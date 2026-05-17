@@ -83,7 +83,8 @@ async function textToSpeech(text, language) {
             pace: 1.0,
             speech_sample_rate: 8000,
             enable_preprocessing: true,
-            model: 'bulbul:v3'
+            model: 'bulbul:v3',
+            output_audio_codec: 'mp3'
         })
     })
 
@@ -107,9 +108,9 @@ async function sendWhatsAppVoiceNote(phone, base64Audio) {
 
     // Upload to WhatsApp media
     const formData = new FormData()
-    const blob = new Blob([audioBuffer], { type: 'audio/wav' })
-    formData.append('file', blob, 'voice.wav')
-    formData.append('type', 'audio/wav')
+    const blob = new Blob([audioBuffer], { type: 'audio/mpeg' })
+    formData.append('file', blob, 'voice.mp3')
+    formData.append('type', 'audio/mpeg')
     formData.append('messaging_product', 'whatsapp')
 
     const uploadRes = await fetch(

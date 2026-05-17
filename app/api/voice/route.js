@@ -145,6 +145,9 @@ async function sendWhatsAppVoiceNote(phone, base64Audio) {
     )
     const sendData = await sendRes.json()
     console.log('WhatsApp send response:', JSON.stringify(sendData))
+    if (!sendRes.ok || sendData.error) {
+        throw new Error(`WhatsApp send failed: ${JSON.stringify(sendData)}`)
+    }
 }
 
 export async function POST(req) {

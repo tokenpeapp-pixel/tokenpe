@@ -17,7 +17,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Namaskaram! ${clinic} ki swagatam. Mee token number ${token}. Ippudu ${pos} mandhi mundu unnaru.`,
         soon: (token) => `${token} number garu, inkaa 3 mandhe unnaru. Clinic vaipu ravandi.`,
         now: (token) => `${token} number garu, mee vanta vachindi! Doctor meeru kosam veediksthunnaru.`,
-        done: (clinic) => `Consultation purthi ayyindi. ${clinic} ki dhanyavadalu. Tvaraga kోలుకోండి!`
+        done: (clinic) => `Consultation purthi ayyindi. ${clinic} ki dhanyavadalu. Tvaraga kolukondi!`
     },
     mr: {
         joined: (token, pos, clinic) => `Namaskar! ${clinic} madhe aapale swagat aahe. Aapala token number ${token} aahe. Ata ${pos} log pudhe aahet.`,
@@ -29,7 +29,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Namaskar! ${clinic} te apnake swagat. Apnar token number ${token}. Ekhon ${pos} jon samne achhen.`,
         soon: (token) => `${token} number, matro 3 jon baki. Clinic er dike asun.`,
         now: (token) => `${token} number, apnar pala eshe geche! Doctor apnar jonno opekkha korchen.`,
-        done: (clinic) => `Consultation sesh hoyeche. ${clinic} te asar jonno dhonyobad. Taratari sুস্থ hon!`
+        done: (clinic) => `Consultation sesh hoyeche. ${clinic} te asar jonno dhonyobad. Taratari sustha hon!`
     },
     gu: {
         joined: (token, pos, clinic) => `Kem cho! ${clinic} ma aapnu swagat che. Aapno token number ${token} che. Haju ${pos} log aage che.`,
@@ -40,7 +40,7 @@ const MESSAGES = {
     kn: {
         joined: (token, pos, clinic) => `Namaskara! ${clinic} ge swagatav. Nimma token number ${token}. Ippaga ${pos} jana mundide.`,
         soon: (token) => `${token} number, kevala 3 jana baki ide. Clinic kade banni.`,
-        now: (token) => `${token} number, nimma sari bandide! Doctor nimmaga kaaythidare.`,
+        now: (token) => `${token} number, nimma sari bandide! Doctor nimmaga kaayithidare.`,
         done: (clinic) => `Consultation mugiyitu. ${clinic} ge banda salakaagi dhanyavadagalu!`
     },
     ml: {
@@ -90,8 +90,14 @@ async function textToSpeech(text, language) {
     })
 
     const data = await response.json()
-    if (!data.audios || !data.audios[0]) throw new Error('No audio from Sarvam')
-    return data.audios[0] // base64 encoded audio
+    console.log('Sarvam response keys:', Object.keys(data))
+
+    // Handle different response formats
+    if (data.audios && data.audios[0]) return data.audios[0]
+    if (data.audio) return data.audio
+    if (data.data) return data.data
+
+    throw new Error(`Sarvam error: ${JSON.stringify(data)}`)
 }
 
 async function sendWhatsAppVoiceNote(phone, base64Audio) {
@@ -116,10 +122,13 @@ async function sendWhatsAppVoiceNote(phone, base64Audio) {
             body: formData
         }
     )
-    const { id: mediaId } = await uploadRes.json()
+    const uploadData = await uploadRes.json()
+    console.log('WhatsApp upload response:', JSON.stringify(uploadData))
+
+    if (!uploadData.id) throw new Error(`Media upload failed: ${JSON.stringify(uploadData)}`)
 
     // Send as voice note
-    await fetch(
+    const sendRes = await fetch(
         `https://graph.facebook.com/v18.0/${PHONE_ID}/messages`,
         {
             method: 'POST',
@@ -131,10 +140,12 @@ async function sendWhatsAppVoiceNote(phone, base64Audio) {
                 messaging_product: 'whatsapp',
                 to: `91${phone}`,
                 type: 'audio',
-                audio: { id: mediaId }
+                audio: { id: uploadData.id }
             })
         }
     )
+    const sendData = await sendRes.json()
+    console.log('WhatsApp send response:', JSON.stringify(sendData))
 }
 
 export async function POST(req) {
@@ -161,7 +172,7 @@ export async function POST(req) {
 
         return Response.json({ success: true })
     } catch (err) {
-        console.error('Voice error:', err)
+        console.error('Voice error:', err.message)
         return Response.json({ error: err.message }, { status: 500 })
     }
 }

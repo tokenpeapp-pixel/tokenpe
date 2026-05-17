@@ -64,9 +64,9 @@ const MESSAGES = {
 }
 
 const SARVAM_VOICES = {
-    hi: 'meera', ta: 'arjun', te: 'arvind',
-    mr: 'meera', bn: 'meera', gu: 'meera',
-    kn: 'arvind', ml: 'arvind', pa: 'meera', en: 'meera'
+    hi: 'anushka', ta: 'abhilash', te: 'abhilash',
+    mr: 'anushka', bn: 'anushka', gu: 'anushka',
+    kn: 'abhilash', ml: 'abhilash', pa: 'anushka', en: 'anushka'
 }
 
 async function textToSpeech(text, language) {
@@ -79,7 +79,7 @@ async function textToSpeech(text, language) {
         body: JSON.stringify({
             inputs: [text],
             target_language_code: `${language}-IN`,
-            speaker: SARVAM_VOICES[language] || 'meera',
+            speaker: SARVAM_VOICES[language] || 'anushka',
             pitch: 0,
             pace: 1.0,
             loudness: 1.5,

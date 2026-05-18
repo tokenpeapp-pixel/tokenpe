@@ -103,6 +103,12 @@ async function sendWhatsAppVoiceNote(phone, base64Audio) {
     const TOKEN = process.env.WHATSAPP_TOKEN
     const PHONE_ID = process.env.WHATSAPP_PHONE_ID
 
+    // Normalize phone number to contain exactly the country code and digits
+    let cleanPhone = phone.replace(/\D/g, '')
+    if (cleanPhone.length === 10) {
+        cleanPhone = `91${cleanPhone}`
+    }
+
     // Convert base64 to buffer
     const audioBuffer = Buffer.from(base64Audio, 'base64')
 
@@ -137,7 +143,7 @@ async function sendWhatsAppVoiceNote(phone, base64Audio) {
             },
             body: JSON.stringify({
                 messaging_product: 'whatsapp',
-                to: `91${phone}`,
+                to: cleanPhone,
                 type: 'audio',
                 audio: { id: uploadData.id }
             })

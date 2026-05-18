@@ -45,8 +45,9 @@ async function sendCallNext(phone, name, token) {
 }
 
 // ─── SEND VOICE NOTE VIA SARVAM ─────────────────────────────────────────────
-async function sendVoiceNote({ phone, language, event, token, position, clinicName }) {
-    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/voice`, {
+async function sendVoiceNote({ phone, language, event, token, position, clinicName, baseUrl }) {
+    const appUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    await fetch(`${appUrl}/api/voice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, language, event, token, position, clinicName })
@@ -58,6 +59,7 @@ export async function POST(req) {
     try {
         const body = await req.json()
         const { phone, name, language, action, clinicCode } = body
+        const baseUrl = new URL(req.url).origin
 
         // ── JOIN action (patient joining queue) ──────────────────────────────────
         if (action === 'join') {
@@ -108,7 +110,8 @@ export async function POST(req) {
                 event: 'joined',
                 token: tokenNumber,
                 position,
-                clinicName: clinic.name
+                clinicName: clinic.name,
+                baseUrl
             })
 
             // 4.5. Send text queue confirmation template via AiSensy
@@ -144,7 +147,8 @@ export async function POST(req) {
                 event: 'called',
                 token,
                 position: 0,
-                clinicName: body.clinicName
+                clinicName: body.clinicName,
+                baseUrl
             })
 
             return Response.json({ success: true }, { status: 200 })

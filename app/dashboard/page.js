@@ -1,17 +1,16 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
 // ─── SOUNDS ────────────────────────────────────────────────────────────────
 function useSounds() {
   const audioCtx = useRef(null)
-
   function getCtx() {
     if (!audioCtx.current)
       audioCtx.current = new (window.AudioContext || window.webkitAudioContext)()
     return audioCtx.current
   }
-
   function playTone(frequencies, type = 'sine', volume = 0.4) {
     const ctx = getCtx()
     frequencies.forEach((freq, i) => {
@@ -29,13 +28,11 @@ function useSounds() {
       osc.stop(t + 0.4)
     })
   }
-
   return {
     newPatient: () => playTone([523.25, 659.25]),
     callNext: () => playTone([880, 1100], 'sine', 0.3),
     done: () => playTone([659.25, 523.25], 'sine', 0.25),
     skip: () => playTone([440], 'sine', 0.2),
-    payment: () => playTone([1046.5, 1318.5, 1568], 'sine', 0.25),
     notify: () => playTone([700, 900], 'sine', 0.2),
   }
 }
@@ -54,7 +51,6 @@ const TOAST_TYPES = {
   call: { bg: '#7C3AED', icon: '📢' },
   done: { bg: '#065F46', icon: '✅' },
   skip: { bg: '#92400E', icon: '⏭' },
-  payment: { bg: '#065F46', icon: '💰' },
   notify: { bg: '#1E40AF', icon: '🔔' },
   error: { bg: '#9F1239', icon: '❌' },
 }
@@ -63,7 +59,6 @@ const TOAST_TYPES = {
 function QRModal({ clinic, onClose }) {
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
-
   const waLink = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=JOIN%20${clinic?.code}`
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(waLink)}&color=0F4C75&bgcolor=ffffff&margin=24`
 
@@ -126,102 +121,30 @@ function QRModal({ clinic, onClose }) {
   }
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.6)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 600, padding: 20
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: 'white', borderRadius: 24,
-          padding: '36px 32px', width: '100%', maxWidth: 380,
-          textAlign: 'center', position: 'relative',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.3)'
-        }}
-      >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute', top: 14, right: 14,
-            background: '#f1f5f9', border: 'none',
-            width: 32, height: 32, borderRadius: '50%',
-            fontSize: 18, cursor: 'pointer', color: '#64748b',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}
-        >×</button>
-
-        {/* Header */}
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 600, padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 24, padding: '36px 32px', width: '100%', maxWidth: 380, textAlign: 'center', position: 'relative', boxShadow: '0 32px 80px rgba(0,0,0,0.3)' }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: '50%', fontSize: 18, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         <div style={{ fontSize: 22, fontWeight: 900, color: '#0F4C75' }}>🏥 TokenPe</div>
-        <div style={{ fontSize: 11, color: '#94a3b8', letterSpacing: .5, marginBottom: 14 }}>
-          YOUR TOKEN. YOUR TIME.
-        </div>
+        <div style={{ fontSize: 11, color: '#94a3b8', letterSpacing: .5, marginBottom: 14 }}>YOUR TOKEN. YOUR TIME.</div>
         <div style={{ fontSize: 17, fontWeight: 800, color: '#1e293b' }}>{clinic?.name}</div>
-        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 20 }}>
-          Scan to join the OPD queue
+        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 20 }}>Scan to join the OPD queue</div>
+        <div style={{ background: '#f8fafc', borderRadius: 16, padding: 16, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 16 }}>
+          <img src={qrUrl} alt="QR Code" style={{ width: 200, height: 200, borderRadius: 10, display: 'block' }} />
         </div>
-
-        {/* QR Code */}
-        <div style={{
-          background: '#f8fafc', borderRadius: 16, padding: 16,
-          display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 16
-        }}>
-          <img
-            src={qrUrl}
-            alt="QR Code"
-            style={{ width: 200, height: 200, borderRadius: 10, display: 'block' }}
-          />
-        </div>
-
-        {/* Instructions */}
-        <div style={{
-          background: '#f0f9ff', borderRadius: 12,
-          padding: '12px 16px', textAlign: 'left', marginBottom: 8
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#0F4C75', marginBottom: 6 }}>
-            📱 How patients join
-          </div>
+        <div style={{ background: '#f0f9ff', borderRadius: 12, padding: '12px 16px', textAlign: 'left', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0F4C75', marginBottom: 6 }}>📱 How patients join</div>
           <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.9 }}>
             1. Open WhatsApp → scan this QR<br />
             2. Tap Send — no typing needed<br />
             3. Pick language → get token + voice note 🎙️
           </div>
         </div>
-
-        <div style={{ fontSize: 10, color: '#cbd5e1', letterSpacing: 1, marginBottom: 20 }}>
-          CLINIC CODE: {clinic?.code}
-        </div>
-
-        {/* Action buttons */}
+        <div style={{ fontSize: 10, color: '#cbd5e1', letterSpacing: 1, marginBottom: 20 }}>CLINIC CODE: {clinic?.code}</div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={download}
-            disabled={downloading}
-            style={{
-              flex: 1, padding: '12px 0',
-              background: '#0F4C75', color: 'white',
-              border: 'none', borderRadius: 12,
-              fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              opacity: downloading ? 0.7 : 1
-            }}
-          >
+          <button onClick={download} disabled={downloading} style={{ flex: 1, padding: '12px 0', background: '#0F4C75', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
             {downloaded ? '✅ Saved!' : downloading ? 'Saving...' : '⬇️ Download PNG'}
           </button>
-          <button
-            onClick={print}
-            style={{
-              flex: 1, padding: '12px 0',
-              background: 'white', color: '#0F4C75',
-              border: '2px solid #0F4C75', borderRadius: 12,
-              fontSize: 13, fontWeight: 700, cursor: 'pointer'
-            }}
-          >
+          <button onClick={print} style={{ flex: 1, padding: '12px 0', background: 'white', color: '#0F4C75', border: '2px solid #0F4C75', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             🖨️ Print Card
           </button>
         </div>
@@ -232,6 +155,7 @@ function QRModal({ clinic, onClose }) {
 
 // ─── MAIN DASHBOARD ────────────────────────────────────────────────────────
 export default function Dashboard() {
+  const router = useRouter()
   const [patients, setPatients] = useState([])
   const [clinic, setClinic] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -243,17 +167,31 @@ export default function Dashboard() {
   const [newPhone, setNewPhone] = useState('')
   const [newLang, setNewLang] = useState('hi')
   const [time, setTime] = useState(new Date())
-  const [dailyRevenue, setDailyRevenue] = useState(0)
-  const [showPaymentModal, setShowPaymentModal] = useState(null)
-  const [paymentAmount, setPaymentAmount] = useState('')
-  const [showQR, setShowQR] = useState(false)   // ← QR state
+  const [showQR, setShowQR] = useState(false)
   const sounds = useSounds()
 
-  // ── Load clinic + patients ──────────────────────────────────────────────
+  // ── Load clinic from session (multi-clinic support) ─────────────────────
   useEffect(() => {
     async function load() {
-      const { data: clinicData } = await supabase
-        .from('clinics').select('*').eq('code', 'SHARMA001').single()
+      // Get clinic code from localStorage (set during login)
+      const clinicCode = localStorage.getItem('clinicCode')
+
+      if (!clinicCode) {
+        // Not logged in — redirect to login
+        router.push('/login')
+        return
+      }
+
+      const { data: clinicData, error } = await supabase
+        .from('clinics').select('*').eq('code', clinicCode).single()
+
+      if (error || !clinicData) {
+        // Invalid clinic — clear and redirect
+        localStorage.removeItem('clinicCode')
+        router.push('/login')
+        return
+      }
+
       setClinic(clinicData)
 
       const today = new Date().toISOString().split('T')[0]
@@ -263,9 +201,7 @@ export default function Dashboard() {
         .eq('date', today)
         .order('joined_at', { ascending: true })
 
-      const list = patientsData || []
-      setPatients(list)
-      setDailyRevenue(list.reduce((sum, p) => sum + (p.amount_paid || 0), 0))
+      setPatients(patientsData || [])
       setLoading(false)
     }
     load()
@@ -295,11 +231,6 @@ export default function Dashboard() {
     return () => supabase.removeChannel(channel)
   }, [clinic])
 
-  // Recalculate revenue whenever patients change
-  useEffect(() => {
-    setDailyRevenue(patients.reduce((sum, p) => sum + (p.amount_paid || 0), 0))
-  }, [patients])
-
   // ── Clock ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000)
@@ -311,6 +242,13 @@ export default function Dashboard() {
     const id = Date.now()
     setToasts(prev => [...prev, { id, msg, type }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
+  }
+
+  // ── Logout ──────────────────────────────────────────────────────────────
+  function logout() {
+    localStorage.removeItem('clinicCode')
+    localStorage.removeItem('clinicPhone')
+    router.push('/login')
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────
@@ -331,7 +269,6 @@ export default function Dashboard() {
     await supabase.from('patients').update({ status: STATUS.DONE }).eq('id', patient.id)
     sounds.done()
     addToast(`${patient.name || patient.token} consultation done`, 'done')
-    setShowPaymentModal(patient)
     await fetch('/api/voice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -358,6 +295,7 @@ export default function Dashboard() {
   async function addWalkIn() {
     if (!newPhone.trim()) return
     const token = `T${String(patients.length + 1).padStart(3, '0')}`
+    const today = new Date().toISOString().split('T')[0]
     await supabase.from('patients').insert({
       clinic_id: clinic.id, token,
       name: newName.trim() || null,
@@ -365,20 +303,11 @@ export default function Dashboard() {
       language: newLang,
       status: STATUS.WAITING,
       amount_paid: 0,
+      date: today,
     })
     setNewName(''); setNewPhone(''); setNewLang('hi')
     setShowAddForm(false)
     addToast(`${newName || newPhone} added as ${token}`, 'new')
-  }
-
-  async function savePayment() {
-    if (!paymentAmount || !showPaymentModal) return
-    const amount = parseInt(paymentAmount)
-    await supabase.from('patients').update({ amount_paid: amount }).eq('id', showPaymentModal.id)
-    sounds.payment()
-    addToast(`₹${amount} recorded for ${showPaymentModal.name || showPaymentModal.token}`, 'payment')
-    setShowPaymentModal(null)
-    setPaymentAmount('')
   }
 
   // ── Computed ────────────────────────────────────────────────────────────
@@ -387,7 +316,6 @@ export default function Dashboard() {
   const done = patients.filter(p => p.status === STATUS.DONE)
   const activePatients = [...called, ...waiting]
   const displayPatients = activeTab === 'active' ? activePatients : done
-  const paidPatients = done.filter(p => p.amount_paid > 0).length
 
   if (loading) return (
     <div style={s.loadingScreen}>
@@ -420,36 +348,6 @@ export default function Dashboard() {
       {/* ── QR Modal ── */}
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} />}
 
-      {/* ── Payment Modal ── */}
-      {showPaymentModal && (
-        <div style={s.modalOverlay}>
-          <div style={s.modal}>
-            <div style={s.modalTitle}>💰 Add Payment</div>
-            <div style={s.modalSub}>
-              How much did <strong>{showPaymentModal.name || showPaymentModal.token}</strong> pay?
-            </div>
-            <div style={s.modalRow}>
-              <span style={s.rupeeSign}>₹</span>
-              <input
-                style={s.modalInput}
-                type="number"
-                placeholder="Enter amount"
-                value={paymentAmount}
-                onChange={e => setPaymentAmount(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && savePayment()}
-                autoFocus
-              />
-            </div>
-            <div style={s.modalButtons}>
-              <button style={s.btnSavePayment} onClick={savePayment}>Save Payment</button>
-              <button style={s.btnSkipPayment} onClick={() => { setShowPaymentModal(null); setPaymentAmount('') }}>
-                Skip (Free / No payment)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Header ── */}
       <header style={s.header}>
         <div style={s.headerLeft}>
@@ -472,59 +370,20 @@ export default function Dashboard() {
             <span style={{ ...s.dot, background: '#38BDF8' }} />
             <strong>{done.length}</strong>&nbsp;Done
           </div>
-          <div style={{ ...s.statPill, background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)' }}>
-            <span style={{ ...s.dot, background: '#10B981' }} />
-            <strong>₹{dailyRevenue.toLocaleString('en-IN')}</strong>&nbsp;Today
-          </div>
         </div>
         <div style={s.headerRight}>
           <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
           <div style={s.clock}>
             {time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
+          <button onClick={logout} style={s.btnLogout}>Logout</button>
         </div>
       </header>
 
-      {/* ── Revenue Bar ── */}
-      <div style={s.revenueBar}>
-        <div>
-          <div style={s.revenueTitle}>💰 Today's Earnings</div>
-          <div style={s.revenueAmount}>₹{dailyRevenue.toLocaleString('en-IN')}</div>
-        </div>
-        <div style={s.revenueStats}>
-          <div style={s.revStat}>
-            <div style={s.revStatNum}>{patients.length}</div>
-            <div style={s.revStatLabel}>Total Patients</div>
-          </div>
-          <div style={s.revDivider} />
-          <div style={s.revStat}>
-            <div style={s.revStatNum}>{paidPatients}</div>
-            <div style={s.revStatLabel}>Paid</div>
-          </div>
-          <div style={s.revDivider} />
-          <div style={s.revStat}>
-            <div style={s.revStatNum}>
-              ₹{paidPatients > 0 ? Math.round(dailyRevenue / paidPatients).toLocaleString('en-IN') : 0}
-            </div>
-            <div style={s.revStatLabel}>Avg per Patient</div>
-          </div>
-          <div style={s.revDivider} />
-          <div style={s.revStat}>
-            <div style={s.revStatNum}>{done.length - paidPatients}</div>
-            <div style={s.revStatLabel}>Unpaid / Free</div>
-          </div>
-        </div>
-      </div>
-
       {/* ── Action Bar ── */}
       <div style={s.actionBar}>
-        {/* QR Button — one click, modal opens */}
-        <button style={s.btnQR} onClick={() => setShowQR(true)}>
-          🔲 Generate QR
-        </button>
-        <button style={s.btnAdd} onClick={() => setShowAddForm(!showAddForm)}>
-          + Add Walk-in
-        </button>
+        <button style={s.btnQR} onClick={() => setShowQR(true)}>🔲 Generate QR</button>
+        <button style={s.btnAdd} onClick={() => setShowAddForm(!showAddForm)}>+ Add Walk-in</button>
         <button
           style={{ ...s.btnCall, opacity: waiting.length === 0 ? 0.4 : 1 }}
           onClick={callNext}
@@ -581,7 +440,6 @@ export default function Dashboard() {
         {activeTab === 'active' && called.map(p => (
           <PatientCard key={p.id} patient={p} position={null}
             onDone={() => markDone(p)} onSkip={() => skipPatient(p)} onNotify={() => notifyPatient(p)}
-            onAddPayment={() => setShowPaymentModal(p)}
           />
         ))}
 
@@ -589,14 +447,11 @@ export default function Dashboard() {
         {activeTab === 'active' && waiting.map((p, idx) => (
           <PatientCard key={p.id} patient={p} position={idx + 1}
             onDone={() => markDone(p)} onSkip={() => skipPatient(p)} onNotify={() => notifyPatient(p)}
-            onAddPayment={() => setShowPaymentModal(p)}
           />
         ))}
 
         {activeTab === 'done' && done.map(p => (
-          <PatientCard key={p.id} patient={p} position={null}
-            onAddPayment={() => setShowPaymentModal(p)}
-          />
+          <PatientCard key={p.id} patient={p} position={null} />
         ))}
       </div>
     </div>
@@ -604,7 +459,7 @@ export default function Dashboard() {
 }
 
 // ─── PATIENT CARD ──────────────────────────────────────────────────────────
-function PatientCard({ patient, position, onDone, onSkip, onNotify, onAddPayment }) {
+function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
   const isWaiting = patient.status === STATUS.WAITING
   const isCalled = patient.status === STATUS.CALLED
   const isDone = patient.status === STATUS.DONE
@@ -619,9 +474,6 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onAddPayment
         <div style={s.patientName}>
           {patient.name || 'Walk-in Patient'}
           <span style={s.langBadge}>{LANG_NAMES[patient.language] || 'हिंदी'}</span>
-          {patient.amount_paid > 0 && (
-            <span style={s.paidBadge}>₹{patient.amount_paid.toLocaleString('en-IN')} paid</span>
-          )}
         </div>
         <div style={s.patientMeta}>
           📱 +91 {patient.phone} &nbsp;·&nbsp;
@@ -632,10 +484,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onAddPayment
       </div>
       <div style={s.cardActions}>
         {isCalled && (
-          <>
-            <button style={s.btnDone} onClick={onDone}>✓ Done</button>
-            <button style={s.btnPayment} onClick={onAddPayment}>₹ Payment</button>
-          </>
+          <button style={s.btnDone} onClick={onDone}>✓ Done</button>
         )}
         {isWaiting && (
           <>
@@ -643,14 +492,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onAddPayment
             <button style={s.btnSkip} onClick={onSkip}>⏭ Skip</button>
           </>
         )}
-        {isDone && (
-          <>
-            <span style={s.doneTag}>✅ Done</span>
-            <button style={s.btnPaymentSmall} onClick={onAddPayment}>
-              {patient.amount_paid > 0 ? `₹${patient.amount_paid} ✓` : '+ Payment'}
-            </button>
-          </>
-        )}
+        {isDone && <span style={s.doneTag}>✅ Done</span>}
         {isSkipped && <span style={s.skipTag}>⏭ Skipped</span>}
       </div>
     </div>
@@ -666,16 +508,6 @@ const s = {
   toast: { padding: '12px 18px', borderRadius: 10, color: 'white', fontWeight: 600, fontSize: '0.88rem', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: 280 },
   banner: { background: 'linear-gradient(135deg,#0F4C75,#1B6CA8)', color: 'white', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem' },
   bannerDot: { width: 10, height: 10, borderRadius: '50%', background: '#4ADE80', boxShadow: '0 0 0 4px rgba(74,222,128,0.3)', flexShrink: 0 },
-  modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500 },
-  modal: { background: 'white', borderRadius: 16, padding: 32, width: 340, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' },
-  modalTitle: { fontSize: '1.3rem', fontWeight: 800, color: '#0F172A', marginBottom: 8 },
-  modalSub: { fontSize: '0.9rem', color: '#64748B', marginBottom: 20 },
-  modalRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 },
-  rupeeSign: { fontSize: '1.5rem', fontWeight: 700, color: '#0F4C75' },
-  modalInput: { flex: 1, padding: '12px 16px', borderRadius: 8, border: '2px solid #CBD5E1', fontSize: '1.1rem', fontWeight: 700, outline: 'none' },
-  modalButtons: { display: 'flex', flexDirection: 'column', gap: 8 },
-  btnSavePayment: { background: '#10B981', color: 'white', border: 'none', padding: '12px', borderRadius: 8, fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' },
-  btnSkipPayment: { background: 'transparent', color: '#94A3B8', border: '1px solid #E2E8F0', padding: '10px', borderRadius: 8, fontWeight: 500, fontSize: '0.85rem', cursor: 'pointer' },
   header: { background: 'linear-gradient(135deg,#0F4C75 0%,#1B6CA8 100%)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 20px rgba(15,76,117,0.3)' },
   headerLeft: { display: 'flex', alignItems: 'center', gap: 12 },
   logoBox: { fontSize: '2rem' },
@@ -688,14 +520,7 @@ const s = {
   liveBadge: { display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 12px', color: 'white', fontSize: '0.72rem', fontWeight: 700, letterSpacing: 1 },
   liveDot: { width: 7, height: 7, borderRadius: '50%', background: '#4ADE80', display: 'inline-block' },
   clock: { color: 'white', fontWeight: 600, fontSize: '1rem', fontVariantNumeric: 'tabular-nums' },
-  revenueBar: { background: 'white', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-  revenueTitle: { fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 },
-  revenueAmount: { fontSize: '1.8rem', fontWeight: 800, color: '#10B981', letterSpacing: '-1px' },
-  revenueStats: { display: 'flex', alignItems: 'center' },
-  revStat: { textAlign: 'center', padding: '0 20px' },
-  revStatNum: { fontSize: '1.2rem', fontWeight: 800, color: '#0F172A' },
-  revStatLabel: { fontSize: '0.7rem', color: '#94A3B8', marginTop: 2, fontWeight: 500 },
-  revDivider: { width: 1, height: 32, background: '#E2E8F0' },
+  btnLogout: { background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
   actionBar: { background: 'white', padding: '14px 24px', display: 'flex', gap: 12, alignItems: 'center', borderBottom: '1px solid #E2E8F0' },
   btnQR: { background: '#1e293b', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' },
   btnAdd: { background: '#0F4C75', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer' },
@@ -704,8 +529,6 @@ const s = {
   btnDone: { background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', padding: '7px 14px', borderRadius: 7, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
   btnNotify: { background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A', padding: '7px 14px', borderRadius: 7, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
   btnSkip: { background: '#FFF1F2', color: '#9F1239', border: '1px solid #FECDD3', padding: '7px 14px', borderRadius: 7, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
-  btnPayment: { background: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', padding: '7px 14px', borderRadius: 7, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
-  btnPaymentSmall: { background: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', padding: '5px 10px', borderRadius: 6, fontWeight: 600, fontSize: '0.78rem', cursor: 'pointer' },
   qrHint: { marginLeft: 'auto', color: '#94A3B8', fontSize: '0.78rem', fontStyle: 'italic' },
   addForm: { background: '#EFF6FF', borderBottom: '1px solid #BFDBFE', padding: '16px 24px' },
   addFormTitle: { fontWeight: 700, color: '#1E40AF', marginBottom: 12, fontSize: '0.9rem' },
@@ -722,7 +545,6 @@ const s = {
   cardInfo: { flex: 1 },
   patientName: { fontWeight: 700, color: '#0F172A', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   langBadge: { background: '#F0F9FF', color: '#0369A1', padding: '2px 8px', borderRadius: 10, fontSize: '0.72rem', fontWeight: 600 },
-  paidBadge: { background: '#F0FDF4', color: '#166534', padding: '2px 8px', borderRadius: 10, fontSize: '0.72rem', fontWeight: 600 },
   patientMeta: { fontSize: '0.78rem', color: '#94A3B8', marginTop: 4 },
   estWait: { fontSize: '0.72rem', color: '#64748B', marginTop: 2 },
   cardActions: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' },

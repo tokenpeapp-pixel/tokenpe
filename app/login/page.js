@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -10,6 +10,16 @@ export default function LoginPage() {
     const [googleLoading, setGoogleLoading] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState('')
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search)
+            const errType = params.get('error')
+            if (errType === 'no_clinic') {
+                setError('No clinic account found for this Google email. Please register first, or use your Clinic Code to log in.')
+            }
+        }
+    }, [])
 
     // Login
     const [loginCode, setLoginCode] = useState('')
@@ -60,6 +70,8 @@ export default function LoginPage() {
         }
 
         localStorage.setItem('tokenpe_clinic', JSON.stringify(data))
+        localStorage.setItem('clinicCode', data.code)
+        localStorage.setItem('clinicPhone', data.phone)
         router.push('/dashboard')
     }
 
@@ -94,6 +106,8 @@ export default function LoginPage() {
         setLoading(false)
         setTimeout(() => {
             localStorage.setItem('tokenpe_clinic', JSON.stringify(data))
+            localStorage.setItem('clinicCode', data.code)
+            localStorage.setItem('clinicPhone', data.phone)
             router.push('/dashboard')
         }, 1500)
     }

@@ -174,12 +174,31 @@ export default function Dashboard() {
   useEffect(() => {
     async function load() {
       // Get clinic code from localStorage (set during login)
-      const clinicCode = localStorage.getItem('clinicCode')
+      let clinicCode = localStorage.getItem('clinicCode')
 
       if (!clinicCode) {
-        // Not logged in — redirect to login
-        router.push('/login')
-        return
+        // Fallback: Check if user is logged in via Supabase (e.g., Google OAuth redirect)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user?.email) {
+          const { data: clinicData, error: clinicError } = await supabase
+            .from('clinics').select('*').eq('email', user.email).single()
+
+          if (clinicData && !clinicError) {
+            localStorage.setItem('clinicCode', clinicData.code)
+            localStorage.setItem('clinicPhone', clinicData.phone)
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(clinicData))
+            clinicCode = clinicData.code
+          } else {
+            // Logged into Google, but email does not exist as a clinic in the clinics table
+            await supabase.auth.signOut()
+            router.push('/login?error=no_clinic')
+            return
+          }
+        } else {
+          // Not logged in — redirect to login
+          router.push('/login')
+          return
+        }
       }
 
       const { data: clinicData, error } = await supabase
@@ -188,6 +207,8 @@ export default function Dashboard() {
       if (error || !clinicData) {
         // Invalid clinic — clear and redirect
         localStorage.removeItem('clinicCode')
+        localStorage.removeItem('clinicPhone')
+        localStorage.removeItem('tokenpe_clinic')
         router.push('/login')
         return
       }
@@ -245,9 +266,11 @@ export default function Dashboard() {
   }
 
   // ── Logout ──────────────────────────────────────────────────────────────
-  function logout() {
+  async function logout() {
     localStorage.removeItem('clinicCode')
     localStorage.removeItem('clinicPhone')
+    localStorage.removeItem('tokenpe_clinic')
+    await supabase.auth.signOut()
     router.push('/login')
   }
 

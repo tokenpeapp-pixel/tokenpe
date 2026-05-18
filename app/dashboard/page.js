@@ -278,14 +278,28 @@ export default function Dashboard() {
   async function callNext() {
     const next = patients.find(p => p.status === STATUS.WAITING)
     if (!next) return
-    await supabase.from('patients').update({ status: STATUS.CALLED }).eq('id', next.id)
-    sounds.callNext()
-    addToast(`Calling ${next.name || next.token} — voice note sent!`, 'call')
-    await fetch('/api/voice', {
+
+    // Call unified backend queue next API to process turn notifications and relative queue alerts!
+    const res = await fetch('/api/queue/next', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: next.phone, language: next.language, event: 'now', token: next.token, clinicName: clinic.name })
+      body: JSON.stringify({
+        clinicId: clinic.id,
+        clinicName: clinic.name,
+        patientId: next.id,
+        patientPhone: next.phone,
+        patientName: next.name || 'Patient',
+        token: next.token,
+        language: next.language || 'en'
+      })
     })
+
+    if (res.ok) {
+      sounds.callNext()
+      addToast(`Calling ${next.name || next.token} — notifications & queue alerts sent!`, 'call')
+    } else {
+      addToast('Error calling next patient', 'error')
+    }
   }
 
   async function markDone(patient) {

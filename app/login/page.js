@@ -132,7 +132,6 @@ export default function LoginPage() {
                     {[
                         ['🎙️', 'Voice updates in 10 Indian languages'],
                         ['📱', 'Patients join via WhatsApp — zero app needed'],
-                        ['💰', 'Track daily revenue per patient'],
                         ['🔔', 'Real-time notifications for every action'],
                     ].map(([icon, text]) => (
                         <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -148,7 +147,7 @@ export default function LoginPage() {
                 </div>
 
                 <div style={{ marginTop: 60, fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
-                    Made in India 🇮🇳 · TokenPe © 2025
+                    Made in India · TokenPe © 2026
                 </div>
             </div>
 

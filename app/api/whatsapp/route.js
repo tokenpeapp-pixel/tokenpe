@@ -1,233 +1,155 @@
 import { supabase } from '../../../lib/supabase'
 
-const TOKEN = process.env.WHATSAPP_TOKEN
-const PHONE_ID = process.env.WHATSAPP_PHONE_ID
-const BASE = `https://graph.facebook.com/v18.0/${PHONE_ID}/messages`
-const HEADERS = {
-    Authorization: `Bearer ${TOKEN}`,
-    'Content-Type': 'application/json'
-}
+const AISENSY_API_KEY = process.env.AISENSY_API_KEY
 
-// ─── SEND TEXT ──────────────────────────────────────────────────────────────
-async function sendText(phone, text) {
-    await fetch(BASE, {
-        method: 'POST', headers: HEADERS,
+// ─── SEND MESSAGE VIA AISENSY ────────────────────────────────────────────────
+async function sendMessage(phone, message) {
+    await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: `91${phone}`,
-            type: 'text',
-            text: { body: text }
+            apiKey: AISENSY_API_KEY,
+            campaignName: 'queue_confirmation', // your AiSensy campaign name
+            destination: phone,               // e.g. "919876543210"
+            userName: 'TokenPe',
+            templateParams: [message],
+            source: 'new-landing-page form',
+            media: {},
+            buttons: [],
+            carouselCards: [],
+            location: {},
         })
     })
 }
 
-// ─── SEND BUTTON ────────────────────────────────────────────────────────────
-async function sendButton(phone, bodyText, buttons) {
-    await fetch(BASE, {
-        method: 'POST', headers: HEADERS,
+// ─── SEND CALL NEXT NOTIFICATION VIA AISENSY ────────────────────────────────
+async function sendCallNext(phone, name, token) {
+    await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: `91${phone}`,
-            type: 'interactive',
-            interactive: {
-                type: 'button',
-                body: { text: bodyText },
-                action: { buttons }
-            }
+            apiKey: AISENSY_API_KEY,
+            campaignName: 'call_next',        // your AiSensy campaign name
+            destination: phone,
+            userName: name,
+            templateParams: [name, token],
+            source: 'dashboard',
+            media: {},
+            buttons: [],
+            carouselCards: [],
+            location: {},
         })
     })
 }
 
-// ─── SEND LANGUAGE LIST ─────────────────────────────────────────────────────
-async function sendLanguageList(phone) {
-    await fetch(BASE, {
-        method: 'POST', headers: HEADERS,
-        body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: `91${phone}`,
-            type: 'interactive',
-            interactive: {
-                type: 'list',
-                body: {
-                    text: '🌐 *Select your preferred language*\n\nYou will receive all queue updates as voice notes in your chosen language.'
-                },
-                action: {
-                    button: '🌐 Choose Language',
-                    sections: [{
-                        title: 'Available Languages',
-                        rows: [
-                            { id: 'lang_hi', title: 'हिंदी', description: 'Hindi' },
-                            { id: 'lang_ta', title: 'தமிழ்', description: 'Tamil' },
-                            { id: 'lang_te', title: 'తెలుగు', description: 'Telugu' },
-                            { id: 'lang_mr', title: 'मराठी', description: 'Marathi' },
-                            { id: 'lang_bn', title: 'বাংলা', description: 'Bengali' },
-                            { id: 'lang_gu', title: 'ગુજરાતી', description: 'Gujarati' },
-                            { id: 'lang_kn', title: 'ಕನ್ನಡ', description: 'Kannada' },
-                            { id: 'lang_ml', title: 'മലയാളം', description: 'Malayalam' },
-                            { id: 'lang_pa', title: 'ਪੰਜਾਬੀ', description: 'Punjabi' },
-                            { id: 'lang_en', title: 'English', description: 'English (Indian)' },
-                        ]
-                    }]
-                }
-            }
-        })
+// ─── SEND VOICE NOTE VIA SARVAM ─────────────────────────────────────────────
+async function sendVoiceNote({ phone, language, event, token, position, clinicName }) {
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/voice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, language, event, token, position, clinicName })
     })
 }
 
-// ─── WEBHOOK HANDLER ────────────────────────────────────────────────────────
+// ─── MAIN WEBHOOK HANDLER (called by AiSensy API Request node) ──────────────
 export async function POST(req) {
-    const body = await req.json()
-    const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]
-    if (!message) return new Response('ok', { status: 200 })
+    try {
+        const body = await req.json()
+        const { phone, name, language, action, clinicCode } = body
 
-    // Phone number — auto from WhatsApp, strip country code
-    const phone = message.from.replace(/^91/, '').replace(/^\+/, '')
+        // ── JOIN action (patient joining queue) ──────────────────────────────────
+        if (action === 'join') {
 
-    // ── Step 1: Patient sends "JOIN CLINICCODE" from QR scan ─────────────────
-    if (message.type === 'text') {
-        const text = message.text.body.trim().toUpperCase()
+            // 1. Validate clinic
+            const { data: clinic, error: clinicError } = await supabase
+                .from('clinics')
+                .select('*')
+                .eq('code', clinicCode)
+                .single()
 
-        if (text.startsWith('JOIN')) {
-            const code = text.split(' ')[1]
-            const { data: clinic } = await supabase
-                .from('clinics').select('*').eq('code', code).single()
-
-            if (!clinic) {
-                await sendText(phone, '❌ Invalid clinic code. Please scan the QR code at the clinic again.')
-                return new Response('ok', { status: 200 })
+            if (clinicError || !clinic) {
+                return Response.json({
+                    success: false,
+                    message: '❌ Invalid clinic code. Please scan the QR code again.'
+                }, { status: 200 })
             }
 
-            // Save state: waiting for name
-            await supabase.from('pending').upsert({
-                phone,
-                clinic_id: clinic.id,
-                step: 'ask_name'
-            })
-
-            // Ask for name — only thing patient types
-            await sendButton(phone,
-                `🏥 *Welcome to ${clinic.name}!*\n\nTo join today's OPD queue, please tell us your name.\n\n_Type your name and send it._`,
-                [{ type: 'reply', reply: { id: 'SKIP_NAME', title: '⏭ Skip (No name)' } }]
-            )
-
-            return new Response('ok', { status: 200 })
-        }
-
-        // ── Step 2: Patient typed their name ──────────────────────────────────
-        const { data: pending } = await supabase
-            .from('pending').select('*').eq('phone', phone).single()
-
-        if (pending?.step === 'ask_name') {
-            const name = message.text.body.trim()
-
-            // Save name, move to language step
-            await supabase.from('pending').update({
-                step: 'ask_language',
-                name: name
-            }).eq('phone', phone)
-
-            await sendLanguageList(phone)
-            return new Response('ok', { status: 200 })
-        }
-    }
-
-    // ── Button / List taps ───────────────────────────────────────────────────
-    if (message.type === 'interactive') {
-        const buttonId = message.interactive?.button_reply?.id
-            || message.interactive?.list_reply?.id
-
-        // ── Tapped "Skip Name" ───────────────────────────────────────────────
-        if (buttonId === 'SKIP_NAME') {
-            await supabase.from('pending').update({
-                step: 'ask_language',
-                name: null
-            }).eq('phone', phone)
-
-            await sendLanguageList(phone)
-            return new Response('ok', { status: 200 })
-        }
-
-        // ── Tapped a language ────────────────────────────────────────────────
-        if (buttonId?.startsWith('lang_')) {
-            const lang = buttonId.replace('lang_', '')
-
-            const { data: pending } = await supabase
-                .from('pending').select('*').eq('phone', phone).single()
-
-            if (!pending) return new Response('ok', { status: 200 })
-
-            const { data: clinic } = await supabase
-                .from('clinics').select('*').eq('id', pending.clinic_id).single()
-
-            // Count patients waiting today
+            // 2. Count patients waiting today
             const today = new Date().toISOString().split('T')[0]
-            const { count } = await supabase.from('patients')
+            const { count } = await supabase
+                .from('patients')
                 .select('*', { count: 'exact', head: true })
-                .eq('clinic_id', pending.clinic_id)
+                .eq('clinic_id', clinic.id)
                 .eq('status', 'waiting')
                 .eq('date', today)
 
             const position = count || 0
-            const token = `T${String(position + 1).padStart(3, '0')}`
+            const tokenNumber = `T${String(position + 1).padStart(3, '0')}`
             const waitMins = position * 7
 
-            const langNames = {
-                hi: 'हिंदी', ta: 'தமிழ்', te: 'తెలుగు', mr: 'मराठी',
-                bn: 'বাংলা', gu: 'ગુજરાતી', kn: 'ಕನ್ನಡ', ml: 'മലയാളം',
-                pa: 'ਪੰਜਾਬੀ', en: 'English'
-            }
-
-            // Add to queue with name from pending
+            // 3. Add patient to queue
             await supabase.from('patients').insert({
-                clinic_id: pending.clinic_id,
-                token,
+                clinic_id: clinic.id,
+                token: tokenNumber,
                 phone,
-                name: pending.name || null,
-                language: lang,
+                name: name || 'Guest',
+                language: language || 'en',
                 status: 'waiting',
-                amount_paid: 0
+                amount_paid: 0,
+                date: today,
             })
 
-            // Clear pending
-            await supabase.from('pending').delete().eq('phone', phone)
-
-            // Send confirmation
-            await sendText(phone,
-                `✅ *You have been added to the queue at ${clinic.name}*\n\n` +
-                `👤 Name: *${pending.name || 'Guest'}*\n` +
-                `🎫 Your Token: *${token}*\n` +
-                `👥 Patients ahead: *${position}*\n` +
-                `⏱ Est. wait: *${position === 0 ? 'You are next!' : `~${waitMins} minutes`}*\n\n` +
-                `📍 Please stay near the clinic.\n` +
-                `🎙️ Voice updates in *${langNames[lang]}*\n\n` +
-                `_${clinic.name} · Powered by TokenPe_`
-            )
-
-            // Send voice note
-            await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/voice`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone, language: lang, event: 'joined',
-                    token, position, clinicName: clinic.name
-                })
+            // 4. Send voice note via Sarvam
+            await sendVoiceNote({
+                phone,
+                language: language || 'en',
+                event: 'joined',
+                token: tokenNumber,
+                position,
+                clinicName: clinic.name
             })
 
-            return new Response('ok', { status: 200 })
+            // 5. Return token info back to AiSensy
+            // AiSensy will show confirmation message to patient
+            return Response.json({
+                success: true,
+                token: tokenNumber,
+                position: position,
+                wait: position === 0 ? 'You are next!' : `${waitMins} mins`,
+                clinicName: clinic.name,
+                name: name || 'Guest'
+            }, { status: 200 })
         }
 
-        // ── Tapped "On My Way" ───────────────────────────────────────────────
-        if (buttonId === 'ON_MY_WAY') {
-            await sendText(phone,
-                `👍 *Perfect! We have noted that you are on your way.*\n\nPlease come to the reception and show your token.\n\n_Thank you for your patience._`
-            )
+        // ── CALL NEXT action (doctor hits Call Next on dashboard) ────────────────
+        if (action === 'callnext') {
+            const { patientPhone, patientName, token } = body
+
+            // Send WhatsApp notification via AiSensy
+            await sendCallNext(patientPhone, patientName, token)
+
+            // Send voice note via Sarvam
+            await sendVoiceNote({
+                phone: patientPhone,
+                language: body.language || 'en',
+                event: 'called',
+                token,
+                position: 0,
+                clinicName: body.clinicName
+            })
+
+            return Response.json({ success: true }, { status: 200 })
         }
+
+        return Response.json({ error: 'Unknown action' }, { status: 400 })
+
+    } catch (error) {
+        console.error('Webhook error:', error)
+        return Response.json({ error: error.message }, { status: 500 })
     }
-
-    return new Response('ok', { status: 200 })
 }
 
-// ─── WEBHOOK VERIFICATION ────────────────────────────────────────────────────
+// ─── WEBHOOK VERIFICATION (keep this for any future use) ────────────────────
 export async function GET(req) {
     const { searchParams } = new URL(req.url)
     const mode = searchParams.get('hub.mode')

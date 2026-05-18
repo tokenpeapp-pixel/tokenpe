@@ -24,12 +24,13 @@ async function sendMessage(phone, message) {
 
 // ─── SEND CALL NEXT NOTIFICATION VIA AISENSY ────────────────────────────────
 async function sendCallNext(phone, name, token) {
+    const campaignName = process.env.WHATSAPP_CAMPAIGN_NAME || 'call_next_v3'
     await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             apiKey: AISENSY_API_KEY,
-            campaignName: 'call_next',        // your AiSensy campaign name
+            campaignName: campaignName,        // dynamic campaign name from env or fallback
             destination: phone,
             userName: name,
             templateParams: [name, token],

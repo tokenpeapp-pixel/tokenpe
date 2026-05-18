@@ -2,18 +2,19 @@ import { supabase } from '../../../lib/supabase'
 
 const AISENSY_API_KEY = process.env.AISENSY_API_KEY
 
-// ─── SEND MESSAGE VIA AISENSY ────────────────────────────────────────────────
-async function sendMessage(phone, message) {
+// ─── SEND QUEUE CONFIRMATION VIA AISENSY ─────────────────────────────────────
+async function sendQueueConfirmation(phone, name, token, position, waitMins) {
+    const campaignName = process.env.WHATSAPP_CONFIRMATION_CAMPAIGN || 'queue_confirmation'
     await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             apiKey: AISENSY_API_KEY,
-            campaignName: 'queue_confirmation', // your AiSensy campaign name
-            destination: phone,               // e.g. "919876543210"
-            userName: 'TokenPe',
-            templateParams: [message],
-            source: 'new-landing-page form',
+            campaignName: campaignName,        // dynamic confirmation campaign name
+            destination: phone,
+            userName: name,
+            templateParams: [name, token, String(position), String(waitMins)],
+            source: 'dashboard',
             media: {},
             buttons: [],
             carouselCards: [],
@@ -109,6 +110,13 @@ export async function POST(req) {
                 position,
                 clinicName: clinic.name
             })
+
+            // 4.5. Send text queue confirmation template via AiSensy
+            try {
+                await sendQueueConfirmation(phone, name || 'Guest', tokenNumber, position, waitMins)
+            } catch (err) {
+                console.error('Error sending WhatsApp queue confirmation:', err)
+            }
 
             // 5. Return token info back to AiSensy
             // AiSensy will show confirmation message to patient

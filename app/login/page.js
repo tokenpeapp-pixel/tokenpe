@@ -133,11 +133,8 @@ export default function LoginPage() {
                 justifyContent: 'center',
                 padding: '60px',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
-                    <img src="/logo-icon.svg" alt="TokenPe Logo" style={{ width: '56px', height: '56px' }} />
-                    <span style={{ fontSize: 42, fontWeight: 900, color: 'white', letterSpacing: '-1.5px', lineHeight: 1.1 }}>
-                        Token<span style={{ color: '#00D05A' }}>Pe</span>
-                    </span>
+                <div style={{ marginBottom: '28px' }}>
+                    <img src="/logo.svg" alt="TokenPe Logo" style={{ height: '64px', width: 'auto' }} />
                 </div>
                 <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginTop: 10, fontWeight: 400, maxWidth: 320, lineHeight: 1.7 }}>
                     Digital OPD queue management for modern clinics. No crowding. No confusion.

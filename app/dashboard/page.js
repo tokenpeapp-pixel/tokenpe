@@ -100,11 +100,9 @@ function QRModal({ clinic, onClose }) {
       </style>
       </head><body>
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px">
-          <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-icon.svg" style="width:28px;height:28px" />
-          <span style="font-size:22px;font-weight:900;color:#0F4C75">Token<span style="color:#00D05A">Pe</span></span>
+        <div style="margin-bottom:12px;display:flex;justify-content:center">
+          <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-light.svg" style="height:44px;width:auto" />
         </div>
-        <div class="tag">YOUR TOKEN. YOUR TIME.</div>
         <div class="name">${clinic?.name}</div>
         <div class="sub">Scan to join the OPD queue</div>
         <img src="${qrUrl}" />
@@ -127,13 +125,9 @@ function QRModal({ clinic, onClose }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 600, padding: 20 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 24, padding: '36px 32px', width: '100%', maxWidth: 380, textAlign: 'center', position: 'relative', boxShadow: '0 32px 80px rgba(0,0,0,0.3)' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: '50%', fontSize: 18, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
-          <img src="/logo-icon.svg" alt="TokenPe" style={{ width: '28px', height: '28px' }} />
-          <span style={{ fontSize: 22, fontWeight: 900, color: '#0F4C75' }}>
-            Token<span style={{ color: '#00D05A' }}>Pe</span>
-          </span>
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+          <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: '48px', width: 'auto' }} />
         </div>
-        <div style={{ fontSize: 11, color: '#94a3b8', letterSpacing: .5, marginBottom: 14 }}>YOUR TOKEN. YOUR TIME.</div>
         <div style={{ fontSize: 17, fontWeight: 800, color: '#1e293b' }}>{clinic?.name}</div>
         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 20 }}>Scan to join the OPD queue</div>
         <div style={{ background: '#f8fafc', borderRadius: 16, padding: 16, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 16 }}>
@@ -396,12 +390,10 @@ export default function Dashboard() {
       {/* ── Header ── */}
       <header style={s.header}>
         <div style={s.headerLeft}>
-          <img src="/logo-icon.svg" alt="TokenPe" style={{ width: '40px', height: '40px', marginRight: '4px' }} />
-          <div>
-            <div style={s.appName}>
-              Token<span style={{ color: '#00D05A' }}>Pe</span>
-            </div>
-            <div style={s.clinicSubName}>{clinic?.name}</div>
+          <img src="/logo.svg" alt="TokenPe Logo" style={{ height: '42px', width: 'auto', marginRight: '14px' }} />
+          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '500', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Clinic Console</div>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: '#FFFFFF' }}>{clinic?.name}</div>
           </div>
         </div>
         <div style={s.headerCenter}>

@@ -639,11 +639,8 @@ export default function LandingPage() {
 
       {/* NAV */}
       <nav className="nav">
-        <a className="nav-brand" onClick={() => router.push("/")} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
-          <img src="/logo-icon.svg" alt="TokenPe" style={{ width: "32px", height: "32px" }} />
-          <span style={{ fontSize: "20px", fontWeight: "800", letterSpacing: "-0.5px" }}>
-            Token<span style={{ color: "#00D05A" }}>Pe</span>
-          </span>
+        <a className="nav-brand" onClick={() => router.push("/")} style={{ cursor: "pointer" }}>
+          <img src="/logo.svg" alt="TokenPe Logo" style={{ height: "44px", width: "auto" }} />
         </a>
         <div className="nav-links">
           <span className="nav-link" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>Features</span>
@@ -865,11 +862,8 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer className="footer">
-        <div className="footer-brand" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <img src="/logo-icon.svg" alt="TokenPe" style={{ width: "24px", height: "24px" }} />
-          <span style={{ fontSize: "16px", fontWeight: "800", letterSpacing: "-0.5px" }}>
-            Token<span style={{ color: "#00D05A" }}>Pe</span>
-          </span>
+        <div className="footer-brand">
+          <img src="/logo.svg" alt="TokenPe Logo" style={{ height: "36px", width: "auto" }} />
         </div>
         <span className="footer-tag">Your token. Your time.</span>
         <div className="footer-links">

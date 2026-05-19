@@ -639,9 +639,11 @@ export default function LandingPage() {
 
       {/* NAV */}
       <nav className="nav">
-        <a className="nav-brand" onClick={() => router.push("/")}>
-          <div className="nav-brand-icon">🏥</div>
-          TokenPe
+        <a className="nav-brand" onClick={() => router.push("/")} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+          <img src="/logo-icon.svg" alt="TokenPe" style={{ width: "32px", height: "32px" }} />
+          <span style={{ fontSize: "20px", fontWeight: "800", letterSpacing: "-0.5px" }}>
+            Token<span style={{ color: "#00D05A" }}>Pe</span>
+          </span>
         </a>
         <div className="nav-links">
           <span className="nav-link" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>Features</span>
@@ -684,7 +686,10 @@ export default function LandingPage() {
         <div className="phone-mock">
           <div className="phone-top-bar"><div className="phone-notch"></div></div>
           <div className="phone-body">
-            <div className="wa-header">🏥 TokenPe</div>
+            <div className="wa-header" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <img src="/logo-icon.svg" alt="TokenPe" style={{ width: "16px", height: "16px", borderRadius: "3px" }} />
+              <span>TokenPe</span>
+            </div>
             <div className="wa-body">
               ✅ <strong style={{ color: "white" }}>You're in the queue!</strong><br />
               🎫 Token: <strong style={{ color: "white" }}>T004</strong><br />
@@ -860,7 +865,12 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer className="footer">
-        <div className="footer-brand">🏥 TokenPe</div>
+        <div className="footer-brand" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <img src="/logo-icon.svg" alt="TokenPe" style={{ width: "24px", height: "24px" }} />
+          <span style={{ fontSize: "16px", fontWeight: "800", letterSpacing: "-0.5px" }}>
+            Token<span style={{ color: "#00D05A" }}>Pe</span>
+          </span>
+        </div>
         <span className="footer-tag">Your token. Your time.</span>
         <div className="footer-links">
           <span className="footer-link" onClick={() => router.push("/privacy")}>Privacy Policy</span>

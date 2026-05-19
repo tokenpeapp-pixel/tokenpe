@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 220" width="100%" height="100%">
+  <!-- Icon -->
+  <g transform="translate(15, 10) scale(0.39)">
+    <rect width="512" height="512" rx="128" fill="#00204E"/>
+    <path d="M 128 150 
+             C 128 120, 140 110, 170 110 
+             L 342 110 
+             C 372 110, 384 120, 384 150 
+             C 384 180, 372 190, 342 190
+             L 286 190
+             L 310 190
+             L 286 190
+             L 286 320
+             C 286 350, 274 360, 256 360
+             C 238 360, 226 350, 226 320
+             L 226 190
+             L 170 190
+             C 140 190, 128 180, 128 150 Z" 
+          fill="#FFFFFF" />
+    <circle cx="176" cy="415" r="28" fill="#00D05A"/>
+    <circle cx="256" cy="415" r="28" fill="#00D05A"/>
+    <circle cx="336" cy="415" r="28" fill="#00D05A"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="245" y="152" font-family="'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-size="120" font-weight="800" letter-spacing="-3">
+    <tspan fill="#FFFFFF">Token</tspan><tspan fill="#00D05A">Pe</tspan>
+  </text>
+</svg>

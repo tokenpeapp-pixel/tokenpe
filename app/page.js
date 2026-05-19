@@ -605,6 +605,20 @@ export default function LandingPage() {
           color: rgba(255,255,255,0.3);
           font-size: 11px;
         }
+        .footer-links {
+          display: flex;
+          gap: 16px;
+        }
+        .footer-link {
+          color: rgba(255,255,255,0.4);
+          font-size: 11px;
+          text-decoration: none;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        .footer-link:hover {
+          color: white;
+        }
 
         /* RESPONSIVE */
         @media (max-width: 600px) {
@@ -848,6 +862,10 @@ export default function LandingPage() {
       <footer className="footer">
         <div className="footer-brand">🏥 TokenPe</div>
         <span className="footer-tag">Your token. Your time.</span>
+        <div className="footer-links">
+          <span className="footer-link" onClick={() => router.push("/privacy")}>Privacy Policy</span>
+          <span className="footer-link" onClick={() => router.push("/terms")}>Terms & Support</span>
+        </div>
         <span className="footer-made">Made with ❤️ in India</span>
       </footer>
     </>

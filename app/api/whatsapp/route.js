@@ -57,6 +57,17 @@ async function sendVoiceNote({ phone, language, event, token, position, clinicNa
 // ─── MAIN WEBHOOK HANDLER (called by AiSensy API Request node) ──────────────
 export async function POST(req) {
     try {
+        const { searchParams } = new URL(req.url)
+        const secret = searchParams.get('secret')
+
+        // 🛡️ Webhook Security: Verify incoming requests match our secret token
+        if (secret !== process.env.WEBHOOK_VERIFY_TOKEN) {
+            return Response.json({
+                success: false,
+                message: '❌ Unauthorized request. Invalid webhook secret token.'
+            }, { status: 401 })
+        }
+
         const body = await req.json()
         const { phone, name, language, action, clinicCode } = body
         const baseUrl = new URL(req.url).origin

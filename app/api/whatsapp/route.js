@@ -5,53 +5,85 @@ const AISENSY_API_KEY = process.env.AISENSY_API_KEY
 // ─── SEND QUEUE CONFIRMATION VIA AISENSY ─────────────────────────────────────
 async function sendQueueConfirmation(phone, name, token, position, waitMins) {
     const campaignName = process.env.WHATSAPP_CONFIRMATION_CAMPAIGN || 'queue_confirmation'
-    await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            apiKey: AISENSY_API_KEY,
-            campaignName: campaignName,        // dynamic confirmation campaign name
-            destination: phone,
-            userName: name,
-            templateParams: [name, token, String(position), String(waitMins)],
-            source: 'dashboard',
-            media: {},
-            buttons: [],
-            carouselCards: [],
-            location: {},
+    if (!AISENSY_API_KEY) {
+        console.warn('AISENSY_API_KEY not configured')
+        return
+    }
+
+    let cleanPhone = String(phone).replace(/\D/g, '')
+    if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`
+
+    try {
+        const res = await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                apiKey: AISENSY_API_KEY,
+                campaignName: campaignName,
+                destination: cleanPhone,
+                userName: name || 'Patient',
+                templateParams: [name || 'Patient', token, String(position), String(waitMins)],
+                source: 'dashboard',
+                media: {},
+                buttons: [],
+                carouselCards: [],
+                location: {},
+            })
         })
-    })
+        const data = await res.json()
+        console.log(`AiSensy confirmation template response:`, JSON.stringify(data))
+    } catch (err) {
+        console.error('Error sending WhatsApp queue confirmation:', err)
+    }
 }
 
 // ─── SEND CALL NEXT NOTIFICATION VIA AISENSY ────────────────────────────────
 async function sendCallNext(phone, name, token) {
-    const campaignName = process.env.WHATSAPP_CAMPAIGN_NAME || 'call_next_v3'
-    await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            apiKey: AISENSY_API_KEY,
-            campaignName: campaignName,        // dynamic campaign name from env or fallback
-            destination: phone,
-            userName: name,
-            templateParams: [name, token],
-            source: 'dashboard',
-            media: {},
-            buttons: [],
-            carouselCards: [],
-            location: {},
+    const campaignName = process.env.WHATSAPP_TURN_CAMPAIGN || 'your_turn'
+    if (!AISENSY_API_KEY) {
+        console.warn('AISENSY_API_KEY not configured')
+        return
+    }
+
+    let cleanPhone = String(phone).replace(/\D/g, '')
+    if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`
+
+    try {
+        const res = await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                apiKey: AISENSY_API_KEY,
+                campaignName: campaignName,
+                destination: cleanPhone,
+                userName: name || 'Patient',
+                templateParams: [name || 'Patient', token],
+                source: 'dashboard',
+                media: {},
+                buttons: [],
+                carouselCards: [],
+                location: {},
+            })
         })
-    })
+        const data = await res.json()
+        console.log(`AiSensy call next template response:`, JSON.stringify(data))
+    } catch (err) {
+        console.error('Error sending WhatsApp call next:', err)
+    }
 }
 
-// ─── SEND VOICE NOTE VIA SARVAM ─────────────────────────────────────────────
+// ─── SEND VOICE NOTE VIA /api/voice ─────────────────────────────────────────
 async function sendVoiceNote({ phone, language, event, token, position, clinicName, baseUrl }) {
     const appUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    await fetch(`${appUrl}/api/voice`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, language, event, token, position, clinicName })
-    })
+    try {
+        await fetch(`${appUrl}/api/voice`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, language, event, token, position, clinicName })
+        })
+    } catch (err) {
+        console.error('Voice note error:', err)
+    }
 }
 
 // ─── MAIN WEBHOOK HANDLER (called by AiSensy API Request node) ──────────────
@@ -60,7 +92,7 @@ export async function POST(req) {
         const { searchParams } = new URL(req.url)
         const secret = searchParams.get('secret')
 
-        // 🛡️ Webhook Security: Verify incoming requests match our secret token
+        // 🛡️ Webhook Security
         if (secret !== process.env.WEBHOOK_VERIFY_TOKEN) {
             return Response.json({
                 success: false,
@@ -72,8 +104,22 @@ export async function POST(req) {
         const { phone, name, language, action, clinicCode } = body
         const baseUrl = new URL(req.url).origin
 
-        // ── JOIN action (patient joining queue) ──────────────────────────────────
+        // ── JOIN action ──────────────────────────────────────────────────────────
         if (action === 'join') {
+
+            // ─── Builder Test Safeguard ──────────────────────────────────────────
+            // If this is a test call from the flow builder with unresolved placeholders,
+            // return a mock success response so response keys can be mapped.
+            if (!clinicCode || clinicCode.includes('{') || clinicCode.includes('}') || clinicCode === 'placeholder' || clinicCode.includes('variable')) {
+                return Response.json({
+                    success: true,
+                    token: 'T001',
+                    position: 0,
+                    wait: 'You are next!',
+                    clinicName: 'Demo Clinic',
+                    name: name || 'Guest'
+                }, { status: 200 })
+            }
 
             // 1. Validate clinic
             const { data: clinic, error: clinicError } = await supabase
@@ -114,8 +160,8 @@ export async function POST(req) {
                 date: today,
             })
 
-            // 4. Send voice note via Sarvam
-            await sendVoiceNote({
+            // 4. Send voice note (Sarvam TTS → Supabase Storage → AiSensy)
+            sendVoiceNote({
                 phone,
                 language: language || 'en',
                 event: 'joined',
@@ -125,15 +171,14 @@ export async function POST(req) {
                 baseUrl
             })
 
-            // 4.5. Send text queue confirmation template via AiSensy
+            // 5. Send text confirmation template via AiSensy
             try {
                 await sendQueueConfirmation(phone, name || 'Guest', tokenNumber, position, waitMins)
             } catch (err) {
                 console.error('Error sending WhatsApp queue confirmation:', err)
             }
 
-            // 5. Return token info back to AiSensy
-            // AiSensy will show confirmation message to patient
+            // 6. Return token info back to flow
             return Response.json({
                 success: true,
                 token: tokenNumber,
@@ -144,18 +189,18 @@ export async function POST(req) {
             }, { status: 200 })
         }
 
-        // ── CALL NEXT action (doctor hits Call Next on dashboard) ────────────────
+        // ── CALL NEXT action ─────────────────────────────────────────────────────
         if (action === 'callnext') {
             const { patientPhone, patientName, token } = body
 
-            // Send WhatsApp notification via AiSensy
+            // Send "Your Turn" template via AiSensy
             await sendCallNext(patientPhone, patientName, token)
 
-            // Send voice note via Sarvam
-            await sendVoiceNote({
+            // Send "Your Turn" voice note
+            sendVoiceNote({
                 phone: patientPhone,
                 language: body.language || 'en',
-                event: 'called',
+                event: 'now',
                 token,
                 position: 0,
                 clinicName: body.clinicName,
@@ -173,7 +218,7 @@ export async function POST(req) {
     }
 }
 
-// ─── WEBHOOK VERIFICATION (keep this for any future use) ────────────────────
+// ─── WEBHOOK VERIFICATION ────────────────────────────────────────────────────
 export async function GET(req) {
     const { searchParams } = new URL(req.url)
     const mode = searchParams.get('hub.mode')

@@ -2,18 +2,27 @@ import { supabase } from '../../../../lib/supabase'
 
 const AISENSY_API_KEY = process.env.AISENSY_API_KEY
 
-// Helper to send a WhatsApp template via AiSensy
+// ─── Extract number from token string (T050 → 50) ───────────────────────────
+function tokenToNum(token) {
+    return parseInt((token || '').replace('T', '')) || 0
+}
+
+// ─── Send WhatsApp template via AiSensy ─────────────────────────────────────
 async function sendWhatsAppTemplate(phone, campaignName, userName, templateParams) {
     if (!AISENSY_API_KEY) return
     try {
+        // Normalize phone: always 12 digits with country code
+        let cleanPhone = String(phone).replace(/\D/g, '')
+        if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`
+
         await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 apiKey: AISENSY_API_KEY,
                 campaignName,
-                destination: phone,
-                userName: userName || 'TokenPe',
+                destination: cleanPhone,
+                userName: userName || 'Patient',
                 templateParams,
                 source: 'dashboard',
                 media: {},
@@ -27,43 +36,51 @@ async function sendWhatsAppTemplate(phone, campaignName, userName, templateParam
     }
 }
 
+// ─── Send voice note via our /api/voice route ────────────────────────────────
+async function sendVoiceNote(phone, language, event, token, clinicName, position = 0, current = '') {
+    try {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        await fetch(`${appUrl}/api/voice`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, language: language || 'en', event, token, position, clinicName, current })
+        })
+    } catch (err) {
+        console.error(`Error sending voice note (${event}) to ${phone}:`, err)
+    }
+}
+
+// ─── MAIN HANDLER ────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
         const body = await req.json()
         const { clinicId, clinicName, patientId, patientPhone, patientName, token, language } = body
 
-        // 1. Update called patient's status to 'called' in Supabase
+        const currentTokenNum = tokenToNum(token)
+
+        // ── Step 1: Mark the called patient as 'called' ──────────────────────
         const { error: updateError } = await supabase
             .from('patients')
-            .update({ status: 'called' })
+            .update({ status: 'called', notifications_sent: 3 })
             .eq('id', patientId)
 
         if (updateError) {
             return Response.json({ success: false, error: updateError.message }, { status: 500 })
         }
 
-        // 2. Trigger voice note for the called patient (event: 'now')
-        try {
-            await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/voice`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone: patientPhone,
-                    language: language || 'en',
-                    event: 'now',
-                    token: token,
-                    clinicName: clinicName
-                })
-            })
-        } catch (err) {
-            console.error('Error triggering voice note:', err)
-        }
+        // ── Step 2: Send "YOUR TURN" WhatsApp template to called patient ──────
+        const turnCampaign = process.env.WHATSAPP_TURN_CAMPAIGN || 'your_turn'
+        await sendWhatsAppTemplate(
+            patientPhone,
+            turnCampaign,
+            patientName,
+            [patientName, token]  // templateParams: {{1}}=name, {{2}}=token
+        )
 
-        // 3. Send turn WhatsApp template to called patient
-        const callCampaign = process.env.WHATSAPP_CAMPAIGN_NAME || 'call_next_v3'
-        await sendWhatsAppTemplate(patientPhone, callCampaign, patientName, [patientName, token])
+        // ── Step 3: Send "YOUR TURN" voice note to called patient ─────────────
+        await sendVoiceNote(patientPhone, language, 'now', token, clinicName, 0)
 
-        // 4. Query remaining waiting patients for today to find who is 5 and 10 spots behind
+        // ── Step 4: Get all remaining waiting patients for today ──────────────
         const today = new Date().toISOString().split('T')[0]
         const { data: waitingPatients, error: queueError } = await supabase
             .from('patients')
@@ -74,20 +91,56 @@ export async function POST(req) {
             .order('created_at', { ascending: true })
 
         if (!queueError && waitingPatients && waitingPatients.length > 0) {
-            // Index 4 in the waiting list represents the patient who has exactly 4 patients ahead of them
-            // (so there are 5 people left ahead of them, placing them 5 spots away).
-            if (waitingPatients.length > 4) {
-                const p5 = waitingPatients[4]
-                const alert5Campaign = process.env.WHATSAPP_ALERT_5_CAMPAIGN || 'queue_alert_5'
-                await sendWhatsAppTemplate(p5.phone, alert5Campaign, p5.name || 'Patient', [token, p5.token])
-            }
+            for (const patient of waitingPatients) {
+                const patientTokenNum = tokenToNum(patient.token)
+                const diff = patientTokenNum - currentTokenNum
+                const notifsSent = patient.notifications_sent || 0
 
-            // Index 9 in the waiting list represents the patient who has exactly 9 patients ahead of them
-            // (placing them 10 spots away).
-            if (waitingPatients.length > 9) {
-                const p10 = waitingPatients[9]
-                const alert10Campaign = process.env.WHATSAPP_ALERT_10_CAMPAIGN || 'queue_alert_10'
-                await sendWhatsAppTemplate(p10.phone, alert10Campaign, p10.name || 'Patient', [token, p10.token])
+                // ── 10 tokens away: send first alert ──────────────────────────
+                // Only send if exactly 10 away AND haven't sent first alert yet
+                if (diff === 10 && notifsSent < 1) {
+                    // Send WhatsApp text alert
+                    const alert10Campaign = process.env.WHATSAPP_ALERT_10_CAMPAIGN || 'queue_alert_10'
+                    await sendWhatsAppTemplate(
+                        patient.phone,
+                        alert10Campaign,
+                        patient.name || 'Patient',
+                        [patient.name || 'Patient', patient.token, token]
+                        // {{1}}=patientName, {{2}}=patientToken, {{3}}=currentToken
+                    )
+
+                    // Send voice note
+                    await sendVoiceNote(patient.phone, patient.language, 'ten_away', patient.token, clinicName, 10, token)
+
+                    // Mark first alert sent
+                    await supabase
+                        .from('patients')
+                        .update({ notifications_sent: 1 })
+                        .eq('id', patient.id)
+                }
+
+                // ── 5 tokens away: send second alert ──────────────────────────
+                // Only send if exactly 5 away AND haven't sent second alert yet
+                if (diff === 5 && notifsSent < 2) {
+                    // Send WhatsApp text alert
+                    const alert5Campaign = process.env.WHATSAPP_ALERT_5_CAMPAIGN || 'queue_alert_5'
+                    await sendWhatsAppTemplate(
+                        patient.phone,
+                        alert5Campaign,
+                        patient.name || 'Patient',
+                        [patient.name || 'Patient', patient.token, token]
+                        // {{1}}=patientName, {{2}}=patientToken, {{3}}=currentToken
+                    )
+
+                    // Send voice note
+                    await sendVoiceNote(patient.phone, patient.language, 'five_away', patient.token, clinicName, 5, token)
+
+                    // Mark second alert sent
+                    await supabase
+                        .from('patients')
+                        .update({ notifications_sent: 2 })
+                        .eq('id', patient.id)
+                }
             }
         }
 

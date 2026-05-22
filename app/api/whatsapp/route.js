@@ -1,80 +1,56 @@
+// FILE: /app/api/whatsapp/route.js
+// Handles: join action (from Interakt Flow webhook)
+// Also handles: callnext action (from dashboard)
+
 import { supabase } from '../../../lib/supabase'
 
-const AISENSY_API_KEY = process.env.AISENSY_API_KEY
+const INTERAKT_API_KEY = process.env.INTERAKT_API_KEY
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-// ─── SEND QUEUE CONFIRMATION VIA AISENSY ─────────────────────────────────────
-async function sendQueueConfirmation(phone, name, token, position, waitMins) {
-    const campaignName = process.env.WHATSAPP_CONFIRMATION_CAMPAIGN || 'queue_confirmation'
-    if (!AISENSY_API_KEY) {
-        console.warn('AISENSY_API_KEY not configured')
+// ── Clean phone number ───────────────────────────────────────────────────────
+function cleanPhone(phone) {
+    let p = String(phone).replace(/\D/g, '')
+    if (p.length === 10) p = '91' + p
+    return p
+}
+
+// ── Send text message via Interakt session ───────────────────────────────────
+async function sendInteraktText(phone, message) {
+    if (!INTERAKT_API_KEY) {
+        console.warn('[Interakt] API key not configured')
         return
     }
 
-    let cleanPhone = String(phone).replace(/\D/g, '')
-    if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`
+    const p = cleanPhone(phone)
+    const phoneNumber = p.startsWith('91') ? p.slice(2) : p
 
     try {
-        const res = await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
+        const res = await fetch('https://api.interakt.ai/v1/public/message/', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + INTERAKT_API_KEY
+            },
             body: JSON.stringify({
-                apiKey: AISENSY_API_KEY,
-                campaignName: campaignName,
-                destination: cleanPhone,
-                userName: name || 'Patient',
-                templateParams: [name || 'Patient', token, String(position), String(waitMins)],
-                source: 'dashboard',
-                media: {},
-                buttons: [],
-                carouselCards: [],
-                location: {},
+                countryCode: '+91',
+                phoneNumber: phoneNumber,
+                callbackData: 'tokenpe_queue',
+                type: 'Text',
+                data: {
+                    message: message
+                }
             })
         })
         const data = await res.json()
-        console.log(`AiSensy confirmation template response:`, JSON.stringify(data))
+        console.log(`[Interakt] → +91${phoneNumber}:`, JSON.stringify(data))
     } catch (err) {
-        console.error('Error sending WhatsApp queue confirmation:', err)
+        console.error('[Interakt] Error:', err)
     }
 }
 
-// ─── SEND CALL NEXT NOTIFICATION VIA AISENSY ────────────────────────────────
-async function sendCallNext(phone, name, token) {
-    const campaignName = process.env.WHATSAPP_TURN_CAMPAIGN || 'your_turn'
-    if (!AISENSY_API_KEY) {
-        console.warn('AISENSY_API_KEY not configured')
-        return
-    }
-
-    let cleanPhone = String(phone).replace(/\D/g, '')
-    if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`
-
-    try {
-        const res = await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                apiKey: AISENSY_API_KEY,
-                campaignName: campaignName,
-                destination: cleanPhone,
-                userName: name || 'Patient',
-                templateParams: [name || 'Patient', token],
-                source: 'dashboard',
-                media: {},
-                buttons: [],
-                carouselCards: [],
-                location: {},
-            })
-        })
-        const data = await res.json()
-        console.log(`AiSensy call next template response:`, JSON.stringify(data))
-    } catch (err) {
-        console.error('Error sending WhatsApp call next:', err)
-    }
-}
-
-// ─── SEND VOICE NOTE VIA /api/voice ─────────────────────────────────────────
+// ── Send voice note via /api/voice ───────────────────────────────────────────
 async function sendVoiceNote({ phone, language, event, token, position, clinicName, baseUrl }) {
-    const appUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = baseUrl || APP_URL
     try {
         await fetch(`${appUrl}/api/voice`, {
             method: 'POST',
@@ -82,11 +58,11 @@ async function sendVoiceNote({ phone, language, event, token, position, clinicNa
             body: JSON.stringify({ phone, language, event, token, position, clinicName })
         })
     } catch (err) {
-        console.error('Voice note error:', err)
+        console.error('[Voice] Error:', err)
     }
 }
 
-// ─── MAIN WEBHOOK HANDLER (called by AiSensy API Request node) ──────────────
+// ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
         const { searchParams } = new URL(req.url)
@@ -96,21 +72,37 @@ export async function POST(req) {
         if (secret !== process.env.WEBHOOK_VERIFY_TOKEN) {
             return Response.json({
                 success: false,
-                message: '❌ Unauthorized request. Invalid webhook secret token.'
+                message: '❌ Unauthorized. Invalid webhook secret.'
             }, { status: 401 })
         }
 
         const body = await req.json()
-        const { phone, name, language, action, clinicCode } = body
+        const { action } = body
         const baseUrl = new URL(req.url).origin
 
         // ── JOIN action ──────────────────────────────────────────────────────────
         if (action === 'join') {
+            const { phone, name, language } = body
 
-            // ─── Builder Test Safeguard ──────────────────────────────────────────
-            // If this is a test call from the flow builder with unresolved placeholders,
-            // return a mock success response so response keys can be mapped.
-            if (!clinicCode || clinicCode.includes('{') || clinicCode.includes('}') || clinicCode === 'placeholder' || clinicCode.includes('variable')) {
+            // ── Extract clinic code from clinicCode field ──────────────────────────
+            // Handles: "JOIN SHARMA001", "SHARMA001", "sharma001"
+            const rawCode = (body.clinicCode || '').toString()
+            const clinicCode = rawCode
+                .replace(/^JOIN\s*/i, '')   // remove "JOIN " prefix if present
+                .trim()
+                .toUpperCase()
+
+            console.log(`[Join] phone=${phone} name=${name} lang=${language} clinicCode=${clinicCode}`)
+
+            // ── Builder Test Safeguard ─────────────────────────────────────────────
+            // Return mock response if called from flow builder test
+            if (
+                !clinicCode ||
+                clinicCode.includes('{') ||
+                clinicCode.includes('}') ||
+                clinicCode === 'PLACEHOLDER' ||
+                clinicCode.includes('VARIABLE')
+            ) {
                 return Response.json({
                     success: true,
                     token: 'T001',
@@ -121,7 +113,7 @@ export async function POST(req) {
                 }, { status: 200 })
             }
 
-            // 1. Validate clinic
+            // 1. Find clinic in Supabase
             const { data: clinic, error: clinicError } = await supabase
                 .from('clinics')
                 .select('*')
@@ -129,40 +121,53 @@ export async function POST(req) {
                 .single()
 
             if (clinicError || !clinic) {
+                console.error(`[Join] Clinic not found: ${clinicCode}`)
                 return Response.json({
                     success: false,
-                    message: '❌ Invalid clinic code. Please scan the QR code again.'
+                    message: '❌ Invalid clinic code. Please scan the QR code again.',
+                    token: 'ERR',
+                    position: 0,
+                    wait: 'N/A',
+                    clinicName: 'Unknown',
+                    name: name || 'Guest'
                 }, { status: 200 })
             }
 
-            // 2. Count patients waiting today
+            // 2. Count waiting patients today
             const today = new Date().toISOString().split('T')[0]
             const { count } = await supabase
                 .from('patients')
                 .select('*', { count: 'exact', head: true })
                 .eq('clinic_id', clinic.id)
-                .eq('status', 'waiting')
                 .eq('date', today)
 
             const position = count || 0
             const tokenNumber = `T${String(position + 1).padStart(3, '0')}`
-            const waitMins = position * 7
+            const waitMins = position === 0 ? 'You are next!' : `${position * 7} mins`
 
-            // 3. Add patient to queue
-            await supabase.from('patients').insert({
+            // 3. Insert patient into queue
+            const { error: insertError } = await supabase.from('patients').insert({
                 clinic_id: clinic.id,
                 token: tokenNumber,
-                phone,
+                phone: cleanPhone(phone),
                 name: name || 'Guest',
                 language: language || 'en',
                 status: 'waiting',
                 amount_paid: 0,
                 date: today,
+                joined_at: new Date().toISOString()
             })
 
-            // 4. Send voice note (Sarvam TTS → Supabase Storage → AiSensy)
+            if (insertError) {
+                console.error('[Join] Insert error:', insertError)
+                return Response.json({ success: false, message: 'Failed to join queue' }, { status: 500 })
+            }
+
+            console.log(`[Join] ✅ ${name} assigned ${tokenNumber} at ${clinic.name}`)
+
+            // 4. Send voice note (joined event)
             sendVoiceNote({
-                phone,
+                phone: cleanPhone(phone),
                 language: language || 'en',
                 event: 'joined',
                 token: tokenNumber,
@@ -171,39 +176,42 @@ export async function POST(req) {
                 baseUrl
             })
 
-            // 5. Send text confirmation template via AiSensy
-            try {
-                await sendQueueConfirmation(phone, name || 'Guest', tokenNumber, position, waitMins)
-            } catch (err) {
-                console.error('Error sending WhatsApp queue confirmation:', err)
-            }
-
-            // 6. Return token info back to flow
+            // 5. Return token info to Interakt Flow
             return Response.json({
                 success: true,
                 token: tokenNumber,
                 position: position,
-                wait: position === 0 ? 'You are next!' : `${waitMins} mins`,
+                wait: waitMins,
                 clinicName: clinic.name,
                 name: name || 'Guest'
             }, { status: 200 })
         }
 
-        // ── CALL NEXT action ─────────────────────────────────────────────────────
+        // ── CALLNEXT action ──────────────────────────────────────────────────────
         if (action === 'callnext') {
-            const { patientPhone, patientName, token } = body
+            const { patientPhone, patientName, token, language, clinicName } = body
 
-            // Send "Your Turn" template via AiSensy
-            await sendCallNext(patientPhone, patientName, token)
+            // Send "Your Turn" message
+            const msg = `🚨 *It's YOUR turn, ${patientName || 'Patient'}!*
+
+🎟 Token *${token}* — Please go now!
+🏥 ${clinicName}
+
+Proceed to the doctor's cabin immediately! 🏥
+Thank you for your patience 🙏
+
+_Powered by TokenPe_`
+
+            await sendInteraktText(patientPhone, msg)
 
             // Send "Your Turn" voice note
             sendVoiceNote({
                 phone: patientPhone,
-                language: body.language || 'en',
+                language: language || 'en',
                 event: 'now',
                 token,
                 position: 0,
-                clinicName: body.clinicName,
+                clinicName,
                 baseUrl
             })
 
@@ -213,12 +221,12 @@ export async function POST(req) {
         return Response.json({ error: 'Unknown action' }, { status: 400 })
 
     } catch (error) {
-        console.error('Webhook error:', error)
+        console.error('[whatsapp] Error:', error)
         return Response.json({ error: error.message }, { status: 500 })
     }
 }
 
-// ─── WEBHOOK VERIFICATION ────────────────────────────────────────────────────
+// ── WEBHOOK VERIFICATION (Meta/GET) ─────────────────────────────────────────
 export async function GET(req) {
     const { searchParams } = new URL(req.url)
     const mode = searchParams.get('hub.mode')

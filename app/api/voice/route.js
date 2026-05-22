@@ -1,7 +1,12 @@
+// FILE: /app/api/voice/route.js
+// Generates voice note via Sarvam AI → uploads to Supabase → sends via Interakt
+
 import { supabase } from '../../../lib/supabase'
 
 const SARVAM_KEY = process.env.SARVAM_API_KEY
+const INTERAKT_API_KEY = process.env.INTERAKT_API_KEY
 
+// ── Voice messages in 10 Indian languages ───────────────────────────────────
 const MESSAGES = {
     hi: {
         joined: (token, pos, clinic) => `Namaste! ${clinic} mein aapka swagat hai. Aapka token number ${token} hai. Abhi ${pos} log aage hain. Kripa pratiksha karein.`,
@@ -77,20 +82,22 @@ const MESSAGES = {
     },
     en: {
         joined: (token, pos, clinic) => `Welcome to ${clinic}! Your token number is ${token}. There are ${pos} patients ahead of you. Please wait nearby.`,
-        ten_away: (token, current) => `Token ${token}, there are only 10 tokens remaining before yours. Currently serving ${current}. Please start making your way to the clinic.`,
-        five_away: (token, current) => `Token ${token}, only 5 more tokens to go! Currently serving ${current}. Please get ready now.`,
+        ten_away: (token, current) => `Token ${token}, only 10 more tokens to go! Currently serving ${current}. Please start making your way to the clinic.`,
+        five_away: (token, current) => `Token ${token}, only 5 more tokens! Currently serving ${current}. Please get ready now.`,
         soon: (token) => `Token ${token}, only 3 patients remaining. Please make your way to the clinic now.`,
         now: (token) => `Token ${token}, it is your turn! The doctor is ready to see you. Please come in.`,
         done: (clinic) => `Your consultation is complete. Thank you for visiting ${clinic}. Get well soon!`
     }
 }
 
+// ── Sarvam AI voices per language ────────────────────────────────────────────
 const SARVAM_VOICES = {
     hi: 'neha', ta: 'rahul', te: 'rahul',
     mr: 'neha', bn: 'neha', gu: 'neha',
     kn: 'rahul', ml: 'rahul', pa: 'neha', en: 'neha'
 }
 
+// ── Generate audio via Sarvam AI TTS ────────────────────────────────────────
 async function textToSpeech(text, language) {
     const response = await fetch('https://api.sarvam.ai/text-to-speech', {
         method: 'POST',
@@ -111,9 +118,8 @@ async function textToSpeech(text, language) {
     })
 
     const data = await response.json()
-    console.log('Sarvam response keys:', Object.keys(data))
+    console.log('[Sarvam] Response keys:', Object.keys(data))
 
-    // Handle different response formats
     if (data.audios && data.audios[0]) return data.audios[0]
     if (data.audio) return data.audio
     if (data.data) return data.data
@@ -121,70 +127,87 @@ async function textToSpeech(text, language) {
     throw new Error(`Sarvam error: ${JSON.stringify(data)}`)
 }
 
-async function sendAiSensyVoiceNote(phone, audioUrl) {
-    const AISENSY_API_KEY = process.env.AISENSY_API_KEY
-    const campaignName = process.env.WHATSAPP_VOICE_CAMPAIGN || 'queue_voice_note'
-
-    // Normalize phone number to contain exactly the country code and digits
-    let cleanPhone = phone.replace(/\D/g, '')
-    if (cleanPhone.length === 10) {
-        cleanPhone = `91${cleanPhone}`
+// ── Send audio via Interakt ──────────────────────────────────────────────────
+async function sendInteraktAudio(phone, audioUrl) {
+    if (!INTERAKT_API_KEY) {
+        console.warn('[Interakt] API key not configured')
+        return
     }
 
-    const response = await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            apiKey: AISENSY_API_KEY,
-            campaignName: campaignName,
-            destination: cleanPhone,
-            userName: 'Patient',
-            media: {
-                url: audioUrl,
-                filename: 'voice.mp3'
-            },
-            templateParams: []
-        })
-    })
+    let p = String(phone).replace(/\D/g, '')
+    if (p.length === 10) p = '91' + p
+    const phoneNumber = p.startsWith('91') ? p.slice(2) : p
 
-    const data = await response.json()
-    console.log('AiSensy voice send response:', JSON.stringify(data))
-    if (!response.ok || !data.success) {
-        throw new Error(`AiSensy voice send failed: ${JSON.stringify(data)}`)
+    try {
+        const res = await fetch('https://api.interakt.ai/v1/public/message/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + INTERAKT_API_KEY
+            },
+            body: JSON.stringify({
+                countryCode: '+91',
+                phoneNumber: phoneNumber,
+                callbackData: 'tokenpe_voice',
+                type: 'Audio',
+                data: {
+                    mediaUrl: audioUrl,
+                    caption: ''
+                }
+            })
+        })
+        const data = await res.json()
+        console.log(`[Interakt Audio] → +91${phoneNumber}:`, JSON.stringify(data))
+    } catch (err) {
+        console.error('[Interakt Audio] Error:', err)
     }
 }
 
+// ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
-        const { phone, language, event, token, position, clinicName, current } = await req.json()
+        const {
+            phone,
+            language,
+            event,
+            token,
+            position,
+            clinicName,
+            currentToken
+        } = await req.json()
 
         const lang = language || 'hi'
         const msgFns = MESSAGES[lang] || MESSAGES.hi
         const clinic = clinicName || 'the clinic'
+        const current = currentToken || ''
 
+        // Build message text based on event
         let text = ''
-        if (event === 'joined') text = msgFns.joined(token, position, clinic)
-        if (event === 'ten_away') text = msgFns.ten_away(token, current || '')
-        if (event === 'five_away') text = msgFns.five_away(token, current || '')
+        if (event === 'joined') text = msgFns.joined(token, position ?? 0, clinic)
+        if (event === 'ten_away') text = msgFns.ten_away(token, current)
+        if (event === 'five_away') text = msgFns.five_away(token, current)
         if (event === 'soon') text = msgFns.soon(token)
         if (event === 'now' || event === 'called') text = msgFns.now(token)
         if (event === 'done') text = msgFns.done(clinic)
 
-        if (!text) return Response.json({ error: 'Unknown event' }, { status: 400 })
-
-        // 1. Normalize phone number
-        let cleanPhone = phone.replace(/\D/g, '')
-        if (cleanPhone.length === 10) {
-            cleanPhone = `91${cleanPhone}`
+        if (!text) {
+            return Response.json({ error: 'Unknown event: ' + event }, { status: 400 })
         }
 
-        // 2. Generate voice note (base64)
+        // 1. Clean phone number
+        let cleanPhone = String(phone).replace(/\D/g, '')
+        if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone
+
+        console.log(`[Voice] ${event} | ${lang} | ${cleanPhone} | ${token}`)
+        console.log(`[Voice] Text: ${text}`)
+
+        // 2. Generate voice note via Sarvam AI
         const base64Audio = await textToSpeech(text, lang)
         const audioBuffer = Buffer.from(base64Audio, 'base64')
 
-        // 3. Upload to Supabase Storage (public bucket 'voice-notes')
+        // 3. Upload to Supabase Storage (public bucket)
         const fileName = `voice_${cleanPhone}_${Date.now()}.mp3`
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
             .from('voice-notes')
             .upload(fileName, audioBuffer, {
                 contentType: 'audio/mpeg',
@@ -193,22 +216,23 @@ export async function POST(req) {
             })
 
         if (uploadError) {
-            throw new Error(`Supabase storage upload failed: ${uploadError.message}`)
+            throw new Error(`Supabase upload failed: ${uploadError.message}`)
         }
 
-        // 4. Get the public URL
+        // 4. Get public URL
         const { data: { publicUrl } } = supabase.storage
             .from('voice-notes')
             .getPublicUrl(fileName)
 
-        console.log('Generated voice note public URL:', publicUrl)
+        console.log(`[Voice] Uploaded: ${publicUrl}`)
 
-        // 5. Send as WhatsApp voice note via AiSensy Campaign
-        await sendAiSensyVoiceNote(phone, publicUrl)
+        // 5. Send via Interakt as audio message
+        await sendInteraktAudio(cleanPhone, publicUrl)
 
-        return Response.json({ success: true, publicUrl })
+        return Response.json({ success: true, audioUrl: publicUrl })
+
     } catch (err) {
-        console.error('Voice error:', err.message)
+        console.error('[Voice] Error:', err.message)
         return Response.json({ error: err.message }, { status: 500 })
     }
 }

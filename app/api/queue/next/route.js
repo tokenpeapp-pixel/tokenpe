@@ -1,152 +1,206 @@
+// FILE: /app/api/queue/next/route.js
+// Called by dashboard "Call Next" button
+// Sends 10-away, 5-away, your-turn messages via Interakt + voice notes via Sarvam
+
 import { supabase } from '../../../../lib/supabase'
 
-const AISENSY_API_KEY = process.env.AISENSY_API_KEY
+const INTERAKT_API_KEY = process.env.INTERAKT_API_KEY
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-// ─── Extract number from token string (T050 → 50) ───────────────────────────
-function tokenToNum(token) {
-    return parseInt((token || '').replace('T', '')) || 0
+// ── Clean phone number ───────────────────────────────────────────────────────
+function cleanPhone(phone) {
+    let p = String(phone).replace(/\D/g, '')
+    if (p.length === 10) p = '91' + p
+    return p
 }
 
-// ─── Send WhatsApp template via AiSensy ─────────────────────────────────────
-async function sendWhatsAppTemplate(phone, campaignName, userName, templateParams) {
-    if (!AISENSY_API_KEY) return
-    try {
-        // Normalize phone: always 12 digits with country code
-        let cleanPhone = String(phone).replace(/\D/g, '')
-        if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`
+// ── Send FREE session text message via Interakt ──────────────────────────────
+// Works because patient messaged first (scanned QR) = 24hr window open
+async function sendInteraktText(phone, message) {
+    if (!INTERAKT_API_KEY) {
+        console.warn('[Interakt] API key not configured')
+        return
+    }
 
-        await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
+    const p = cleanPhone(phone)
+    const phoneNumber = p.startsWith('91') ? p.slice(2) : p
+
+    try {
+        const res = await fetch('https://api.interakt.ai/v1/public/message/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + INTERAKT_API_KEY
+            },
+            body: JSON.stringify({
+                countryCode: '+91',
+                phoneNumber: phoneNumber,
+                callbackData: 'tokenpe_queue_alert',
+                type: 'Text',
+                data: {
+                    message: message
+                }
+            })
+        })
+        const data = await res.json()
+        console.log(`[Interakt Text] → +91${phoneNumber}:`, JSON.stringify(data))
+    } catch (err) {
+        console.error('[Interakt Text] Error:', err)
+    }
+}
+
+// ── Generate voice note via Sarvam + send via Interakt ───────────────────────
+async function sendVoiceNote({ phone, language, event, token, currentToken, clinicName }) {
+    try {
+        const res = await fetch(`${APP_URL}/api/voice`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                apiKey: AISENSY_API_KEY,
-                campaignName,
-                destination: cleanPhone,
-                userName: userName || 'Patient',
-                templateParams,
-                source: 'dashboard',
-                media: {},
-                buttons: [],
-                carouselCards: [],
-                location: {},
+                phone,
+                language: language || 'en',
+                event,
+                token,
+                currentToken,
+                clinicName
             })
         })
+        const data = await res.json()
+        console.log(`[Voice] ${event} → ${phone}:`, JSON.stringify(data))
     } catch (err) {
-        console.error(`Error sending template ${campaignName} to ${phone}:`, err)
+        console.error('[Voice] Error:', err)
     }
 }
 
-// ─── Send voice note via our /api/voice route ────────────────────────────────
-async function sendVoiceNote(phone, language, event, token, clinicName, position = 0, current = '') {
-    try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-        await fetch(`${appUrl}/api/voice`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, language: language || 'en', event, token, position, clinicName, current })
-        })
-    } catch (err) {
-        console.error(`Error sending voice note (${event}) to ${phone}:`, err)
+// ── Message text for each event ──────────────────────────────────────────────
+function getMessage(event, name, token, currentToken, clinicName) {
+    switch (event) {
+
+        case 'ten_away':
+            return `🔔 *Heads up, ${name}!*
+
+📍 Now Serving: *${currentToken}*
+🎟 Your Token: *${token}*
+🏥 ${clinicName}
+
+About 10 tokens to go. Start making your way to the clinic! 🏃
+
+_Powered by TokenPe_`
+
+        case 'five_away':
+            return `⚡ *Almost your turn, ${name}!*
+
+📍 Now Serving: *${currentToken}*
+🎟 Your Token: *${token}*
+🏥 ${clinicName}
+
+Only 5 tokens away. Please be ready near the cabin! 🙏
+
+_Powered by TokenPe_`
+
+        case 'your_turn':
+            return `🚨 *It's YOUR turn, ${name}!*
+
+🎟 Token *${token}* — Please go now!
+🏥 ${clinicName}
+
+Proceed to the doctor's cabin immediately! 🏥
+Thank you for your patience 🙏
+
+_Powered by TokenPe_`
+
+        default:
+            return ''
     }
 }
 
-// ─── MAIN HANDLER ────────────────────────────────────────────────────────────
+// ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
-        const body = await req.json()
-        const { clinicId, clinicName, patientId, patientPhone, patientName, token, language } = body
+        const {
+            clinicId,
+            clinicName,
+            patientId,
+            patientPhone,
+            patientName,
+            token,
+            language
+        } = await req.json()
 
-        const currentTokenNum = tokenToNum(token)
+        const today = new Date().toISOString().split('T')[0]
 
-        // ── Step 1: Mark the called patient as 'called' ──────────────────────
-        const { error: updateError } = await supabase
+        // 1. Mark this patient as CALLED in Supabase
+        await supabase
             .from('patients')
-            .update({ status: 'called', notifications_sent: 3 })
+            .update({ status: 'called' })
             .eq('id', patientId)
 
-        if (updateError) {
-            return Response.json({ success: false, error: updateError.message }, { status: 500 })
-        }
+        // 2. Send MSG 4 — "Your Turn" to current patient
+        const yourTurnMsg = getMessage('your_turn', patientName || 'Patient', token, token, clinicName)
+        await sendInteraktText(patientPhone, yourTurnMsg)
 
-        // ── Step 2: Send "YOUR TURN" WhatsApp template to called patient ──────
-        const turnCampaign = process.env.WHATSAPP_TURN_CAMPAIGN || 'your_turn'
-        await sendWhatsAppTemplate(
-            patientPhone,
-            turnCampaign,
-            patientName,
-            [patientName, token]  // templateParams: {{1}}=name, {{2}}=token
-        )
+        // 3. Send Voice Note 4 — "Your Turn" in patient's language
+        sendVoiceNote({
+            phone: patientPhone,
+            language: language || 'en',
+            event: 'now',
+            token,
+            currentToken: token,
+            clinicName
+        })
 
-        // ── Step 3: Send "YOUR TURN" voice note to called patient ─────────────
-        await sendVoiceNote(patientPhone, language, 'now', token, clinicName, 0)
-
-        // ── Step 4: Get all remaining waiting patients for today ──────────────
-        const today = new Date().toISOString().split('T')[0]
-        const { data: waitingPatients, error: queueError } = await supabase
+        // 4. Get remaining WAITING patients in queue order
+        const { data: waitingPatients } = await supabase
             .from('patients')
             .select('*')
             .eq('clinic_id', clinicId)
             .eq('status', 'waiting')
             .eq('date', today)
-            .order('created_at', { ascending: true })
+            .order('joined_at', { ascending: true })
 
-        if (!queueError && waitingPatients && waitingPatients.length > 0) {
-            for (const patient of waitingPatients) {
-                const patientTokenNum = tokenToNum(patient.token)
-                const diff = patientTokenNum - currentTokenNum
-                const notifsSent = patient.notifications_sent || 0
+        if (waitingPatients && waitingPatients.length > 0) {
+            waitingPatients.forEach((p, idx) => {
+                const position = idx + 1
 
-                // ── 10 tokens away: send first alert ──────────────────────────
-                // Only send if exactly 10 away AND haven't sent first alert yet
-                if (diff === 10 && notifsSent < 1) {
-                    // Send WhatsApp text alert
-                    const alert10Campaign = process.env.WHATSAPP_ALERT_10_CAMPAIGN || 'queue_alert_10'
-                    await sendWhatsAppTemplate(
-                        patient.phone,
-                        alert10Campaign,
-                        patient.name || 'Patient',
-                        [patient.name || 'Patient', patient.token, token]
-                        // {{1}}=patientName, {{2}}=patientToken, {{3}}=currentToken
-                    )
-
-                    // Send voice note
-                    await sendVoiceNote(patient.phone, patient.language, 'ten_away', patient.token, clinicName, 10, token)
-
-                    // Mark first alert sent
-                    await supabase
-                        .from('patients')
-                        .update({ notifications_sent: 1 })
-                        .eq('id', patient.id)
+                // MSG 2 — 10 tokens away
+                if (position === 10) {
+                    console.log(`[10-Away] Alerting ${p.name} (${p.token})`)
+                    const msg = getMessage('ten_away', p.name || 'Patient', p.token, token, clinicName)
+                    sendInteraktText(p.phone, msg)
+                    sendVoiceNote({
+                        phone: p.phone,
+                        language: p.language || 'en',
+                        event: 'ten_away',
+                        token: p.token,
+                        currentToken: token,
+                        clinicName
+                    })
                 }
 
-                // ── 5 tokens away: send second alert ──────────────────────────
-                // Only send if exactly 5 away AND haven't sent second alert yet
-                if (diff === 5 && notifsSent < 2) {
-                    // Send WhatsApp text alert
-                    const alert5Campaign = process.env.WHATSAPP_ALERT_5_CAMPAIGN || 'queue_alert_5'
-                    await sendWhatsAppTemplate(
-                        patient.phone,
-                        alert5Campaign,
-                        patient.name || 'Patient',
-                        [patient.name || 'Patient', patient.token, token]
-                        // {{1}}=patientName, {{2}}=patientToken, {{3}}=currentToken
-                    )
-
-                    // Send voice note
-                    await sendVoiceNote(patient.phone, patient.language, 'five_away', patient.token, clinicName, 5, token)
-
-                    // Mark second alert sent
-                    await supabase
-                        .from('patients')
-                        .update({ notifications_sent: 2 })
-                        .eq('id', patient.id)
+                // MSG 3 — 5 tokens away
+                if (position === 5) {
+                    console.log(`[5-Away] Alerting ${p.name} (${p.token})`)
+                    const msg = getMessage('five_away', p.name || 'Patient', p.token, token, clinicName)
+                    sendInteraktText(p.phone, msg)
+                    sendVoiceNote({
+                        phone: p.phone,
+                        language: p.language || 'en',
+                        event: 'five_away',
+                        token: p.token,
+                        currentToken: token,
+                        clinicName
+                    })
                 }
-            }
+            })
         }
 
-        return Response.json({ success: true })
+        return Response.json({
+            success: true,
+            called: token,
+            waitingCount: waitingPatients?.length || 0
+        })
+
     } catch (error) {
-        console.error('Error in queue next API:', error)
-        return Response.json({ success: false, error: error.message }, { status: 500 })
+        console.error('[queue/next] Error:', error)
+        return Response.json({ error: error.message }, { status: 500 })
     }
 }

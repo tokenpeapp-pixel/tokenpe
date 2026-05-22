@@ -55,7 +55,7 @@ export async function GET(req) {
             WEBHOOK_VERIFY_TOKEN:  process.env.WEBHOOK_VERIFY_TOKEN  ? '✅ set' : '❌ MISSING',
             NEXT_PUBLIC_APP_URL:   process.env.NEXT_PUBLIC_APP_URL   || '⚠️ not set',
             SARVAM_API_KEY:        process.env.SARVAM_API_KEY        ? '✅ set' : '❌ MISSING',
-            SUPABASE_URL:          process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ set' : '❌ MISSING',
+            SUPABASE_URL:          process.env.NEXT_PUBLIC_SUPABASE_URL || '❌ MISSING',
         },
         webhookUrl: `${new URL(req.url).origin}/api/whatsapp?secret=${process.env.WEBHOOK_VERIFY_TOKEN}`,
         hint: 'Add ?testJoin=YOUR_CLINIC_CODE to simulate a real patient joining',

@@ -334,13 +334,24 @@ export default function Dashboard() {
   }
 
   async function notifyPatient(patient) {
-    sounds.notify()
-    addToast(`Almost-turn voice note sent to ${patient.name || patient.token}`, 'notify')
-    await fetch('/api/voice', {
+    const res = await fetch('/api/queue/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: patient.phone, language: patient.language, event: 'soon', token: patient.token, clinicName: clinic.name })
+      body: JSON.stringify({
+        clinicName: clinic.name,
+        patientPhone: patient.phone,
+        patientName: patient.name || 'Patient',
+        token: patient.token,
+        language: patient.language || 'en'
+      })
     })
+
+    if (res.ok) {
+      sounds.notify()
+      addToast(`Manual text & voice note alert sent to ${patient.name || patient.token}`, 'notify')
+    } else {
+      addToast('Error sending manual alert', 'error')
+    }
   }
 
   async function addWalkIn() {

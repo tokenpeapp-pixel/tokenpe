@@ -305,14 +305,26 @@ export default function Dashboard() {
   }
 
   async function markDone(patient) {
-    await supabase.from('patients').update({ status: STATUS.DONE }).eq('id', patient.id)
-    sounds.done()
-    addToast(`${patient.name || patient.token} consultation done`, 'done')
-    await fetch('/api/voice', {
+    const res = await fetch('/api/queue/done', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: patient.phone, language: patient.language, event: 'done', token: patient.token, clinicName: clinic.name })
+      body: JSON.stringify({
+        clinicId: clinic.id,
+        clinicName: clinic.name,
+        patientId: patient.id,
+        patientPhone: patient.phone,
+        patientName: patient.name || 'Patient',
+        token: patient.token,
+        language: patient.language || 'en'
+      })
     })
+
+    if (res.ok) {
+      sounds.done()
+      addToast(`${patient.name || patient.token} consultation done`, 'done')
+    } else {
+      addToast('Error marking consultation done', 'error')
+    }
   }
 
   async function skipPatient(patient) {

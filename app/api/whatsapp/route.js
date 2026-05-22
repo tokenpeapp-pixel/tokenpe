@@ -17,7 +17,7 @@ function cleanPhone(phone) {
 // ── Send text message via Interakt session ───────────────────────────────────
 async function sendInteraktText(phone, message) {
     if (!INTERAKT_API_KEY) {
-        console.warn('[Interakt] API key not configured')
+        console.warn('[Interakt] ⚠️ INTERAKT_API_KEY not set in env — skipping send')
         return
     }
 
@@ -36,15 +36,13 @@ async function sendInteraktText(phone, message) {
                 phoneNumber: phoneNumber,
                 callbackData: 'tokenpe_queue',
                 type: 'Text',
-                data: {
-                    message: message
-                }
+                data: { message }
             })
         })
         const data = await res.json()
         console.log(`[Interakt] → +91${phoneNumber}:`, JSON.stringify(data))
     } catch (err) {
-        console.error('[Interakt] Error:', err)
+        console.error('[Interakt] Send error:', err)
     }
 }
 
@@ -62,6 +60,17 @@ async function sendVoiceNote({ phone, language, event, token, position, clinicNa
     }
 }
 
+// ── Resolve field with multiple possible Interakt variable names ─────────────
+// Interakt Flow variables might come as: customer_phone, phone, Phone, PHONE, etc.
+function pick(body, ...keys) {
+    for (const key of keys) {
+        if (body[key] !== undefined && body[key] !== null && body[key] !== '') {
+            return body[key]
+        }
+    }
+    return undefined
+}
+
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
@@ -70,6 +79,7 @@ export async function POST(req) {
 
         // 🛡️ Webhook Security
         if (secret !== process.env.WEBHOOK_VERIFY_TOKEN) {
+            console.error(`[whatsapp] ❌ Unauthorized — secret="${secret}" expected="${process.env.WEBHOOK_VERIFY_TOKEN}"`)
             return Response.json({
                 success: false,
                 message: '❌ Unauthorized. Invalid webhook secret.'
@@ -77,25 +87,42 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { action } = body
+
+        // ── 🔍 FULL PAYLOAD LOG — helps debug Interakt variable names ──────────
+        console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
+
+        const action = pick(body, 'action', 'Action', 'event', 'type')
         const baseUrl = new URL(req.url).origin
 
         // ── JOIN action ──────────────────────────────────────────────────────────
         if (action === 'join') {
-            const { phone, name, language } = body
 
-            // ── Extract clinic code from clinicCode field ──────────────────────────
-            // Handles: "JOIN SHARMA001", "SHARMA001", "sharma001"
-            const rawCode = (body.clinicCode || '').toString()
+            // Accept multiple possible field names from Interakt Flow
+            const phone    = pick(body, 'phone', 'Phone', 'mobile', 'customer_phone', 'waPhone', 'whatsapp')
+            const name     = pick(body, 'name', 'Name', 'customer_name', 'patientName', 'fullName', 'full_name')
+            const language = pick(body, 'language', 'Language', 'lang', 'preferred_language') || 'en'
+
+            // Accept clinic code variants + strip "JOIN " prefix
+            const rawCode = String(
+                pick(body, 'clinicCode', 'clinic_code', 'cliniccode', 'code', 'Code', 'JOIN') || ''
+            )
             const clinicCode = rawCode
-                .replace(/^JOIN\s*/i, '')   // remove "JOIN " prefix if present
+                .replace(/^JOIN\s*/i, '')
                 .trim()
                 .toUpperCase()
 
-            console.log(`[Join] phone=${phone} name=${name} lang=${language} clinicCode=${clinicCode}`)
+            console.log(`[Join] phone=${phone} | name=${name} | lang=${language} | clinicCode=${clinicCode}`)
+
+            if (!phone) {
+                console.error('[Join] ❌ No phone number in payload. Keys received:', Object.keys(body).join(', '))
+                return Response.json({
+                    success: false,
+                    message: '❌ No phone number provided',
+                    token: 'ERR', position: 0, wait: 'N/A', clinicName: 'Unknown', name: 'Guest'
+                }, { status: 200 })
+            }
 
             // ── Builder Test Safeguard ─────────────────────────────────────────────
-            // Return mock response if called from flow builder test
             if (
                 !clinicCode ||
                 clinicCode.includes('{') ||
@@ -103,6 +130,7 @@ export async function POST(req) {
                 clinicCode === 'PLACEHOLDER' ||
                 clinicCode.includes('VARIABLE')
             ) {
+                console.log('[Join] 🧪 Test mode detected — returning mock response')
                 return Response.json({
                     success: true,
                     token: 'T001',
@@ -121,19 +149,15 @@ export async function POST(req) {
                 .single()
 
             if (clinicError || !clinic) {
-                console.error(`[Join] Clinic not found: ${clinicCode}`)
+                console.error(`[Join] ❌ Clinic not found for code: "${clinicCode}"`, clinicError?.message)
                 return Response.json({
                     success: false,
                     message: '❌ Invalid clinic code. Please scan the QR code again.',
-                    token: 'ERR',
-                    position: 0,
-                    wait: 'N/A',
-                    clinicName: 'Unknown',
-                    name: name || 'Guest'
+                    token: 'ERR', position: 0, wait: 'N/A', clinicName: 'Unknown', name: name || 'Guest'
                 }, { status: 200 })
             }
 
-            // 2. Count waiting patients today
+            // 2. Count patients in queue today
             const today = new Date().toISOString().split('T')[0]
             const { count } = await supabase
                 .from('patients')
@@ -146,7 +170,7 @@ export async function POST(req) {
             const waitMins = position === 0 ? 'You are next!' : `${position * 7} mins`
 
             // 3. Insert patient into queue
-            const { error: insertError } = await supabase.from('patients').insert({
+            const insertPayload = {
                 clinic_id: clinic.id,
                 token: tokenNumber,
                 phone: cleanPhone(phone),
@@ -156,16 +180,19 @@ export async function POST(req) {
                 amount_paid: 0,
                 date: today,
                 joined_at: new Date().toISOString()
-            })
+            }
+            console.log('[Join] Inserting patient:', JSON.stringify(insertPayload))
+
+            const { error: insertError } = await supabase.from('patients').insert(insertPayload)
 
             if (insertError) {
-                console.error('[Join] Insert error:', insertError)
-                return Response.json({ success: false, message: 'Failed to join queue' }, { status: 500 })
+                console.error('[Join] ❌ Insert failed:', insertError.message, insertError.details)
+                return Response.json({ success: false, message: 'Failed to join queue', error: insertError.message }, { status: 500 })
             }
 
-            console.log(`[Join] ✅ ${name} assigned ${tokenNumber} at ${clinic.name}`)
+            console.log(`[Join] ✅ ${name} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
 
-            // 4. Send voice note (joined event)
+            // 4. Send voice note (fire & forget)
             sendVoiceNote({
                 phone: cleanPhone(phone),
                 language: language || 'en',
@@ -176,7 +203,7 @@ export async function POST(req) {
                 baseUrl
             })
 
-            // 5. Return token info to Interakt Flow
+            // 5. Return token info back to Interakt Flow
             return Response.json({
                 success: true,
                 token: tokenNumber,
@@ -191,7 +218,6 @@ export async function POST(req) {
         if (action === 'callnext') {
             const { patientPhone, patientName, token, language, clinicName } = body
 
-            // Send "Your Turn" message
             const msg = `🚨 *It's YOUR turn, ${patientName || 'Patient'}!*
 
 🎟 Token *${token}* — Please go now!
@@ -204,7 +230,6 @@ _Powered by TokenPe_`
 
             await sendInteraktText(patientPhone, msg)
 
-            // Send "Your Turn" voice note
             sendVoiceNote({
                 phone: patientPhone,
                 language: language || 'en',
@@ -218,23 +243,35 @@ _Powered by TokenPe_`
             return Response.json({ success: true }, { status: 200 })
         }
 
-        return Response.json({ error: 'Unknown action' }, { status: 400 })
+        console.warn('[whatsapp] ⚠️ Unknown action received:', action)
+        return Response.json({ error: 'Unknown action', receivedAction: action }, { status: 400 })
 
     } catch (error) {
-        console.error('[whatsapp] Error:', error)
+        console.error('[whatsapp] 💥 Unhandled error:', error.message)
         return Response.json({ error: error.message }, { status: 500 })
     }
 }
 
-// ── WEBHOOK VERIFICATION (Meta/GET) ─────────────────────────────────────────
+// ── WEBHOOK VERIFICATION (GET) ───────────────────────────────────────────────
 export async function GET(req) {
     const { searchParams } = new URL(req.url)
-    const mode = searchParams.get('hub.mode')
-    const token = searchParams.get('hub.verify_token')
+    const mode      = searchParams.get('hub.mode')
+    const token     = searchParams.get('hub.verify_token')
     const challenge = searchParams.get('hub.challenge')
 
     if (mode === 'subscribe' && token === process.env.WEBHOOK_VERIFY_TOKEN) {
         return new Response(challenge, { status: 200 })
     }
-    return new Response('Forbidden', { status: 403 })
+
+    // Simple health check when hit directly in browser
+    return Response.json({
+        status: 'ok',
+        message: 'TokenPe WhatsApp Webhook is live ✅',
+        hint: 'POST to this URL with ?secret=<WEBHOOK_VERIFY_TOKEN>',
+        envCheck: {
+            WEBHOOK_VERIFY_TOKEN: !!process.env.WEBHOOK_VERIFY_TOKEN,
+            INTERAKT_API_KEY: !!process.env.INTERAKT_API_KEY,
+            NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || '(not set)'
+        }
+    }, { status: 200 })
 }

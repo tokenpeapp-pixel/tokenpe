@@ -116,7 +116,23 @@ export async function POST(req) {
             // Accept multiple possible field names from Interakt Flow
             const phone    = pick(body, 'phone', 'Phone', 'mobile', 'customer_phone', 'waPhone', 'whatsapp')
             const name     = pick(body, 'name', 'Name', 'customer_name', 'patientName', 'fullName', 'full_name')
-            const language = pick(body, 'language', 'Language', 'lang', 'preferred_language') || 'en'
+            const rawLanguage = pick(body, 'language', 'Language', 'lang', 'preferred_language') || 'en'
+
+            // Map Interakt list position numbers to language codes
+            // 1=मराठी 2=हिंदी 3=English 4=ગુજરાતી 5=ਪੰਜਾਬੀ 6=தமிழ் 7=తెలుగు 8=বাংলা 9=ಕನ್ನಡ 10=മലയാളം
+            const languageMap = {
+                '1': 'mr', 'marathi': 'mr', 'मराठी': 'mr',
+                '2': 'hi', 'hindi': 'hi', 'हिंदी': 'hi', 'हिन्दी': 'hi',
+                '3': 'en', 'english': 'en',
+                '4': 'gu', 'gujarati': 'gu', 'ગુજરાતી': 'gu',
+                '5': 'pa', 'punjabi': 'pa', 'ਪੰਜਾਬੀ': 'pa',
+                '6': 'ta', 'tamil': 'ta', 'தமிழ்': 'ta',
+                '7': 'te', 'telugu': 'te', 'తెలుగు': 'te',
+                '8': 'bn', 'bengali': 'bn', 'বাংলা': 'bn',
+                '9': 'kn', 'kannada': 'kn', 'ಕನ್ನಡ': 'kn',
+                '10': 'ml', 'malayalam': 'ml', 'മലയാളം': 'ml',
+            }
+            const language = languageMap[String(rawLanguage).toLowerCase()] || languageMap[String(rawLanguage)] || rawLanguage || 'en'
 
             // Accept clinic code variants + strip "JOIN " prefix
             const rawCode = String(

@@ -12,7 +12,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Namaste! ${clinic} mein aapka swagat hai. Aapka token number ${token} hai. Abhi ${pos} log aage hain. Kripa pratiksha karein.`,
         ten_away: (token, current) => `${token} number wale ji, ab sirf 10 token baaki hain. Abhi ${current} chal raha hai. Clinic ki taraf chaliye.`,
         five_away: (token, current) => `${token} number wale ji, sirf 5 token baaki hain! Abhi ${current} chal raha hai. Kripya taiyaar ho jayein.`,
-        soon: (token) => `${token} number wale ji, sirf 3 log baaki hain. Kripya clinic ki taraf aa jayein.`,
+        soon: (token) => `${token} number wale ji, ab bas aapki baari aane wali hai. Kripya clinic ki taraf aa jayein.`,
         now: (token) => `${token} number wale ji, aapki baari aa gayi hai. Doctor aapka intezaar kar rahe hain. Please andar aa jayein.`,
         done: (clinic) => `Aapka consultation complete hua. ${clinic} mein aane ka shukriya. Jaldi theek ho jayein!`
     },
@@ -20,7 +20,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Vanakkam! ${clinic} il ungalukkு varkaverppu. Ungal token number ${token}. Tharuvadhil ${pos} per ullanar.`,
         ten_away: (token, current) => `${token} number, innumm 10 per ullanar. Tharuvadhil ${current} nadakkirathu. Clinic noki varungal.`,
         five_away: (token, current) => `${token} number, innumm 5 per mattume! Tharuvadhil ${current} nadakkirathu. Thayaraaga irungal.`,
-        soon: (token) => `${token} number, innumm 3 per mattume ullanar. Theruvukku varungal.`,
+        soon: (token) => `${token} number, ungal murai nerungi vittathu. Clinic noki varungal.`,
         now: (token) => `${token} number, ungal alar vandhachu! Doctor ungalai thirumbugirar.`,
         done: (clinic) => `Consultation mudinthathu. ${clinic} vanthatharku nandri. Viratam munnerugal!`
     },
@@ -28,7 +28,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Namaskaram! ${clinic} ki swagatam. Mee token number ${token}. Ippudu ${pos} mandhi mundu unnaru.`,
         ten_away: (token, current) => `${token} number garu, inkaa 10 mandhe unnaru. Ippudu ${current} nadustundi. Clinic vaipu ravandi.`,
         five_away: (token, current) => `${token} number garu, kevalam 5 mandhe unnaru! Ippudu ${current} nadustundi. Tayyaruga undandi.`,
-        soon: (token) => `${token} number garu, inkaa 3 mandhe unnaru. Clinic vaipu ravandi.`,
+        soon: (token) => `${token} number garu, mee vantu daggarapaddadi. Clinic vaipu ravandi.`,
         now: (token) => `${token} number garu, mee vanta vachindi! Doctor meeru kosam veediksthunnaru.`,
         done: (clinic) => `Consultation purthi ayyindi. ${clinic} ki dhanyavadalu. Tvaraga kolukondi!`
     },
@@ -36,7 +36,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Namaskar! ${clinic} madhe aapale swagat aahe. Aapala token number ${token} aahe. Ata ${pos} log pudhe aahet.`,
         ten_away: (token, current) => `${token} number wale, ata fakt 10 log baaki aahet. Ata ${current} chalu aahe. Clinic kade yaa.`,
         five_away: (token, current) => `${token} number wale, fakt 5 log baaki aahet! Ata ${current} chalu aahe. Krupaya taiyaar vha.`,
-        soon: (token) => `${token} number wale, fakt 3 log baaki aahet. Krupaya clinic kade yaa.`,
+        soon: (token) => `${token} number wale, aapli vel javal aali aahe. Krupaya clinic kade yaa.`,
         now: (token) => `${token} number wale, aapali vel aali aahe! Doctor aapli vaat pahat aahet.`,
         done: (clinic) => `Consultation sampale. ${clinic} madhe alyabaddal dhanyavaad. Lavkar bara vha!`
     },
@@ -44,7 +44,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Namaskar! ${clinic} te apnake swagat. Apnar token number ${token}. Ekhon ${pos} jon samne achhen.`,
         ten_away: (token, current) => `${token} number, aro 10 jon baki. Ekhon ${current} cholche. Clinic er dike asun.`,
         five_away: (token, current) => `${token} number, matro 5 jon baki! Ekhon ${current} cholche. Tairi thakun.`,
-        soon: (token) => `${token} number, matro 3 jon baki. Clinic er dike asun.`,
+        soon: (token) => `${token} number, apnar pala pray chole esheche. Clinic er dike asun.`,
         now: (token) => `${token} number, apnar pala eshe geche! Doctor apnar jonno opekkha korchen.`,
         done: (clinic) => `Consultation sesh hoyeche. ${clinic} te asar jonno dhonyobad. Taratari sustha hon!`
     },
@@ -52,7 +52,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Kem cho! ${clinic} ma aapnu swagat che. Aapno token number ${token} che. Haju ${pos} log aage che.`,
         ten_away: (token, current) => `${token} number wala, hun fakt 10 log baaki che. Haju ${current} chale che. Clinic taraf aavo.`,
         five_away: (token, current) => `${token} number wala, fakt 5 log baaki! Haju ${current} chale che. Taiyaar thao.`,
-        soon: (token) => `${token} number wala, fakt 3 log baki che. Clinic taraf aavo.`,
+        soon: (token) => `${token} number wala, aaparo varo aavvani taiyari che. Clinic taraf aavo.`,
         now: (token) => `${token} number wala, aaparo varo aavi gayo! Doctor rahi rahya che.`,
         done: (clinic) => `Consultation puru thayun. ${clinic} ma aavva badal aabhar. Jaldi saara thao!`
     },
@@ -60,7 +60,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Namaskara! ${clinic} ge swagatav. Nimma token number ${token}. Ippaga ${pos} jana mundide.`,
         ten_away: (token, current) => `${token} number, ippaga 10 jana baaki ide. Ippaga ${current} nadeyuttide. Clinic kade banni.`,
         five_away: (token, current) => `${token} number, kevala 5 jana baaki! Ippaga ${current} nadeyuttide. Tayyaragi iri.`,
-        soon: (token) => `${token} number, kevala 3 jana baki ide. Clinic kade banni.`,
+        soon: (token) => `${token} number, nimma sari hathira bandide. Clinic kade banni.`,
         now: (token) => `${token} number, nimma sari bandide! Doctor nimmaga kaayithidare.`,
         done: (clinic) => `Consultation mugiyitu. ${clinic} ge banda salakaagi dhanyavadagalu!`
     },
@@ -68,7 +68,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Namaskaram! ${clinic} il swagatam. Ningalude token number ${token} aanu. Ippol ${pos} per munpil undu.`,
         ten_away: (token, current) => `${token} number, ippol 10 per baaki undu. Ippol ${current} nadakkunnu. Clinic ilekku varoo.`,
         five_away: (token, current) => `${token} number, vettum 5 per baaki! Ippol ${current} nadakkunnu. Tayyarayi irikkoo.`,
-        soon: (token) => `${token} number, vettum 3 per baaki. Clinic te varoo.`,
+        soon: (token) => `${token} number, ningalude oozham aduthu! Clinic ilekku varoo.`,
         now: (token) => `${token} number, ningalude gharam ethi! Doctor ningale kaathirikkunnu.`,
         done: (clinic) => `Consultation kazhinju. ${clinic} il vanna thanku. Vegam suhrikhatte!`
     },
@@ -76,7 +76,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Sat sri akal! ${clinic} vich aapda swagat hai. Aapda token number ${token} hai. Hune ${pos} log aage ne.`,
         ten_away: (token, current) => `${token} number wale, hun sirf 10 log baaki ne. Hune ${current} chal reha hai. Clinic wale aa jao.`,
         five_away: (token, current) => `${token} number wale, sirf 5 log baaki ne! Hune ${current} chal reha hai. Taiyaar ho jao.`,
-        soon: (token) => `${token} number wale, sirf 3 log baaki ne. Clinic wale aa jao.`,
+        soon: (token) => `${token} number wale, aapdi wari aaun wali hai. Clinic wale aa jao.`,
         now: (token) => `${token} number wale, aapdi wari aa gayi! Doctor tenu intezaar kar reha hai.`,
         done: (clinic) => `Consultation mukk gaya. ${clinic} aun da shukriya. Jaldi theek ho jao!`
     },
@@ -84,7 +84,7 @@ const MESSAGES = {
         joined: (token, pos, clinic) => `Welcome to ${clinic}! Your token number is ${token}. There are ${pos} patients ahead of you. Please wait nearby.`,
         ten_away: (token, current) => `Token ${token}, only 10 more tokens to go! Currently serving ${current}. Please start making your way to the clinic.`,
         five_away: (token, current) => `Token ${token}, only 5 more tokens! Currently serving ${current}. Please get ready now.`,
-        soon: (token) => `Token ${token}, only 3 patients remaining. Please make your way to the clinic now.`,
+        soon: (token) => `Token ${token}, it is almost your turn! Please make your way to the clinic now.`,
         now: (token) => `Token ${token}, it is your turn! The doctor is ready to see you. Please come in.`,
         done: (clinic) => `Your consultation is complete. Thank you for visiting ${clinic}. Get well soon!`
     }

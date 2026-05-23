@@ -95,11 +95,17 @@ function AuthCallbackContent() {
                     const num = (Math.abs(hash) % 900) + 100
                     const newCode = `${clean}${num}`
 
+                    const trialEndsAt = new Date()
+                    trialEndsAt.setDate(trialEndsAt.getDate() + 14) // 14-day free trial
+                    
                     const newClinicData = {
                         name: user.user_metadata?.full_name || 'My Clinic',
                         email: user.email,
                         code: newCode,
-                        phone: '0000000000' // Placeholder, they can update later if needed
+                        phone: '0000000000', // Placeholder, they can update later if needed
+                        plan_id: 'elite',
+                        subscription_status: 'trialing',
+                        trial_ends_at: trialEndsAt.toISOString()
                     }
 
                     const { data: insertedClinic, error: insertError } = await supabase

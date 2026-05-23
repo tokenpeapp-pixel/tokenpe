@@ -439,6 +439,11 @@ export default function Dashboard() {
   const activePatients = [...called, ...waiting]
   const displayPatients = activeTab === 'active' ? activePatients : done
 
+  // ── Limits ──
+  const planId = clinic?.plan_id || 'starter'
+  const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
+  const isLimitReached = patients.length >= limit
+
   if (loading) return (
     <div style={s.loadingScreen}>
       <div style={s.spinner} />
@@ -584,6 +589,7 @@ export default function Dashboard() {
           </div>
           <div className="header-mobile-right">
             <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
+            <button onClick={() => router.push('/dashboard/billing')} style={s.btnBilling}>Billing</button>
             <button onClick={logout} style={s.btnLogout}>Logout</button>
           </div>
         </div>
@@ -610,6 +616,7 @@ export default function Dashboard() {
           <div className="header-clock">{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
           <div className="desktop-only-logout">
             <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
+            <button onClick={() => router.push('/dashboard/billing')} style={s.btnBilling}>Billing & Plan</button>
             <button onClick={logout} style={s.btnLogout}>Logout</button>
           </div>
         </div>
@@ -618,7 +625,18 @@ export default function Dashboard() {
       {/* ── Action Bar ── */}
       <div style={s.actionBar}>
         <button style={s.btnQR} onClick={() => setShowQR(true)}>🔲 Generate QR</button>
-        <button style={s.btnAdd} onClick={() => setShowAddForm(!showAddForm)}>+ Add Walk-in</button>
+        <button 
+          style={{ ...s.btnAdd, opacity: isLimitReached ? 0.5 : 1, cursor: isLimitReached ? 'not-allowed' : 'pointer' }} 
+          onClick={() => {
+            if (isLimitReached) {
+              addToast(`Daily limit of ${limit} reached. Upgrade to add more!`, 'error')
+              return
+            }
+            setShowAddForm(!showAddForm)
+          }}
+        >
+          {isLimitReached ? `🔒 Limit Reached (${limit})` : '+ Add Walk-in'}
+        </button>
         <button
           style={{ ...s.btnCall, opacity: waiting.length === 0 ? 0.4 : 1 }}
           onClick={callNext}
@@ -787,6 +805,7 @@ const s = {
   liveBadge: { display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', borderRadius: 20, padding: '4px 12px', color: '#34D399', fontSize: '0.72rem', fontWeight: 700, letterSpacing: 1 },
   liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B981' },
   clock: { color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.88rem', fontVariantNumeric: 'tabular-nums' },
+  btnBilling: { background: 'rgba(124,58,237,0.2)', color: '#C4B5FD', border: '1px solid rgba(124,58,237,0.4)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
   btnLogout: { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
   actionBar: { background: 'white', padding: '12px 24px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid #E2E8F0', flexWrap: 'wrap', boxShadow: '0 1px 0 #E2E8F0' },
   btnQR: { background: '#0F172A', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' },

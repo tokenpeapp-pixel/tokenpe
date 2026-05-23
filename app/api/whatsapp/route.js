@@ -145,6 +145,23 @@ export async function POST(req) {
                 .eq('date', today)
 
             const position = count || 0
+
+            // 2.5 Check subscription limits
+            const planId = clinic.plan_id || 'starter' // default to starter
+            const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
+            
+            if (position >= limit) {
+                console.log(`[Join] ❌ Limit reached for ${clinic.name}: ${position}/${limit}`)
+                const limitMsg = `❌ *Queue Full*\n\nThe clinic has reached its maximum daily patient limit.\n\nPlease ask the clinic reception to upgrade their TokenPe plan to add more patients today.`
+                await sendText(cleanPhone(phone), limitMsg)
+                
+                return Response.json({
+                    success: false,
+                    message: 'Daily queue limit reached.',
+                    token: 'FULL', position: 0, wait: 'N/A', clinicName: clinic.name, name: name || 'Guest'
+                }, { status: 200 })
+            }
+
             const tokenNumber = `T${String(position + 1).padStart(3, '0')}`
             const waitMins = position === 0 ? 'You are next!' : `${position * 7} mins`
 

@@ -1,67 +1,162 @@
 'use client'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString } from '../../../lib/supabase'
 
+// ─── CONFETTI ENGINE ──────────────────────────────────────────────────────────
+function ConfettiCanvas() {
+    const canvasRef = useRef(null)
+    useEffect(() => {
+        const canvas = canvasRef.current
+        if (!canvas) return
+        const ctx = canvas.getContext('2d')
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+        const COLORS = ['#7C3AED','#8B5CF6','#C4B5FD','#10B981','#F59E0B','#EF4444','#3B82F6','#EC4899','#fff']
+        const SHAPES = ['circle','rect','triangle']
+        const particles = []
+        const origins = [
+            { x: canvas.width * 0.3, y: canvas.height * 0.4 },
+            { x: canvas.width * 0.7, y: canvas.height * 0.35 },
+            { x: canvas.width * 0.5, y: canvas.height * 0.25 },
+        ]
+        for (let i = 0; i < 220; i++) {
+            const origin = origins[i % origins.length]
+            const angle = Math.random() * Math.PI * 2
+            const speed = 4 + Math.random() * 14
+            particles.push({
+                x: origin.x + (Math.random() - 0.5) * 60,
+                y: origin.y + (Math.random() - 0.5) * 60,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 10,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+                size: 6 + Math.random() * 10,
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.2,
+                opacity: 1,
+                gravity: 0.35 + Math.random() * 0.2,
+            })
+        }
+        let animId
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            let alive = false
+            for (const p of particles) {
+                if (p.opacity <= 0) continue
+                alive = true
+                p.x += p.vx; p.y += p.vy; p.vy += p.gravity
+                p.vx *= 0.99; p.rotation += p.rotSpeed
+                if (p.y > canvas.height * 0.65) p.opacity -= 0.02
+                ctx.save()
+                ctx.globalAlpha = Math.max(0, p.opacity)
+                ctx.translate(p.x, p.y); ctx.rotate(p.rotation)
+                ctx.fillStyle = p.color
+                if (p.shape === 'circle') {
+                    ctx.beginPath(); ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2); ctx.fill()
+                } else if (p.shape === 'rect') {
+                    ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2)
+                } else {
+                    ctx.beginPath(); ctx.moveTo(0, -p.size / 2)
+                    ctx.lineTo(p.size / 2, p.size / 2); ctx.lineTo(-p.size / 2, p.size / 2)
+                    ctx.closePath(); ctx.fill()
+                }
+                ctx.restore()
+            }
+            if (alive) animId = requestAnimationFrame(draw)
+        }
+        draw()
+        return () => cancelAnimationFrame(animId)
+    }, [])
+    return <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:10 }} />
+}
+
+// ─── CELEBRATION SCREEN ───────────────────────────────────────────────────────
+function CelebrationScreen({ clinicName, trialEnd, onDone }) {
+    const [count, setCount] = useState(6)
+    useEffect(() => {
+        if (count <= 0) { onDone(); return }
+        const t = setTimeout(() => setCount(c => c - 1), 1000)
+        return () => clearTimeout(t)
+    }, [count, onDone])
+
+    return (
+        <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%)', fontFamily:"'Inter','DM Sans',sans-serif", color:'#fff', flexDirection:'column', textAlign:'center', padding:24, position:'relative', overflow:'hidden' }}>
+            <ConfettiCanvas />
+            {/* Glow blob */}
+            <div style={{ position:'absolute', width:600, height:600, background:'radial-gradient(circle,rgba(124,58,237,0.3) 0%,transparent 70%)', borderRadius:'50%', top:'50%', left:'50%', transform:'translate(-50%,-50%)', zIndex:0, animation:'pulse 2s ease-in-out infinite' }} />
+            {/* Card */}
+            <div style={{ position:'relative', zIndex:5, background:'rgba(255,255,255,0.05)', backdropFilter:'blur(20px)', border:'1px solid rgba(124,58,237,0.4)', borderRadius:32, padding:'48px 40px', maxWidth:500, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.5)', animation:'slideUp 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
+                <div style={{ fontSize:80, marginBottom:4, lineHeight:1, animation:'bounce 0.6s ease 0.3s both' }}>🎉</div>
+                <div style={{ fontSize:15, fontWeight:700, color:'#f59e0b', letterSpacing:2, textTransform:'uppercase', marginBottom:8 }}>🎊 Trial Activated 🎊</div>
+                <div style={{ fontSize:28, fontWeight:900, marginBottom:20, letterSpacing:'-0.5px', lineHeight:1.25 }}>
+                    Welcome to TokenPe,<br />
+                    <span style={{ background:'linear-gradient(90deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
+                        {clinicName}!
+                    </span>
+                </div>
+                <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.08))', border:'1.5px solid rgba(245,158,11,0.5)', borderRadius:20, padding:'10px 24px', marginBottom:24 }}>
+                    <span style={{ fontSize:20 }}>🥇</span>
+                    <span style={{ fontWeight:800, color:'#fbbf24', fontSize:15, letterSpacing:0.5 }}>14-DAY ELITE PLAN — FREE!</span>
+                </div>
+                <div style={{ color:'rgba(255,255,255,0.7)', lineHeight:1.9, marginBottom:28, fontSize:15 }}>
+                    You have <strong style={{ color:'#a78bfa' }}>unlimited patients</strong>, AI voice notes,<br />
+                    and all Elite features unlocked — free until&nbsp;
+                    <strong style={{ color:'#34d399' }}>
+                        {new Date(trialEnd).toLocaleDateString('en-IN',{ day:'numeric', month:'long', year:'numeric' })}
+                    </strong>.
+                </div>
+                <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap', marginBottom:32 }}>
+                    {['♾️ Unlimited Patients','🎙️ AI Voice Notes','🔑 Custom Clinic Code','⚡ Priority Support'].map(f => (
+                        <span key={f} style={{ background:'rgba(124,58,237,0.2)', border:'1px solid rgba(124,58,237,0.4)', borderRadius:20, padding:'5px 14px', fontSize:12, fontWeight:700, color:'#c4b5fd' }}>{f}</span>
+                    ))}
+                </div>
+                <button onClick={onDone} style={{ width:'100%', padding:'16px 24px', background:'linear-gradient(135deg,#7c3aed,#5b21b6)', border:'none', borderRadius:16, color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer', boxShadow:'0 8px 32px rgba(124,58,237,0.5)', letterSpacing:0.3 }}>
+                    🚀 Enter Your Dashboard ({count}s)
+                </button>
+            </div>
+            <style>{`
+                @keyframes slideUp { from{opacity:0;transform:translateY(40px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+                @keyframes pulse { 0%,100%{opacity:0.6;transform:translate(-50%,-50%) scale(1)} 50%{opacity:1;transform:translate(-50%,-50%) scale(1.15)} }
+                @keyframes bounce { 0%{transform:scale(0) rotate(-20deg)} 60%{transform:scale(1.2) rotate(5deg)} 100%{transform:scale(1) rotate(0)} }
+            `}</style>
+        </div>
+    )
+}
+
+// ─── MAIN CALLBACK ────────────────────────────────────────────────────────────
 function AuthCallbackContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [status, setStatus] = useState('Securing your session...')
+    const [celebration, setCelebration] = useState(null)
 
     useEffect(() => {
         async function processAuth() {
             try {
-                // 1. Get the authenticated user from Supabase session
                 const { data: { user }, error: authError } = await supabase.auth.getUser()
+                if (authError || !user) { router.replace('/login'); return }
 
-                if (authError || !user) {
-                    router.replace('/login')
-                    return
-                }
-
-                const intent = searchParams.get('intent') || 'login' // 'login' or 'register'
-                
-                // 2. Check if a clinic exists for this user's email
+                const intent = searchParams.get('intent') || 'login'
                 const { data: clinicData, error: clinicError } = await supabase
-                    .from('clinics')
-                    .select('*')
-                    .eq('email', user.email)
-                    .single()
+                    .from('clinics').select('*').eq('email', user.email).single()
 
                 if (clinicData && !clinicError) {
                     setStatus('Generating your daily code...')
-                    
-                    // Generate a daily code based on date so it changes every day upon login
                     const baseName = clinicData.name || user.user_metadata?.full_name || user.email.split('@')[0]
                     const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
                     const todayStr = getISTDateString()
-                    
-                    // Simple deterministic hash for the day
                     const strToHash = clinicData.id + todayStr
                     let hash = 0
-                    for (let i = 0; i < strToHash.length; i++) {
-                        hash = (hash << 5) - hash + strToHash.charCodeAt(i)
-                        hash |= 0
-                    }
+                    for (let i = 0; i < strToHash.length; i++) { hash = (hash << 5) - hash + strToHash.charCodeAt(i); hash |= 0 }
                     const dailyNum = (Math.abs(hash) % 900) + 100
                     const newCode = `${clean}${dailyNum}`
-
                     let finalClinicData = clinicData
-
                     if (clinicData.code !== newCode) {
                         const { data: updated, error: updateError } = await supabase
-                            .from('clinics')
-                            .update({ code: newCode })
-                            .eq('id', clinicData.id)
-                            .select()
-                            .single()
-                        
-                        if (updated && !updateError) {
-                            finalClinicData = updated
-                        }
+                            .from('clinics').update({ code: newCode }).eq('id', clinicData.id).select().single()
+                        if (updated && !updateError) finalClinicData = updated
                     }
-
-                    // Clinic exists! Log them in regardless of intent
                     setStatus('Logging you in...')
                     localStorage.setItem('clinicCode', finalClinicData.code)
                     localStorage.setItem('clinicPhone', finalClinicData.phone)
@@ -70,49 +165,37 @@ function AuthCallbackContent() {
                     return
                 }
 
-                // 3. Clinic DOES NOT exist
                 if (intent === 'login') {
-                    // Tried to login, but no clinic found -> Error out
                     await supabase.auth.signOut()
                     router.replace('/login?error=no_clinic')
                     return
                 }
 
                 if (intent === 'register') {
-                    // Register intent -> Auto-create the clinic
                     setStatus('Creating your clinic workspace...')
-                    
-                    // Generate a clinic code from their name or email
                     const baseName = user.user_metadata?.full_name || user.email.split('@')[0]
                     const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
                     const todayStr = getISTDateString()
-                    const strToHash = user.email + todayStr // use email as ID proxy for first time
+                    const strToHash = user.email + todayStr
                     let hash = 0
-                    for (let i = 0; i < strToHash.length; i++) {
-                        hash = (hash << 5) - hash + strToHash.charCodeAt(i)
-                        hash |= 0
-                    }
+                    for (let i = 0; i < strToHash.length; i++) { hash = (hash << 5) - hash + strToHash.charCodeAt(i); hash |= 0 }
                     const num = (Math.abs(hash) % 900) + 100
                     const newCode = `${clean}${num}`
-
                     const trialEndsAt = new Date()
-                    trialEndsAt.setDate(trialEndsAt.getDate() + 14) // 14-day free trial
-                    
+                    trialEndsAt.setDate(trialEndsAt.getDate() + 14)
+
                     const newClinicData = {
                         name: user.user_metadata?.full_name || 'My Clinic',
                         email: user.email,
                         code: newCode,
-                        phone: '0000000000', // Placeholder, they can update later if needed
+                        phone: '0000000000',
                         plan_id: 'elite',
                         subscription_status: 'trialing',
                         trial_ends_at: trialEndsAt.toISOString()
                     }
 
                     const { data: insertedClinic, error: insertError } = await supabase
-                        .from('clinics')
-                        .insert(newClinicData)
-                        .select()
-                        .single()
+                        .from('clinics').insert(newClinicData).select().single()
 
                     if (insertError) {
                         console.error('Failed to auto-create clinic:', insertError)
@@ -121,13 +204,12 @@ function AuthCallbackContent() {
                         return
                     }
 
-                    // Successfully created! Log them in
                     localStorage.setItem('clinicCode', insertedClinic.code)
                     localStorage.setItem('clinicPhone', insertedClinic.phone)
                     localStorage.setItem('tokenpe_clinic', JSON.stringify(insertedClinic))
-                    
-                    setStatus('Workspace ready! Redirecting...')
-                    router.replace('/dashboard')
+
+                    // 🎉 Show party before redirecting!
+                    setCelebration({ clinicName: insertedClinic.name, trialEnd: insertedClinic.trial_ends_at })
                 }
 
             } catch (err) {
@@ -135,43 +217,25 @@ function AuthCallbackContent() {
                 router.replace('/login')
             }
         }
-
         processAuth()
     }, [router, searchParams])
 
+    if (celebration) {
+        return <CelebrationScreen clinicName={celebration.clinicName} trialEnd={celebration.trialEnd} onDone={() => router.replace('/dashboard')} />
+    }
+
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'linear-gradient(135deg, #0a2540 0%, #0F4C75 60%, #0a3554 100%)',
-            fontFamily: "'DM Sans','Segoe UI',sans-serif",
-            color: 'white',
-            flexDirection: 'column',
-            gap: 20
-        }}>
-            {/* Loading spinner */}
-            <div style={{
-                width: 40, height: 40, 
-                border: '4px solid rgba(255,255,255,0.2)',
-                borderTopColor: 'white',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-            }} />
-            <div style={{ fontSize: 18, fontWeight: 500 }}>{status}</div>
-            <style>{`
-                @keyframes spin { 
-                    to { transform: rotate(360deg); } 
-                }
-            `}</style>
+        <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#0a2540 0%,#0F4C75 60%,#0a3554 100%)', fontFamily:"'DM Sans','Segoe UI',sans-serif", color:'white', flexDirection:'column', gap:20 }}>
+            <div style={{ width:40, height:40, border:'4px solid rgba(255,255,255,0.2)', borderTopColor:'white', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
+            <div style={{ fontSize:18, fontWeight:500 }}>{status}</div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
     )
 }
 
 export default function AuthCallback() {
     return (
-        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0a2540' }}></div>}>
+        <Suspense fallback={<div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0a2540', color:'white' }}>Loading...</div>}>
             <AuthCallbackContent />
         </Suspense>
     )

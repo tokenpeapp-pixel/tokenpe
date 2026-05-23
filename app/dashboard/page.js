@@ -164,6 +164,11 @@ export default function Dashboard() {
   const [toasts, setToasts] = useState([])
   const [newPatientAlert, setNewPatientAlert] = useState(null)
   const [activeTab, setActiveTab] = useState('active')
+  const [historyDate, setHistoryDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0];
+  })
+  const [historyPatients, setHistoryPatients] = useState([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
@@ -259,6 +264,23 @@ export default function Dashboard() {
     const t = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  // ── Fetch History ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (activeTab === 'history' && clinic) {
+      async function fetchHistory() {
+        setLoadingHistory(true)
+        const { data } = await supabase
+          .from('patients').select('*')
+          .eq('clinic_id', clinic.id)
+          .eq('date', historyDate)
+          .order('joined_at', { ascending: true })
+        setHistoryPatients(data || [])
+        setLoadingHistory(false)
+      }
+      fetchHistory()
+    }
+  }, [activeTab, historyDate, clinic])
 
   // ── Toast system ────────────────────────────────────────────────────────
   function addToast(msg, type = 'done') {
@@ -482,11 +504,14 @@ export default function Dashboard() {
         <button style={{ ...s.tab, ...(activeTab === 'done' ? s.tabActive : {}) }} onClick={() => setActiveTab('done')}>
           Completed ({done.length})
         </button>
+        <button style={{ ...s.tab, ...(activeTab === 'history' ? s.tabActive : {}) }} onClick={() => setActiveTab('history')}>
+          History
+        </button>
       </div>
 
       {/* ── Patient List ── */}
       <div style={s.list}>
-        {displayPatients.length === 0 && (
+        {activeTab !== 'history' && displayPatients.length === 0 && (
           <div style={s.empty}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>{activeTab === 'active' ? '🎉' : '📋'}</div>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>
@@ -497,6 +522,35 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {activeTab === 'history' && (
+          <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12, background: 'white', padding: '16px 20px', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1E293B' }}>Select Date:</label>
+            <input 
+              type="date" 
+              value={historyDate} 
+              max={new Date().toISOString().split('T')[0]}
+              onChange={e => setHistoryDate(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500 }}
+            />
+          </div>
+        )}
+
+        {activeTab === 'history' && loadingHistory && (
+          <div style={{ textAlign: 'center', padding: '60px 24px', color: '#64748b', fontWeight: 600 }}>Loading history...</div>
+        )}
+
+        {activeTab === 'history' && !loadingHistory && historyPatients.length === 0 && (
+          <div style={s.empty}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>📅</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>No records found</div>
+            <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: 6 }}>Try selecting a different date</div>
+          </div>
+        )}
+
+        {activeTab === 'history' && !loadingHistory && historyPatients.map(p => (
+          <PatientCard key={p.id} patient={p} position={null} />
+        ))}
 
         {activeTab === 'active' && called.length > 0 && <div style={s.sectionLabel}>🟢 With Doctor Now</div>}
         {activeTab === 'active' && called.map(p => (

@@ -127,38 +127,38 @@ export default function LandingPage() {
 
       {/* NAV */}
       <nav className="nav">
-        <img src="/logo.svg" alt="TokenPe" style={{height:36,width:"auto",cursor:"pointer"}} onClick={()=>router.push("/")} />
+        <img src="/logo.svg" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
         <div className="nav-links">
-          <span className="nl" onClick={()=>go("features")}>Features</span>
-          <span className="nl" onClick={()=>go("how")}>How it works</span>
-          <span className="nl" onClick={()=>go("pricing")}>Pricing</span>
-          <button className="nav-btn" onClick={()=>router.push("/login")}>Get Started →</button>
+          <span className="nl" onClick={() => go("features")}>Features</span>
+          <span className="nl" onClick={() => go("how")}>How it works</span>
+          <span className="nl" onClick={() => go("pricing")}>Pricing</span>
+          <button className="nav-btn" onClick={() => router.push("/login")}>Get Started →</button>
         </div>
-        <button className="hamburger" onClick={()=>setMenuOpen(!menuOpen)}>{menuOpen?"✕":"☰"}</button>
+        <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? "✕" : "☰"}</button>
       </nav>
-      <div className={`mmenu ${menuOpen?"open":""}`}>
-        <span className="mlink" onClick={()=>go("features")}>Features</span>
-        <span className="mlink" onClick={()=>go("how")}>How it works</span>
-        <span className="mlink" onClick={()=>go("pricing")}>Pricing</span>
-        <span className="mbtn" onClick={()=>router.push("/login")}>Get Started →</span>
+      <div className={`mmenu ${menuOpen ? "open" : ""}`}>
+        <span className="mlink" onClick={() => go("features")}>Features</span>
+        <span className="mlink" onClick={() => go("how")}>How it works</span>
+        <span className="mlink" onClick={() => go("pricing")}>Pricing</span>
+        <span className="mbtn" onClick={() => router.push("/login")}>Get Started →</span>
       </div>
 
       {/* HERO */}
       <section className="hero">
-        <div className="orb1"/><div className="orb2"/><div className="orb3"/>
-        <div className="hero-badge"><span className="badge-dot"/>🇮🇳 Built for India's 6 lakh+ clinics</div>
-        <h1 className="hero-h1">No more waiting.<br/><span className="grad-text">Queue smarter.</span></h1>
+        <div className="orb1" /><div className="orb2" /><div className="orb3" />
+        <div className="hero-badge"><span className="badge-dot" />🇮🇳 Built for India's 6 lakh+ clinics</div>
+        <h1 className="hero-h1">No more waiting.<br /><span className="grad-text">Queue smarter.</span></h1>
         <p className="hero-sub">Replace your clinic's paper token chaos with a WhatsApp-based digital queue. Patients wait at home. Voice updates in 10 languages. Zero apps needed.</p>
         <div className="hero-btns">
-          <button className="btn-hero-primary" onClick={()=>router.push("/login")}>Start Free Trial →</button>
-          <button className="btn-hero-ghost" onClick={()=>go("how")}>See how it works</button>
+          <button className="btn-hero-primary" onClick={() => router.push("/login")}>Start Free Trial →</button>
+          <button className="btn-hero-ghost" onClick={() => go("how")}>See how it works</button>
         </div>
         <p className="hero-note"><span>No app for patients</span>·<span>Any phone</span>·<span>2 min setup</span></p>
       </section>
 
       {/* TRUST */}
       <div className="trust">
-        {[["💬","100%","WhatsApp Native"],["🇮🇳","Built for","Indian Clinics"],["🎙️","10","Languages"],["⚡","2 min","Setup time"]].map(([ic,v,l])=>(
+        {[["💬", "100%", "WhatsApp Native"], ["🇮🇳", "Built for", "Indian Clinics"], ["🎙️", "10", "Languages"], ["⚡", "2 min", "Setup time"]].map(([ic, v, l]) => (
           <div key={l} className="trust-item">
             <span className="trust-icon">{ic}</span>
             <span className="trust-text"><span className="trust-val">{v}</span> {l}</span>
@@ -167,7 +167,7 @@ export default function LandingPage() {
       </div>
       <div className="wave-div">
         <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#0d0d20"></path>
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#0d0d20"></path>
         </svg>
       </div>
 
@@ -179,15 +179,15 @@ export default function LandingPage() {
           <p className="sec-sub">One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.</p>
           <div className="feat-grid">
             {[
-              {ico:"🎙️",bg:"linear-gradient(135deg,#f0fdf4,#dcfce7)",title:"Voice in 10 Indian languages",desc:"Patients get WhatsApp voice updates in Hindi, Tamil, Telugu, Marathi, Gujarati and 5 more."},
-              {ico:"💬",bg:"linear-gradient(135deg,#eff6ff,#dbeafe)",title:"WhatsApp — zero app needed",desc:"Scan QR → join queue. No downloads, no logins. Works on any phone, even a basic one."},
-              {ico:"⚡",bg:"linear-gradient(135deg,#fdf4ff,#f3e8ff)",title:"Real-time live dashboard",desc:"See who's waiting, with doctor, and done — all updating live as patients move through."},
-              {ico:"🔔",bg:"linear-gradient(135deg,#fff7ed,#ffedd5)",title:"Smart automatic alerts",desc:"10-away, 5-away, and your-turn alerts sent automatically. Zero manual effort needed."},
-              {ico:"📅",bg:"linear-gradient(135deg,#f0f9ff,#e0f2fe)",title:"History by date",desc:"View complete patient records for any past date. Know daily volume at a glance."},
-              {ico:"🔲",bg:"linear-gradient(135deg,#fff1f2,#ffe4e6)",title:"QR code + print card",desc:"Generate your clinic's unique QR. Download PNG or print a ready-to-display card."},
-            ].map(f=>(
+              { ico: "🎙️", bg: "linear-gradient(135deg,#f0fdf4,#dcfce7)", title: "Voice in 10 Indian languages", desc: "Patients get WhatsApp voice updates in Hindi, Tamil, Telugu, Marathi, Gujarati and 5 more." },
+              { ico: "💬", bg: "linear-gradient(135deg,#eff6ff,#dbeafe)", title: "WhatsApp — zero app needed", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone, even a basic one." },
+              { ico: "⚡", bg: "linear-gradient(135deg,#fdf4ff,#f3e8ff)", title: "Real-time live dashboard", desc: "See who's waiting, with doctor, and done — all updating live as patients move through." },
+              { ico: "🔔", bg: "linear-gradient(135deg,#fff7ed,#ffedd5)", title: "Smart automatic alerts", desc: "10-away, 5-away, and your-turn alerts sent automatically. Zero manual effort needed." },
+              { ico: "📅", bg: "linear-gradient(135deg,#f0f9ff,#e0f2fe)", title: "History by date", desc: "View complete patient records for any past date. Know daily volume at a glance." },
+              { ico: "🔲", bg: "linear-gradient(135deg,#fff1f2,#ffe4e6)", title: "QR code + print card", desc: "Generate your clinic's unique QR. Download PNG or print a ready-to-display card." },
+            ].map(f => (
               <div key={f.title} className="feat-card">
-                <div className="feat-ico" style={{background:f.bg}}>{f.ico}</div>
+                <div className="feat-ico" style={{ background: f.bg }}>{f.ico}</div>
                 <div className="feat-title">{f.title}</div>
                 <div className="feat-desc">{f.desc}</div>
               </div>
@@ -195,6 +195,13 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Wave Divider: Features (Light) to How it works (Dark) */}
+      <div className="wave-div" style={{ background: "#080818" }}>
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#fff"></path>
+        </svg>
+      </div>
 
       {/* HOW */}
       <section id="how" className="how-sec">
@@ -204,10 +211,10 @@ export default function LandingPage() {
           <p className="sec-sub">No IT team needed. No hardware. No complexity.</p>
           <div className="steps">
             {[
-              {n:"1",t:"Register your clinic",d:"Sign up in 2 minutes with Google or your clinic code. Get your unique WhatsApp QR instantly."},
-              {n:"2",t:"Display the QR at reception",d:"Print the card or show on a screen. Patients scan once and they're in the queue — no app needed."},
-              {n:"3",t:"Call patients with one tap",d:"Press 'Call Next' on your dashboard. The patient gets a WhatsApp text + voice note in their language."},
-            ].map(s=>(
+              { n: "1", t: "Register your clinic", d: "Sign up in 2 minutes with Google or your clinic code. Get your unique WhatsApp QR instantly." },
+              { n: "2", t: "Display the QR at reception", d: "Print the card or show on a screen. Patients scan once and they're in the queue — no app needed." },
+              { n: "3", t: "Call patients with one tap", d: "Press 'Call Next' on your dashboard. The patient gets a WhatsApp text + voice note in their language." },
+            ].map(s => (
               <div key={s.n} className="step">
                 <div className="step-num">{s.n}</div>
                 <div><div className="step-title">{s.t}</div><div className="step-desc">{s.d}</div></div>
@@ -217,44 +224,58 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Wave Divider: How it works (Dark) to Pricing (Light) */}
+      <div className="wave-div" style={{ background: "#fafbff" }}>
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#0f0a2a"></path>
+        </svg>
+      </div>
+
       {/* PRICING */}
       <section id="pricing" className="pricing-sec">
-        <div style={{maxWidth:900,margin:"0 auto",textAlign:"center"}}>
+        <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
           <div className="sec-eye">Pricing</div>
           <h2 className="sec-h2">Simple. Affordable.</h2>
-          <p className="sec-sub" style={{margin:"0 auto 0"}}>All plans include every feature.</p>
+          <p className="sec-sub" style={{ margin: "0 auto 0" }}>All plans include every feature.</p>
         </div>
         <div className="plans">
           {[
-            {name:"Starter",desc:"Solo doctor clinics",price:"₹499",per:"/mo",feats:["50 patients/day","WhatsApp queue","Voice notes — 10 languages","QR code generation"],hot:false},
-            {name:"Growth",desc:"Busy clinics",price:"₹999",per:"/mo",feats:["150 patients/day","History & analytics","Priority support","Walk-in management"],hot:true},
-            {name:"Pro",desc:"Hospitals & chains",price:"₹1,999",per:"/mo",feats:["Unlimited patients","Multiple queues","API access","Dedicated support"],hot:false},
-          ].map(p=>(
-            <div key={p.name} className={`plan${p.hot?" hot":""}`}>
-              {p.hot&&<div className="plan-badge">✦ Most Popular</div>}
+            { name: "Starter", desc: "Solo doctor clinics", price: "₹499", per: "/mo", feats: ["50 patients/day", "WhatsApp queue", "Voice notes — 10 languages", "QR code generation"], hot: false },
+            { name: "Growth", desc: "Busy clinics", price: "₹999", per: "/mo", feats: ["150 patients/day", "History & analytics", "Priority support", "Walk-in management"], hot: true },
+            { name: "Pro", desc: "Hospitals & chains", price: "₹1,999", per: "/mo", feats: ["Unlimited patients", "Multiple queues", "API access", "Dedicated support"], hot: false },
+          ].map(p => (
+            <div key={p.name} className={`plan${p.hot ? " hot" : ""}`}>
+              {p.hot && <div className="plan-badge">✦ Most Popular</div>}
               <div><div className="plan-name">{p.name}</div><div className="plan-desc">{p.desc}</div></div>
               <div className="plan-price">{p.price}<span>{p.per}</span></div>
-              <div className="plan-feats">{p.feats.map(f=><div key={f} className="pf"><span className="pf-check">✓</span>{f}</div>)}</div>
-              <button className={`plan-btn${p.hot?"":" ghost"}`} onClick={()=>router.push("/login")}>Get started →</button>
+              <div className="plan-feats">{p.feats.map(f => <div key={f} className="pf"><span className="pf-check">✓</span>{f}</div>)}</div>
+              <button className={`plan-btn${p.hot ? "" : " ghost"}`} onClick={() => router.push("/login")}>Get started →</button>
             </div>
           ))}
         </div>
       </section>
 
+      {/* Wave Divider: Pricing (Light) to CTA (Dark) */}
+      <div className="wave-div" style={{ background: "#080818" }}>
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#fafbff"></path>
+        </svg>
+      </div>
+
       {/* CTA */}
       <section className="cta-sec">
-        <div className="cta-orb"/>
+        <div className="cta-orb" />
         <h2 className="cta-h2">Ready to transform your clinic?</h2>
         <p className="cta-sub">Join clinics across India already using TokenPe to manage queues and delight patients.</p>
-        <button className="cta-btn" onClick={()=>router.push("/login")}>Start your free trial →</button>
+        <button className="cta-btn" onClick={() => router.push("/login")}>Start your free trial →</button>
       </section>
 
       {/* FOOTER */}
       <footer className="footer">
-        <img src="/logo.svg" alt="TokenPe" style={{height:30,width:"auto"}}/>
+        <img src="/logo.svg" alt="TokenPe" style={{ height: 30, width: "auto" }} />
         <div className="footer-links">
-          <span className="flink" onClick={()=>router.push("/privacy")}>Privacy Policy</span>
-          <span className="flink" onClick={()=>router.push("/terms")}>Terms & Support</span>
+          <span className="flink" onClick={() => router.push("/privacy")}>Privacy Policy</span>
+          <span className="flink" onClick={() => router.push("/terms")}>Terms & Support</span>
         </div>
         <span className="footer-made">Made with ❤️ in India</span>
       </footer>

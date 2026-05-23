@@ -40,7 +40,6 @@ export default function LoginPage() {
     async function handleGoogleLogin() {
         setGoogleLoading(true)
         setError('')
-        // Supabase Google OAuth
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo: `${window.location.origin}/auth/callback?intent=${mode}` }
@@ -113,363 +112,464 @@ export default function LoginPage() {
     }
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #080818 0%, #1a0b3b 50%, #0c1445 100%)',
-            display: 'flex',
-            fontFamily: "'Inter','DM Sans','Segoe UI',sans-serif",
-            position: 'relative',
-            overflow: 'hidden'
-        }}>
-
+        <div className="login-container">
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
                 
-                @media (max-width: 767px) {
-                    .left-panel { display: none !important; }
+                * { box-sizing: border-box; }
+                
+                .login-container {
+                    display: flex;
+                    min-height: 100vh;
+                    width: 100vw;
+                    font-family: 'Inter', sans-serif;
+                    background: #ffffff;
+                    overflow-x: hidden;
+                    overflow-y: auto;
+                }
+
+                /* ANIMATIONS */
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-10px); }
                 }
                 
-                .login-orb1 {
-                    position: absolute; width: 500px; height: 500px; border-radius: 50%;
-                    background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%);
-                    top: -150px; left: -100px; pointer-events: none;
-                    animation: float1 10s ease-in-out infinite;
+                .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+                .animate-slide-up-1 { opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards; }
+                .animate-slide-up-2 { opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; }
+                .animate-slide-up-3 { opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; }
+                .animate-slide-up-4 { opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards; }
+                .animate-slide-up-5 { opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards; }
+
+                /* LEFT PANEL */
+                .left-panel {
+                    flex: 1.2;
+                    position: relative;
+                    background: url('/login-illustration.png') center/cover no-repeat;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    padding: 60px;
+                    color: white;
                 }
-                .login-orb2 {
-                    position: absolute; width: 400px; height: 400px; border-radius: 50%;
-                    background: radial-gradient(circle, rgba(6,182,212,0.2) 0%, transparent 70%);
-                    bottom: -100px; right: 30vw; pointer-events: none;
-                    animation: float2 12s ease-in-out infinite;
+
+                .left-overlay {
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(124, 58, 237, 0.45) 100%);
+                    z-index: 1;
                 }
                 
-                @keyframes float1 { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-30px) scale(1.05)} }
-                @keyframes float2 { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(24px) scale(0.97)} }
+                .left-content {
+                    position: relative;
+                    z-index: 2;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                }
+
+                .glass-card {
+                    background: rgba(255, 255, 255, 0.08);
+                    backdrop-filter: blur(24px);
+                    -webkit-backdrop-filter: blur(24px);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 32px;
+                    padding: 48px;
+                    max-width: 520px;
+                    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.3);
+                    animation: float 6s ease-in-out infinite;
+                }
                 
-                .glass-feat {
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.08);
+                .brand-title {
+                    font-family: 'Outfit', sans-serif;
+                    font-size: 52px;
+                    font-weight: 800;
+                    line-height: 1.1;
+                    margin-bottom: 20px;
+                    background: linear-gradient(135deg, #ffffff, #e2e8f0);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+
+                .brand-subtitle {
+                    font-size: 17px;
+                    color: rgba(255, 255, 255, 0.85);
+                    line-height: 1.6;
+                    font-weight: 400;
+                }
+
+                .feature-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 12px;
+                    background: rgba(255, 255, 255, 0.15);
+                    padding: 12px 24px;
+                    border-radius: 100px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    margin-top: 32px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    transition: transform 0.3s, background 0.3s, box-shadow 0.3s;
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+                }
+                .feature-pill:hover {
+                    transform: translateY(-4px);
+                    background: rgba(255, 255, 255, 0.25);
+                    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+                }
+
+                /* RIGHT PANEL */
+                .right-panel {
+                    flex: 1;
+                    background: #ffffff;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 40px;
+                    position: relative;
+                }
+                
+                .form-wrapper {
+                    width: 100%;
+                    max-width: 440px;
+                }
+
+                .form-header {
+                    margin-bottom: 40px;
+                }
+                .form-header h2 {
+                    font-family: 'Outfit', sans-serif;
+                    font-size: 40px;
+                    font-weight: 800;
+                    color: #0f172a;
+                    margin: 0 0 10px 0;
+                    letter-spacing: -1px;
+                }
+                .form-header p {
+                    font-size: 16px;
+                    color: #64748b;
+                    margin: 0;
+                    line-height: 1.5;
+                }
+
+                /* INPUTS */
+                .input-group {
+                    margin-bottom: 24px;
+                    position: relative;
+                }
+                .input-group label {
+                    display: block;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #475569;
+                    margin-bottom: 8px;
+                    transition: color 0.2s;
+                }
+                .input-group input {
+                    width: 100%;
+                    padding: 16px 20px;
+                    border: 2px solid #e2e8f0;
                     border-radius: 16px;
+                    font-size: 15px;
+                    font-weight: 500;
+                    font-family: inherit;
+                    color: #0f172a;
+                    background: #f8fafc;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    outline: none;
+                }
+                .input-group input::placeholder { color: #94a3b8; font-weight: 400; }
+                .input-group input:hover { border-color: #cbd5e1; background: #f1f5f9; }
+                .input-group input:focus {
+                    background: #ffffff;
+                    border-color: #7c3aed;
+                    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+                }
+                .input-group:focus-within label { color: #7c3aed; }
+
+                /* BUTTONS */
+                .btn-submit {
+                    width: 100%;
+                    padding: 18px;
+                    border-radius: 16px;
+                    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+                    color: white;
+                    font-size: 16px;
+                    font-weight: 700;
+                    border: none;
+                    cursor: pointer;
+                    box-shadow: 0 10px 24px rgba(124, 58, 237, 0.25);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    overflow: hidden;
+                    margin-top: 12px;
+                }
+                .btn-submit::before {
+                    content: '';
+                    position: absolute;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+                .btn-submit:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.35);
+                }
+                .btn-submit:hover::before { opacity: 1; }
+                .btn-submit:active { transform: translateY(0); box-shadow: 0 8px 16px rgba(124, 58, 237, 0.2); }
+                .btn-submit:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                    transform: none;
+                    box-shadow: none;
+                }
+
+                .btn-google {
+                    width: 100%;
                     padding: 16px;
+                    border-radius: 16px;
+                    background: #ffffff;
+                    color: #0f172a;
+                    font-size: 15px;
+                    font-weight: 600;
+                    border: 2px solid #e2e8f0;
+                    cursor: pointer;
                     display: flex;
                     align-items: center;
-                    gap: 16px;
-                    backdrop-filter: blur(10px);
-                    transition: transform 0.2s, background 0.2s;
+                    justify-content: center;
+                    gap: 12px;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    margin-bottom: 32px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
                 }
-                .glass-feat:hover {
-                    transform: translateX(5px);
-                    background: rgba(255,255,255,0.06);
-                    border-color: rgba(124,58,237,0.3);
+                .btn-google:hover {
+                    background: #f8fafc;
+                    border-color: #cbd5e1;
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+                }
+                .btn-google:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+
+                /* DIVIDER */
+                .divider {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 32px;
+                }
+                .divider-line { flex: 1; height: 1px; background: #e2e8f0; }
+                .divider-text { padding: 0 16px; color: #94a3b8; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+                /* TABS */
+                .tab-container {
+                    display: flex;
+                    background: #f1f5f9;
+                    padding: 6px;
+                    border-radius: 16px;
+                    margin-bottom: 32px;
+                    position: relative;
+                }
+                .tab-btn {
+                    flex: 1;
+                    padding: 12px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    border: none;
+                    background: transparent;
+                    color: #64748b;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    z-index: 2;
+                }
+                .tab-btn.active { color: #0f172a; }
+                
+                .tab-highlight {
+                    position: absolute;
+                    top: 6px; bottom: 6px;
+                    width: calc(50% - 6px);
+                    background: #ffffff;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                    z-index: 1;
+                }
+                .mode-login .tab-highlight { transform: translateX(0); }
+                .mode-register .tab-highlight { transform: translateX(100%); }
+
+                /* ALERTS */
+                .alert {
+                    padding: 16px;
+                    border-radius: 16px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    margin-bottom: 24px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    animation: fadeInUp 0.4s ease-out;
+                }
+                .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #ef4444; }
+                .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #22c55e; }
+
+                /* RESPONSIVE */
+                @media (max-width: 992px) {
+                    .login-container { flex-direction: column; }
+                    .left-panel {
+                        flex: none; min-height: 320px; padding: 40px 24px;
+                        align-items: center; text-align: center;
+                    }
+                    .glass-card { display: none; }
+                    .left-content > div:last-child { display: none; }
+                    .left-content { justify-content: center; width: 100%; }
+                    .left-content img { height: 48px !important; margin: 0 auto; }
+                    
+                    .right-panel {
+                        flex: 1;
+                        padding: 40px 24px;
+                        border-radius: 32px 32px 0 0;
+                        margin-top: -40px;
+                        z-index: 10;
+                        box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+                        justify-content: flex-start;
+                    }
+                    .form-header h2 { font-size: 32px; }
+                }
+
+                @media (max-width: 480px) {
+                    .left-panel { min-height: 260px; padding: 30px 20px; }
+                    .right-panel { padding: 32px 20px; margin-top: -30px; border-radius: 24px 24px 0 0; }
+                    .form-header h2 { font-size: 28px; }
+                    .form-header p { font-size: 14px; }
+                    .input-group input { padding: 14px 16px; font-size: 14px; }
+                    .btn-submit { padding: 16px; font-size: 15px; }
                 }
             `}</style>
-            
-            <div className="login-orb1" />
-            <div className="login-orb2" />
 
-            {/* ── Left panel — branding ── */}
-            <div className="left-panel" style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                padding: '60px',
-                position: 'relative',
-                zIndex: 10
-            }}>
-                <div style={{ marginBottom: '28px', cursor: 'pointer' }} onClick={() => router.push('/')}>
-                    <img src="/logo.svg" alt="TokenPe Logo" style={{ height: '56px', width: 'auto' }} />
-                </div>
-                <h1 style={{ fontSize: '42px', fontWeight: 900, color: '#fff', letterSpacing: '-1.5px', lineHeight: 1.1, marginBottom: 16 }}>
-                    Welcome to the<br/>
-                    <span style={{ background: 'linear-gradient(135deg, #7C3AED, #06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        future of queues.
-                    </span>
-                </h1>
-                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', fontWeight: 400, maxWidth: 400, lineHeight: 1.7 }}>
-                    Digital OPD queue management for modern clinics. No crowding. No confusion. Just better patient care.
-                </div>
-
-                {/* Feature list */}
-                <div style={{ marginTop: 48, display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 400 }}>
-                    {[
-                        ['🎙️', 'Voice updates in 10 Indian languages'],
-                        ['💬', 'Patients join via WhatsApp — zero app needed'],
-                        ['⚡', 'Real-time live queue dashboard'],
-                    ].map(([icon, text]) => (
-                        <div key={text} className="glass-feat">
-                            <div style={{
-                                width: 42, height: 42, borderRadius: 12,
-                                background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(79,70,229,0.2))',
-                                border: '1px solid rgba(124,58,237,0.3)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 20, flexShrink: 0, boxShadow: '0 4px 12px rgba(124,58,237,0.2)'
-                            }}>{icon}</div>
-                            <div style={{ fontSize: 15, color: '#e2e8f0', fontWeight: 500, lineHeight: 1.4 }}>{text}</div>
+            {/* LEFT PANEL */}
+            <div className="left-panel animate-fade-in">
+                <div className="left-overlay"></div>
+                <div className="left-content">
+                    <div style={{ cursor: 'pointer', display: 'inline-block' }} onClick={() => router.push('/')}>
+                        <img src="/logo.svg" alt="TokenPe" style={{ height: 44, filter: 'brightness(0) invert(1)' }} />
+                    </div>
+                    
+                    <div className="glass-card">
+                        <h1 className="brand-title">Queue smarter,<br/>not harder.</h1>
+                        <p className="brand-subtitle">
+                            Transform your clinic's waiting room into a seamless digital experience. 
+                            Zero apps for patients, real-time updates in 10 languages.
+                        </p>
+                        <div className="feature-pill">
+                            <span style={{ fontSize: 18 }}>✨</span>
+                            Over 1M+ Patients Served
                         </div>
-                    ))}
-                </div>
-
-                <div style={{ marginTop: 60, fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>
-                    Made with ❤️ in India · TokenPe © 2026
+                    </div>
+                    
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
+                        © 2026 TokenPe Technologies · Made with ❤️ in India
+                    </div>
                 </div>
             </div>
 
-            {/* ── Right panel — form ── */}
-            <div style={{
-                width: '100%',
-                maxWidth: 520,
-                background: '#ffffff',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                padding: '48px 48px',
-                position: 'relative',
-                zIndex: 10,
-                boxShadow: '-20px 0 60px rgba(0,0,0,0.3)'
-            }}>
-
-                {/* Header */}
-                <div style={{ marginBottom: 32 }}>
-                    <div style={{ fontSize: 28, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.5px' }}>
-                        {mode === 'login' ? 'Welcome back' : 'Register clinic'}
+            {/* RIGHT PANEL */}
+            <div className="right-panel">
+                <div className="form-wrapper">
+                    <div className="form-header animate-slide-up-1">
+                        <h2>{mode === 'login' ? 'Welcome back' : 'Create account'}</h2>
+                        <p>{mode === 'login' ? 'Sign in to access your clinic dashboard.' : 'Start managing your queue digitally in 2 minutes.'}</p>
                     </div>
-                    <div style={{ fontSize: 15, color: '#64748B', marginTop: 6 }}>
-                        {mode === 'login'
-                            ? 'Sign in to access your TokenPe console'
-                            : 'Get your digital queue running in 2 mins'}
-                    </div>
-                </div>
 
-                {/* Google Sign In */}
-                <button
-                    onClick={handleGoogleLogin}
-                    disabled={googleLoading}
-                    style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        border: '1px solid #E2E8F0',
-                        borderRadius: 12,
-                        background: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 12,
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: '#0F172A',
-                        cursor: 'pointer',
-                        marginBottom: 24,
-                        transition: 'all 0.2s',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                    }}
-                    onMouseOver={(e) => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
-                    onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
-                >
-                    {/* Google icon SVG */}
-                    <svg width="20" height="20" viewBox="0 0 18 18">
-                        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
-                        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
-                        <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
-                        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" />
-                    </svg>
-                    {googleLoading ? 'Redirecting...' : 'Continue with Google'}
-                </button>
-
-                {/* Divider */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-                    <div style={{ flex: 1, height: 1, background: '#F1F5F9' }} />
-                    <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>or</div>
-                    <div style={{ flex: 1, height: 1, background: '#F1F5F9' }} />
-                </div>
-
-                {/* Tab toggle */}
-                <div style={{
-                    display: 'flex',
-                    background: '#F8FAFC',
-                    borderRadius: 12,
-                    padding: 4,
-                    marginBottom: 28,
-                    border: '1px solid #F1F5F9'
-                }}>
-                    {['login', 'register'].map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => { setMode(tab); setError(''); setSuccess('') }}
-                            style={{
-                                flex: 1, padding: '10px',
-                                border: 'none', borderRadius: 8,
-                                fontSize: 14, fontWeight: 700,
-                                cursor: 'pointer', transition: 'all 0.2s',
-                                background: mode === tab ? '#fff' : 'transparent',
-                                color: mode === tab ? '#7C3AED' : '#64748B',
-                                boxShadow: mode === tab ? '0 2px 8px rgba(0,0,0,0.06)' : 'none'
-                            }}
-                        >
-                            {tab === 'login' ? 'Login with Code' : 'New Clinic'}
+                    <div className="animate-slide-up-2">
+                        <button className="btn-google" onClick={handleGoogleLogin} disabled={googleLoading}>
+                            <svg width="22" height="22" viewBox="0 0 18 18">
+                                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
+                                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
+                                <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
+                                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" />
+                            </svg>
+                            {googleLoading ? 'Redirecting...' : 'Continue with Google'}
                         </button>
-                    ))}
-                </div>
 
-                {/* Error */}
-                {error && (
-                    <div style={{
-                        background: '#FFF1F2', border: '1px solid #FECDD3',
-                        borderRadius: 12, padding: '12px 16px',
-                        fontSize: 14, color: '#BE123C', marginBottom: 20,
-                        fontWeight: 500, display: 'flex', gap: 8, alignItems: 'flex-start'
-                    }}>
-                        <span>⚠️</span>
-                        <span>{error}</span>
+                        <div className="divider">
+                            <div className="divider-line"></div>
+                            <div className="divider-text">or</div>
+                            <div className="divider-line"></div>
+                        </div>
+
+                        <div className={`tab-container mode-${mode}`}>
+                            <div className="tab-highlight"></div>
+                            <button className={`tab-btn ${mode === 'login' ? 'active' : ''}`} onClick={() => { setMode('login'); setError(''); setSuccess(''); }}>Login</button>
+                            <button className={`tab-btn ${mode === 'register' ? 'active' : ''}`} onClick={() => { setMode('register'); setError(''); setSuccess(''); }}>Register</button>
+                        </div>
+
+                        {error && (
+                            <div className="alert alert-error">
+                                <span>⚠️</span>
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        {success && (
+                            <div className="alert alert-success">
+                                <span>✅</span>
+                                <span>{success}</span>
+                            </div>
+                        )}
                     </div>
-                )}
 
-                {/* Success */}
-                {success && (
-                    <div style={{
-                        background: '#F0FDF4', border: '1px solid #BBF7D0',
-                        borderRadius: 12, padding: '12px 16px',
-                        fontSize: 14, color: '#15803D', marginBottom: 20,
-                        fontWeight: 600, display: 'flex', gap: 8, alignItems: 'flex-start'
-                    }}>
-                        <span>✅</span>
-                        <span>{success}</span>
-                    </div>
-                )}
-
-                {/* LOGIN FORM */}
-                {mode === 'login' && (
-                    <form onSubmit={handleLogin}>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={labelStyle}>Clinic Code</label>
-                            <input
-                                value={loginCode}
-                                onChange={e => setLoginCode(e.target.value)}
-                                placeholder="e.g. SHARMA001"
-                                required
-                                style={inputStyle}
-                            />
-                        </div>
-                        <div style={{ marginBottom: 28 }}>
-                            <label style={labelStyle}>Registered Phone</label>
-                            <input
-                                value={loginPhone}
-                                onChange={e => setLoginPhone(e.target.value)}
-                                placeholder="9876543210"
-                                required
-                                type="tel"
-                                style={inputStyle}
-                            />
-                        </div>
-                        <button type="submit" disabled={loading} className="btn-primary" style={btnPrimaryStyle}>
-                            {loading ? 'Signing in...' : 'Sign in to Console →'}
-                        </button>
-                    </form>
-                )}
-
-                {/* REGISTER FORM */}
-                {mode === 'register' && (
-                    <form onSubmit={handleRegister}>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={labelStyle}>Clinic Name *</label>
-                            <input
-                                value={regName}
-                                onChange={e => {
-                                    setRegName(e.target.value)
-                                    if (!regCode) setRegCode(generateCode(e.target.value))
-                                }}
-                                placeholder="Dr. Sharma Clinic"
-                                required
-                                style={inputStyle}
-                            />
-                        </div>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={labelStyle}>Phone Number *</label>
-                            <input
-                                value={regPhone}
-                                onChange={e => setRegPhone(e.target.value)}
-                                placeholder="9876543210"
-                                required
-                                type="tel"
-                                style={inputStyle}
-                            />
-                        </div>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={labelStyle}>Email (optional)</label>
-                            <input
-                                value={regEmail}
-                                onChange={e => setRegEmail(e.target.value)}
-                                placeholder="doctor@gmail.com"
-                                type="email"
-                                style={inputStyle}
-                            />
-                        </div>
-                        <div style={{ marginBottom: 28 }}>
-                            <label style={labelStyle}>
-                                Clinic Code
-                                <span style={{ color: '#94A3B8', fontWeight: 400, marginLeft: 6 }}>
-                                    (auto-generated, you can edit)
-                                </span>
-                            </label>
-                            <input
-                                value={regCode}
-                                onChange={e => setRegCode(e.target.value.toUpperCase())}
-                                placeholder="SHARMA001"
-                                style={{ ...inputStyle, fontFamily: 'monospace', letterSpacing: 1.5, background: '#F8FAFC', color: '#7C3AED', fontWeight: 700 }}
-                            />
-                        </div>
-                        <button type="submit" disabled={loading} className="btn-primary" style={btnPrimaryStyle}>
-                            {loading ? 'Creating account...' : 'Create Clinic Account →'}
-                        </button>
-                    </form>
-                )}
-
-                {/* Subscription hint — for later */}
-                <div style={{
-                    marginTop: 36,
-                    padding: '16px',
-                    background: 'linear-gradient(135deg, #F8FAFC, #F1F5F9)',
-                    borderRadius: 16,
-                    border: '1px solid #E2E8F0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14
-                }}>
-                    <div style={{ width: 36, height: 36, background: 'white', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: 18 }}>✨</div>
-                    <div>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>Growth plan coming soon</div>
-                        <div style={{ fontSize: 12, color: '#64748B', marginTop: 2, fontWeight: 500 }}>
-                            Patient history · Multi-queue support · Analytics
-                        </div>
+                    <div className="animate-slide-up-3">
+                        {mode === 'login' ? (
+                            <form onSubmit={handleLogin}>
+                                <div className="input-group">
+                                    <label>Clinic Code</label>
+                                    <input value={loginCode} onChange={e => setLoginCode(e.target.value)} placeholder="e.g. SHARMA001" required />
+                                </div>
+                                <div className="input-group">
+                                    <label>Registered Phone</label>
+                                    <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" />
+                                </div>
+                                <button type="submit" disabled={loading} className="btn-submit">
+                                    {loading ? 'Signing in...' : 'Sign In to Console'}
+                                </button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleRegister}>
+                                <div className="input-group">
+                                    <label>Clinic Name <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input value={regName} onChange={e => { setRegName(e.target.value); if (!regCode) setRegCode(generateCode(e.target.value)); }} placeholder="Dr. Sharma Clinic" required />
+                                </div>
+                                <div className="input-group">
+                                    <label>Phone Number <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="9876543210" required type="tel" />
+                                </div>
+                                <div className="input-group">
+                                    <label>Email <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span></label>
+                                    <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" />
+                                </div>
+                                <div className="input-group">
+                                    <label>Clinic Code <span style={{ color: '#94a3b8', fontWeight: 400 }}>(auto-generated)</span></label>
+                                    <input value={regCode} onChange={e => setRegCode(e.target.value.toUpperCase())} placeholder="SHARMA001" style={{ fontFamily: 'monospace', letterSpacing: 1, color: '#7c3aed', fontWeight: 700 }} />
+                                </div>
+                                <button type="submit" disabled={loading} className="btn-submit">
+                                    {loading ? 'Creating account...' : 'Create Account'}
+                                </button>
+                            </form>
+                        )}
                     </div>
                 </div>
-
             </div>
         </div>
     )
 }
-
-const labelStyle = {
-    fontSize: 13, fontWeight: 700, color: '#334155',
-    display: 'block', marginBottom: 8
-}
-
-const inputStyle = {
-    width: '100%', padding: '14px 16px',
-    border: '1px solid #E2E8F0', borderRadius: 12,
-    fontSize: 15, outline: 'none',
-    boxSizing: 'border-box',
-    fontFamily: "'Inter','DM Sans','Segoe UI',sans-serif",
-    color: '#0F172A', background: '#fff',
-    transition: 'all 0.2s',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-}
-
-const btnPrimaryStyle = {
-    width: '100%', padding: '16px',
-    background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
-    color: 'white', border: 'none', borderRadius: 12,
-    fontSize: 15, fontWeight: 800, cursor: 'pointer',
-    letterSpacing: '0.2px',
-    boxShadow: '0 8px 24px rgba(124,58,237,0.3)',
-    transition: 'transform 0.2s, box-shadow 0.2s'
-}

@@ -82,9 +82,23 @@ export default function LoginPage() {
             return
         }
 
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(data))
-        localStorage.setItem('clinicCode', data.code)
-        localStorage.setItem('clinicPhone', data.phone)
+        // Generate a new clinic code on each login (invalidates old QR)
+        const newCode = generateCode(data.name)
+        const { data: updated, error: updateErr } = await supabase
+            .from('clinics')
+            .update({ code: newCode })
+            .eq('id', data.id)
+            .select().single()
+
+        if (updateErr || !updated) {
+            setError('Something went wrong. Please try again.')
+            setLoading(false)
+            return
+        }
+
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(updated))
+        localStorage.setItem('clinicCode', updated.code)
+        localStorage.setItem('clinicPhone', updated.phone)
         router.push('/dashboard')
     }
 

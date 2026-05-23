@@ -191,10 +191,15 @@ export default function Dashboard() {
             .from('clinics').select('*').eq('email', user.email).single()
 
           if (clinicData && !clinicError) {
-            localStorage.setItem('clinicCode', clinicData.code)
-            localStorage.setItem('clinicPhone', clinicData.phone)
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(clinicData))
-            clinicCode = clinicData.code
+            // Generate new clinic code on each login (invalidates old QR)
+            const newCode = clinicData.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7) + (Math.floor(Math.random() * 900) + 100)
+            const { data: updated } = await supabase
+              .from('clinics').update({ code: newCode }).eq('id', clinicData.id).select().single()
+            const finalClinic = updated || clinicData
+            localStorage.setItem('clinicCode', finalClinic.code)
+            localStorage.setItem('clinicPhone', finalClinic.phone)
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinic))
+            clinicCode = finalClinic.code
           } else {
             // Logged into Google, but email does not exist as a clinic in the clinics table
             await supabase.auth.signOut()

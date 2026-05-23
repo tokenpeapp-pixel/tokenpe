@@ -2,7 +2,7 @@
 // Called by dashboard "Call Next" button
 // Sends your-turn + 10-away + 5-away alerts via Interakt text + Sarvam voice — all in parallel
 
-import { supabase } from '../../../../lib/supabase'
+import { supabase, getISTDateString } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 
 // ── Message text for each event ──────────────────────────────────────────────
@@ -59,7 +59,7 @@ export async function POST(req) {
             language
         } = await req.json()
 
-        const today = new Date().toISOString().split('T')[0]
+        const today = getISTDateString()
         const phone = cleanPhone(patientPhone)
 
         // 1. Mark patient as CALLED in Supabase + fetch waiting list — in parallel

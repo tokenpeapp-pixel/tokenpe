@@ -2,7 +2,7 @@
 // Handles: join action (from Interakt Flow webhook)
 // Also handles: callnext action (from dashboard)
 
-import { supabase } from '../../../lib/supabase'
+import { supabase, getISTDateString } from '../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../lib/messaging'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -44,7 +44,7 @@ export async function POST(req) {
                 name: `PAYLOAD: ${JSON.stringify(body)}`.slice(0, 255),
                 language: 'en',
                 status: 'skipped', // skipped so it doesn't clutter dashboard
-                date: new Date().toISOString().split('T')[0],
+                date: getISTDateString(),
                 joined_at: new Date().toISOString()
             })
         } catch (logErr) {
@@ -137,7 +137,7 @@ export async function POST(req) {
             }
 
             // 2. Count patients in queue today
-            const today = new Date().toISOString().split('T')[0]
+            const today = getISTDateString()
             const { count } = await supabase
                 .from('patients')
                 .select('*', { count: 'exact', head: true })

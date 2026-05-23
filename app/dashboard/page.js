@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
 
 // ─── SOUNDS ────────────────────────────────────────────────────────────────
 function useSounds() {
@@ -96,7 +96,9 @@ function QRModal({ clinic, onClose }) {
         hr{border:none;border-top:1px solid #f1f5f9;margin:18px 0}
         .how{font-size:13px;font-weight:700;color:#1e293b}
         .steps{font-size:11px;color:#64748b;margin-top:8px;line-height:2}
-        .code{font-size:10px;color:#cbd5e1;margin-top:16px;letter-spacing:1px}
+        .code-box{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:10px;padding:8px 16px;margin-top:16px}
+        .code-label{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px}
+        .code-val{font-size:15px;font-weight:800;color:#0F4C75;font-family:monospace;letter-spacing:1px}
       </style>
       </head><body>
       <div class="card">
@@ -113,7 +115,10 @@ function QRModal({ clinic, onClose }) {
           2. Scan this QR code with camera<br/>
           3. Tap Send — get your token instantly
         </div>
-        <div class="code">Clinic Code: ${clinic?.code}</div>
+        <div class="code-box">
+          <span class="code-label">Clinic Code:</span>
+          <span class="code-val">${clinic?.code}</span>
+        </div>
       </div>
       </body></html>
     `)
@@ -141,7 +146,10 @@ function QRModal({ clinic, onClose }) {
             3. Pick language → get token + voice note 🎙️
           </div>
         </div>
-        <div style={{ fontSize: 10, color: '#cbd5e1', letterSpacing: 1, marginBottom: 20 }}>CLINIC CODE: {clinic?.code}</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#f8fafc', border: '1.5px dashed #e2e8f0', borderRadius: 10, padding: '8px 16px', marginBottom: 20 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>Clinic Code:</span>
+          <span style={{ fontSize: 16, fontWeight: 800, color: '#0F4C75', fontFamily: 'monospace', letterSpacing: 1 }}>{clinic?.code}</span>
+        </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={download} disabled={downloading} style={{ flex: 1, padding: '12px 0', background: '#0F4C75', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
             {downloaded ? '✅ Saved!' : downloading ? 'Saving...' : '⬇️ Download PNG'}
@@ -164,9 +172,8 @@ export default function Dashboard() {
   const [toasts, setToasts] = useState([])
   const [newPatientAlert, setNewPatientAlert] = useState(null)
   const [activeTab, setActiveTab] = useState('active')
-  const [historyDate, setHistoryDate] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0];
-  })
+  const [currentDate, setCurrentDate] = useState(() => getISTDateString())
+  const [historyDate, setHistoryDate] = useState(() => getISTYesterdayDateString())
   const [historyPatients, setHistoryPatients] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -179,7 +186,7 @@ export default function Dashboard() {
 
   // ── Load clinic from session (multi-clinic support) ─────────────────────
   useEffect(() => {
-    async function load() {
+    async function loadClinic() {
       // Get clinic code from localStorage (set during login)
       let clinicCode = localStorage.getItem('clinicCode')
 
@@ -226,19 +233,26 @@ export default function Dashboard() {
       }
 
       setClinic(clinicData)
+    }
+    loadClinic()
+  }, [])
 
-      const today = new Date().toISOString().split('T')[0]
+  // ── Load patients when clinic or currentDate changes ───────────────────
+  useEffect(() => {
+    if (!clinic) return
+    async function loadPatients() {
+      setLoading(true)
       const { data: patientsData } = await supabase
         .from('patients').select('*')
-        .eq('clinic_id', clinicData.id)
-        .eq('date', today)
+        .eq('clinic_id', clinic.id)
+        .eq('date', currentDate)
         .order('joined_at', { ascending: true })
 
       setPatients(patientsData || [])
       setLoading(false)
     }
-    load()
-  }, [])
+    loadPatients()
+  }, [clinic, currentDate])
 
   // ── Real-time ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -250,25 +264,43 @@ export default function Dashboard() {
         filter: `clinic_id=eq.${clinic.id}`
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setPatients(prev => [...prev, payload.new])
-          sounds.newPatient()
-          setNewPatientAlert(payload.new)
-          setTimeout(() => setNewPatientAlert(null), 5000)
-          addToast(`New patient joined: ${payload.new.name || payload.new.phone} — ${payload.new.token}`, 'new')
+          if (payload.new.date === currentDate) {
+            setPatients(prev => [...prev, payload.new])
+            sounds.newPatient()
+            setNewPatientAlert(payload.new)
+            setTimeout(() => setNewPatientAlert(null), 5000)
+            addToast(`New patient joined: ${payload.new.name || payload.new.phone} — ${payload.new.token}`, 'new')
+          }
         }
         if (payload.eventType === 'UPDATE') {
-          setPatients(prev => prev.map(p => p.id === payload.new.id ? payload.new : p))
+          if (payload.new.date === currentDate) {
+            setPatients(prev => {
+              const exists = prev.some(p => p.id === payload.new.id)
+              if (exists) {
+                return prev.map(p => p.id === payload.new.id ? payload.new : p)
+              } else {
+                return [...prev, payload.new]
+              }
+            })
+          }
         }
       })
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [clinic])
+  }, [clinic, currentDate])
 
-  // ── Clock ───────────────────────────────────────────────────────────────
+  // ── Clock & Date Check ──────────────────────────────────────────────────
   useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000)
+    const t = setInterval(() => {
+      const now = new Date()
+      setTime(now)
+      const todayStr = getISTDateString()
+      if (todayStr !== currentDate) {
+        setCurrentDate(todayStr)
+      }
+    }, 1000)
     return () => clearInterval(t)
-  }, [])
+  }, [currentDate])
 
   // ── Fetch History ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -384,7 +416,7 @@ export default function Dashboard() {
   async function addWalkIn() {
     if (!newPhone.trim()) return
     const token = `T${String(patients.length + 1).padStart(3, '0')}`
-    const today = new Date().toISOString().split('T')[0]
+    const today = getISTDateString()
     await supabase.from('patients').insert({
       clinic_id: clinic.id, token,
       name: newName.trim() || null,
@@ -393,6 +425,7 @@ export default function Dashboard() {
       status: STATUS.WAITING,
       amount_paid: 0,
       date: today,
+      joined_at: new Date().toISOString(),
     })
     setNewName(''); setNewPhone(''); setNewLang('hi')
     setShowAddForm(false)

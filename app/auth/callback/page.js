@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '../../../lib/supabase'
+import { supabase, getISTDateString } from '../../../lib/supabase'
 
 function AuthCallbackContent() {
     const router = useRouter()
@@ -34,7 +34,7 @@ function AuthCallbackContent() {
                     // Generate a daily code based on date so it changes every day upon login
                     const baseName = clinicData.name || user.user_metadata?.full_name || user.email.split('@')[0]
                     const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
-                    const todayStr = new Date().toISOString().split('T')[0]
+                    const todayStr = getISTDateString()
                     
                     // Simple deterministic hash for the day
                     const strToHash = clinicData.id + todayStr
@@ -85,7 +85,7 @@ function AuthCallbackContent() {
                     // Generate a clinic code from their name or email
                     const baseName = user.user_metadata?.full_name || user.email.split('@')[0]
                     const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
-                    const todayStr = new Date().toISOString().split('T')[0]
+                    const todayStr = getISTDateString()
                     const strToHash = user.email + todayStr // use email as ID proxy for first time
                     let hash = 0
                     for (let i = 0; i < strToHash.length; i++) {

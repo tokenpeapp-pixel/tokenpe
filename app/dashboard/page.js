@@ -435,24 +435,27 @@ export default function Dashboard() {
       {/* ── Header ── */}
       <header style={s.header}>
         <div style={s.headerLeft}>
-          <img src="/logo.svg" alt="TokenPe Logo" style={{ height: '42px', width: 'auto', marginRight: '14px' }} />
-          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '500', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Clinic Console</div>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: '#FFFFFF' }}>{clinic?.name}</div>
+          <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: '38px', width: 'auto' }} />
+          <div style={{ borderLeft: '1px solid #E2E8F0', paddingLeft: '14px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#94A3B8', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Clinic Console</div>
+            <div style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.3px' }}>{clinic?.name}</div>
           </div>
         </div>
         <div style={s.headerCenter}>
-          <div style={s.statPill}>
+          <div style={{ ...s.statPill, background: '#FFF7ED', border: '1px solid #FED7AA' }}>
             <span style={{ ...s.dot, background: '#F97316' }} />
-            <strong>{waiting.length}</strong>&nbsp;Waiting
+            <span style={{ color: '#C2410C', fontWeight: 700 }}>{waiting.length}</span>
+            <span style={{ color: '#94A3B8', fontSize: '0.78rem' }}>Waiting</span>
           </div>
-          <div style={s.statPill}>
+          <div style={{ ...s.statPill, background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
             <span style={{ ...s.dot, background: '#10B981' }} />
-            <strong>{called.length}</strong>&nbsp;With Doctor
+            <span style={{ color: '#059669', fontWeight: 700 }}>{called.length}</span>
+            <span style={{ color: '#94A3B8', fontSize: '0.78rem' }}>With Doctor</span>
           </div>
-          <div style={s.statPill}>
-            <span style={{ ...s.dot, background: '#38BDF8' }} />
-            <strong>{done.length}</strong>&nbsp;Done
+          <div style={{ ...s.statPill, background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+            <span style={{ ...s.dot, background: '#3B82F6' }} />
+            <span style={{ color: '#1D4ED8', fontWeight: 700 }}>{done.length}</span>
+            <span style={{ color: '#94A3B8', fontSize: '0.78rem' }}>Done</span>
           </div>
         </div>
         <div style={s.headerRight}>
@@ -615,56 +618,54 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
   )
 }
 
-// ─── STYLES ────────────────────────────────────────────────────────────────
+// ─── STYLES ──────────────────────────────────────────────────────────────────
 const s = {
-  root: { fontFamily: "'DM Sans','Segoe UI',sans-serif", background: '#F0F4F8', minHeight: '100vh', maxWidth: '980px', margin: '0 auto' },
-  loadingScreen: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' },
-  spinner: { width: 40, height: 40, border: '4px solid #E2E8F0', borderTop: '4px solid #0F4C75', borderRadius: '50%' },
-  toastContainer: { position: 'fixed', top: 16, right: 16, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8 },
-  toast: { padding: '12px 18px', borderRadius: 10, color: 'white', fontWeight: 600, fontSize: '0.88rem', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: 280 },
-  banner: { background: 'linear-gradient(135deg,#0F4C75,#1B6CA8)', color: 'white', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem' },
-  bannerDot: { width: 10, height: 10, borderRadius: '50%', background: '#4ADE80', boxShadow: '0 0 0 4px rgba(74,222,128,0.3)', flexShrink: 0 },
-  header: { background: 'linear-gradient(135deg,#0F4C75 0%,#1B6CA8 100%)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 20px rgba(15,76,117,0.3)' },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: 12 },
-  logoBox: { fontSize: '2rem' },
-  appName: { color: 'white', fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.5px' },
-  clinicSubName: { color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', marginTop: 2 },
+  root: { fontFamily: "'Inter','DM Sans','Segoe UI',sans-serif", background: '#F8FAFC', minHeight: '100vh', maxWidth: '1040px', margin: '0 auto' },
+  loadingScreen: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F8FAFC' },
+  spinner: { width: 40, height: 40, border: '3px solid #E2E8F0', borderTop: '3px solid #0F4C75', borderRadius: '50%' },
+  toastContainer: { position: 'fixed', top: 16, right: 16, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 },
+  toast: { padding: '12px 18px', borderRadius: 12, color: 'white', fontWeight: 600, fontSize: '0.85rem', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', minWidth: 260 },
+  banner: { background: '#EFF6FF', color: '#1E40AF', borderBottom: '1px solid #BFDBFE', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.88rem', fontWeight: 600 },
+  bannerDot: { width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 0 3px rgba(16,185,129,0.25)', flexShrink: 0 },
+  header: { background: '#ffffff', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 0 #E2E8F0', position: 'sticky', top: 0, zIndex: 50 },
+  headerLeft: { display: 'flex', alignItems: 'center', gap: 14 },
+  logoBox: {}, appName: {}, clinicSubName: {},
   headerCenter: { display: 'flex', gap: 8, flexWrap: 'wrap' },
-  statPill: { background: 'rgba(255,255,255,0.12)', borderRadius: 20, padding: '6px 14px', color: 'white', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: '50%', display: 'inline-block' },
-  headerRight: { display: 'flex', alignItems: 'center', gap: 12 },
-  liveBadge: { display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 12px', color: 'white', fontSize: '0.72rem', fontWeight: 700, letterSpacing: 1 },
-  liveDot: { width: 7, height: 7, borderRadius: '50%', background: '#4ADE80', display: 'inline-block' },
-  clock: { color: 'white', fontWeight: 600, fontSize: '1rem', fontVariantNumeric: 'tabular-nums' },
-  btnLogout: { background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
-  actionBar: { background: 'white', padding: '14px 24px', display: 'flex', gap: 12, alignItems: 'center', borderBottom: '1px solid #E2E8F0' },
-  btnQR: { background: '#1e293b', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' },
-  btnAdd: { background: '#0F4C75', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer' },
-  btnCall: { background: '#10B981', color: 'white', border: 'none', padding: '10px 20px', borderRadius: 8, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' },
-  btnGhost: { background: 'transparent', color: '#64748B', border: '1px solid #CBD5E1', padding: '10px 16px', borderRadius: 8, fontWeight: 500, fontSize: '0.88rem', cursor: 'pointer' },
-  btnDone: { background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', padding: '7px 14px', borderRadius: 7, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
-  btnNotify: { background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A', padding: '7px 14px', borderRadius: 7, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
-  btnSkip: { background: '#FFF1F2', color: '#9F1239', border: '1px solid #FECDD3', padding: '7px 14px', borderRadius: 7, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
-  qrHint: { marginLeft: 'auto', color: '#94A3B8', fontSize: '0.78rem', fontStyle: 'italic' },
-  addForm: { background: '#EFF6FF', borderBottom: '1px solid #BFDBFE', padding: '16px 24px' },
-  addFormTitle: { fontWeight: 700, color: '#1E40AF', marginBottom: 12, fontSize: '0.9rem' },
+  statPill: { borderRadius: 20, padding: '5px 12px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 },
+  dot: { width: 8, height: 8, borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
+  headerRight: { display: 'flex', alignItems: 'center', gap: 10 },
+  liveBadge: { display: 'flex', alignItems: 'center', gap: 5, background: '#ECFDF5', border: '1px solid #BBF7D0', borderRadius: 20, padding: '4px 12px', color: '#065F46', fontSize: '0.72rem', fontWeight: 700, letterSpacing: 1 },
+  liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block' },
+  clock: { color: '#475569', fontWeight: 600, fontSize: '0.88rem', fontVariantNumeric: 'tabular-nums' },
+  btnLogout: { background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
+  actionBar: { background: 'white', padding: '12px 24px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid #F1F5F9', flexWrap: 'wrap' },
+  btnQR: { background: '#1E293B', color: 'white', border: 'none', padding: '9px 16px', borderRadius: 8, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' },
+  btnAdd: { background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '9px 16px', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' },
+  btnCall: { background: '#10B981', color: 'white', border: 'none', padding: '9px 20px', borderRadius: 8, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(16,185,129,0.3)' },
+  btnGhost: { background: 'transparent', color: '#64748B', border: '1px solid #E2E8F0', padding: '9px 16px', borderRadius: 8, fontWeight: 500, fontSize: '0.85rem', cursor: 'pointer' },
+  btnDone: { background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', padding: '7px 14px', borderRadius: 8, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
+  btnNotify: { background: '#FFFBEB', color: '#92400E', border: '1px solid #FDE68A', padding: '7px 14px', borderRadius: 8, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
+  btnSkip: { background: '#FFF1F2', color: '#9F1239', border: '1px solid #FECDD3', padding: '7px 14px', borderRadius: 8, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' },
+  qrHint: { marginLeft: 'auto', color: '#CBD5E1', fontSize: '0.75rem', fontStyle: 'italic' },
+  addForm: { background: '#F0F9FF', borderBottom: '1px solid #BAE6FD', padding: '16px 24px' },
+  addFormTitle: { fontWeight: 700, color: '#0369A1', marginBottom: 12, fontSize: '0.88rem' },
   addFormRow: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' },
-  input: { padding: '10px 14px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: '0.9rem', flex: 1, minWidth: 160, outline: 'none', background: 'white' },
-  select: { padding: '10px 14px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: '0.9rem', background: 'white', cursor: 'pointer' },
-  tabs: { display: 'flex', padding: '16px 24px 0', background: 'white', borderBottom: '1px solid #E2E8F0', gap: 4 },
-  tab: { padding: '10px 20px', border: 'none', background: 'transparent', color: '#64748B', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', borderBottom: '3px solid transparent', borderRadius: '8px 8px 0 0' },
-  tabActive: { color: '#0F4C75', borderBottom: '3px solid #0F4C75', background: '#F0F9FF' },
-  list: { padding: '8px 16px 40px' },
-  sectionLabel: { padding: '12px 8px 6px', fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.8px' },
-  card: { background: 'white', borderRadius: 12, padding: '16px 20px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
-  token: { fontWeight: 800, fontSize: '1.1rem', minWidth: 52, textAlign: 'center' },
-  cardInfo: { flex: 1 },
-  patientName: { fontWeight: 700, color: '#0F172A', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  langBadge: { background: '#F0F9FF', color: '#0369A1', padding: '2px 8px', borderRadius: 10, fontSize: '0.72rem', fontWeight: 600 },
-  patientMeta: { fontSize: '0.78rem', color: '#94A3B8', marginTop: 4 },
-  estWait: { fontSize: '0.72rem', color: '#64748B', marginTop: 2 },
-  cardActions: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
-  doneTag: { color: '#065F46', fontWeight: 600, fontSize: '0.82rem' },
-  skipTag: { color: '#9F1239', fontWeight: 600, fontSize: '0.82rem' },
-  empty: { textAlign: 'center', padding: '60px 24px' },
+  input: { padding: '10px 14px', borderRadius: 8, border: '1.5px solid #E2E8F0', fontSize: '0.88rem', flex: 1, minWidth: 160, outline: 'none', background: 'white', color: '#0F172A' },
+  select: { padding: '10px 14px', borderRadius: 8, border: '1.5px solid #E2E8F0', fontSize: '0.88rem', background: 'white', cursor: 'pointer', color: '#0F172A' },
+  tabs: { display: 'flex', padding: '0 24px', background: 'white', borderBottom: '1px solid #F1F5F9', gap: 4 },
+  tab: { padding: '14px 20px', border: 'none', background: 'transparent', color: '#94A3B8', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', borderBottom: '2px solid transparent' },
+  tabActive: { color: '#0F4C75', borderBottom: '2px solid #0F4C75', background: 'transparent' },
+  list: { padding: '12px 16px 60px' },
+  sectionLabel: { padding: '14px 8px 6px', fontSize: '0.7rem', fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '1px' },
+  card: { background: 'white', borderRadius: 14, padding: '16px 20px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #F1F5F9' },
+  token: { fontWeight: 800, fontSize: '1.05rem', minWidth: 54, textAlign: 'center', letterSpacing: '-0.5px', fontVariantNumeric: 'tabular-nums' },
+  cardInfo: { flex: 1, minWidth: 0 },
+  patientName: { fontWeight: 700, color: '#0F172A', fontSize: '0.93rem', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  langBadge: { background: '#F0F9FF', color: '#0369A1', padding: '2px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, flexShrink: 0, border: '1px solid #BAE6FD' },
+  patientMeta: { fontSize: '0.75rem', color: '#94A3B8', marginTop: 4 },
+  estWait: { fontSize: '0.72rem', color: '#64748B', marginTop: 3, fontWeight: 500 },
+  cardActions: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 },
+  doneTag: { color: '#059669', fontWeight: 600, fontSize: '0.78rem', background: '#ECFDF5', padding: '4px 12px', borderRadius: 20, border: '1px solid #A7F3D0' },
+  skipTag: { color: '#BE123C', fontWeight: 600, fontSize: '0.78rem', background: '#FFF1F2', padding: '4px 12px', borderRadius: 20, border: '1px solid #FECDD3' },
+  empty: { textAlign: 'center', padding: '80px 24px' },
 }

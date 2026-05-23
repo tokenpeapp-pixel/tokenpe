@@ -140,14 +140,14 @@ export default function LoginPage() {
     }
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", overflow: 'hidden' }}>
+        <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", overflow: 'hidden' }} suppressHydrationWarning={true}>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
                 * { box-sizing: border-box; margin: 0; padding: 0; }
 
                 .left-panel {
                     width: 42%;
-                    background: linear-gradient(160deg, #0d2d3f 0%, #0a2233 60%, #071a28 100%);
+                    background: linear-gradient(160deg, #1a0b3b 0%, #0f0a2a 60%, #080818 100%);
                     display: flex;
                     flex-direction: column;
                     justify-content: space-between;
@@ -162,7 +162,7 @@ export default function LoginPage() {
                     top: -120px; right: -120px;
                     width: 380px; height: 380px;
                     border-radius: 50%;
-                    background: radial-gradient(circle, rgba(0,200,180,0.12) 0%, transparent 70%);
+                    background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%);
                     pointer-events: none;
                 }
                 .left-panel::after {
@@ -171,35 +171,30 @@ export default function LoginPage() {
                     bottom: -80px; left: -80px;
                     width: 300px; height: 300px;
                     border-radius: 50%;
-                    background: radial-gradient(circle, rgba(20,120,180,0.1) 0%, transparent 70%);
+                    background: radial-gradient(circle, rgba(79,70,229,0.12) 0%, transparent 70%);
                     pointer-events: none;
                 }
 
                 .logo-area {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
                     cursor: pointer;
                 }
-                .logo-icon {
-                    width: 44px; height: 44px;
-                    background: linear-gradient(135deg, #00c8b4, #0ea5e9);
-                    border-radius: 12px;
-                    display: flex; align-items: center; justify-content: center;
-                    font-size: 22px;
-                    font-weight: 900;
-                    color: white;
-                    box-shadow: 0 4px 16px rgba(0,200,180,0.35);
-                    flex-shrink: 0;
+                .logo-img {
+                    height: 48px;
+                    width: auto;
                 }
-                .logo-text { display: flex; flex-direction: column; }
-                .logo-name {
-                    font-size: 22px; font-weight: 800;
-                    background: linear-gradient(135deg, #ffffff, #a0d4e8);
-                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-                    line-height: 1.1;
+
+                .panel-divider-wave {
+                    position: absolute;
+                    top: 0;
+                    right: -1px;
+                    height: 100%;
+                    width: 45px;
+                    fill: #ffffff;
+                    pointer-events: none;
+                    z-index: 10;
                 }
-                .logo-tagline { font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 500; margin-top: 2px; }
 
                 .mid-content { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 0 20px; }
                 .mid-desc {
@@ -274,7 +269,7 @@ export default function LoginPage() {
                     display: flex; align-items: center; justify-content: center; gap: 6px;
                 }
                 .tab-btn.active {
-                    background: #0d2d3f; color: #ffffff;
+                    background: #7C3AED; color: #ffffff;
                 }
 
                 /* INPUTS */
@@ -288,16 +283,16 @@ export default function LoginPage() {
                     transition: border-color 0.2s, box-shadow 0.2s;
                 }
                 .field input::placeholder { color: #94a3b8; }
-                .field input:focus { border-color: #0d2d3f; background: #fff; box-shadow: 0 0 0 3px rgba(13,45,63,0.1); }
+                .field input:focus { border-color: #7C3AED; background: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
 
                 .btn-submit {
                     width: 100%; padding: 13px;
-                    background: #0d2d3f; color: #fff;
+                    background: linear-gradient(135deg, #7C3AED, #4F46E5); color: #fff;
                     border: none; border-radius: 10px;
                     font-size: 15px; font-weight: 700; cursor: pointer;
                     transition: all 0.2s; margin-top: 6px; font-family: inherit;
                 }
-                .btn-submit:hover { background: #0a2233; box-shadow: 0 6px 20px rgba(13,45,63,0.25); transform: translateY(-1px); }
+                .btn-submit:hover { background: linear-gradient(135deg, #6d28d9, #4338ca); box-shadow: 0 6px 20px rgba(124,58,237,0.3); transform: translateY(-1px); }
                 .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
                 .alert-error {
@@ -322,12 +317,11 @@ export default function LoginPage() {
 
             {/* LEFT PANEL */}
             <div className="left-panel">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 1000" preserveAspectRatio="none" className="panel-divider-wave">
+                    <path d="M100,0 L0,0 C30,150 70,350 40,500 C10,650 60,850 100,1000 Z" />
+                </svg>
                 <div className="logo-area" onClick={() => router.push('/')}>
-                    <div className="logo-icon">T</div>
-                    <div className="logo-text">
-                        <span className="logo-name">TokenPe</span>
-                        <span className="logo-tagline">Smart Queue. Better Care.</span>
-                    </div>
+                    <img src="/logo.svg" alt="TokenPe" className="logo-img" />
                 </div>
 
                 <div className="mid-content">
@@ -362,7 +356,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* Google */}
-                    <button className="btn-google" onClick={handleGoogleLogin} disabled={googleLoading}>
+                    <button className="btn-google" onClick={handleGoogleLogin} disabled={googleLoading} suppressHydrationWarning={true}>
                         <svg width="18" height="18" viewBox="0 0 18 18">
                             <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
                             <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
@@ -381,12 +375,14 @@ export default function LoginPage() {
                         <button
                             className={`tab-btn ${mode === 'login' ? 'active' : ''}`}
                             onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+                            suppressHydrationWarning={true}
                         >
                             🔑 Login
                         </button>
                         <button
                             className={`tab-btn ${mode === 'register' ? 'active' : ''}`}
                             onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
+                            suppressHydrationWarning={true}
                         >
                             🏥 New Clinic
                         </button>
@@ -405,13 +401,13 @@ export default function LoginPage() {
                         <form onSubmit={handleLogin}>
                             <div className="field">
                                 <label>Clinic Code</label>
-                                <input value={loginCode} onChange={e => setLoginCode(e.target.value)} placeholder="e.g. SHARMA001" required />
+                                <input value={loginCode} onChange={e => setLoginCode(e.target.value)} placeholder="e.g. SHARMA001" required suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
                                 <label>Registered Phone</label>
-                                <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" />
+                                <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
                             </div>
-                            <button type="submit" disabled={loading} className="btn-submit">
+                            <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
                                 {loading ? 'Signing in...' : 'Sign in →'}
                             </button>
                         </form>
@@ -419,21 +415,21 @@ export default function LoginPage() {
                         <form onSubmit={handleRegister}>
                             <div className="field">
                                 <label>Clinic Name *</label>
-                                <input value={regName} onChange={e => { setRegName(e.target.value); if (!regCode) setRegCode(generateCode(e.target.value)); }} placeholder="Dr. Sharma Clinic" required />
+                                <input value={regName} onChange={e => { setRegName(e.target.value); if (!regCode) setRegCode(generateCode(e.target.value)); }} placeholder="Dr. Sharma Clinic" required suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
                                 <label>Phone Number *</label>
-                                <input value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="9876543210" required type="tel" />
+                                <input value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
                                 <label>Email <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span></label>
-                                <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" />
+                                <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
                                 <label>Clinic Code <span style={{ color: '#94a3b8', fontWeight: 400 }}>(auto-generated)</span></label>
-                                <input value={regCode} onChange={e => setRegCode(e.target.value.toUpperCase())} placeholder="SHARMA001" style={{ fontFamily: 'monospace', letterSpacing: 1, color: '#0d2d3f', fontWeight: 700 }} />
+                                <input value={regCode} onChange={e => setRegCode(e.target.value.toUpperCase())} placeholder="SHARMA001" style={{ fontFamily: 'monospace', letterSpacing: 1, color: '#7C3AED', fontWeight: 700 }} suppressHydrationWarning={true} />
                             </div>
-                            <button type="submit" disabled={loading} className="btn-submit">
+                            <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
                                 {loading ? 'Creating account...' : 'Create Account →'}
                             </button>
                         </form>

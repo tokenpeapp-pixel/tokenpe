@@ -1,80 +1,13 @@
 // FILE: /app/api/queue/next/route.js
 // Called by dashboard "Call Next" button
-// Sends 10-away, 5-away, your-turn messages via Interakt + voice notes via Sarvam
+// Sends your-turn + 10-away + 5-away alerts via Interakt text + Sarvam voice — all in parallel
 
 import { supabase } from '../../../../lib/supabase'
-
-const INTERAKT_API_KEY = process.env.INTERAKT_API_KEY
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-
-// ── Clean phone number ───────────────────────────────────────────────────────
-function cleanPhone(phone) {
-    let p = String(phone).replace(/\D/g, '')
-    if (p.length === 10) p = '91' + p
-    return p
-}
-
-// ── Send FREE session text message via Interakt ──────────────────────────────
-// Works because patient messaged first (scanned QR) = 24hr window open
-async function sendInteraktText(phone, message) {
-    if (!INTERAKT_API_KEY) {
-        console.warn('[Interakt] API key not configured')
-        return
-    }
-
-    const p = cleanPhone(phone)
-    const phoneNumber = p.startsWith('91') ? p.slice(2) : p
-
-    try {
-        const res = await fetch('https://api.interakt.ai/v1/public/message/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + INTERAKT_API_KEY
-            },
-            body: JSON.stringify({
-                countryCode: '+91',
-                phoneNumber: phoneNumber,
-                callbackData: 'tokenpe_queue_alert',
-                type: 'Text',
-                data: {
-                    message: message
-                }
-            })
-        })
-        const data = await res.json()
-        console.log(`[Interakt Text] → +91${phoneNumber}:`, JSON.stringify(data))
-    } catch (err) {
-        console.error('[Interakt Text] Error:', err)
-    }
-}
-
-// ── Generate voice note via Sarvam + send via Interakt ───────────────────────
-async function sendVoiceNote({ phone, language, event, token, currentToken, clinicName }) {
-    try {
-        const res = await fetch(`${APP_URL}/api/voice`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                phone,
-                language: language || 'en',
-                event,
-                token,
-                currentToken,
-                clinicName
-            })
-        })
-        const data = await res.json()
-        console.log(`[Voice] ${event} → ${phone}:`, JSON.stringify(data))
-    } catch (err) {
-        console.error('[Voice] Error:', err)
-    }
-}
+import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 
 // ── Message text for each event ──────────────────────────────────────────────
 function getMessage(event, name, token, currentToken, clinicName) {
     switch (event) {
-
         case 'ten_away':
             return `🔔 *Heads up, ${name}!*
 
@@ -127,71 +60,49 @@ export async function POST(req) {
         } = await req.json()
 
         const today = new Date().toISOString().split('T')[0]
+        const phone = cleanPhone(patientPhone)
 
-        // 1. Mark this patient as CALLED in Supabase
-        await supabase
-            .from('patients')
-            .update({ status: 'called' })
-            .eq('id', patientId)
+        // 1. Mark patient as CALLED in Supabase + fetch waiting list — in parallel
+        const [, { data: waitingPatients }] = await Promise.all([
+            supabase.from('patients').update({ status: 'called' }).eq('id', patientId),
+            supabase.from('patients').select('*')
+                .eq('clinic_id', clinicId)
+                .eq('status', 'waiting')
+                .eq('date', today)
+                .order('joined_at', { ascending: true })
+        ])
 
-        // 2. Send MSG 4 — "Your Turn" to current patient
-        const yourTurnMsg = getMessage('your_turn', patientName || 'Patient', token, token, clinicName)
-        await sendInteraktText(patientPhone, yourTurnMsg)
+        // 2. Send "Your Turn" text + voice in parallel
+        await Promise.all([
+            sendText(phone, getMessage('your_turn', patientName || 'Patient', token, token, clinicName)),
+            sendVoice({ phone, language: language || 'en', event: 'now', token, clinicName })
+        ])
 
-        // 3. Send Voice Note 4 — "Your Turn" in patient's language
-        sendVoiceNote({
-            phone: patientPhone,
-            language: language || 'en',
-            event: 'now',
-            token,
-            currentToken: token,
-            clinicName
-        })
-
-        // 4. Get remaining WAITING patients in queue order
-        const { data: waitingPatients } = await supabase
-            .from('patients')
-            .select('*')
-            .eq('clinic_id', clinicId)
-            .eq('status', 'waiting')
-            .eq('date', today)
-            .order('joined_at', { ascending: true })
-
+        // 3. Send 10-away and 5-away alerts in parallel (fire & await together)
+        const sideAlerts = []
         if (waitingPatients && waitingPatients.length > 0) {
             waitingPatients.forEach((p, idx) => {
                 const position = idx + 1
 
-                // MSG 2 — 10 tokens away
                 if (position === 10) {
                     console.log(`[10-Away] Alerting ${p.name} (${p.token})`)
-                    const msg = getMessage('ten_away', p.name || 'Patient', p.token, token, clinicName)
-                    sendInteraktText(p.phone, msg)
-                    sendVoiceNote({
-                        phone: p.phone,
-                        language: p.language || 'en',
-                        event: 'ten_away',
-                        token: p.token,
-                        currentToken: token,
-                        clinicName
-                    })
+                    sideAlerts.push(
+                        sendText(cleanPhone(p.phone), getMessage('ten_away', p.name || 'Patient', p.token, token, clinicName)),
+                        sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'ten_away', token: p.token, currentToken: token, clinicName })
+                    )
                 }
 
-                // MSG 3 — 5 tokens away
                 if (position === 5) {
                     console.log(`[5-Away] Alerting ${p.name} (${p.token})`)
-                    const msg = getMessage('five_away', p.name || 'Patient', p.token, token, clinicName)
-                    sendInteraktText(p.phone, msg)
-                    sendVoiceNote({
-                        phone: p.phone,
-                        language: p.language || 'en',
-                        event: 'five_away',
-                        token: p.token,
-                        currentToken: token,
-                        clinicName
-                    })
+                    sideAlerts.push(
+                        sendText(cleanPhone(p.phone), getMessage('five_away', p.name || 'Patient', p.token, token, clinicName)),
+                        sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'five_away', token: p.token, currentToken: token, clinicName })
+                    )
                 }
             })
         }
+
+        if (sideAlerts.length > 0) await Promise.all(sideAlerts)
 
         return Response.json({
             success: true,

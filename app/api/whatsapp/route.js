@@ -3,62 +3,9 @@
 // Also handles: callnext action (from dashboard)
 
 import { supabase } from '../../../lib/supabase'
+import { sendText, sendVoice, cleanPhone } from '../../../lib/messaging'
 
-const INTERAKT_API_KEY = process.env.INTERAKT_API_KEY
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-
-// ── Clean phone number ───────────────────────────────────────────────────────
-function cleanPhone(phone) {
-    let p = String(phone).replace(/\D/g, '')
-    if (p.length === 10) p = '91' + p
-    return p
-}
-
-// ── Send text message via Interakt session ───────────────────────────────────
-async function sendInteraktText(phone, message) {
-    if (!INTERAKT_API_KEY) {
-        console.warn('[Interakt] ⚠️ INTERAKT_API_KEY not set in env — skipping send')
-        return
-    }
-
-    const p = cleanPhone(phone)
-    const phoneNumber = p.startsWith('91') ? p.slice(2) : p
-
-    try {
-        const res = await fetch('https://api.interakt.ai/v1/public/message/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + INTERAKT_API_KEY
-            },
-            body: JSON.stringify({
-                countryCode: '+91',
-                phoneNumber: phoneNumber,
-                callbackData: 'tokenpe_queue',
-                type: 'Text',
-                data: { message }
-            })
-        })
-        const data = await res.json()
-        console.log(`[Interakt] → +91${phoneNumber}:`, JSON.stringify(data))
-    } catch (err) {
-        console.error('[Interakt] Send error:', err)
-    }
-}
-
-// ── Send voice note via /api/voice ───────────────────────────────────────────
-async function sendVoiceNote({ phone, language, event, token, position, clinicName, baseUrl }) {
-    const appUrl = baseUrl || APP_URL
-    try {
-        await fetch(`${appUrl}/api/voice`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, language, event, token, position, clinicName })
-        })
-    } catch (err) {
-        console.error('[Voice] Error:', err)
-    }
-}
 
 // ── Resolve field with multiple possible Interakt variable names ─────────────
 // Interakt Flow variables might come as: customer_phone, phone, Phone, PHONE, etc.
@@ -201,7 +148,7 @@ export async function POST(req) {
             const tokenNumber = `T${String(position + 1).padStart(3, '0')}`
             const waitMins = position === 0 ? 'You are next!' : `${position * 7} mins`
 
-            // 3. Insert patient into queue
+            // 3. Insert patient into queue + send voice note — in parallel
             const insertPayload = {
                 clinic_id: clinic.id,
                 token: tokenNumber,
@@ -224,15 +171,14 @@ export async function POST(req) {
 
             console.log(`[Join] ✅ ${name} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
 
-            // 4. Send voice note (fire & forget)
-            sendVoiceNote({
+            // 4. Send voice note — fully awaited so Vercel doesn't kill it
+            await sendVoice({
                 phone: cleanPhone(phone),
                 language: language || 'en',
                 event: 'joined',
                 token: tokenNumber,
                 position,
-                clinicName: clinic.name,
-                baseUrl
+                clinicName: clinic.name
             })
 
             // 5. Return token info back to Interakt Flow
@@ -260,17 +206,10 @@ Thank you for your patience 🙏
 
 _Powered by TokenPe_`
 
-            await sendInteraktText(patientPhone, msg)
-
-            sendVoiceNote({
-                phone: patientPhone,
-                language: language || 'en',
-                event: 'now',
-                token,
-                position: 0,
-                clinicName,
-                baseUrl
-            })
+            await Promise.all([
+                sendText(patientPhone, msg),
+                sendVoice({ phone: patientPhone, language: language || 'en', event: 'now', token, clinicName })
+            ])
 
             return Response.json({ success: true }, { status: 200 })
         }

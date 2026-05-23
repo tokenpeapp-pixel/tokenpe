@@ -48,11 +48,13 @@ export default function LandingPage() {
         .hero-note span{margin:0 8px}
 
         /* TRUST BAR */
-        .trust{background:#0d0d20;padding:20px 32px;display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05)}
+        .trust{background:#0d0d20;padding:20px 32px 30px;display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.05)}
         .trust-item{display:flex;align-items:center;gap:10px}
         .trust-icon{font-size:20px}
         .trust-text{color:rgba(255,255,255,0.4);font-size:13px;font-weight:500}
         .trust-val{color:rgba(255,255,255,0.8);font-weight:700}
+        .wave-div{width:100%;overflow:hidden;line-height:0;background:#fff;margin-top:-1px;}
+        .wave-div svg{display:block;width:calc(100% + 1.3px);height:40px;}
 
         /* FEATURES */
         .sec{padding:100px 24px}
@@ -156,12 +158,17 @@ export default function LandingPage() {
 
       {/* TRUST */}
       <div className="trust">
-        {[["🏥","500+","Clinics"],["👥","50,000+","Patients served"],["🎙️","10","Languages"],["⚡","2 min","Setup time"]].map(([ic,v,l])=>(
+        {[["💬","100%","WhatsApp Native"],["🇮🇳","Built for","Indian Clinics"],["🎙️","10","Languages"],["⚡","2 min","Setup time"]].map(([ic,v,l])=>(
           <div key={l} className="trust-item">
             <span className="trust-icon">{ic}</span>
             <span className="trust-text"><span className="trust-val">{v}</span> {l}</span>
           </div>
         ))}
+      </div>
+      <div className="wave-div">
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#0d0d20"></path>
+        </svg>
       </div>
 
       {/* FEATURES */}

@@ -115,76 +115,128 @@ export default function LoginPage() {
     return (
         <div style={{
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #0a2540 0%, #0F4C75 60%, #0a3554 100%)',
+            background: 'linear-gradient(135deg, #080818 0%, #1a0b3b 50%, #0c1445 100%)',
             display: 'flex',
-            fontFamily: "'DM Sans','Segoe UI',sans-serif",
+            fontFamily: "'Inter','DM Sans','Segoe UI',sans-serif",
+            position: 'relative',
+            overflow: 'hidden'
         }}>
 
-            {/* ── Left panel — branding ── */}
             <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+                
                 @media (max-width: 767px) {
                     .left-panel { display: none !important; }
                 }
+                
+                .login-orb1 {
+                    position: absolute; width: 500px; height: 500px; border-radius: 50%;
+                    background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%);
+                    top: -150px; left: -100px; pointer-events: none;
+                    animation: float1 10s ease-in-out infinite;
+                }
+                .login-orb2 {
+                    position: absolute; width: 400px; height: 400px; border-radius: 50%;
+                    background: radial-gradient(circle, rgba(6,182,212,0.2) 0%, transparent 70%);
+                    bottom: -100px; right: 30vw; pointer-events: none;
+                    animation: float2 12s ease-in-out infinite;
+                }
+                
+                @keyframes float1 { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-30px) scale(1.05)} }
+                @keyframes float2 { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(24px) scale(0.97)} }
+                
+                .glass-feat {
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 16px;
+                    padding: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    backdrop-filter: blur(10px);
+                    transition: transform 0.2s, background 0.2s;
+                }
+                .glass-feat:hover {
+                    transform: translateX(5px);
+                    background: rgba(255,255,255,0.06);
+                    border-color: rgba(124,58,237,0.3);
+                }
             `}</style>
+            
+            <div className="login-orb1" />
+            <div className="login-orb2" />
+
+            {/* ── Left panel — branding ── */}
             <div className="left-panel" style={{
                 flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 padding: '60px',
+                position: 'relative',
+                zIndex: 10
             }}>
-                <div style={{ marginBottom: '28px' }}>
-                    <img src="/logo.svg" alt="TokenPe Logo" style={{ height: '64px', width: 'auto' }} />
+                <div style={{ marginBottom: '28px', cursor: 'pointer' }} onClick={() => router.push('/')}>
+                    <img src="/logo.svg" alt="TokenPe Logo" style={{ height: '56px', width: 'auto' }} />
                 </div>
-                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginTop: 10, fontWeight: 400, maxWidth: 320, lineHeight: 1.7 }}>
-                    Digital OPD queue management for modern clinics. No crowding. No confusion.
+                <h1 style={{ fontSize: '42px', fontWeight: 900, color: '#fff', letterSpacing: '-1.5px', lineHeight: 1.1, marginBottom: 16 }}>
+                    Welcome to the<br/>
+                    <span style={{ background: 'linear-gradient(135deg, #7C3AED, #06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        future of queues.
+                    </span>
+                </h1>
+                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', fontWeight: 400, maxWidth: 400, lineHeight: 1.7 }}>
+                    Digital OPD queue management for modern clinics. No crowding. No confusion. Just better patient care.
                 </div>
 
                 {/* Feature list */}
-                <div style={{ marginTop: 48, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ marginTop: 48, display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 400 }}>
                     {[
                         ['🎙️', 'Voice updates in 10 Indian languages'],
-                        ['📱', 'Patients join via WhatsApp — zero app needed'],
-                        ['🔔', 'Real-time notifications for every action'],
+                        ['💬', 'Patients join via WhatsApp — zero app needed'],
+                        ['⚡', 'Real-time live queue dashboard'],
                     ].map(([icon, text]) => (
-                        <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div key={text} className="glass-feat">
                             <div style={{
-                                width: 36, height: 36, borderRadius: 10,
-                                background: 'rgba(255,255,255,0.1)',
+                                width: 42, height: 42, borderRadius: 12,
+                                background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(79,70,229,0.2))',
+                                border: '1px solid rgba(124,58,237,0.3)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 18, flexShrink: 0
+                                fontSize: 20, flexShrink: 0, boxShadow: '0 4px 12px rgba(124,58,237,0.2)'
                             }}>{icon}</div>
-                            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{text}</div>
+                            <div style={{ fontSize: 15, color: '#e2e8f0', fontWeight: 500, lineHeight: 1.4 }}>{text}</div>
                         </div>
                     ))}
                 </div>
 
-                <div style={{ marginTop: 60, fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
-                    Made in India · TokenPe © 2026
+                <div style={{ marginTop: 60, fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>
+                    Made with ❤️ in India · TokenPe © 2026
                 </div>
             </div>
 
             {/* ── Right panel — form ── */}
             <div style={{
                 width: '100%',
-                maxWidth: 480,
-                background: 'white',
+                maxWidth: 520,
+                background: '#ffffff',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                padding: '48px 40px',
-                boxShadow: '-20px 0 60px rgba(0,0,0,0.2)',
+                padding: '48px 48px',
+                position: 'relative',
+                zIndex: 10,
+                boxShadow: '-20px 0 60px rgba(0,0,0,0.3)'
             }}>
 
                 {/* Header */}
                 <div style={{ marginBottom: 32 }}>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px' }}>
-                        {mode === 'login' ? 'Welcome back' : 'Register your clinic'}
+                    <div style={{ fontSize: 28, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.5px' }}>
+                        {mode === 'login' ? 'Welcome back' : 'Register clinic'}
                     </div>
-                    <div style={{ fontSize: 14, color: '#94A3B8', marginTop: 4 }}>
+                    <div style={{ fontSize: 15, color: '#64748B', marginTop: 6 }}>
                         {mode === 'login'
-                            ? 'Sign in to your TokenPe dashboard'
-                            : 'Get started in under 2 minutes'}
+                            ? 'Sign in to access your TokenPe console'
+                            : 'Get your digital queue running in 2 mins'}
                     </div>
                 </div>
 
@@ -194,24 +246,27 @@ export default function LoginPage() {
                     disabled={googleLoading}
                     style={{
                         width: '100%',
-                        padding: '12px 16px',
-                        border: '1.5px solid #E2E8F0',
-                        borderRadius: 10,
+                        padding: '14px 16px',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: 12,
                         background: 'white',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 10,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: '#1E293B',
+                        gap: 12,
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: '#0F172A',
                         cursor: 'pointer',
-                        marginBottom: 20,
-                        transition: 'all 0.15s',
+                        marginBottom: 24,
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                     }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
                 >
                     {/* Google icon SVG */}
-                    <svg width="18" height="18" viewBox="0 0 18 18">
+                    <svg width="20" height="20" viewBox="0 0 18 18">
                         <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
                         <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
                         <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
@@ -221,9 +276,9 @@ export default function LoginPage() {
                 </button>
 
                 {/* Divider */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
                     <div style={{ flex: 1, height: 1, background: '#F1F5F9' }} />
-                    <div style={{ fontSize: 12, color: '#CBD5E1', fontWeight: 500 }}>or</div>
+                    <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>or</div>
                     <div style={{ flex: 1, height: 1, background: '#F1F5F9' }} />
                 </div>
 
@@ -231,9 +286,9 @@ export default function LoginPage() {
                 <div style={{
                     display: 'flex',
                     background: '#F8FAFC',
-                    borderRadius: 10,
+                    borderRadius: 12,
                     padding: 4,
-                    marginBottom: 24,
+                    marginBottom: 28,
                     border: '1px solid #F1F5F9'
                 }}>
                     {['login', 'register'].map(tab => (
@@ -241,15 +296,16 @@ export default function LoginPage() {
                             key={tab}
                             onClick={() => { setMode(tab); setError(''); setSuccess('') }}
                             style={{
-                                flex: 1, padding: '9px',
+                                flex: 1, padding: '10px',
                                 border: 'none', borderRadius: 8,
-                                fontSize: 13, fontWeight: 600,
-                                cursor: 'pointer', transition: 'all 0.15s',
-                                background: mode === tab ? '#0F4C75' : 'transparent',
-                                color: mode === tab ? 'white' : '#94A3B8',
+                                fontSize: 14, fontWeight: 700,
+                                cursor: 'pointer', transition: 'all 0.2s',
+                                background: mode === tab ? '#fff' : 'transparent',
+                                color: mode === tab ? '#7C3AED' : '#64748B',
+                                boxShadow: mode === tab ? '0 2px 8px rgba(0,0,0,0.06)' : 'none'
                             }}
                         >
-                            {tab === 'login' ? '🔑 Login' : '🩺 New Clinic'}
+                            {tab === 'login' ? 'Login with Code' : 'New Clinic'}
                         </button>
                     ))}
                 </div>
@@ -257,25 +313,33 @@ export default function LoginPage() {
                 {/* Error */}
                 {error && (
                     <div style={{
-                        background: '#FEF2F2', border: '1px solid #FECACA',
-                        borderRadius: 8, padding: '10px 14px',
-                        fontSize: 13, color: '#DC2626', marginBottom: 16
-                    }}>❌ {error}</div>
+                        background: '#FFF1F2', border: '1px solid #FECDD3',
+                        borderRadius: 12, padding: '12px 16px',
+                        fontSize: 14, color: '#BE123C', marginBottom: 20,
+                        fontWeight: 500, display: 'flex', gap: 8, alignItems: 'flex-start'
+                    }}>
+                        <span>⚠️</span>
+                        <span>{error}</span>
+                    </div>
                 )}
 
                 {/* Success */}
                 {success && (
                     <div style={{
                         background: '#F0FDF4', border: '1px solid #BBF7D0',
-                        borderRadius: 8, padding: '10px 14px',
-                        fontSize: 13, color: '#16A34A', marginBottom: 16
-                    }}>{success}</div>
+                        borderRadius: 12, padding: '12px 16px',
+                        fontSize: 14, color: '#15803D', marginBottom: 20,
+                        fontWeight: 600, display: 'flex', gap: 8, alignItems: 'flex-start'
+                    }}>
+                        <span>✅</span>
+                        <span>{success}</span>
+                    </div>
                 )}
 
                 {/* LOGIN FORM */}
                 {mode === 'login' && (
                     <form onSubmit={handleLogin}>
-                        <div style={{ marginBottom: 14 }}>
+                        <div style={{ marginBottom: 16 }}>
                             <label style={labelStyle}>Clinic Code</label>
                             <input
                                 value={loginCode}
@@ -285,7 +349,7 @@ export default function LoginPage() {
                                 style={inputStyle}
                             />
                         </div>
-                        <div style={{ marginBottom: 22 }}>
+                        <div style={{ marginBottom: 28 }}>
                             <label style={labelStyle}>Registered Phone</label>
                             <input
                                 value={loginPhone}
@@ -296,22 +360,16 @@ export default function LoginPage() {
                                 style={inputStyle}
                             />
                         </div>
-                        <button type="submit" disabled={loading} style={btnPrimaryStyle}>
-                            {loading ? 'Signing in...' : 'Sign in →'}
+                        <button type="submit" disabled={loading} className="btn-primary" style={btnPrimaryStyle}>
+                            {loading ? 'Signing in...' : 'Sign in to Console →'}
                         </button>
-                        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#94A3B8' }}>
-                            New clinic?{' '}
-                            <span onClick={() => setMode('register')} style={linkStyle}>
-                                Register here
-                            </span>
-                        </div>
                     </form>
                 )}
 
                 {/* REGISTER FORM */}
                 {mode === 'register' && (
                     <form onSubmit={handleRegister}>
-                        <div style={{ marginBottom: 14 }}>
+                        <div style={{ marginBottom: 16 }}>
                             <label style={labelStyle}>Clinic Name *</label>
                             <input
                                 value={regName}
@@ -324,7 +382,7 @@ export default function LoginPage() {
                                 style={inputStyle}
                             />
                         </div>
-                        <div style={{ marginBottom: 14 }}>
+                        <div style={{ marginBottom: 16 }}>
                             <label style={labelStyle}>Phone Number *</label>
                             <input
                                 value={regPhone}
@@ -335,7 +393,7 @@ export default function LoginPage() {
                                 style={inputStyle}
                             />
                         </div>
-                        <div style={{ marginBottom: 14 }}>
+                        <div style={{ marginBottom: 16 }}>
                             <label style={labelStyle}>Email (optional)</label>
                             <input
                                 value={regEmail}
@@ -345,7 +403,7 @@ export default function LoginPage() {
                                 style={inputStyle}
                             />
                         </div>
-                        <div style={{ marginBottom: 22 }}>
+                        <div style={{ marginBottom: 28 }}>
                             <label style={labelStyle}>
                                 Clinic Code
                                 <span style={{ color: '#94A3B8', fontWeight: 400, marginLeft: 6 }}>
@@ -356,37 +414,31 @@ export default function LoginPage() {
                                 value={regCode}
                                 onChange={e => setRegCode(e.target.value.toUpperCase())}
                                 placeholder="SHARMA001"
-                                style={{ ...inputStyle, fontFamily: 'monospace', letterSpacing: 2, background: '#F8FAFC' }}
+                                style={{ ...inputStyle, fontFamily: 'monospace', letterSpacing: 1.5, background: '#F8FAFC', color: '#7C3AED', fontWeight: 700 }}
                             />
                         </div>
-                        <button type="submit" disabled={loading} style={btnPrimaryStyle}>
+                        <button type="submit" disabled={loading} className="btn-primary" style={btnPrimaryStyle}>
                             {loading ? 'Creating account...' : 'Create Clinic Account →'}
                         </button>
-                        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#94A3B8' }}>
-                            Already registered?{' '}
-                            <span onClick={() => setMode('login')} style={linkStyle}>
-                                Login here
-                            </span>
-                        </div>
                     </form>
                 )}
 
                 {/* Subscription hint — for later */}
                 <div style={{
-                    marginTop: 32,
-                    padding: '12px 16px',
-                    background: '#F8FAFC',
-                    borderRadius: 10,
-                    border: '1px solid #F1F5F9',
+                    marginTop: 36,
+                    padding: '16px',
+                    background: 'linear-gradient(135deg, #F8FAFC, #F1F5F9)',
+                    borderRadius: 16,
+                    border: '1px solid #E2E8F0',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10
+                    gap: 14
                 }}>
-                    <span style={{ fontSize: 18 }}>✨</span>
+                    <div style={{ width: 36, height: 36, background: 'white', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: 18 }}>✨</div>
                     <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A' }}>Pro plan coming soon</div>
-                        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>
-                            Unlimited clinics · Analytics · Priority support
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>Growth plan coming soon</div>
+                        <div style={{ fontSize: 12, color: '#64748B', marginTop: 2, fontWeight: 500 }}>
+                            Patient history · Multi-queue support · Analytics
                         </div>
                     </div>
                 </div>
@@ -397,29 +449,27 @@ export default function LoginPage() {
 }
 
 const labelStyle = {
-    fontSize: 13, fontWeight: 600, color: '#374151',
-    display: 'block', marginBottom: 6
+    fontSize: 13, fontWeight: 700, color: '#334155',
+    display: 'block', marginBottom: 8
 }
 
 const inputStyle = {
-    width: '100%', padding: '11px 14px',
-    border: '1.5px solid #E2E8F0', borderRadius: 9,
-    fontSize: 14, outline: 'none',
+    width: '100%', padding: '14px 16px',
+    border: '1px solid #E2E8F0', borderRadius: 12,
+    fontSize: 15, outline: 'none',
     boxSizing: 'border-box',
-    fontFamily: "'DM Sans','Segoe UI',sans-serif",
-    color: '#0F172A', background: 'white',
-    transition: 'border-color 0.15s'
+    fontFamily: "'Inter','DM Sans','Segoe UI',sans-serif",
+    color: '#0F172A', background: '#fff',
+    transition: 'all 0.2s',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
 }
 
 const btnPrimaryStyle = {
-    width: '100%', padding: '13px',
-    background: 'linear-gradient(135deg, #0F4C75, #1B6CA8)',
-    color: 'white', border: 'none', borderRadius: 10,
-    fontSize: 14, fontWeight: 700, cursor: 'pointer',
-    letterSpacing: '0.2px'
-}
-
-const linkStyle = {
-    color: '#0F4C75', cursor: 'pointer',
-    fontWeight: 600, textDecoration: 'underline'
-}
+    width: '100%', padding: '16px',
+    background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
+    color: 'white', border: 'none', borderRadius: 12,
+    fontSize: 15, fontWeight: 800, cursor: 'pointer',
+    letterSpacing: '0.2px',
+    boxShadow: '0 8px 24px rgba(124,58,237,0.3)',
+    transition: 'transform 0.2s, box-shadow 0.2s'
+}

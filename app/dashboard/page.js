@@ -410,6 +410,108 @@ export default function Dashboard() {
 
   return (
     <div style={s.root}>
+      <style>{`
+        .dash-header {
+          background: linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%);
+          padding: 0 24px;
+          height: 72px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          box-shadow: 0 4px 32px rgba(124,58,237,0.25);
+          position: sticky;
+          top: 0;
+          z-index: 50;
+          gap: 12px;
+        }
+
+        .header-top-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .header-mobile-right {
+          display: none;
+        }
+
+        .header-mid-row {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .header-bottom-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .stat-num {
+          color: #fff;
+          font-weight: 800;
+          font-size: 1rem;
+        }
+
+        .stat-label {
+          color: rgba(255,255,255,0.45);
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
+        .desktop-only-logout {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .header-clock {
+          color: rgba(255,255,255,0.6);
+          font-weight: 600;
+          font-size: 0.88rem;
+          font-variant-numeric: tabular-nums;
+        }
+
+        /* RESPONSIVE DESIGN FOR TABLET & MOBILE */
+        @media (max-width: 960px) {
+          .dash-header {
+            height: auto !important;
+            flex-direction: column;
+            padding: 16px !important;
+            align-items: stretch;
+            gap: 14px;
+          }
+          
+          .header-top-row {
+            width: 100%;
+            justify-content: space-between;
+          }
+          
+          .header-mobile-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          
+          .header-mid-row {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+          }
+          
+          .header-bottom-row {
+            width: 100%;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 12px;
+            justify-content: space-between;
+          }
+          
+          .desktop-only-logout {
+            display: none;
+          }
+        }
+      `}</style>
 
       {/* ── Toasts ── */}
       <div style={s.toastContainer}>
@@ -433,35 +535,45 @@ export default function Dashboard() {
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} />}
 
       {/* ── Header ── */}
-      <header style={s.header}>
-        <div style={s.headerLeft}>
-          <img src="/logo.svg" alt="TokenPe" style={{ height: '36px', width: 'auto' }} />
-          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.45)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Clinic Console</div>
-            <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px' }}>{clinic?.name}</div>
+      <header className="dash-header">
+        <div className="header-top-row">
+          <div style={s.headerLeft}>
+            <img src="/logo.svg" alt="TokenPe" style={{ height: '36px', width: 'auto' }} />
+            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.45)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Clinic Console</div>
+              <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px' }}>{clinic?.name}</div>
+            </div>
+          </div>
+          <div className="header-mobile-right">
+            <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
+            <button onClick={logout} style={s.btnLogout}>Logout</button>
           </div>
         </div>
-        <div style={s.headerCenter}>
+        
+        <div className="header-mid-row">
           <div style={s.statChip}>
             <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#f97316,#fb923c)', boxShadow: '0 0 8px rgba(249,115,22,0.6)' }} />
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: '1rem' }}>{waiting.length}</span>
-            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem' }}>Waiting</span>
+            <span className="stat-num">{waiting.length}</span>
+            <span className="stat-label">Waiting</span>
           </div>
           <div style={s.statChip}>
             <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#10b981,#34d399)', boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: '1rem' }}>{called.length}</span>
-            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem' }}>With Doctor</span>
+            <span className="stat-num">{called.length}</span>
+            <span className="stat-label">With Doctor</span>
           </div>
           <div style={s.statChip}>
             <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#6366f1,#818cf8)', boxShadow: '0 0 8px rgba(99,102,241,0.6)' }} />
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: '1rem' }}>{done.length}</span>
-            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem' }}>Done</span>
+            <span className="stat-num">{done.length}</span>
+            <span className="stat-label">Done</span>
           </div>
         </div>
-        <div style={s.headerRight}>
-          <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
-          <div style={s.clock}>{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
-          <button onClick={logout} style={s.btnLogout}>Logout</button>
+
+        <div className="header-bottom-row">
+          <div className="header-clock">{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+          <div className="desktop-only-logout">
+            <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
+            <button onClick={logout} style={s.btnLogout}>Logout</button>
+          </div>
         </div>
       </header>
 

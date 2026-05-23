@@ -29,11 +29,43 @@ function AuthCallbackContent() {
                     .single()
 
                 if (clinicData && !clinicError) {
+                    setStatus('Generating your daily code...')
+                    
+                    // Generate a daily code based on date so it changes every day upon login
+                    const baseName = clinicData.name || user.user_metadata?.full_name || user.email.split('@')[0]
+                    const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+                    const todayStr = new Date().toISOString().split('T')[0]
+                    
+                    // Simple deterministic hash for the day
+                    const strToHash = clinicData.id + todayStr
+                    let hash = 0
+                    for (let i = 0; i < strToHash.length; i++) {
+                        hash = (hash << 5) - hash + strToHash.charCodeAt(i)
+                        hash |= 0
+                    }
+                    const dailyNum = (Math.abs(hash) % 900) + 100
+                    const newCode = `${clean}${dailyNum}`
+
+                    let finalClinicData = clinicData
+
+                    if (clinicData.code !== newCode) {
+                        const { data: updated, error: updateError } = await supabase
+                            .from('clinics')
+                            .update({ code: newCode })
+                            .eq('id', clinicData.id)
+                            .select()
+                            .single()
+                        
+                        if (updated && !updateError) {
+                            finalClinicData = updated
+                        }
+                    }
+
                     // Clinic exists! Log them in regardless of intent
                     setStatus('Logging you in...')
-                    localStorage.setItem('clinicCode', clinicData.code)
-                    localStorage.setItem('clinicPhone', clinicData.phone)
-                    localStorage.setItem('tokenpe_clinic', JSON.stringify(clinicData))
+                    localStorage.setItem('clinicCode', finalClinicData.code)
+                    localStorage.setItem('clinicPhone', finalClinicData.phone)
+                    localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinicData))
                     router.replace('/dashboard')
                     return
                 }
@@ -52,9 +84,16 @@ function AuthCallbackContent() {
                     
                     // Generate a clinic code from their name or email
                     const baseName = user.user_metadata?.full_name || user.email.split('@')[0]
-                    const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)
-                    const num = Math.floor(Math.random() * 900) + 100
-                    const newCode = clean + num
+                    const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+                    const todayStr = new Date().toISOString().split('T')[0]
+                    const strToHash = user.email + todayStr // use email as ID proxy for first time
+                    let hash = 0
+                    for (let i = 0; i < strToHash.length; i++) {
+                        hash = (hash << 5) - hash + strToHash.charCodeAt(i)
+                        hash |= 0
+                    }
+                    const num = (Math.abs(hash) % 900) + 100
+                    const newCode = `${clean}${num}`
 
                     const newClinicData = {
                         name: user.user_metadata?.full_name || 'My Clinic',

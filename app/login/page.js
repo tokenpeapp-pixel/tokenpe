@@ -13,6 +13,20 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
+            // Auto-redirect if already logged in
+            const existing = localStorage.getItem('tokenpe_clinic')
+            if (existing) {
+                try {
+                    const clinic = JSON.parse(existing)
+                    if (clinic && clinic.code) {
+                        router.replace('/dashboard')
+                        return
+                    }
+                } catch (_) {
+                    localStorage.removeItem('tokenpe_clinic')
+                }
+            }
+
             const params = new URLSearchParams(window.location.search)
             const errType = params.get('error')
             if (errType === 'no_clinic') {

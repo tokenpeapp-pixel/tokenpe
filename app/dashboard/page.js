@@ -55,12 +55,58 @@ const TOAST_TYPES = {
   error: { bg: '#9F1239', icon: '❌' },
 }
 
-// ─── QR MODAL ──────────────────────────────────────────────────────────────
-function QRModal({ clinic, onClose }) {
+// ─── QR MODAL ──────────────────────────────────────────────────────────────────────
+function QRModal({ clinic, onClose, onCodeUpdate, router }) {
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
-  const waLink = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=JOIN%20${clinic?.code}`
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(waLink)}&color=0F4C75&bgcolor=ffffff&margin=24`
+  const [editingCode, setEditingCode] = useState(false)
+  const [codeInput, setCodeInput] = useState(clinic?.code || '')
+  const [codeError, setCodeError] = useState('')
+  const [codeSaving, setCodeSaving] = useState(false)
+  const [codeSuccess, setCodeSuccess] = useState(false)
+
+  const planId = clinic?.plan_id || 'starter'
+  const canEditCode = planId === 'pro' || planId === 'elite' || planId === 'trialing' || clinic?.subscription_status === 'trialing'
+
+  // QR reflects the live code (updates after save)
+  const liveCode = codeSuccess ? codeInput : (clinic?.code || '')
+  const waLink = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=JOIN%20${liveCode}`
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(waLink)}&color=7C3AED&bgcolor=ffffff&margin=24`
+
+  async function saveCode() {
+    const clean = codeInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (clean.length < 3 || clean.length > 12) {
+      setCodeError('Code must be 3–12 alphanumeric characters.')
+      return
+    }
+    if (clean === clinic?.code) { setEditingCode(false); return }
+    setCodeSaving(true)
+    setCodeError('')
+    // Check uniqueness
+    const { data: taken } = await supabase.from('clinics').select('id').eq('code', clean).single()
+    if (taken && taken.id !== clinic?.id) {
+      setCodeError('This code is already taken. Try another.')
+      setCodeSaving(false)
+      return
+    }
+    const { error } = await supabase.from('clinics').update({ code: clean }).eq('id', clinic?.id)
+    if (error) {
+      setCodeError('Failed to save. Please try again.')
+      setCodeSaving(false)
+      return
+    }
+    // Update localStorage
+    const stored = localStorage.getItem('tokenpe_clinic')
+    if (stored) {
+      try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean })) } catch (_) {}
+    }
+    localStorage.setItem('clinicCode', clean)
+    onCodeUpdate(clean)
+    setCodeSaving(false)
+    setCodeSuccess(true)
+    setEditingCode(false)
+    setTimeout(() => setCodeSuccess(false), 4000)
+  }
 
   async function download() {
     setDownloading(true)
@@ -69,7 +115,7 @@ function QRModal({ clinic, onClose }) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `TokenPe-QR-${clinic?.code}.png`
+    a.download = `TokenPe-QR-${liveCode}.png`
     a.click()
     URL.revokeObjectURL(url)
     setDownloading(false)
@@ -86,9 +132,9 @@ function QRModal({ clinic, onClose }) {
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;
              justify-content:center;min-height:100vh;background:#fff}
-        .card{width:320px;border:2.5px solid #0F4C75;border-radius:22px;
+        .card{width:320px;border:2.5px solid #7C3AED;border-radius:22px;
               padding:32px 24px;text-align:center}
-        .logo{font-size:22px;font-weight:900;color:#0F4C75}
+        .logo{font-size:22px;font-weight:900;color:#7C3AED}
         .tag{font-size:10px;color:#94a3b8;margin-bottom:20px;letter-spacing:.5px}
         .name{font-size:17px;font-weight:800;color:#1e293b;margin-bottom:4px}
         .sub{font-size:12px;color:#64748b;margin-bottom:22px}
@@ -96,9 +142,9 @@ function QRModal({ clinic, onClose }) {
         hr{border:none;border-top:1px solid #f1f5f9;margin:18px 0}
         .how{font-size:13px;font-weight:700;color:#1e293b}
         .steps{font-size:11px;color:#64748b;margin-top:8px;line-height:2}
-        .code-box{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:10px;padding:8px 16px;margin-top:16px}
-        .code-label{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px}
-        .code-val{font-size:15px;font-weight:800;color:#0F4C75;font-family:monospace;letter-spacing:1px}
+        .code-box{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#f5f3ff;border:1.5px dashed #c4b5fd;border-radius:10px;padding:8px 16px;margin-top:16px}
+        .code-label{font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:0.5px}
+        .code-val{font-size:15px;font-weight:800;color:#6d28d9;font-family:monospace;letter-spacing:1px}
       </style>
       </head><body>
       <div class="card">
@@ -117,7 +163,7 @@ function QRModal({ clinic, onClose }) {
         </div>
         <div class="code-box">
           <span class="code-label">Clinic Code:</span>
-          <span class="code-val">${clinic?.code}</span>
+          <span class="code-val">${liveCode}</span>
         </div>
       </div>
       </body></html>
@@ -128,33 +174,75 @@ function QRModal({ clinic, onClose }) {
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 600, padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 24, padding: '36px 32px', width: '100%', maxWidth: 380, textAlign: 'center', position: 'relative', boxShadow: '0 32px 80px rgba(0,0,0,0.3)' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 24, padding: '32px 28px', width: '100%', maxWidth: 400, textAlign: 'center', position: 'relative', boxShadow: '0 32px 80px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: '50%', fontSize: 18, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
-          <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: '48px', width: 'auto' }} />
+        <div style={{ marginBottom: '14px', display: 'flex', justifyContent: 'center' }}>
+          <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: '44px', width: 'auto' }} />
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: '#1e293b' }}>{clinic?.name}</div>
-        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 20 }}>Scan to join the OPD queue</div>
-        <div style={{ background: '#f8fafc', borderRadius: 16, padding: 16, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 16 }}>
-          <img src={qrUrl} alt="QR Code" style={{ width: 200, height: 200, borderRadius: 10, display: 'block' }} />
+        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>Scan to join the OPD queue</div>
+        <div style={{ background: '#f8fafc', borderRadius: 16, padding: 14, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 14 }}>
+          <img src={qrUrl} alt="QR Code" style={{ width: 190, height: 190, borderRadius: 10, display: 'block' }} />
         </div>
-        <div style={{ background: '#f0f9ff', borderRadius: 12, padding: '12px 16px', textAlign: 'left', marginBottom: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#0F4C75', marginBottom: 6 }}>📱 How patients join</div>
+        <div style={{ background: '#f0f9ff', borderRadius: 12, padding: '10px 14px', textAlign: 'left', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0F4C75', marginBottom: 5 }}>📱 How patients join</div>
           <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.9 }}>
             1. Open WhatsApp → scan this QR<br />
             2. Tap Send — no typing needed<br />
-            3. Pick language → get token + voice note 🎙️
+            3. Pick language → get token + voice note 🎤
           </div>
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#f8fafc', border: '1.5px dashed #e2e8f0', borderRadius: 10, padding: '8px 16px', marginBottom: 20 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>Clinic Code:</span>
-          <span style={{ fontSize: 16, fontWeight: 800, color: '#0F4C75', fontFamily: 'monospace', letterSpacing: 1 }}>{clinic?.code}</span>
+
+        {/* ── Clinic Code Section ── */}
+        <div style={{ marginBottom: 14 }}>
+          {/* Code badge — always visible */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#f5f3ff', border: '1.5px dashed #c4b5fd', borderRadius: 10, padding: '8px 16px', marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: 0.5 }}>Clinic Code:</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: '#6d28d9', fontFamily: 'monospace', letterSpacing: 2 }}>{liveCode}</span>
+          </div>
+          {codeSuccess && <div style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginBottom: 4 }}>✅ Code updated! Your new QR is ready.</div>}
+
+          {/* Plan-gated edit section */}
+          {canEditCode ? (
+            editingCode ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <input
+                  value={codeInput}
+                  onChange={e => { setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')); setCodeError('') }}
+                  maxLength={12}
+                  placeholder="e.g. DRSHARMA"
+                  style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 700, letterSpacing: 2, color: '#6d28d9', border: '2px solid #7C3AED', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#faf5ff' }}
+                />
+                {codeError && <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600 }}>{codeError}</div>}
+                <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                  <button onClick={saveCode} disabled={codeSaving} style={{ flex: 1, padding: '9px 0', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: 'white', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: codeSaving ? 0.7 : 1 }}>
+                    {codeSaving ? 'Saving...' : '✓ Save Code'}
+                  </button>
+                  <button onClick={() => { setEditingCode(false); setCodeInput(clinic?.code || ''); setCodeError('') }} style={{ flex: 1, padding: '9px 0', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setEditingCode(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#7C3AED', cursor: 'pointer', margin: '0 auto' }}>
+                ✏️ Edit Code
+              </button>
+            )
+          ) : (
+            <button
+              onClick={() => router.push('/dashboard/billing')}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, color: '#92400e', cursor: 'pointer', margin: '0 auto', textAlign: 'center' }}
+            >
+              🔒 Custom Code — Upgrade to Pro
+            </button>
+          )}
         </div>
+
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={download} disabled={downloading} style={{ flex: 1, padding: '12px 0', background: '#0F4C75', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
+          <button onClick={download} disabled={downloading} style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
             {downloaded ? '✅ Saved!' : downloading ? 'Saving...' : '⬇️ Download PNG'}
           </button>
-          <button onClick={print} style={{ flex: 1, padding: '12px 0', background: 'white', color: '#0F4C75', border: '2px solid #0F4C75', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={print} style={{ flex: 1, padding: '11px 0', background: 'white', color: '#7C3AED', border: '2px solid #7C3AED', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             🖨️ Print Card
           </button>
         </div>
@@ -325,6 +413,12 @@ export default function Dashboard() {
     const id = Date.now()
     setToasts(prev => [...prev, { id, msg, type }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
+  }
+
+  // ── Code Update Callback ─────────────────────────────────────
+  function handleCodeUpdate(newCode) {
+    setClinic(prev => ({ ...prev, code: newCode }))
+    addToast(`✅ Clinic code updated to ${newCode}! Share it with your patients.`, 'done')
   }
 
   // ── Logout ──────────────────────────────────────────────────────────────
@@ -683,7 +777,7 @@ export default function Dashboard() {
       )}
 
       {/* ── QR Modal ── */}
-      {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} />}
+      {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} onCodeUpdate={handleCodeUpdate} router={router} />}
 
       {/* ── Header ── */}
       <header className="dash-header">

@@ -39,16 +39,13 @@ export default function LoginPage() {
     const [loginCode, setLoginCode] = useState('')
     const [loginPhone, setLoginPhone] = useState('')
 
-    // Register
-    const [regName, setRegName] = useState('')
-    const [regPhone, setRegPhone] = useState('')
     const [regEmail, setRegEmail] = useState('')
-    const [regCode, setRegCode] = useState('')
 
-    function generateCode(name) {
-        const clean = name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)
-        const num = Math.floor(Math.random() * 900) + 100
-        return clean + num
+    function generateRandomCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+        let code = ''
+        for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
+        return code
     }
 
     async function handleGoogleLogin() {
@@ -107,15 +104,13 @@ export default function LoginPage() {
         setError('')
         setLoading(true)
 
-        const code = regCode || generateCode(regName)
-
-        const { data: existing } = await supabase
-            .from('clinics').select('id').eq('code', code).single()
-
-        if (existing) {
-            setError('This clinic code is taken. Try a different one.')
-            setLoading(false)
-            return
+        // Always generate a random, unbranded code (Pro/Elite can customize later from QR modal)
+        let code = generateRandomCode()
+        // Ensure uniqueness with a simple retry
+        for (let i = 0; i < 5; i++) {
+            const { data: existing } = await supabase.from('clinics').select('id').eq('code', code).single()
+            if (!existing) break
+            code = generateRandomCode()
         }
 
         const { data, error } = await supabase
@@ -129,14 +124,14 @@ export default function LoginPage() {
             return
         }
 
-        setSuccess(`✅ Registered! Your clinic code is: ${code}`)
+        setSuccess(`✅ Clinic registered! Redirecting to your dashboard...`)
         setLoading(false)
         setTimeout(() => {
             localStorage.setItem('tokenpe_clinic', JSON.stringify(data))
             localStorage.setItem('clinicCode', data.code)
             localStorage.setItem('clinicPhone', data.phone)
             router.push('/dashboard')
-        }, 1500)
+        }, 1200)
     }
 
     return (
@@ -415,7 +410,7 @@ export default function LoginPage() {
                         <form onSubmit={handleRegister}>
                             <div className="field">
                                 <label>Clinic Name *</label>
-                                <input value={regName} onChange={e => { setRegName(e.target.value); if (!regCode) setRegCode(generateCode(e.target.value)); }} placeholder="Dr. Sharma Clinic" required suppressHydrationWarning={true} />
+                                <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="Dr. Sharma Clinic" required suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
                                 <label>Phone Number *</label>
@@ -425,9 +420,8 @@ export default function LoginPage() {
                                 <label>Email <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span></label>
                                 <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" suppressHydrationWarning={true} />
                             </div>
-                            <div className="field">
-                                <label>Clinic Code <span style={{ color: '#94a3b8', fontWeight: 400 }}>(auto-generated)</span></label>
-                                <input value={regCode} onChange={e => setRegCode(e.target.value.toUpperCase())} placeholder="SHARMA001" style={{ fontFamily: 'monospace', letterSpacing: 1, color: '#7C3AED', fontWeight: 700 }} suppressHydrationWarning={true} />
+                            <div style={{ background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#6d28d9', fontWeight: 500 }}>
+                                🎲 A unique clinic code will be auto-generated. You can customize it later from your dashboard.
                             </div>
                             <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
                                 {loading ? 'Creating account...' : 'Create Account →'}

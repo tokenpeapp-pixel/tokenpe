@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 export default function LandingPage() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const go = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
 
   return (
@@ -240,9 +241,9 @@ export default function LandingPage() {
         </div>
         <div className="plans">
           {[
-            { name: "Starter", desc: "Solo doctor clinics", price: "₹499", per: "/mo", feats: ["50 patients/day", "WhatsApp queue", "Voice notes — 10 languages", "QR code generation"], hot: false },
-            { name: "Growth", desc: "Busy clinics", price: "₹999", per: "/mo", feats: ["150 patients/day", "History & analytics", "Priority support", "Walk-in management"], hot: true },
-            { name: "Pro", desc: "Hospitals & chains", price: "₹1,999", per: "/mo", feats: ["Unlimited patients", "Multiple queues", "API access", "Dedicated support"], hot: false },
+            { name: "Starter", desc: "Perfect for small clinics", price: "₹499", per: "/mo", feats: ["50 patients/day", "Standard WhatsApp Alerts", "Basic 7-day Analytics", "Auto-Generated Code"], hot: false },
+            { name: "Pro", desc: "For busy clinics that want to look professional", price: "₹999", per: "/mo", feats: ["150 patients/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "30-Day History & Support"], hot: true },
+            { name: "Elite", desc: "For hospitals, polyclinics & top doctors", price: "₹1999", per: "/mo", feats: ["Unlimited patients", "Multi-Clinic Management", "Automated Google Reviews", "Receptionist Accounts", "CRM Broadcasts"], hot: false },
           ].map(p => (
             <div key={p.name} className={`plan${p.hot ? " hot" : ""}`}>
               {p.hot && <div className="plan-badge">✦ Most Popular</div>}
@@ -252,6 +253,11 @@ export default function LandingPage() {
               <button className={`plan-btn${p.hot ? "" : " ghost"}`} onClick={() => router.push("/login")}>Get started →</button>
             </div>
           ))}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 40 }}>
+          <button onClick={() => setShowDetails(true)} style={{ background: "none", border: "none", color: "#7C3AED", fontSize: "15px", fontWeight: "700", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 4 }}>
+            📄 View Detailed Feature Breakdown & Terms
+          </button>
         </div>
       </section>
 
@@ -270,15 +276,89 @@ export default function LandingPage() {
         <button className="cta-btn" onClick={() => router.push("/login")}>Start your free trial →</button>
       </section>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <img src="/logo.svg" alt="TokenPe" style={{ height: 30, width: "auto" }} />
-        <div className="footer-links">
-          <span className="flink" onClick={() => router.push("/privacy")}>Privacy Policy</span>
-          <span className="flink" onClick={() => router.push("/terms")}>Terms & Support</span>
+      {/* MODAL */}
+      {showDetails && (
+        <div onClick={() => setShowDetails(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyItems: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", width: "100%", maxWidth: 800, maxHeight: "90vh", overflowY: "auto", borderRadius: 24, padding: "40px 32px", position: "relative", margin: "auto" }}>
+            <button onClick={() => setShowDetails(false)} style={{ position: "absolute", top: 20, right: 20, background: "#f1f5f9", border: "none", width: 36, height: 36, borderRadius: "50%", fontSize: 20, cursor: "pointer", color: "#64748b" }}>×</button>
+            <h2 style={{ fontSize: 28, fontWeight: 900, color: "#0f172a", marginBottom: 8, letterSpacing: "-1px" }}>Detailed Feature Breakdown</h2>
+            <p style={{ color: "#64748b", marginBottom: 32 }}>A comprehensive look at what's included in every TokenPe subscription tier.</p>
+            
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                    <th style={{ textAlign: "left", padding: "16px 8px", color: "#0f172a", width: "40%" }}>Feature</th>
+                    <th style={{ textAlign: "center", padding: "16px 8px", color: "#64748b" }}>Starter</th>
+                    <th style={{ textAlign: "center", padding: "16px 8px", color: "#7C3AED", fontWeight: 800 }}>Pro</th>
+                    <th style={{ textAlign: "center", padding: "16px 8px", color: "#f59e0b", fontWeight: 800 }}>Elite</th>
+                  </tr>
+                </thead>
+                <tbody style={{ fontSize: 14, color: "#475569" }}>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Daily Patient Limit</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>50</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>150</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 700 }}>Unlimited</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>WhatsApp Alerts</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Text Only</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Text + AI Voice</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Text + Priority AI Voice</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Clinic Code Branding</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Auto-generated</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Custom (e.g. DRSHARMA)</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Custom (e.g. CITYHOSP)</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Multi-Clinic Management</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Google Reviews Automation</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Receptionist Accounts</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Patient CRM Broadcasts</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Dashboard Analytics</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>7 Days</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>30 Days</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>Unlimited + Excel Export</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Support</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Email</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Priority Email & Chat</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>Dedicated Account Manager</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid #e2e8f0", fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
+              <strong>Terms of Subscription:</strong> All plans automatically renew monthly. You can cancel your subscription at any time from the billing dashboard. The free trial is available for 14 days and provides full access to Elite features. After the trial, you must choose a plan to continue service.
+            </div>
+          </div>
         </div>
-        <span className="footer-made">Made with ❤️ in India</span>
-      </footer>
+      )}
     </>
   );
 }

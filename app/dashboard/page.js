@@ -558,26 +558,27 @@ export default function Dashboard() {
 
         /* DROPDOWN MENU STYLES */
         .dropdown-menu {
-          position: absolute;
-          top: 60px;
-          right: 24px;
-          background: rgba(15, 10, 42, 0.95);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(124, 58, 237, 0.3);
-          border-radius: 12px;
+          position: fixed;
+          top: 72px;
+          right: 16px;
+          background: rgba(15, 10, 42, 0.97);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(124, 58, 237, 0.35);
+          border-radius: 14px;
           padding: 8px;
-          width: 200px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-          z-index: 100;
+          width: 210px;
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.07) inset;
+          z-index: 9999;
           display: flex;
           flex-direction: column;
           gap: 4px;
-          animation: slideDown 0.2s ease-out forwards;
+          animation: slideDown 0.18s ease-out forwards;
           transform-origin: top right;
         }
 
         @keyframes slideDown {
-          from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+          from { opacity: 0; transform: scale(0.92) translateY(-8px); }
           to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
@@ -585,32 +586,34 @@ export default function Dashboard() {
           background: transparent;
           color: rgba(255, 255, 255, 0.85);
           border: none;
-          padding: 12px 16px;
-          border-radius: 8px;
+          padding: 13px 16px;
+          border-radius: 9px;
           text-align: left;
-          font-size: 0.88rem;
+          font-size: 0.9rem;
           font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
-          gap: 10px;
-          transition: all 0.15s ease;
+          gap: 11px;
+          transition: background 0.12s ease, color 0.12s ease;
+          width: 100%;
+          font-family: inherit;
         }
 
-        .dropdown-item:hover {
-          background: rgba(124, 58, 237, 0.2);
+        .dropdown-item:hover, .dropdown-item:active {
+          background: rgba(124, 58, 237, 0.25);
           color: #fff;
         }
 
         .dropdown-divider {
           height: 1px;
-          background: rgba(255, 255, 255, 0.1);
-          margin: 4px 0;
+          background: rgba(255, 255, 255, 0.08);
+          margin: 4px 8px;
         }
 
         .hamburger-btn {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.07);
+          border: 1px solid rgba(255, 255, 255, 0.15);
           color: white;
           width: 40px;
           height: 40px;
@@ -620,27 +623,45 @@ export default function Dashboard() {
           justify-content: center;
           cursor: pointer;
           transition: all 0.2s;
+          flex-shrink: 0;
         }
 
-        .hamburger-btn:hover {
-          background: rgba(124, 58, 237, 0.2);
-          border-color: rgba(124, 58, 237, 0.4);
+        .hamburger-btn:hover, .hamburger-btn:active {
+          background: rgba(124, 58, 237, 0.3);
+          border-color: rgba(124, 58, 237, 0.5);
         }
 
         @media (max-width: 960px) {
           .dropdown-menu {
-            top: 50px;
-            right: 16px;
+            top: auto;
+            bottom: auto;
+            right: 12px;
           }
         }
       `}</style>
 
-      {/* ── Menu Overlay ── */}
+      {/* ── Menu Overlay + Dropdown (fixed portal, outside header) ── */}
       {menuOpen && (
-        <div 
-          onClick={() => setMenuOpen(false)} 
-          style={{ position: 'fixed', inset: 0, zIndex: 90 }}
-        />
+        <>
+          {/* Click-away overlay - z-index BELOW dropdown */}
+          <div
+            onClick={() => setMenuOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+          />
+          {/* Dropdown - z-index ABOVE overlay */}
+          <div className="dropdown-menu">
+            <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
+              🕒 History
+            </button>
+            <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
+              💳 Billing & Plan
+            </button>
+            <div className="dropdown-divider" />
+            <button className="dropdown-item" onClick={() => { logout(); setMenuOpen(false); }} style={{ color: '#FDA4AF' }}>
+              🚪 Logout
+            </button>
+          </div>
+        </>
       )}
 
       {/* ── Toasts ── */}
@@ -674,7 +695,7 @@ export default function Dashboard() {
               <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px' }}>{clinic?.name}</div>
             </div>
           </div>
-          
+
           {/* Mobile Right (only Hamburger & Live badge) */}
           <div className="header-mobile-right">
             <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
@@ -687,7 +708,7 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-        
+
         <div className="header-mid-row">
           <div style={s.statChip}>
             <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#f97316,#fb923c)', boxShadow: '0 0 8px rgba(249,115,22,0.6)' }} />
@@ -720,28 +741,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Dropdown Menu ── */}
-        {menuOpen && (
-          <div className="dropdown-menu">
-            <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
-              🕒 History
-            </button>
-            <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
-              💳 Billing & Plan
-            </button>
-            <div className="dropdown-divider" />
-            <button className="dropdown-item" onClick={() => { logout(); setMenuOpen(false); }} style={{ color: '#FDA4AF' }}>
-              🚪 Logout
-            </button>
-          </div>
-        )}
       </header>
 
       {/* ── Action Bar ── */}
       <div style={s.actionBar}>
         <button style={s.btnQR} onClick={() => setShowQR(true)}>🔲 Generate QR</button>
-        <button 
-          style={{ ...s.btnAdd, opacity: isLimitReached ? 0.5 : 1, cursor: isLimitReached ? 'not-allowed' : 'pointer' }} 
+        <button
+          style={{ ...s.btnAdd, opacity: isLimitReached ? 0.5 : 1, cursor: isLimitReached ? 'not-allowed' : 'pointer' }}
           onClick={() => {
             if (isLimitReached) {
               addToast(`Daily limit of ${limit} reached. Upgrade to add more!`, 'error')
@@ -807,9 +813,9 @@ export default function Dashboard() {
         {activeTab === 'history' && (
           <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12, background: 'white', padding: '16px 20px', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1E293B' }}>Select Date:</label>
-            <input 
-              type="date" 
-              value={historyDate} 
+            <input
+              type="date"
+              value={historyDate}
               max={new Date().toISOString().split('T')[0]}
               onChange={e => setHistoryDate(e.target.value)}
               style={{ padding: '8px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500 }}

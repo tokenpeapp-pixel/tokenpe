@@ -623,6 +623,7 @@ export default function Dashboard() {
           .header-top-row {
             width: 100%;
             justify-content: space-between;
+            align-items: center;
           }
           
           .header-mobile-right {
@@ -784,9 +785,9 @@ export default function Dashboard() {
         <div className="header-top-row">
           <div style={s.headerLeft}>
             <img src="/logo.svg" alt="TokenPe" style={{ height: '36px', width: 'auto' }} />
-            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px' }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.45)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Clinic Console</div>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px' }}>{clinic?.name}</div>
+            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px', overflow: 'hidden' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.45)', letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Clinic Console</div>
+              <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>{clinic?.name}</div>
             </div>
           </div>
 

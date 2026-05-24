@@ -111,8 +111,12 @@ export default function BillingPage() {
   const planName = planId === 'starter' ? 'Starter' : planId === 'pro' ? 'Pro' : 'Elite'
   const percentage = limit === Infinity ? 0 : Math.min((todayCount / limit) * 100, 100)
 
-  const daysLeft = isTrial && clinic.trial_ends_at
-    ? Math.max(0, Math.ceil((new Date(clinic.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24)))
+  const trialEnd = clinic.trial_ends_at
+    ? new Date(clinic.trial_ends_at)
+    : (clinic.created_at ? new Date(new Date(clinic.created_at).getTime() + 14 * 24 * 60 * 60 * 1000) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+  
+  const daysLeft = isTrial
+    ? Math.max(0, Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)))
     : null
 
   const plans = [
@@ -135,13 +139,50 @@ export default function BillingPage() {
 
   return (
     <div style={{ minHeight:'100vh', background:'#0a0514', color:'#fff', fontFamily:"'Inter',sans-serif" }}>
+      <style>{`
+        .billing-header {
+          background: linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%);
+          padding: 0 24px;
+          height: 72px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid rgba(124,58,237,0.2);
+        }
+        .header-title {
+          border-left: 1px solid rgba(255,255,255,0.2);
+          padding-left: 16px;
+          font-size: 18px;
+          font-weight: 700;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        @media (max-width: 600px) {
+          .billing-header {
+            flex-direction: column;
+            height: auto;
+            padding: 16px;
+            gap: 16px;
+            align-items: stretch;
+          }
+          .header-title {
+            font-size: 16px;
+          }
+          .back-btn {
+            width: 100%;
+            text-align: center;
+          }
+        }
+      `}</style>
+
       {/* HEADER */}
-      <header style={{ background:'linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%)', padding:'0 24px', height:72, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid rgba(124,58,237,0.2)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-          <img src="/logo.svg" alt="TokenPe" style={{ height:32 }} onError={e => e.target.style.display='none'} />
-          <div style={{ borderLeft:'1px solid rgba(255,255,255,0.2)', paddingLeft:16, fontSize:18, fontWeight:700 }}>Billing & Subscription</div>
+      <header className="billing-header">
+        <div style={{ display:'flex', alignItems:'center', gap:16, overflow: 'hidden' }}>
+          <img src="/logo.svg" alt="TokenPe" style={{ height:32, flexShrink: 0 }} onError={e => e.target.style.display='none'} />
+          <div className="header-title">Billing & Subscription</div>
         </div>
-        <button onClick={() => router.push('/dashboard')} style={{ background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontWeight:600 }}>
+        <button className="back-btn" onClick={() => router.push('/dashboard')} style={{ background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', padding:'10px 16px', borderRadius:8, cursor:'pointer', fontWeight:600 }}>
           ← Back to Dashboard
         </button>
       </header>
@@ -163,7 +204,7 @@ export default function BillingPage() {
               </div>
               <div style={{ color:'#cbd5e1', marginTop:10, fontSize:15, lineHeight:1.7 }}>
                 {isTrial
-                  ? `Trial ends on ${new Date(clinic.trial_ends_at).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}. Upgrade now to keep your features!`
+                  ? `Trial ends on ${trialEnd.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}. Upgrade now to keep your features!`
                   : `Your ${planName} plan renews on ${clinic.current_period_end ? new Date(clinic.current_period_end).toLocaleDateString('en-IN') : 'N/A'}.`}
               </div>
             </div>

@@ -182,6 +182,7 @@ export default function Dashboard() {
   const [newLang, setNewLang] = useState('hi')
   const [time, setTime] = useState(new Date())
   const [showQR, setShowQR] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const sounds = useSounds()
 
   // ── Load clinic from session (multi-clinic support) ─────────────────────
@@ -554,7 +555,93 @@ export default function Dashboard() {
             display: none;
           }
         }
+
+        /* DROPDOWN MENU STYLES */
+        .dropdown-menu {
+          position: absolute;
+          top: 60px;
+          right: 24px;
+          background: rgba(15, 10, 42, 0.95);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(124, 58, 237, 0.3);
+          border-radius: 12px;
+          padding: 8px;
+          width: 200px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+          z-index: 100;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          animation: slideDown 0.2s ease-out forwards;
+          transform-origin: top right;
+        }
+
+        @keyframes slideDown {
+          from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .dropdown-item {
+          background: transparent;
+          color: rgba(255, 255, 255, 0.85);
+          border: none;
+          padding: 12px 16px;
+          border-radius: 8px;
+          text-align: left;
+          font-size: 0.88rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          transition: all 0.15s ease;
+        }
+
+        .dropdown-item:hover {
+          background: rgba(124, 58, 237, 0.2);
+          color: #fff;
+        }
+
+        .dropdown-divider {
+          height: 1px;
+          background: rgba(255, 255, 255, 0.1);
+          margin: 4px 0;
+        }
+
+        .hamburger-btn {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .hamburger-btn:hover {
+          background: rgba(124, 58, 237, 0.2);
+          border-color: rgba(124, 58, 237, 0.4);
+        }
+
+        @media (max-width: 960px) {
+          .dropdown-menu {
+            top: 50px;
+            right: 16px;
+          }
+        }
       `}</style>
+
+      {/* ── Menu Overlay ── */}
+      {menuOpen && (
+        <div 
+          onClick={() => setMenuOpen(false)} 
+          style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+        />
+      )}
 
       {/* ── Toasts ── */}
       <div style={s.toastContainer}>
@@ -587,10 +674,17 @@ export default function Dashboard() {
               <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px' }}>{clinic?.name}</div>
             </div>
           </div>
+          
+          {/* Mobile Right (only Hamburger & Live badge) */}
           <div className="header-mobile-right">
             <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
-            <button onClick={() => router.push('/dashboard/billing')} style={s.btnBilling}>Billing</button>
-            <button onClick={logout} style={s.btnLogout}>Logout</button>
+            <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
           </div>
         </div>
         
@@ -616,10 +710,31 @@ export default function Dashboard() {
           <div className="header-clock">{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
           <div className="desktop-only-logout">
             <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
-            <button onClick={() => router.push('/dashboard/billing')} style={s.btnBilling}>Billing & Plan</button>
-            <button onClick={logout} style={s.btnLogout}>Logout</button>
+            <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* ── Dropdown Menu ── */}
+        {menuOpen && (
+          <div className="dropdown-menu">
+            <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
+              🕒 History
+            </button>
+            <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
+              💳 Billing & Plan
+            </button>
+            <div className="dropdown-divider" />
+            <button className="dropdown-item" onClick={() => { logout(); setMenuOpen(false); }} style={{ color: '#FDA4AF' }}>
+              🚪 Logout
+            </button>
+          </div>
+        )}
       </header>
 
       {/* ── Action Bar ── */}
@@ -672,9 +787,6 @@ export default function Dashboard() {
         </button>
         <button style={{ ...s.tab, ...(activeTab === 'done' ? s.tabActive : {}) }} onClick={() => setActiveTab('done')}>
           Completed ({done.length})
-        </button>
-        <button style={{ ...s.tab, ...(activeTab === 'history' ? s.tabActive : {}) }} onClick={() => setActiveTab('history')}>
-          History
         </button>
       </div>
 

@@ -3,19 +3,19 @@
 import Razorpay from 'razorpay'
 import { supabase } from '../../../../lib/supabase'
 
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-})
-
-const PLAN_MAP = {
-  starter: process.env.RAZORPAY_PLAN_STARTER,
-  pro:     process.env.RAZORPAY_PLAN_PRO,
-  elite:   process.env.RAZORPAY_PLAN_ELITE,
-}
-
 export async function POST(req) {
   try {
+    const razorpay = new Razorpay({
+      key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'dummy_key',
+      key_secret: process.env.RAZORPAY_KEY_SECRET || 'dummy_secret',
+    })
+
+    const PLAN_MAP = {
+      starter: process.env.RAZORPAY_PLAN_STARTER,
+      pro:     process.env.RAZORPAY_PLAN_PRO,
+      elite:   process.env.RAZORPAY_PLAN_ELITE,
+    }
+
     const { clinicId, planTier } = await req.json()
 
     if (!clinicId || !planTier) {

@@ -603,6 +603,10 @@ export default function Dashboard() {
           gap: 12px;
         }
 
+        .mobile-only-live {
+          display: none;
+        }
+
         .header-clock {
           color: rgba(255,255,255,0.6);
           font-weight: 600;
@@ -644,6 +648,10 @@ export default function Dashboard() {
             border-top: 1px solid rgba(255,255,255,0.08);
             padding-top: 12px;
             justify-content: space-between;
+          }
+          
+          .mobile-only-live {
+            display: block;
           }
           
           .desktop-only-logout {
@@ -783,17 +791,16 @@ export default function Dashboard() {
       {/* ── Header ── */}
       <header className="dash-header">
         <div className="header-top-row">
-          <div style={s.headerLeft}>
-            <img src="/logo.svg" alt="TokenPe" style={{ height: '36px', width: 'auto' }} />
-            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px', overflow: 'hidden' }}>
+          <div style={{ ...s.headerLeft, flex: 1, minWidth: 0 }}>
+            <img src="/logo.svg" alt="TokenPe" style={{ height: '36px', width: 'auto', flexShrink: 0 }} />
+            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px', overflow: 'hidden', flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.45)', letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Clinic Console</div>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>{clinic?.name}</div>
+              <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{clinic?.name}</div>
             </div>
           </div>
 
-          {/* Mobile Right (only Hamburger & Live badge) */}
+          {/* Mobile Right (only Hamburger) */}
           <div className="header-mobile-right">
-            <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
             <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -823,7 +830,10 @@ export default function Dashboard() {
         </div>
 
         <div className="header-bottom-row">
-          <div className="header-clock">{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="header-clock">{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+            <div className="mobile-only-live"><div style={s.liveBadge}><span style={s.liveDot} />LIVE</div></div>
+          </div>
           <div className="desktop-only-logout">
             <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
             <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)}>

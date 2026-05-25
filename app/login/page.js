@@ -80,7 +80,7 @@ export default function LoginPage() {
         }
 
         // Generate a new clinic code on each login (invalidates old QR)
-        const newCode = generateCode(data.name)
+        const newCode = generateRandomCode()
         const { data: updated, error: updateErr } = await supabase
             .from('clinics')
             .update({ code: newCode })

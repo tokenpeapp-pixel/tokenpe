@@ -2,6 +2,7 @@
 // Handles: join action (from Interakt Flow webhook)
 // Also handles: callnext action (from dashboard)
 
+import { after } from 'next/server'
 import { supabase, getISTDateString } from '../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../lib/messaging'
 
@@ -188,14 +189,20 @@ export async function POST(req) {
 
             console.log(`[Join] ✅ ${name} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
 
-            // 4. Send voice note — fully awaited so Vercel doesn't kill it
-            await sendVoice({
-                phone: cleanPhone(phone),
-                language: language || 'en',
-                event: 'joined',
-                token: tokenNumber,
-                position,
-                clinicName: clinic.name
+            // 4. Send voice note in background so WhatsApp webhook doesn't timeout!
+            after(async () => {
+                try {
+                    await sendVoice({
+                        phone: cleanPhone(phone),
+                        language: language || 'en',
+                        event: 'joined',
+                        token: tokenNumber,
+                        position,
+                        clinicName: clinic.name
+                    })
+                } catch (err) {
+                    console.error('[Voice Background Error]', err)
+                }
             })
 
             // 5. Return token info back to Interakt Flow
@@ -223,10 +230,16 @@ Thank you for your patience 🙏
 
 _Powered by TokenPe_`
 
-            await Promise.all([
-                sendText(patientPhone, msg),
-                sendVoice({ phone: patientPhone, language: language || 'en', event: 'now', token, clinicName })
-            ])
+            after(async () => {
+                try {
+                    await Promise.all([
+                        sendText(patientPhone, msg),
+                        sendVoice({ phone: patientPhone, language: language || 'en', event: 'now', token, clinicName })
+                    ])
+                } catch (err) {
+                    console.error('[CallNext Background Error]', err)
+                }
+            })
 
             return Response.json({ success: true }, { status: 200 })
         }

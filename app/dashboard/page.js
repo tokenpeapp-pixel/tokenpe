@@ -435,6 +435,11 @@ export default function Dashboard() {
     const next = patients.find(p => p.status === STATUS.WAITING)
     if (!next) return
 
+    // Optimistic UI Update
+    setPatients(prev => prev.map(p => p.id === next.id ? { ...p, status: STATUS.CALLED } : p))
+    sounds.callNext()
+    addToast(`Calling ${next.name || next.token} — notifications & queue alerts sent!`, 'call')
+
     // Call unified backend queue next API to process turn notifications and relative queue alerts!
     const res = await fetch('/api/queue/next', {
       method: 'POST',
@@ -450,15 +455,17 @@ export default function Dashboard() {
       })
     })
 
-    if (res.ok) {
-      sounds.callNext()
-      addToast(`Calling ${next.name || next.token} — notifications & queue alerts sent!`, 'call')
-    } else {
+    if (!res.ok) {
       addToast('Error calling next patient', 'error')
     }
   }
 
   async function markDone(patient) {
+    // Optimistic UI Update
+    setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.DONE } : p))
+    sounds.done()
+    addToast(`${patient.name || patient.token} consultation done`, 'done')
+
     const res = await fetch('/api/queue/done', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -473,21 +480,25 @@ export default function Dashboard() {
       })
     })
 
-    if (res.ok) {
-      sounds.done()
-      addToast(`${patient.name || patient.token} consultation done`, 'done')
-    } else {
+    if (!res.ok) {
       addToast('Error marking consultation done', 'error')
     }
   }
 
   async function skipPatient(patient) {
-    await supabase.from('patients').update({ status: STATUS.SKIPPED }).eq('id', patient.id)
+    // Optimistic UI Update
+    setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.SKIPPED } : p))
     sounds.skip()
     addToast(`${patient.name || patient.token} skipped`, 'skip')
+
+    await supabase.from('patients').update({ status: STATUS.SKIPPED }).eq('id', patient.id)
   }
 
   async function notifyPatient(patient) {
+    // Optimistic UI Update
+    sounds.notify()
+    addToast(`Manual text & voice note alert sent to ${patient.name || patient.token}`, 'notify')
+
     const res = await fetch('/api/queue/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -500,10 +511,7 @@ export default function Dashboard() {
       })
     })
 
-    if (res.ok) {
-      sounds.notify()
-      addToast(`Manual text & voice note alert sent to ${patient.name || patient.token}`, 'notify')
-    } else {
+    if (!res.ok) {
       addToast('Error sending manual alert', 'error')
     }
   }
@@ -656,6 +664,20 @@ export default function Dashboard() {
           
           .desktop-only-logout {
             display: none;
+          }
+        }
+
+        /* PATIENT CARD MOBILE TWEAKS */
+        @media (max-width: 600px) {
+          .patient-card {
+            padding: 14px 16px !important;
+          }
+          .patient-card-actions {
+            width: 100%;
+            justify-content: flex-end;
+            margin-top: 4px;
+            padding-top: 14px;
+            border-top: 1px solid #F1F5F9;
           }
         }
 
@@ -976,7 +998,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
   const statusColor = { waiting: '#F97316', called: '#10B981', done: '#38BDF8', skipped: '#FB7185' }[patient.status]
 
   return (
-    <div style={{ ...s.card, borderLeft: `4px solid ${statusColor}`, opacity: isDone || isSkipped ? 0.75 : 1 }}>
+    <div className="patient-card" style={{ ...s.card, borderLeft: `4px solid ${statusColor}`, opacity: isDone || isSkipped ? 0.75 : 1 }}>
       <div style={{ ...s.token, color: statusColor }}>{patient.token}</div>
       <div style={s.cardInfo}>
         <div style={s.patientName}>
@@ -990,7 +1012,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
         </div>
         {position && <div style={s.estWait}>Est. wait: ~{position * 7} mins</div>}
       </div>
-      <div style={s.cardActions}>
+      <div className="patient-card-actions" style={s.cardActions}>
         {isCalled && (
           <button style={s.btnDone} onClick={onDone}>✓ Done</button>
         )}
@@ -1049,7 +1071,7 @@ const s = {
   tabActive: { color: '#7C3AED', borderBottom: '2px solid #7C3AED' },
   list: { padding: '12px 16px 80px' },
   sectionLabel: { padding: '16px 8px 8px', fontSize: '0.68rem', fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '1.2px', display: 'flex', alignItems: 'center', gap: 6 },
-  card: { background: 'white', borderRadius: 16, padding: '18px 20px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid #F1F5F9', transition: 'box-shadow .2s,transform .15s' },
+  card: { background: 'white', borderRadius: 16, padding: '18px 20px', marginBottom: 10, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid #F1F5F9', transition: 'box-shadow .2s,transform .15s' },
   token: { fontWeight: 900, fontSize: '1.1rem', minWidth: 56, textAlign: 'center', letterSpacing: '-0.5px', fontVariantNumeric: 'tabular-nums' },
   cardInfo: { flex: 1, minWidth: 0 },
   patientName: { fontWeight: 700, color: '#0F172A', fontSize: '0.93rem', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },

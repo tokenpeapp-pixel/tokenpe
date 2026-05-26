@@ -62,8 +62,9 @@ export async function POST(req) {
         const today = getISTDateString()
         const phone = cleanPhone(patientPhone)
 
-        // 1. Mark patient as CALLED in Supabase + fetch waiting list — in parallel
-        const [, { data: waitingPatients }] = await Promise.all([
+        // 1. Fetch clinic to check plan, Mark patient as CALLED, fetch waiting list — in parallel
+        const [ { data: clinic }, , { data: waitingPatients }] = await Promise.all([
+            supabase.from('clinics').select('plan_id').eq('id', clinicId).single(),
             supabase.from('patients').update({ status: 'called' }).eq('id', patientId),
             supabase.from('patients').select('*')
                 .eq('clinic_id', clinicId)
@@ -72,11 +73,14 @@ export async function POST(req) {
                 .order('joined_at', { ascending: true })
         ])
 
-        // 2. Send "Your Turn" text + voice in parallel
-        await Promise.all([
-            sendText(phone, getMessage('your_turn', patientName || 'Patient', token, token, clinicName)),
-            sendVoice({ phone, language: language || 'en', event: 'now', token, clinicName })
-        ])
+        const planId = clinic?.plan_id || 'starter'
+
+        // 2. Send "Your Turn" text + voice (if pro/elite) in parallel
+        const nowAlerts = [sendText(phone, getMessage('your_turn', patientName || 'Patient', token, token, clinicName))]
+        if (planId !== 'starter') {
+            nowAlerts.push(sendVoice({ phone, language: language || 'en', event: 'now', token, clinicName }))
+        }
+        await Promise.all(nowAlerts)
 
         // 3. Send 10-away and 5-away alerts in parallel (fire & await together)
         const sideAlerts = []
@@ -86,18 +90,18 @@ export async function POST(req) {
 
                 if (position === 10) {
                     console.log(`[10-Away] Alerting ${p.name} (${p.token})`)
-                    sideAlerts.push(
-                        sendText(cleanPhone(p.phone), getMessage('ten_away', p.name || 'Patient', p.token, token, clinicName)),
-                        sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'ten_away', token: p.token, currentToken: token, clinicName })
-                    )
+                    sideAlerts.push(sendText(cleanPhone(p.phone), getMessage('ten_away', p.name || 'Patient', p.token, token, clinicName)))
+                    if (planId !== 'starter') {
+                        sideAlerts.push(sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'ten_away', token: p.token, currentToken: token, clinicName }))
+                    }
                 }
 
                 if (position === 5) {
                     console.log(`[5-Away] Alerting ${p.name} (${p.token})`)
-                    sideAlerts.push(
-                        sendText(cleanPhone(p.phone), getMessage('five_away', p.name || 'Patient', p.token, token, clinicName)),
-                        sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'five_away', token: p.token, currentToken: token, clinicName })
-                    )
+                    sideAlerts.push(sendText(cleanPhone(p.phone), getMessage('five_away', p.name || 'Patient', p.token, token, clinicName)))
+                    if (planId !== 'starter') {
+                        sideAlerts.push(sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'five_away', token: p.token, currentToken: token, clinicName }))
+                    }
                 }
             })
         }

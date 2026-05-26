@@ -190,20 +190,22 @@ export async function POST(req) {
             console.log(`[Join] ✅ ${name} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
 
             // 4. Send voice note in background so WhatsApp webhook doesn't timeout!
-            after(async () => {
-                try {
-                    await sendVoice({
-                        phone: cleanPhone(phone),
-                        language: language || 'en',
-                        event: 'joined',
-                        token: tokenNumber,
-                        position,
-                        clinicName: clinic.name
-                    })
-                } catch (err) {
-                    console.error('[Voice Background Error]', err)
-                }
-            })
+            if (planId !== 'starter') {
+                after(async () => {
+                    try {
+                        await sendVoice({
+                            phone: cleanPhone(phone),
+                            language: language || 'en',
+                            event: 'joined',
+                            token: tokenNumber,
+                            position,
+                            clinicName: clinic.name
+                        })
+                    } catch (err) {
+                        console.error('[Voice Background Error]', err)
+                    }
+                })
+            }
 
             // 5. Return token info back to Interakt Flow
             return Response.json({

@@ -27,12 +27,21 @@ Please don't hesitate to reach out if you have any questions.
 
 _Powered by TokenPe_`
 
-        // Mark done in DB + send text + send voice — all in parallel
-        await Promise.all([
+        // 1. Fetch clinic to check plan
+        const { data: clinic } = await supabase.from('clinics').select('plan_id').eq('id', clinicId).single()
+        const planId = clinic?.plan_id || 'starter'
+
+        // 2. Mark done in DB + send text + send voice (if pro/elite) — all in parallel
+        const alerts = [
             supabase.from('patients').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId),
-            sendText(phone, doneMsg),
-            sendVoice({ phone, language: language || 'en', event: 'done', token, clinicName })
-        ])
+            sendText(phone, doneMsg)
+        ]
+        
+        if (planId !== 'starter') {
+            alerts.push(sendVoice({ phone, language: language || 'en', event: 'done', token, clinicName }))
+        }
+
+        await Promise.all(alerts)
 
         return Response.json({ success: true, done: token })
 

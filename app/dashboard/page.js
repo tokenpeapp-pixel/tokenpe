@@ -504,6 +504,7 @@ export default function Dashboard() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        clinicId: clinic.id,
         clinicName: clinic.name,
         patientPhone: patient.phone,
         patientName: patient.name || 'Patient',
@@ -778,6 +779,9 @@ export default function Dashboard() {
           <div className="dropdown-menu">
             <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
               🕒 History
+            </button>
+            <button className="dropdown-item" onClick={() => { router.push('/dashboard/analytics'); setMenuOpen(false); }}>
+              📊 Analytics (Elite)
             </button>
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
               💳 Billing & Plan

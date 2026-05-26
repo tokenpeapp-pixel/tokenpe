@@ -1,12 +1,14 @@
 // FILE: /app/api/queue/notify/route.js
 // Manual notify from dashboard — sends "coming soon" text + voice note in parallel
 
+import { supabase } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
         const {
+            clinicId,
             clinicName,
             patientPhone,
             patientName,
@@ -25,11 +27,16 @@ The clinic has sent a manual alert for you. Please make sure you are nearby! �
 
 _Powered by TokenPe_`
 
-        // Send text + voice in parallel
-        await Promise.all([
-            sendText(phone, notifyMsg),
-            sendVoice({ phone, language: language || 'en', event: 'soon', token, clinicName })
-        ])
+        // Fetch clinic to check plan
+        const { data: clinic } = await supabase.from('clinics').select('plan_id').eq('id', clinicId).single()
+        const planId = clinic?.plan_id || 'starter'
+
+        // Send text + voice (if pro/elite) in parallel
+        const alerts = [sendText(phone, notifyMsg)]
+        if (planId !== 'starter') {
+            alerts.push(sendVoice({ phone, language: language || 'en', event: 'soon', token, clinicName }))
+        }
+        await Promise.all(alerts)
 
         return Response.json({ success: true, notified: token })
 

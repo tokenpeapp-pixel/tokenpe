@@ -99,6 +99,31 @@ export default function BillingPage() {
     }
   }, [clinic, upgrading])
 
+  const handleCancel = async () => {
+    if (!confirm('Are you sure you want to cancel your active subscription? You will instantly lose access to premium features and be downgraded to Starter.')) return;
+    try {
+      setUpgrading('cancel')
+      const res = await fetch('/api/razorpay/cancel-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to cancel')
+      
+      alert('Subscription canceled successfully.')
+      const { data: fresh } = await supabase.from('clinics').select('*').eq('id', clinic.id).single()
+      if (fresh) {
+        setClinic(fresh)
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`)
+    } finally {
+      setUpgrading(null)
+    }
+  }
+
   if (loading) return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0a0514' }}>
       <div style={{ width:40, height:40, border:'4px solid rgba(255,255,255,0.1)', borderTopColor:'#7c3aed', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
@@ -256,6 +281,15 @@ export default function BillingPage() {
                 >
                   {isLoading ? '⏳ Opening checkout...' : isCurrent ? '✓ Current Plan' : `Upgrade to ${plan.name}`}
                 </button>
+                {isCurrent && plan.tier !== 'starter' && !isTrial && (
+                  <button
+                    onClick={handleCancel}
+                    disabled={!!upgrading}
+                    style={{ width: '100%', padding: '12px 24px', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: 'pointer', marginTop: 12, transition: 'all 0.2s', opacity: upgrading ? 0.5 : 1 }}
+                  >
+                    {upgrading === 'cancel' ? 'Canceling...' : 'Cancel Subscription'}
+                  </button>
+                )}
               </div>
             )
           })}

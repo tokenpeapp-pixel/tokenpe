@@ -39,6 +39,8 @@ export default function LoginPage() {
     const [loginCode, setLoginCode] = useState('')
     const [loginPhone, setLoginPhone] = useState('')
 
+    const [regName, setRegName] = useState('')
+    const [regPhone, setRegPhone] = useState('')
     const [regEmail, setRegEmail] = useState('')
 
     function generateRandomCode() {

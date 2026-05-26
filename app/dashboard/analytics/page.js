@@ -29,13 +29,12 @@ export default function AnalyticsPage() {
       const c = JSON.parse(stored)
       setClinic(c)
 
-      if (c.plan_id !== 'elite') {
-        // Not Elite -> Block access
-        setLoading(false)
-        return
+      // Automatically force 7-days for starter plan, or 30-days for pro/elite if not already set.
+      if (c.plan_id === 'starter') {
+        setDateRange('7')
       }
 
-      await fetchAnalytics(c.id)
+      await fetchAnalytics(c.id, c.plan_id === 'starter' ? '7' : dateRange)
     }
     load()
   }, [router])
@@ -172,25 +171,7 @@ export default function AnalyticsPage() {
     </div>
   )
 
-  if (clinic?.plan_id !== 'elite') {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', color: 'white', fontFamily: "'Inter',sans-serif", padding: 20 }}>
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '40px', borderRadius: '24px', textAlign: 'center', maxWidth: 400 }}>
-          <div style={{ fontSize: '3rem', marginBottom: 20 }}>🥇</div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 10 }}>Elite Feature</h2>
-          <p style={{ color: '#94A3B8', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24 }}>
-            Monthly PDF Analytics is strictly available to Elite plan members. Upgrade to unlock deep clinic insights!
-          </p>
-          <button onClick={() => router.push('/dashboard/billing')} style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', width: '100%' }}>
-            Upgrade to Elite
-          </button>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'transparent', color: '#94A3B8', border: 'none', padding: '12px 24px', marginTop: 10, fontWeight: 600, cursor: 'pointer' }}>
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
-    )
-  }
+  // Removed strict Elite blocker; Analytics now open to all (with varying limits)
 
   // Calculate Max for Chart Scaling
   const maxChartVal = Math.max(...stats.dailyData.map(d => d.count), 1)
@@ -304,28 +285,31 @@ export default function AnalyticsPage() {
           <select 
             value={dateRange} 
             onChange={(e) => {
+              if (clinic?.plan_id === 'starter' && e.target.value !== '7') return
+              if (clinic?.plan_id === 'pro' && parseInt(e.target.value) > 30) return
               setDateRange(e.target.value)
               setLoading(true)
               fetchAnalytics(clinic.id, e.target.value)
             }}
             style={{ background: '#1E293B', color: 'white', border: '1px solid #334155', padding: '10px 16px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
           >
-            <option value="30">Last 30 Days</option>
-            <option value="180">Last 6 Months</option>
-            <option value="365">Last 1 Year</option>
+            <option value="7">Last 7 Days (Starter)</option>
+            {clinic?.plan_id !== 'starter' && <option value="30">Last 30 Days (Pro)</option>}
+            {clinic?.plan_id === 'elite' && <option value="180">Last 6 Months (Elite)</option>}
+            {clinic?.plan_id === 'elite' && <option value="365">Last 1 Year (Elite)</option>}
           </select>
 
           <button
-            onClick={exportCSV}
-            style={{ background: '#10B981', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            onClick={() => clinic?.plan_id === 'starter' ? router.push('/dashboard/billing') : exportCSV()}
+            style={{ background: clinic?.plan_id === 'starter' ? '#334155' : '#10B981', color: clinic?.plan_id === 'starter' ? '#94A3B8' : 'white', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: clinic?.plan_id === 'starter' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
           >
-            📥 Export CSV
+            {clinic?.plan_id === 'starter' ? '🔒 CSV Export (Pro)' : '📥 Export CSV'}
           </button>
           <button
-            onClick={() => window.print()}
-            style={{ background: '#F59E0B', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            onClick={() => clinic?.plan_id === 'starter' ? router.push('/dashboard/billing') : window.print()}
+            style={{ background: clinic?.plan_id === 'starter' ? '#334155' : '#F59E0B', color: clinic?.plan_id === 'starter' ? '#94A3B8' : '#000', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: clinic?.plan_id === 'starter' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
           >
-            📄 Download PDF
+            {clinic?.plan_id === 'starter' ? '🔒 PDF Report (Pro)' : '📄 Download PDF'}
           </button>
         </div>
       </div>

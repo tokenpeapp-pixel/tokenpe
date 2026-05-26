@@ -901,9 +901,15 @@ export default function Dashboard() {
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/crm'); setMenuOpen(false); }}>
               📢 CRM & Broadcasts (Elite)
             </button>
-            <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }} style={{ color: '#059669', fontWeight: 700 }}>
-              🟢 VIP Support (Elite)
-            </button>
+            {clinic?.plan_id === 'elite' ? (
+              <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }} style={{ color: '#059669', fontWeight: 700 }}>
+                🟢 VIP Support (Elite)
+              </button>
+            ) : (
+              <button className="dropdown-item" onClick={() => { window.open('mailto:support@tokenpe.online', '_blank'); setMenuOpen(false); }}>
+                ✉️ Email Support
+              </button>
+            )}
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
               💳 Billing & Plan
             </button>
@@ -1122,6 +1128,7 @@ export default function Dashboard() {
               type="date"
               value={historyDate}
               max={new Date().toISOString().split('T')[0]}
+              min={clinic?.plan_id === 'starter' ? (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })() : undefined}
               onChange={e => setHistoryDate(e.target.value)}
               style={{ padding: '8px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500 }}
             />

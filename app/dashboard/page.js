@@ -463,7 +463,7 @@ export default function Dashboard() {
 
   async function markDone(patient) {
     // Optimistic UI Update
-    setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.DONE } : p))
+    setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.DONE, completed_at: new Date().toISOString() } : p))
     sounds.done()
     addToast(`${patient.name || patient.token} consultation done`, 'done')
 
@@ -997,6 +997,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
   const isSkipped = patient.status === STATUS.SKIPPED
   const waitMins = Math.floor((new Date() - new Date(patient.joined_at)) / 60000)
   const joinedTime = new Date(patient.joined_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const completedTime = patient.completed_at ? new Date(patient.completed_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : null
   const statusColor = { waiting: '#F97316', called: '#10B981', done: '#38BDF8', skipped: '#FB7185' }[patient.status]
 
   return (
@@ -1009,7 +1010,8 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
         </div>
         <div style={s.patientMeta}>
           📱 +91 {patient.phone} &nbsp;·&nbsp;
-          🕒 {joinedTime} {isWaiting && `(⏳ ${waitMins}m)`} &nbsp;·&nbsp;
+          🕒 {joinedTime} {isWaiting && `(⏳ ${waitMins}m)`} 
+          {completedTime && ` → ✅ ${completedTime}`} &nbsp;·&nbsp;
           {position ? `#${position} in line` : patient.status.toUpperCase()}
         </div>
         {position && <div style={s.estWait}>Est. wait: ~{position * 7} mins</div>}

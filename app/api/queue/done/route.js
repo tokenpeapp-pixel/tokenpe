@@ -29,7 +29,7 @@ _Powered by TokenPe_`
 
         // Mark done in DB + send text + send voice — all in parallel
         await Promise.all([
-            supabase.from('patients').update({ status: 'done' }).eq('id', patientId),
+            supabase.from('patients').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId),
             sendText(phone, doneMsg),
             sendVoice({ phone, language: language || 'en', event: 'done', token, clinicName })
         ])

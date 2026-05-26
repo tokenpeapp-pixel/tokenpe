@@ -83,15 +83,16 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
     setCodeSaving(true)
     setCodeError('')
     // Check uniqueness
-    const { data: taken } = await supabase.from('clinics').select('id').eq('code', clean).single()
-    if (taken && taken.id !== clinic?.id) {
-      setCodeError('This code is already taken. Try another.')
-      setCodeSaving(false)
-      return
-    }
-    const { error } = await supabase.from('clinics').update({ code: clean }).eq('id', clinic?.id)
-    if (error) {
-      setCodeError('Failed to save. Please try again.')
+    const res = await fetch('/api/clinics/code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clinicId: clinic?.id, newCode: clean })
+    })
+
+    const result = await res.json()
+
+    if (!res.ok || !result.success) {
+      setCodeError(result.message || 'Failed to save. You might not have permission.')
       setCodeSaving(false)
       return
     }

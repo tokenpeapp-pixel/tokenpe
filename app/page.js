@@ -242,8 +242,8 @@ export default function LandingPage() {
         <div className="plans">
           {[
             { name: "Starter", desc: "Perfect for small clinics", price: "₹499", per: "/mo", feats: ["50 patients/day", "Standard WhatsApp Alerts", "Basic 7-day Analytics", "Auto-Generated Code"], hot: false },
-            { name: "Pro", desc: "For busy clinics that want to look professional", price: "₹999", per: "/mo", feats: ["150 patients/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "30-Day History & Support"], hot: true },
-            { name: "Elite", desc: "For hospitals, polyclinics & top doctors", price: "₹1999", per: "/mo", feats: ["Unlimited patients", "Multi-Clinic Management", "Automated Google Reviews", "Receptionist Accounts", "CRM Broadcasts"], hot: false },
+            { name: "Pro", desc: "For busy clinics that want to look professional", price: "₹999", per: "/mo", feats: ["150 patients/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "Queue Pause & Smart Wait Time", "30-Day History & Heatmap"], hot: true },
+            { name: "Elite", desc: "For hospitals, polyclinics & top doctors", price: "₹1999", per: "/mo", feats: ["Unlimited patients", "Multi-Clinic Management", "Monthly PDF Reports", "VIP WhatsApp Support", "CRM Broadcasts"], hot: false },
           ].map(p => (
             <div key={p.name} className={`plan${p.hot ? " hot" : ""}`}>
               {p.hot && <div className="plan-badge">✦ Most Popular</div>}
@@ -325,12 +325,7 @@ export default function LandingPage() {
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
                   </tr>
-                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Receptionist Accounts</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
-                  </tr>
+
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Patient CRM Broadcasts</td>
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
@@ -338,10 +333,28 @@ export default function LandingPage() {
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Queue Pause Control</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓ Included</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Smart Wait Time Prediction</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Basic Time</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Dynamic AI Prediction</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Dynamic AI Prediction</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>QR Print Card</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Clinic Name Only</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Name + Custom Address</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Name + Custom Address</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Dashboard Analytics</td>
                     <td style={{ textAlign: "center", padding: "16px 8px" }}>7 Days</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>30 Days</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>Unlimited + Excel Export</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>30 Days + Heatmap</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>Unlimited + Excel/PDF Export</td>
                   </tr>
                   <tr>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Support</td>

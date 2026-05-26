@@ -137,6 +137,19 @@ export async function POST(req) {
                 }, { status: 200 })
             }
 
+            // 1.5 Check if queue is paused
+            if (clinic.queue_paused) {
+                console.log(`[Join] ❌ Queue is paused for ${clinic.name}`)
+                const pausedMsg = `❌ *Queue Paused*\n\nThe queue is currently paused by the clinic.\n\nPlease try again later.`
+                await sendText(cleanPhone(phone), pausedMsg)
+                
+                return Response.json({
+                    success: false,
+                    message: 'Queue is currently paused.',
+                    token: 'PAUSED', position: 0, wait: 'N/A', clinicName: clinic.name, name: name || 'Guest'
+                }, { status: 200 })
+            }
+
             // 2. Count patients in queue today
             const today = getISTDateString()
             const { count } = await supabase
@@ -163,8 +176,54 @@ export async function POST(req) {
                 }, { status: 200 })
             }
 
+            // Calculate people actually waiting ahead
+            const { count: peopleAhead } = await supabase
+                .from('patients')
+                .select('*', { count: 'exact', head: true })
+                .eq('clinic_id', clinic.id)
+                .eq('date', today)
+                .in('status', ['waiting', 'called'])
+
+            // Calculate dynamic wait time for Pro/Elite based on doctor's speed today
+            let avgWaitPerPatient = 7 // Default 7 mins
+            if (planId !== 'starter') {
+                const { data: recentDone } = await supabase
+                    .from('patients')
+                    .select('completed_at')
+                    .eq('clinic_id', clinic.id)
+                    .eq('date', today)
+                    .eq('status', 'done')
+                    .not('completed_at', 'is', null)
+                    .order('completed_at', { ascending: false })
+                    .limit(10)
+
+                if (recentDone && recentDone.length >= 2) {
+                    let totalDiffMs = 0
+                    let diffCount = 0
+                    for (let i = 0; i < recentDone.length - 1; i++) {
+                        const t1 = new Date(recentDone[i].completed_at).getTime()
+                        const t2 = new Date(recentDone[i+1].completed_at).getTime()
+                        const diffMs = t1 - t2
+                        // Ignore huge gaps (> 30 mins) as the doctor might have taken a break
+                        if (diffMs >= 60000 && diffMs <= 1800000) {
+                            totalDiffMs += diffMs
+                            diffCount++
+                        }
+                    }
+                    if (diffCount > 0) {
+                        const calculatedAvg = Math.round((totalDiffMs / diffCount) / 60000)
+                        // Keep reasonable bounds (min 2 mins, max 15 mins)
+                        avgWaitPerPatient = Math.max(2, Math.min(calculatedAvg, 15))
+                    }
+                }
+            }
+
             const tokenNumber = `T${String(position + 1).padStart(3, '0')}`
-            const waitMins = position === 0 ? 'You are next!' : `${position * 7} mins`
+            const waitTimeNum = (peopleAhead || 0) * avgWaitPerPatient
+            let waitMins = (peopleAhead === 0) ? 'You are next!' : `${waitTimeNum} mins`
+            if (planId !== 'starter' && peopleAhead > 0) {
+                waitMins = `Predicted Wait Time: ~${waitTimeNum} mins`
+            }
 
             // 3. Insert patient into queue + send voice note — in parallel
             const insertPayload = {

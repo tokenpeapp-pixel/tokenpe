@@ -61,6 +61,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
   const [downloaded, setDownloaded] = useState(false)
   const [editingCode, setEditingCode] = useState(false)
   const [codeInput, setCodeInput] = useState(clinic?.code || '')
+  const [addressInput, setAddressInput] = useState(clinic?.address || '')
   const [codeError, setCodeError] = useState('')
   const [codeSaving, setCodeSaving] = useState(false)
   const [codeSuccess, setCodeSuccess] = useState(false)
@@ -100,9 +101,13 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
     // Update localStorage
     const stored = localStorage.getItem('tokenpe_clinic')
     if (stored) {
-      try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean })) } catch (_) {}
+      try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean, address: addressInput })) } catch (_) {}
     }
     localStorage.setItem('clinicCode', clean)
+    // Save address directly via supabase
+    await supabase.from('clinics').update({ address: addressInput }).eq('id', clinic.id)
+    clinic.address = addressInput
+    
     onCodeUpdate(clean)
     setCodeSaving(false)
     setCodeSuccess(true)
@@ -215,6 +220,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
           <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-light.svg" style="height:44px;width:auto" />
         </div>
         <div class="name">${clinic?.name}</div>
+        ${clinic?.address ? `<div style="font-size:11px;color:#64748b;margin-top:-2px;margin-bottom:8px;padding:0 10px">${clinic.address}</div>` : ''}
         <div class="sub">Scan to join the OPD queue</div>
         <div style="position:relative; display:inline-block">
           <img src="${qrUrl}" />
@@ -294,12 +300,19 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
                   placeholder="e.g. DRSHARMA"
                   style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 700, letterSpacing: 2, color: '#6d28d9', border: '2px solid #7C3AED', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#faf5ff' }}
                 />
+                <input
+                  value={addressInput}
+                  onChange={e => setAddressInput(e.target.value)}
+                  maxLength={100}
+                  placeholder="Clinic Address (Optional)"
+                  style={{ fontSize: 13, color: '#1e293b', border: '2px solid #ede9fe', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#fff' }}
+                />
                 {codeError && <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600 }}>{codeError}</div>}
                 <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                   <button onClick={saveCode} disabled={codeSaving} style={{ flex: 1, padding: '9px 0', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: 'white', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: codeSaving ? 0.7 : 1 }}>
-                    {codeSaving ? 'Saving...' : '✓ Save Code'}
+                    {codeSaving ? 'Saving...' : '✓ Save'}
                   </button>
-                  <button onClick={() => { setEditingCode(false); setCodeInput(clinic?.code || ''); setCodeError('') }} style={{ flex: 1, padding: '9px 0', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={() => { setEditingCode(false); setCodeInput(clinic?.code || ''); setAddressInput(clinic?.address || ''); setCodeError('') }} style={{ flex: 1, padding: '9px 0', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     Cancel
                   </button>
                 </div>
@@ -521,6 +534,18 @@ export default function Dashboard() {
     localStorage.removeItem('tokenpe_clinic')
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  // ── Toggle Pause ────────────────────────────────────────────────────────
+  async function togglePause() {
+    if (clinic.plan_id === 'starter') {
+      addToast('Queue pause is a Pro feature. Please upgrade.', 'error')
+      return
+    }
+    const newStatus = !clinic.queue_paused
+    setClinic(prev => ({ ...prev, queue_paused: newStatus }))
+    await supabase.from('clinics').update({ queue_paused: newStatus }).eq('id', clinic.id)
+    addToast(newStatus ? 'Queue is now PAUSED' : 'Queue is now ACTIVE', newStatus ? 'notify' : 'done')
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────
@@ -773,6 +798,23 @@ export default function Dashboard() {
             padding-top: 14px;
             border-top: 1px solid #F1F5F9;
           }
+          .action-bar-responsive {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px !important;
+            padding: 12px 14px !important;
+          }
+          .action-bar-responsive button {
+            font-size: 0.78rem !important;
+            padding: 10px 10px !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .action-bar-responsive .qr-hint-mobile {
+            grid-column: 1 / -1;
+            text-align: center;
+          }
         }
 
         /* DROPDOWN MENU STYLES */
@@ -905,9 +947,13 @@ export default function Dashboard() {
               <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }} style={{ color: '#059669', fontWeight: 700 }}>
                 🟢 VIP Support (Elite)
               </button>
+            ) : clinic?.plan_id === 'pro' ? (
+              <button className="dropdown-item" onClick={() => { window.open('mailto:support@tokenpe.online', '_blank'); setMenuOpen(false); }} style={{ color: '#A78BFA', fontWeight: 700 }}>
+                ⭐ Priority Support (Pro)
+              </button>
             ) : (
-              <button className="dropdown-item" onClick={() => { window.open('mailto:support@tokenpe.online', '_blank'); setMenuOpen(false); }}>
-                ✉️ Email Support
+              <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
+                ✉️ Standard Support (Upgrade for Priority)
               </button>
             )}
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
@@ -1055,8 +1101,14 @@ export default function Dashboard() {
       </header>
 
       {/* ── Action Bar ── */}
-      <div style={s.actionBar}>
+      <div className="action-bar-responsive" style={s.actionBar}>
         <button style={s.btnQR} onClick={() => setShowQR(true)}>🔲 Generate QR</button>
+        <button 
+          style={{ ...s.btnGhost, color: clinic?.queue_paused ? '#EF4444' : '#10B981', borderColor: clinic?.queue_paused ? '#FECACA' : '#A7F3D0', fontWeight: 700 }}
+          onClick={togglePause}
+        >
+          {clinic?.queue_paused ? '⏸ Paused' : '▶️ Active'}
+        </button>
         <button
           style={{ ...s.btnAdd, opacity: isLimitReached ? 0.5 : 1, cursor: isLimitReached ? 'not-allowed' : 'pointer' }}
           onClick={() => {
@@ -1067,7 +1119,7 @@ export default function Dashboard() {
             setShowAddForm(!showAddForm)
           }}
         >
-          {isLimitReached ? `🔒 Limit Reached (${limit})` : '+ Add Walk-in'}
+          {isLimitReached ? `🔒 Limit (${limit})` : '+ Walk-in'}
         </button>
         <button
           style={{ ...s.btnCall, opacity: waiting.length === 0 ? 0.4 : 1 }}
@@ -1076,7 +1128,7 @@ export default function Dashboard() {
         >
           📢 Call Next {waiting.length > 0 ? `(${waiting[0]?.token})` : ''}
         </button>
-        <div style={s.qrHint}>📱 Patients scan QR → WhatsApp → Auto joins queue</div>
+        <div className="qr-hint-mobile" style={s.qrHint}>📱 Patients scan QR → WhatsApp → Auto joins queue</div>
       </div>
 
       {/* ── Add Walk-in Form ── */}
@@ -1128,7 +1180,13 @@ export default function Dashboard() {
               type="date"
               value={historyDate}
               max={new Date().toISOString().split('T')[0]}
-              min={clinic?.plan_id === 'starter' ? (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })() : undefined}
+              min={
+                clinic?.plan_id === 'starter' 
+                  ? (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })() 
+                  : clinic?.plan_id === 'pro' 
+                    ? (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })() 
+                    : undefined
+              }
               onChange={e => setHistoryDate(e.target.value)}
               style={{ padding: '8px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500 }}
             />

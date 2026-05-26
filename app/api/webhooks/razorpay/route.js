@@ -1,7 +1,7 @@
 // POST /api/webhooks/razorpay
 // Handles Razorpay subscription webhook events to update clinic plans in Supabase
 import crypto from 'crypto'
-import { supabase } from '../../../../lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req) {
   try {
@@ -33,12 +33,18 @@ export async function POST(req) {
     const planTier = sub.notes?.plan_tier
     if (!clinicId) return Response.json({ ok: true })
 
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
     // ── Handle Events ──────────────────────────────────────────────────────────
 
     if (eventType === 'subscription.activated' || eventType === 'subscription.charged') {
       // Payment successful — upgrade clinic plan
       const periodEnd = new Date(sub.current_end * 1000).toISOString()
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('clinics')
         .update({
           plan_id: planTier,
@@ -54,7 +60,7 @@ export async function POST(req) {
 
     if (eventType === 'subscription.halted' || eventType === 'subscription.cancelled') {
       // Payment failed or cancelled — downgrade to starter
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('clinics')
         .update({
           plan_id: 'starter',
@@ -67,7 +73,7 @@ export async function POST(req) {
     }
 
     if (eventType === 'subscription.completed') {
-      await supabase
+      await supabaseAdmin
         .from('clinics')
         .update({ subscription_status: 'completed' })
         .eq('id', clinicId)

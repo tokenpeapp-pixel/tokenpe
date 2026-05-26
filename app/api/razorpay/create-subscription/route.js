@@ -1,7 +1,7 @@
 // POST /api/razorpay/create-subscription
 // Creates a Razorpay subscription for the given plan tier
 import Razorpay from 'razorpay'
-import { supabase } from '../../../../lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req) {
   try {
@@ -28,7 +28,13 @@ export async function POST(req) {
     }
 
     // Get clinic details for pre-filling checkout
-    const { data: clinic, error: cErr } = await supabase
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    
+    const { data: clinic, error: cErr } = await supabaseAdmin
       .from('clinics').select('name, email, phone').eq('id', clinicId).single()
 
     if (cErr || !clinic) {

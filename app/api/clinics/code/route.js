@@ -21,6 +21,22 @@ export async function POST(req) {
             }
         )
 
+        // 1. Verify the clinic exists and check their plan
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, subscription_status').eq('id', clinicId).single()
+        
+        if (!clinic) {
+            return NextResponse.json({ success: false, message: 'Clinic not found' }, { status: 404 })
+        }
+
+        const planId = clinic.plan_id || 'starter'
+        const isTrialing = planId === 'trialing' || clinic.subscription_status === 'trialing'
+        const canEditCode = planId === 'pro' || planId === 'elite' || isTrialing
+
+        if (!canEditCode) {
+            return NextResponse.json({ success: false, message: 'Upgrade to Pro or Elite to customize your clinic code.' }, { status: 403 })
+        }
+
+        // 2. Check if the new code is already taken
         const { data: taken } = await supabaseAdmin.from('clinics').select('id').eq('code', newCode).single()
         
         if (taken && taken.id !== clinicId) {

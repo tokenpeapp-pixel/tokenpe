@@ -138,11 +138,12 @@ function AuthCallbackContent() {
                 if (authError || !user) { router.replace('/login'); return }
 
                 const intent = searchParams.get('intent') || 'login'
-                const { data: clinicData, error: clinicError } = await supabase
-                    .from('clinics').select('*').eq('email', user.email).single()
+                const { data: clinics, error: clinicError } = await supabase
+                    .from('clinics').select('*').eq('email', user.email).order('created_at', { ascending: true })
 
-                if (clinicData && !clinicError) {
+                if (clinics && clinics.length > 0 && !clinicError) {
                     setStatus('Generating your daily code...')
+                    const clinicData = clinics[0] // Default to the first clinic
                     const baseName = clinicData.name || user.user_metadata?.full_name || user.email.split('@')[0]
                     const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
                     const todayStr = getISTDateString()
@@ -161,6 +162,7 @@ function AuthCallbackContent() {
                     localStorage.setItem('clinicCode', finalClinicData.code)
                     localStorage.setItem('clinicPhone', finalClinicData.phone)
                     localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinicData))
+                    localStorage.setItem('tokenpe_user_clinics', JSON.stringify(clinics))
                     router.replace('/dashboard')
                     return
                 }

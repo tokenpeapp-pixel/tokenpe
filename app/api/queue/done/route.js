@@ -19,17 +19,21 @@ export async function POST(req) {
 
         const phone = cleanPhone(patientPhone)
 
+        // 1. Fetch clinic to check plan
+        const { data: clinic } = await supabase.from('clinics').select('plan_id, code').eq('id', clinicId).single()
+        const planId = clinic?.plan_id || 'starter'
+        const clinicCode = clinic?.code || ''
+
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tokenpe.online'
+        const feedbackUrl = `${baseUrl}/feedback/${clinicCode}?patientId=${patientId}`
+
         const doneMsg = `✅ *Consultation Completed, ${patientName || 'Patient'}!*
 
 Thank you for visiting *${clinicName}*. We hope you feel better soon! 🌟
 
-Please don't hesitate to reach out if you have any questions.
+${(planId === 'elite' || clinic?.subscription_status === 'trialing') ? `How was your visit? Please rate us here:\n${feedbackUrl}\n\n` : ''}Please don't hesitate to reach out if you have any questions.
 
 _Powered by TokenPe_`
-
-        // 1. Fetch clinic to check plan
-        const { data: clinic } = await supabase.from('clinics').select('plan_id').eq('id', clinicId).single()
-        const planId = clinic?.plan_id || 'starter'
 
         // 2. Mark done in DB + send text + send voice (if pro/elite) — all in parallel
         const alerts = [

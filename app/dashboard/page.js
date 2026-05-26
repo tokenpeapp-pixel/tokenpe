@@ -64,6 +64,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
   const [codeError, setCodeError] = useState('')
   const [codeSaving, setCodeSaving] = useState(false)
   const [codeSuccess, setCodeSuccess] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const planId = clinic?.plan_id || 'starter'
   const canEditCode = planId === 'pro' || planId === 'elite' || planId === 'trialing' || clinic?.subscription_status === 'trialing'
@@ -71,7 +72,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
   // QR reflects the live code (updates after save)
   const liveCode = codeSuccess ? codeInput : (clinic?.code || '')
   const waLink = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=JOIN%20${liveCode}`
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(waLink)}&color=7C3AED&bgcolor=ffffff&margin=24`
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=H&data=${encodeURIComponent(waLink)}&color=7C3AED&bgcolor=ffffff&margin=24`
 
   async function saveCode() {
     const clean = codeInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -109,16 +110,77 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
     setTimeout(() => setCodeSuccess(false), 4000)
   }
 
+  async function handleLogoUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploadingLogo(true)
+    try {
+      const fileName = `logos/${clinic.id}_${Date.now()}.png`
+      // Re-using voice-notes bucket since it exists
+      const { data, error } = await supabase.storage.from('voice-notes').upload(fileName, file, { upsert: true })
+      if (error) throw error
+      
+      const { data: { publicUrl } } = supabase.storage.from('voice-notes').getPublicUrl(fileName)
+      await supabase.from('clinics').update({ logo_url: publicUrl }).eq('id', clinic.id)
+      
+      clinic.logo_url = publicUrl // mutate locally for immediate render
+      const stored = localStorage.getItem('tokenpe_clinic')
+      if (stored) {
+        localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), logo_url: publicUrl }))
+      }
+    } catch(err) {
+      alert('Error uploading logo: ' + err.message)
+    }
+    setUploadingLogo(false)
+  }
+
   async function download() {
     setDownloading(true)
-    const res = await fetch(qrUrl)
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `TokenPe-QR-${liveCode}.png`
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      const res = await fetch(qrUrl)
+      const blob = await res.blob()
+      
+      if (!clinic?.logo_url) {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `TokenPe-QR-${liveCode}.png`
+        a.click()
+        URL.revokeObjectURL(url)
+      } else {
+        const img = new Image()
+        img.crossOrigin = 'Anonymous'
+        const imgUrl = URL.createObjectURL(blob)
+        await new Promise(r => { img.onload = r; img.src = imgUrl })
+        
+        const logo = new Image()
+        logo.crossOrigin = 'Anonymous'
+        await new Promise(r => { logo.onload = r; logo.src = clinic.logo_url })
+        
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+        
+        const logoSize = img.width * 0.22
+        const x = (img.width - logoSize) / 2
+        const y = (img.height - logoSize) / 2
+        
+        ctx.fillStyle = 'white'
+        ctx.fillRect(x - 8, y - 8, logoSize + 16, logoSize + 16)
+        ctx.drawImage(logo, x, y, logoSize, logoSize)
+        
+        const finalUrl = canvas.toDataURL('image/png')
+        const a = document.createElement('a')
+        a.href = finalUrl
+        a.download = `TokenPe-QR-${liveCode}.png`
+        a.click()
+        URL.revokeObjectURL(imgUrl)
+      }
+    } catch(e) {
+      console.error(e)
+    }
     setDownloading(false)
     setDownloaded(true)
     setTimeout(() => setDownloaded(false), 2500)
@@ -154,7 +216,10 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         </div>
         <div class="name">${clinic?.name}</div>
         <div class="sub">Scan to join the OPD queue</div>
-        <img src="${qrUrl}" />
+        <div style="position:relative; display:inline-block">
+          <img src="${qrUrl}" />
+          ${clinic?.logo_url ? `<img src="${clinic.logo_url}" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:50px; height:50px; border:none; border-radius:8px; padding:4px; background:white;" />` : ''}
+        </div>
         <hr/>
         <div class="how">📱 How to join</div>
         <div class="steps">
@@ -182,9 +247,24 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: '#1e293b' }}>{clinic?.name}</div>
         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>Scan to join the OPD queue</div>
-        <div style={{ background: '#f8fafc', borderRadius: 16, padding: 14, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 14 }}>
+        <div style={{ background: '#f8fafc', borderRadius: 16, padding: 14, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 14, position: 'relative' }}>
           <img src={qrUrl} alt="QR Code" style={{ width: 190, height: 190, borderRadius: 10, display: 'block' }} />
+          {clinic?.logo_url && (
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', padding: 4, borderRadius: 8 }}>
+              <img src={clinic.logo_url} alt="Logo" style={{ width: 44, height: 44, borderRadius: 6, display: 'block' }} />
+            </div>
+          )}
         </div>
+        
+        {planId === 'elite' && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'inline-block', background: '#F5F3FF', color: '#7C3AED', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: uploadingLogo ? 'wait' : 'pointer', border: '1px dashed #C4B5FD' }}>
+              {uploadingLogo ? 'Uploading...' : '📸 Upload Center Logo'}
+              <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={handleLogoUpload} disabled={uploadingLogo} />
+            </label>
+          </div>
+        )}
+
         <div style={{ background: '#f0f9ff', borderRadius: 12, padding: '10px 14px', textAlign: 'left', marginBottom: 12 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#0F4C75', marginBottom: 5 }}>📱 How patients join</div>
           <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.9 }}>
@@ -272,6 +352,10 @@ export default function Dashboard() {
   const [time, setTime] = useState(new Date())
   const [showQR, setShowQR] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [userClinics, setUserClinics] = useState([])
+  const [showAddBranch, setShowAddBranch] = useState(false)
+  const [newBranchName, setNewBranchName] = useState('')
+  const [addingBranch, setAddingBranch] = useState(false)
   const sounds = useSounds()
 
   // ── Load clinic from session (multi-clinic support) ─────────────────────
@@ -280,14 +364,22 @@ export default function Dashboard() {
       // Get clinic code from localStorage (set during login)
       let clinicCode = localStorage.getItem('clinicCode')
 
+      try {
+        const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics')) || []
+        setUserClinics(storedUserClinics)
+      } catch(e) {}
+
       if (!clinicCode) {
         // Fallback: Check if user is logged in via Supabase (e.g., Google OAuth redirect)
         const { data: { user } } = await supabase.auth.getUser()
         if (user?.email) {
-          const { data: clinicData, error: clinicError } = await supabase
-            .from('clinics').select('*').eq('email', user.email).single()
+          const { data: clinics, error: clinicError } = await supabase
+            .from('clinics').select('*').eq('email', user.email).order('created_at', { ascending: true })
 
-          if (clinicData && !clinicError) {
+          if (clinics && clinics.length > 0 && !clinicError) {
+            const clinicData = clinics[0]
+            setUserClinics(clinics)
+            localStorage.setItem('tokenpe_user_clinics', JSON.stringify(clinics))
             // Generate new clinic code on each login (invalidates old QR)
             const newCode = clinicData.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7) + (Math.floor(Math.random() * 900) + 100)
             const { data: updated } = await supabase
@@ -777,11 +869,40 @@ export default function Dashboard() {
           />
           {/* Dropdown - z-index ABOVE overlay */}
           <div className="dropdown-menu">
+            {userClinics.length > 1 && (
+              <>
+                <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 }}>Switch Clinic</div>
+                {userClinics.map(uc => (
+                  <button key={uc.id} className="dropdown-item" style={{ padding: '8px 16px', background: uc.id === clinic?.id ? 'rgba(124,58,237,0.15)' : 'transparent', color: uc.id === clinic?.id ? '#A78BFA' : 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }} onClick={() => {
+                    localStorage.setItem('clinicCode', uc.code)
+                    localStorage.setItem('clinicPhone', uc.phone)
+                    localStorage.setItem('tokenpe_clinic', JSON.stringify(uc))
+                    window.location.reload()
+                  }}>
+                    {uc.id === clinic?.id ? '✓ ' : '○ '}{uc.name}
+                  </button>
+                ))}
+                <div className="dropdown-divider" />
+              </>
+            )}
+            
+            {(clinic?.plan_id === 'elite' || clinic?.subscription_status === 'trialing') && userClinics.length < 3 && (
+              <button className="dropdown-item" onClick={() => { setShowAddBranch(true); setMenuOpen(false); }} style={{ color: '#34D399', fontSize: '0.85rem' }}>
+                + Add New Branch
+              </button>
+            )}
+
             <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
               🕒 History
             </button>
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/analytics'); setMenuOpen(false); }}>
               📊 Analytics (Elite)
+            </button>
+            <button className="dropdown-item" onClick={() => { router.push('/dashboard/crm'); setMenuOpen(false); }}>
+              📢 CRM & Broadcasts (Elite)
+            </button>
+            <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }} style={{ color: '#059669', fontWeight: 700 }}>
+              🟢 VIP Support (Elite)
             </button>
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
               💳 Billing & Plan
@@ -792,6 +913,58 @@ export default function Dashboard() {
             </button>
           </div>
         </>
+      )}
+
+      {/* ── Add New Branch Modal ── */}
+      {showAddBranch && (
+        <div onClick={() => setShowAddBranch(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#0F172A', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Add New Branch</h2>
+            <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: 20 }}>As an Elite user, you can manage up to 3 clinics under one login.</p>
+            <input
+              autoFocus
+              placeholder="E.g. City Hospital - South Branch"
+              value={newBranchName}
+              onChange={e => setNewBranchName(e.target.value)}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none', marginBottom: 16 }}
+            />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={async () => {
+                  if (!newBranchName.trim()) return
+                  setAddingBranch(true)
+                  try {
+                    const res = await fetch('/api/clinics/create', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ clinicName: newBranchName, email: clinic.email, phone: clinic.phone })
+                    })
+                    const data = await res.json()
+                    if (data.success) {
+                      const updatedClinics = [...userClinics, data.clinic]
+                      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedClinics))
+                      localStorage.setItem('clinicCode', data.clinic.code)
+                      localStorage.setItem('clinicPhone', data.clinic.phone)
+                      localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
+                      window.location.reload()
+                    } else {
+                      alert(data.error || 'Failed to create branch')
+                      setAddingBranch(false)
+                    }
+                  } catch (e) {
+                    alert('Error creating branch')
+                    setAddingBranch(false)
+                  }
+                }}
+                disabled={addingBranch}
+                style={{ flex: 1, background: '#10B981', color: '#000', border: 'none', padding: '12px', borderRadius: 12, fontWeight: 700, cursor: addingBranch ? 'not-allowed' : 'pointer', opacity: addingBranch ? 0.7 : 1 }}
+              >
+                {addingBranch ? 'Creating...' : 'Create Branch'}
+              </button>
+              <button onClick={() => setShowAddBranch(false)} style={{ flex: 1, background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.2)', padding: '12px', borderRadius: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Toasts ── */}

@@ -14,6 +14,8 @@ export default function AnalyticsPage() {
     peakHour: 'N/A',
     dailyData: []
   })
+  const [dateRange, setDateRange] = useState('30')
+  const [avgRating, setAvgRating] = useState(0)
 
   // 1. Load Clinic & Check Plan
   useEffect(() => {
@@ -39,23 +41,61 @@ export default function AnalyticsPage() {
   }, [router])
 
   // 2. Fetch Data
-  async function fetchAnalytics(clinicId) {
-    // Get last 30 days
+  async function fetchAnalytics(clinicId, range = dateRange) {
+    // Get date based on range
     const d = new Date()
-    d.setDate(d.getDate() - 30)
-    const thirtyDaysAgo = d.toISOString().split('T')[0]
+    d.setDate(d.getDate() - parseInt(range))
+    const cutoffDate = d.toISOString().split('T')[0]
 
     const { data } = await supabase
       .from('patients')
-      .select('date, joined_at')
+      .select('*')
       .eq('clinic_id', clinicId)
-      .gte('date', thirtyDaysAgo)
+      .gte('date', cutoffDate)
+      .order('date', { ascending: false })
+      .order('joined_at', { ascending: false })
 
     if (data) {
+      setPatients(data)
       processData(data)
+      
+      const rated = data.filter(p => p.rating > 0)
+      if (rated.length > 0) {
+        const sum = rated.reduce((acc, p) => acc + p.rating, 0)
+        setAvgRating((sum / rated.length).toFixed(1))
+      }
     } else {
       setLoading(false)
     }
+  }
+
+  // 2.5 Export CSV
+  function exportCSV() {
+    if (!patients.length) return alert('No patient data to export.')
+
+    const headers = ['Date', 'Time Joined', 'Token', 'Patient Name', 'Phone', 'Status', 'Wait Time (Mins)']
+    const rows = patients.map(p => {
+      const waitTime = p.completed_at ? Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000) : 'N/A'
+      return [
+        p.date,
+        new Date(p.joined_at).toLocaleTimeString('en-IN'),
+        p.token,
+        `"${p.name || 'Walk-in'}"`,
+        p.phone,
+        p.status.toUpperCase(),
+        waitTime
+      ]
+    })
+
+    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `${clinic.name.replace(/\s+/g, '_')}_30Day_Report.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   // 3. Crunch Numbers
@@ -260,20 +300,53 @@ export default function AnalyticsPage() {
             <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{clinic.name}</div>
           </div>
         </div>
-        <button
-          onClick={() => window.print()}
-          style={{ background: '#F59E0B', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-        >
-          📄 Download PDF
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <select 
+            value={dateRange} 
+            onChange={(e) => {
+              setDateRange(e.target.value)
+              setLoading(true)
+              fetchAnalytics(clinic.id, e.target.value)
+            }}
+            style={{ background: '#1E293B', color: 'white', border: '1px solid #334155', padding: '10px 16px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
+          >
+            <option value="30">Last 30 Days</option>
+            <option value="180">Last 6 Months</option>
+            <option value="365">Last 1 Year</option>
+          </select>
+
+          <button
+            onClick={exportCSV}
+            style={{ background: '#10B981', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            📥 Export CSV
+          </button>
+          <button
+            onClick={() => window.print()}
+            style={{ background: '#F59E0B', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            📄 Download PDF
+          </button>
+        </div>
       </div>
 
       <div className="container">
         {/* PDF HEADER (Hidden on web) */}
         <div className="print-header" style={{ display: 'none' }}>
           <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A', marginBottom: 8 }}>Monthly Performance Report</div>
-          <div style={{ fontSize: '1.1rem', color: '#64748B', fontWeight: 500 }}>Clinic: <strong>{clinic.name}</strong></div>
-          <div style={{ fontSize: '0.9rem', color: '#94A3B8', marginTop: 4 }}>Generated on: {new Date().toLocaleDateString('en-IN')}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: '1.1rem', color: '#64748B', fontWeight: 500 }}>Clinic: <strong>{clinic.name}</strong></div>
+              <div style={{ fontSize: '0.9rem', color: '#94A3B8', marginTop: 4 }}>Generated on: {new Date().toLocaleDateString('en-IN')}</div>
+            </div>
+            {avgRating > 0 && (
+              <div style={{ background: '#FEF3C7', padding: '10px 16px', borderRadius: 12, border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#B45309' }}>{avgRating}</span>
+                <span style={{ fontSize: '1.1rem', color: '#F59E0B' }}>★</span>
+                <span style={{ fontSize: '0.8rem', color: '#92400E', fontWeight: 600, marginLeft: 4 }}>Patient Rating</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ marginBottom: 32 }} className="no-print">

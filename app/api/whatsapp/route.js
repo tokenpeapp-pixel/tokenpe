@@ -189,10 +189,14 @@ export async function POST(req) {
 
             console.log(`[Join] ✅ ${name} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
 
-            // 4. Send voice note in background so WhatsApp webhook doesn't timeout!
+            // 4. Send voice note and custom welcome text in background
             if (planId !== 'starter') {
                 after(async () => {
                     try {
+                        if (clinic.welcome_message) {
+                            await sendText(cleanPhone(phone), `*Message from ${clinic.name}:*\n\n${clinic.welcome_message}`)
+                        }
+                        
                         await sendVoice({
                             phone: cleanPhone(phone),
                             language: language || 'en',

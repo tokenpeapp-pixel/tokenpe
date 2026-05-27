@@ -276,6 +276,19 @@ export default function LandingPage() {
         <button className="cta-btn" onClick={() => router.push("/login")}>Start your free trial →</button>
       </section>
 
+      {/* FOOTER */}
+      <footer style={{ background: "#080818", borderTop: "1px solid rgba(255,255,255,0.05)", padding: "40px 20px", textAlign: "center", color: "#64748b" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: "32px", marginBottom: "24px", flexWrap: "wrap" }}>
+          <a href="/privacy" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "14px", fontWeight: "600", transition: "color 0.2s" }} onMouseOver={e => e.target.style.color = "white"} onMouseOut={e => e.target.style.color = "#94a3b8"}>Privacy Policy</a>
+          <a href="/terms" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "14px", fontWeight: "600", transition: "color 0.2s" }} onMouseOver={e => e.target.style.color = "white"} onMouseOut={e => e.target.style.color = "#94a3b8"}>Terms of Service</a>
+          <a href="mailto:tokenpe.online@gmail.com" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "14px", fontWeight: "600", transition: "color 0.2s" }} onMouseOver={e => e.target.style.color = "white"} onMouseOut={e => e.target.style.color = "#94a3b8"}>Contact Support</a>
+        </div>
+        <div style={{ fontSize: "13px", opacity: 0.7 }}>
+          Made with ❤️ from TokenPe <br />
+          &copy; {new Date().getFullYear()} TokenPe. All rights reserved.
+        </div>
+      </footer>
+
       {/* MODAL */}
       {showDetails && (
         <div onClick={() => setShowDetails(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyItems: "center", padding: 20 }}>

@@ -441,10 +441,22 @@ export default function BillingPage() {
             
             <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
               <strong>Terms of Subscription:</strong> All plans automatically renew monthly. You can cancel your subscription at any time from the billing dashboard. The free trial is available for 14 days and provides full access to Elite features. After the trial, you must choose a plan to continue service.
-            </div>
           </div>
         </div>
       )}
+
+      {/* FOOTER */}
+      <footer style={{ marginTop: 60, borderTop: "1px solid rgba(255,255,255,0.05)", padding: "40px 20px", textAlign: "center", color: "#64748b" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: "32px", marginBottom: "24px", flexWrap: "wrap" }}>
+          <a href="/privacy" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "14px", fontWeight: "600", transition: "color 0.2s" }} onMouseOver={e => e.target.style.color = "white"} onMouseOut={e => e.target.style.color = "#94a3b8"}>Privacy Policy</a>
+          <a href="/terms" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "14px", fontWeight: "600", transition: "color 0.2s" }} onMouseOver={e => e.target.style.color = "white"} onMouseOut={e => e.target.style.color = "#94a3b8"}>Terms of Service</a>
+          <a href="mailto:tokenpe.online@gmail.com" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "14px", fontWeight: "600", transition: "color 0.2s" }} onMouseOver={e => e.target.style.color = "white"} onMouseOut={e => e.target.style.color = "#94a3b8"}>Contact Support</a>
+        </div>
+        <div style={{ fontSize: "13px", opacity: 0.7 }}>
+          Made with ❤️ from TokenPe <br />
+          &copy; {new Date().getFullYear()} TokenPe. All rights reserved.
+        </div>
+      </footer>
     </div>
   )
 }

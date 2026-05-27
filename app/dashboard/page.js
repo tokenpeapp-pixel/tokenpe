@@ -995,11 +995,11 @@ export default function Dashboard() {
                 🟢 VIP Support (Elite)
               </button>
             ) : clinic?.plan_id === 'pro' ? (
-              <button className="dropdown-item" onClick={() => { window.open('mailto:support@tokenpe.online', '_blank'); setMenuOpen(false); }} style={{ color: '#A78BFA', fontWeight: 700 }}>
+              <button className="dropdown-item" onClick={() => { window.open('mailto:tokenpe.online@gmail.com', '_blank'); setMenuOpen(false); }} style={{ color: '#A78BFA', fontWeight: 700 }}>
                 ⭐ Priority Support (Pro)
               </button>
             ) : (
-              <button className="dropdown-item" onClick={() => { window.open('mailto:support@tokenpe.online', '_blank'); setMenuOpen(false); }}>
+              <button className="dropdown-item" onClick={() => { window.open('mailto:tokenpe.online@gmail.com', '_blank'); setMenuOpen(false); }}>
                 ✉️ Standard Support
               </button>
             )}

@@ -66,6 +66,8 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
   const [codeSaving, setCodeSaving] = useState(false)
   const [codeSuccess, setCodeSuccess] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [savingAddress, setSavingAddress] = useState(false)
+  const [addressSuccess, setAddressSuccess] = useState(false)
 
   const planId = clinic?.plan_id || 'starter'
   const canEditCode = planId === 'pro' || planId === 'elite' || planId === 'trialing' || clinic?.subscription_status === 'trialing'
@@ -137,6 +139,27 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
       alert('Error uploading logo: ' + err.message)
     }
     setUploadingLogo(false)
+  }
+
+  async function saveAddress() {
+    setSavingAddress(true)
+    try {
+      const res = await fetch('/api/clinics/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, address: addressInput })
+      })
+      if (res.ok) {
+        setAddressSuccess(true)
+        setTimeout(() => setAddressSuccess(false), 3000)
+        clinic.address = addressInput
+        const stored = localStorage.getItem('tokenpe_clinic')
+        if (stored) {
+          localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), address: addressInput }))
+        }
+      }
+    } catch (e) {}
+    setSavingAddress(false)
   }
 
   async function download() {
@@ -252,6 +275,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
           <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: '44px', width: 'auto' }} />
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: '#1e293b' }}>{clinic?.name}</div>
+        {clinic?.address && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, marginBottom: 4, padding: '0 10px' }}>{clinic.address}</div>}
         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>Scan to join the OPD queue</div>
         <div style={{ background: '#f8fafc', borderRadius: 16, padding: 14, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 14, position: 'relative' }}>
           <img src={qrUrl} alt="QR Code" style={{ width: 190, height: 190, borderRadius: 10, display: 'block' }} />
@@ -263,11 +287,28 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         </div>
         
         {planId === 'elite' && (
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'inline-block', background: '#F5F3FF', color: '#7C3AED', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: uploadingLogo ? 'wait' : 'pointer', border: '1px dashed #C4B5FD' }}>
+          <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ display: 'inline-block', background: '#F5F3FF', color: '#7C3AED', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: uploadingLogo ? 'wait' : 'pointer', border: '1px dashed #C4B5FD' }}>
               {uploadingLogo ? 'Uploading...' : '📸 Upload Center Logo'}
               <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={handleLogoUpload} disabled={uploadingLogo} />
             </label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input 
+                type="text" 
+                placeholder="Clinic Address for print (optional)" 
+                value={addressInput} 
+                onChange={e => setAddressInput(e.target.value)}
+                maxLength={60}
+                style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, outline: 'none' }}
+              />
+              <button 
+                onClick={saveAddress}
+                disabled={savingAddress}
+                style={{ background: '#10B981', color: 'white', border: 'none', padding: '0 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: savingAddress ? 'not-allowed' : 'pointer' }}
+              >
+                {savingAddress ? '...' : (addressSuccess ? '✓' : 'Save')}
+              </button>
+            </div>
           </div>
         )}
 

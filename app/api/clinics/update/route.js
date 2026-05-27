@@ -3,15 +3,19 @@ import { supabase } from '../../../../lib/supabase'
 
 export async function POST(req) {
   try {
-    const { clinicId, welcomeMessage } = await req.json()
+    const { clinicId, welcomeMessage, address } = await req.json()
     
     if (!clinicId) {
       return NextResponse.json({ success: false, error: 'Clinic ID required' }, { status: 400 })
     }
 
+    const updates = {}
+    if (welcomeMessage !== undefined) updates.welcome_message = welcomeMessage
+    if (address !== undefined) updates.address = address
+
     const { error } = await supabase
       .from('clinics')
-      .update({ welcome_message: welcomeMessage })
+      .update(updates)
       .eq('id', clinicId)
 
     if (error) throw error

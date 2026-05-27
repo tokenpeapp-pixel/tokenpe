@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
 
 At **TokenPe** (accessible from https://tokenpe.online), one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by TokenPe and how we use it.
 
-If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at support@tokenpe.online.
+If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at tokenpe.online@gmail.com.
 
 This Privacy Policy applies only to our online activities and is valid for visitors to our website with regards to the information that they shared and/or collect in TokenPe.
 
@@ -51,7 +51,7 @@ We only share essential information with third-party processors to fulfill our c
 
 ## 5. Data Deletion Requests (Meta Compliant)
 We respect your right to control your personal data. If you want to delete your TokenPe account and erase all associated personal details (including email, phone number, and logs) from our databases, you can do so easily:
-1. Send an email to support@tokenpe.online with the subject line "Data Deletion Request".
+1. Send an email to tokenpe.online@gmail.com with the subject line "Data Deletion Request".
 2. Include the registered email address of the account you want to delete.
 3. Our team will verify ownership and permanently erase your database records within 48 hours, sending you a confirmation email once completed.
 
@@ -111,7 +111,7 @@ By using our website, you hereby consent to our Privacy Policy and agree to its 
               At <strong className="text-slate-900 dark:text-white">TokenPe</strong> (accessible from <Link href="https://tokenpe.online" className="text-indigo-600 dark:text-indigo-400 hover:underline">https://tokenpe.online</Link>), one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by TokenPe and how we use it.
             </p>
             <p className="mt-4 text-base sm:text-lg text-slate-600 dark:text-zinc-300">
-              If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at <a href="mailto:support@tokenpe.online" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">support@tokenpe.online</a>.
+              If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at <a href="mailto:tokenpe.online@gmail.com" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">tokenpe.online@gmail.com</a>.
             </p>
           </section>
 
@@ -205,7 +205,7 @@ By using our website, you hereby consent to our Privacy Policy and agree to its 
             </p>
             <ol className="list-decimal pl-6 space-y-2 text-rose-950/80 dark:text-rose-200/80">
               <li>
-                Send an email to <a href="mailto:support@tokenpe.online" className="underline font-semibold hover:text-rose-700 dark:hover:text-rose-100">support@tokenpe.online</a> with the subject line <code className="bg-rose-100 dark:bg-rose-950/50 px-1.5 py-0.5 rounded font-mono text-xs text-rose-900 dark:text-rose-300">Data Deletion Request</code>.
+                Send an email to <a href="mailto:tokenpe.online@gmail.com" className="underline font-semibold hover:text-rose-700 dark:hover:text-rose-100">tokenpe.online@gmail.com</a> with the subject line <code className="bg-rose-100 dark:bg-rose-950/50 px-1.5 py-0.5 rounded font-mono text-xs text-rose-900 dark:text-rose-300">Data Deletion Request</code>.
               </li>
               <li>Include the registered email address of the account you want to delete.</li>
               <li>Our team will verify ownership and permanently erase your database records within <strong className="font-semibold text-rose-900 dark:text-rose-100">48 hours</strong>, sending you a confirmation email once completed.</li>

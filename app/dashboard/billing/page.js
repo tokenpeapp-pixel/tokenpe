@@ -334,71 +334,106 @@ export default function BillingPage() {
                     <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 700 }}>Unlimited</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>WhatsApp Alerts</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Text Only</td>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>All WhatsApp Alerts</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Text only</td>
                     <td style={{ textAlign: "center", padding: "16px 8px" }}>Text + AI Voice</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Text + Priority AI Voice</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Text + AI Voice</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Clinic Code Branding</td>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>AI Voice Notes (10 languages)</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Clinic Code</td>
                     <td style={{ textAlign: "center", padding: "16px 8px" }}>Auto-generated</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>Custom (e.g. DRSHARMA)</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>Custom (e.g. CITYHOSP)</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>Custom (DRSHARMA)</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>Custom (CITYHOSP)</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Multi-Clinic Management</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓ Included</td>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>QR Card</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Basic</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Name + Address</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Name + Address + Logo</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Google Reviews Automation</td>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Queue Pause Button</td>
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓ Included</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Monthly PDF Reports</td>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Patient Visit History</td>
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓ Printable Analytics</td>
-                  </tr>
-
-                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Patient CRM Broadcasts</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓ Included</td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Queue Pause Control</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓ Included</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓ Included</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Smart Wait Time Prediction</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Basic Time</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Dynamic AI Prediction</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Dynamic AI Prediction</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>QR Print Card</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Clinic Name Only</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Name + Custom Address</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px" }}>Name + Custom Address</td>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Follow-up Reminder</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Busy Hour Heatmap</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Personalized Welcome Message</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Multi-Location (3 clinics)</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Patient Feedback & Star Rating</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>CRM Broadcasts</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Smart Patient Follow-ups</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Monthly PDF Report</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Dashboard Analytics</td>
                     <td style={{ textAlign: "center", padding: "16px 8px" }}>7 Days</td>
                     <td style={{ textAlign: "center", padding: "16px 8px" }}>30 Days + Heatmap</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>Unlimited + Excel/PDF Export</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>Unlimited + Excel Export</td>
                   </tr>
                   <tr>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Support</td>
                     <td style={{ textAlign: "center", padding: "16px 8px" }}>Email</td>
                     <td style={{ textAlign: "center", padding: "16px 8px" }}>Priority Email & Chat</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>Dedicated Account Manager</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>Dedicated WhatsApp Support</td>
                   </tr>
                 </tbody>
               </table>

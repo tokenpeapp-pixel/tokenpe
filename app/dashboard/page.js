@@ -999,8 +999,8 @@ export default function Dashboard() {
                 ⭐ Priority Support (Pro)
               </button>
             ) : (
-              <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
-                ✉️ Standard Support (Upgrade for Priority)
+              <button className="dropdown-item" onClick={() => { window.open('mailto:support@tokenpe.online', '_blank'); setMenuOpen(false); }}>
+                ✉️ Standard Support
               </button>
             )}
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>

@@ -21,7 +21,7 @@ export default function CRMPage() {
   const [sendingBroadcast, setSendingBroadcast] = useState(false)
   const [broadcastSuccess, setBroadcastSuccess] = useState(false)
 
-  // Smart Follow-ups Config (Frontend Demo)
+  // Smart Follow-ups Config
   const [followupRecall, setFollowupRecall] = useState(false)
   const [followupMeds, setFollowupMeds] = useState(false)
   const [savingFollowups, setSavingFollowups] = useState(false)
@@ -84,7 +84,6 @@ export default function CRMPage() {
       if (res.ok) {
         setWelcomeSuccess(true)
         setTimeout(() => setWelcomeSuccess(false), 3000)
-        // update local storage
         const updated = { ...clinic, welcome_message: welcomeMsg }
         setClinic(updated)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(updated))
@@ -160,25 +159,24 @@ export default function CRMPage() {
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A' }}>
-      <div style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#F59E0B', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div className="min-h-screen flex items-center justify-center bg-[#0F172A]">
+      <div className="w-10 h-10 border-4 border-white/10 border-t-[#F59E0B] rounded-full animate-spin" />
     </div>
   )
 
   if (clinic?.plan_id !== 'elite' && clinic?.subscription_status !== 'trialing') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', color: 'white', fontFamily: "'Inter',sans-serif", padding: 20 }}>
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '40px', borderRadius: '24px', textAlign: 'center', maxWidth: 400 }}>
-          <div style={{ fontSize: '3rem', marginBottom: 20 }}>🥇</div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 10 }}>Elite Feature</h2>
-          <p style={{ color: '#94A3B8', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24 }}>
+      <div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white p-4 font-sans">
+        <div className="bg-white/5 border border-white/10 p-8 rounded-3xl text-center max-w-sm w-full">
+          <div className="text-5xl mb-4">🥇</div>
+          <h2 className="text-2xl font-black mb-3">Elite Feature</h2>
+          <p className="text-[#94A3B8] text-sm leading-relaxed mb-6">
             Patient CRM and Broadcasts are strictly available to Elite plan members. Upgrade to engage your patients!
           </p>
-          <button onClick={() => router.push('/dashboard/billing')} style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', width: '100%' }}>
+          <button onClick={() => router.push('/dashboard/billing')} className="w-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] text-black py-3 rounded-xl font-black mb-3 transition hover:scale-105">
             Upgrade to Elite
           </button>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'transparent', color: '#94A3B8', border: 'none', padding: '12px 24px', marginTop: 10, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={() => router.push('/dashboard')} className="w-full bg-transparent text-[#94A3B8] py-3 rounded-xl font-bold hover:text-white transition">
             Back to Dashboard
           </button>
         </div>
@@ -187,58 +185,58 @@ export default function CRMPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: "'Inter', sans-serif", color: '#0F172A' }}>
-      <div style={{ background: '#0F172A', color: 'white', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans pb-20">
+      <div className="bg-[#0F172A] text-white px-4 py-6 sm:px-8 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition">
             ←
           </button>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Patient CRM</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{clinic.name}</div>
+            <div className="text-xs text-[#94A3B8] font-bold uppercase tracking-widest">Patient CRM</div>
+            <div className="text-xl font-black">{clinic.name}</div>
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}>
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px' }}>CRM & Broadcasts</h1>
-          <p style={{ color: '#64748B' }}>Engage with your patients and customize your clinic's automated messaging.</p>
+      <div className="max-w-4xl mx-auto p-4 sm:p-8 space-y-8">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">CRM & Broadcasts</h1>
+          <p className="text-[#64748B] text-sm sm:text-base mt-1">Engage with your patients and customize your clinic's automated messaging.</p>
         </div>
 
-        <div style={{ display: 'grid', gap: 32 }}>
-          {/* Personalized Welcome Message */}
-          <div style={{ background: 'white', padding: 32, borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.03)', border: '1px solid #F1F5F9' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>Personalized Welcome Message</h2>
-            <p style={{ color: '#64748B', fontSize: '0.9rem', marginBottom: 20 }}>This message will be appended to the standard TokenPe WhatsApp reply when a patient joins your queue.</p>
+        <div className="space-y-8">
+          {/* Welcome Message */}
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <h2 className="text-lg font-black mb-2">Personalized Welcome Message</h2>
+            <p className="text-[#64748B] text-sm mb-5">This message will be appended to the standard TokenPe WhatsApp reply when a patient joins your queue.</p>
             
             <textarea
               value={welcomeMsg}
               onChange={e => setWelcomeMsg(e.target.value)}
               placeholder="e.g. Welcome to City Hospital! Please wait in the AC lounge. Free Wi-Fi password is: city123"
-              style={{ width: '100%', minHeight: 100, padding: 16, borderRadius: 12, border: '1.5px solid #E2E8F0', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'vertical', marginBottom: 16 }}
+              className="w-full min-h-[100px] p-4 rounded-xl border-2 border-[#E2E8F0] outline-none text-sm font-medium resize-y mb-4 focus:border-[#7C3AED]"
             />
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <button 
                 onClick={saveWelcomeMessage}
                 disabled={savingWelcome}
-                style={{ background: '#7C3AED', color: 'white', border: 'none', padding: '10px 24px', borderRadius: 10, fontWeight: 700, cursor: savingWelcome ? 'not-allowed' : 'pointer', opacity: savingWelcome ? 0.7 : 1 }}
+                className={`bg-[#7C3AED] text-white px-6 py-2.5 rounded-xl font-bold transition ${savingWelcome ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#6D28D9]'}`}
               >
                 {savingWelcome ? 'Saving...' : 'Save Welcome Message'}
               </button>
-              {welcomeSuccess && <span style={{ color: '#10B981', fontWeight: 600, fontSize: '0.9rem' }}>✅ Saved successfully!</span>}
+              {welcomeSuccess && <span className="text-[#10B981] font-bold text-sm">✅ Saved successfully!</span>}
             </div>
           </div>
 
           {/* Broadcasts */}
-          <div style={{ background: 'white', padding: 32, borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.03)', border: '1px solid #F1F5F9' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-5">
               <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>WhatsApp Broadcast</h2>
-                <p style={{ color: '#64748B', fontSize: '0.9rem' }}>Send a mass update to all your past patients instantly.</p>
+                <h2 className="text-lg font-black mb-2">WhatsApp Broadcast</h2>
+                <p className="text-[#64748B] text-sm">Send a mass update to all your past patients instantly.</p>
               </div>
-              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#166534', padding: '8px 16px', borderRadius: 20, fontWeight: 700, fontSize: '0.85rem' }}>
+              <div className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">
                 👥 {totalPatients} Reachable Patients
               </div>
             </div>
@@ -247,98 +245,96 @@ export default function CRMPage() {
               value={broadcastMsg}
               onChange={e => setBroadcastMsg(e.target.value)}
               placeholder="e.g. Dr. Sharma's Clinic will be closed this Sunday. We are also running a free dental checkup camp next week!"
-              style={{ width: '100%', minHeight: 120, padding: 16, borderRadius: 12, border: '1.5px solid #E2E8F0', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'vertical', marginBottom: 16 }}
+              className="w-full min-h-[120px] p-4 rounded-xl border-2 border-[#E2E8F0] outline-none text-sm font-medium resize-y mb-4 focus:border-[#10B981]"
             />
 
-            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: 16, borderRadius: 12, marginBottom: 20, fontSize: '0.85rem', color: '#92400E' }}>
+            <div className="bg-[#FFFBEB] border border-[#FDE68A] p-4 rounded-xl mb-5 text-sm text-[#92400E]">
               <strong>Note:</strong> Broadcasts are sent using the official TokenPe WhatsApp API. Do not use this for spam, or your clinic's broadcast privileges may be revoked.
             </div>
             
             {broadcastImage && (
-              <div style={{ position: 'relative', display: 'inline-block', marginBottom: 20 }}>
-                <img src={broadcastImage} alt="Broadcast Attachment" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 12, border: '1px solid #E2E8F0' }} />
-                <button onClick={() => setBroadcastImage('')} style={{ position: 'absolute', top: -8, right: -8, background: '#EF4444', color: 'white', width: 24, height: 24, borderRadius: '50%', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>×</button>
+              <div className="relative inline-block mb-5">
+                <img src={broadcastImage} alt="Broadcast Attachment" className="w-32 h-32 object-cover rounded-xl border border-[#E2E8F0]" />
+                <button onClick={() => setBroadcastImage('')} className="absolute -top-2 -right-2 bg-[#EF4444] text-white w-6 h-6 rounded-full font-bold flex items-center justify-center">×</button>
               </div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <button 
                 onClick={sendBroadcast}
                 disabled={sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)}
-                style={{ background: '#10B981', color: 'white', border: 'none', padding: '10px 24px', borderRadius: 10, fontWeight: 700, cursor: (sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)) ? 'not-allowed' : 'pointer', opacity: (sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)) ? 0.7 : 1 }}
+                className={`bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold transition flex items-center justify-center ${(sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#059669]'}`}
               >
                 {sendingBroadcast ? 'Sending...' : '📢 Send Broadcast'}
               </button>
               
-              <label style={{ cursor: uploadingImage ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: '#7C3AED', fontWeight: 600, fontSize: '0.9rem', background: '#F5F3FF', padding: '10px 16px', borderRadius: 10, border: '1px dashed #C4B5FD' }}>
-                {uploadingImage ? 'Uploading...' : '📸 Attach Flyer Image'}
-                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} disabled={uploadingImage} />
+              <label className={`flex items-center gap-2 text-[#7C3AED] font-bold text-sm bg-[#F5F3FF] px-4 py-2.5 rounded-xl border border-dashed border-[#C4B5FD] transition ${uploadingImage ? 'cursor-wait opacity-70' : 'cursor-pointer hover:bg-[#EDE9FE]'}`}>
+                {uploadingImage ? 'Uploading...' : '📸 Attach Flyer'}
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
               </label>
 
-              {broadcastSuccess && <span style={{ color: '#10B981', fontWeight: 600, fontSize: '0.9rem' }}>✅ Broadcast queued successfully!</span>}
+              {broadcastSuccess && <span className="text-[#10B981] font-bold text-sm">✅ Broadcast queued!</span>}
             </div>
           </div>
 
-          {/* Smart Patient Follow-ups */}
-          <div style={{ background: 'white', padding: 32, borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.03)', border: '1px solid #F1F5F9' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>Smart Patient Follow-ups</h2>
-            <p style={{ color: '#64748B', fontSize: '0.9rem', marginBottom: 20 }}>Automate your patient retention with intelligent WhatsApp reminders.</p>
+          {/* Smart Follow-ups */}
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <h2 className="text-lg font-black mb-2">Smart Patient Follow-ups</h2>
+            <p className="text-[#64748B] text-sm mb-6">Automate your patient retention with intelligent WhatsApp reminders.</p>
 
-            <div style={{ display: 'grid', gap: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 20, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] gap-4">
                 <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>90-Day Routine Recall 🔄</h3>
-                  <p style={{ fontSize: '0.85rem', color: '#64748B' }}>Automatically messages patients 90 days after their visit to schedule a routine check-up.</p>
+                  <h3 className="text-base font-bold text-[#0F172A] mb-1">90-Day Routine Recall 🔄</h3>
+                  <p className="text-sm text-[#64748B]">Automatically messages patients 90 days after their visit to schedule a routine check-up.</p>
                 </div>
-                <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24 }}>
-                  <input type="checkbox" checked={followupRecall} onChange={e => saveFollowupConfig('recall', e.target.checked)} disabled={savingFollowups} style={{ opacity: 0, width: 0, height: 0 }} />
-                  <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: followupRecall ? '#10B981' : '#CBD5E1', transition: '.4s', borderRadius: 24 }}></span>
-                  <span style={{ position: 'absolute', content: '""', height: 18, width: 18, left: followupRecall ? 22 : 3, bottom: 3, backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
+                <label className="relative inline-block w-11 h-6 flex-shrink-0 cursor-pointer">
+                  <input type="checkbox" checked={followupRecall} onChange={e => saveFollowupConfig('recall', e.target.checked)} disabled={savingFollowups} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-[#CBD5E1] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#10B981]"></div>
                 </label>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 20, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] gap-4">
                 <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>Medicine Reminders 💊</h3>
-                  <p style={{ fontSize: '0.85rem', color: '#64748B' }}>Sends a friendly "Did you start your medicines?" check-in 3 days post-visit.</p>
+                  <h3 className="text-base font-bold text-[#0F172A] mb-1">Medicine Reminders 💊</h3>
+                  <p className="text-sm text-[#64748B]">Sends a friendly "Did you start your medicines?" check-in 3 days post-visit.</p>
                 </div>
-                <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24 }}>
-                  <input type="checkbox" checked={followupMeds} onChange={e => saveFollowupConfig('meds', e.target.checked)} disabled={savingFollowups} style={{ opacity: 0, width: 0, height: 0 }} />
-                  <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: followupMeds ? '#10B981' : '#CBD5E1', transition: '.4s', borderRadius: 24 }}></span>
-                  <span style={{ position: 'absolute', content: '""', height: 18, width: 18, left: followupMeds ? 22 : 3, bottom: 3, backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
+                <label className="relative inline-block w-11 h-6 flex-shrink-0 cursor-pointer">
+                  <input type="checkbox" checked={followupMeds} onChange={e => saveFollowupConfig('meds', e.target.checked)} disabled={savingFollowups} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-[#CBD5E1] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#10B981]"></div>
                 </label>
               </div>
             </div>
           </div>
 
           {/* Patient Feedback */}
-          <div style={{ background: 'white', padding: 32, borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.03)', border: '1px solid #F1F5F9' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
               <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>Patient Feedback</h2>
-                <p style={{ color: '#64748B', fontSize: '0.9rem' }}>Ratings and reviews collected after consultation.</p>
+                <h2 className="text-lg font-black mb-2">Patient Feedback</h2>
+                <p className="text-[#64748B] text-sm">Ratings and reviews collected after consultation.</p>
               </div>
-              <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', color: '#B45309', padding: '12px 20px', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '1.5rem', fontWeight: 900 }}>{avgRating > 0 ? avgRating : 'N/A'}</span>
-                <span style={{ fontSize: '1.2rem', color: '#F59E0B' }}>★</span>
+              <div className="bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] px-5 py-2.5 rounded-xl flex items-center gap-2">
+                <span className="text-2xl font-black">{avgRating > 0 ? avgRating : 'N/A'}</span>
+                <span className="text-xl text-[#F59E0B]">★</span>
               </div>
             </div>
 
             {recentFeedbacks.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#F8FAFC', borderRadius: 12, border: '1.5px dashed #E2E8F0' }}>
-                <p style={{ color: '#94A3B8', fontWeight: 600 }}>No text feedback received yet.</p>
-                <p style={{ color: '#CBD5E1', fontSize: '0.85rem', marginTop: 4 }}>Patients receive a feedback link automatically after their visit.</p>
+              <div className="text-center p-8 bg-[#F8FAFC] rounded-xl border-2 border-dashed border-[#E2E8F0]">
+                <p className="text-[#94A3B8] font-bold">No text feedback received yet.</p>
+                <p className="text-[#CBD5E1] text-sm mt-1">Patients receive a feedback link automatically after their visit.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: 12 }}>
+              <div className="grid gap-4">
                 {recentFeedbacks.map((fb, idx) => (
-                  <div key={idx} style={{ background: '#F8FAFC', padding: 16, borderRadius: 12, border: '1px solid #E2E8F0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontWeight: 700, color: '#0F172A' }}>{fb.name || 'Anonymous'}</span>
-                      <span style={{ color: '#F59E0B', fontWeight: 800 }}>{'★'.repeat(fb.rating)}{'☆'.repeat(5 - fb.rating)}</span>
+                  <div key={idx} className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-bold text-[#0F172A]">{fb.name || 'Anonymous'}</span>
+                      <span className="text-[#F59E0B] font-black tracking-widest">{'★'.repeat(fb.rating)}{'☆'.repeat(5 - fb.rating)}</span>
                     </div>
-                    <p style={{ color: '#475569', fontSize: '0.9rem', fontStyle: 'italic' }}>"{fb.feedback_text}"</p>
-                    <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 8, textAlign: 'right' }}>{fb.date}</div>
+                    <p className="text-[#475569] text-sm italic">"{fb.feedback_text}"</p>
+                    <div className="text-xs text-[#94A3B8] mt-2 text-right">{fb.date}</div>
                   </div>
                 ))}
               </div>

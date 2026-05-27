@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { after } from 'next/server'
 import { supabase } from '../../../../lib/supabase'
 import { sendText, sendImage } from '../../../../lib/messaging'
 
@@ -6,8 +7,8 @@ export async function POST(req) {
   try {
     const { clinicId, message, imageUrl } = await req.json()
     
-    if (!clinicId || !message) {
-      return NextResponse.json({ success: false, error: 'Clinic ID and message required' }, { status: 400 })
+    if (!clinicId || (!message && !imageUrl)) {
+      return NextResponse.json({ success: false, error: 'Clinic ID and message or image required' }, { status: 400 })
     }
 
     // 1. Verify Clinic is Elite
@@ -35,16 +36,20 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: 'Failed to fetch patients' }, { status: 500 })
     }
 
-    const uniquePhones = [...new Set(patients.map(p => p.phone))]
+    const uniquePhones = [...new Set(patients.map(p => p.phone).filter(Boolean))]
 
-    // 3. Send Broadcast in Background
-    // We don't await the entire loop so the request doesn't timeout
-    const formattedMessage = `📢 *Update from ${clinic.name}*\n\n${message}\n\n_Powered by TokenPe_`
+    if (uniquePhones.length === 0) {
+      return NextResponse.json({ success: false, error: 'No patients with phone numbers found' }, { status: 400 })
+    }
+
+    // 3. Send Broadcast using after() so Vercel keeps the function alive
+    const formattedMessage = `📢 *Update from ${clinic.name}*\n\n${message || ''}\n\n_Powered by TokenPe_`
     
-    // In a real production system with thousands of patients, we would use a queue system (like BullMQ)
-    // or batching. For now, since Vercel serverless has execution limits, we will send in small batches.
-    
-    setTimeout(async () => {
+    after(async () => {
+      console.log(`[Broadcast] Starting broadcast to ${uniquePhones.length} patients for ${clinic.name}`)
+      let sent = 0
+      let failed = 0
+
       for (const phone of uniquePhones) {
         try {
           if (imageUrl) {
@@ -52,17 +57,21 @@ export async function POST(req) {
           } else {
             await sendText(phone, formattedMessage)
           }
-          // Add a small delay to avoid hitting rate limits
-          await new Promise(r => setTimeout(r, 100))
+          sent++
+          // Small delay to avoid rate limits
+          await new Promise(r => setTimeout(r, 150))
         } catch (err) {
-          console.error(`Failed to broadcast to ${phone}:`, err)
+          failed++
+          console.error(`[Broadcast] Failed for ${phone}:`, err.message)
         }
       }
-    }, 0)
+
+      console.log(`[Broadcast] Completed: ${sent} sent, ${failed} failed out of ${uniquePhones.length}`)
+    })
 
     return NextResponse.json({ success: true, count: uniquePhones.length })
   } catch (err) {
-    console.error('Broadcast error:', err)
+    console.error('[Broadcast] Error:', err)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }

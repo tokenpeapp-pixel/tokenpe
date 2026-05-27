@@ -174,8 +174,9 @@ We are committed to helping you integrate and resolve any issues with your Token
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-white dark:bg-zinc-800 p-4 rounded-xl border border-slate-100 dark:border-zinc-700 shadow-sm">
                 <span className="text-xs text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1">Email Support</span>
-                <a href="mailto:support@tokenpe.online" className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-base sm:text-lg">
-                  support@tokenpe.online
+                <a href="mailto:tokenpe.online@gmail.com" className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-base sm:text-lg">
+                  tokenpe.online@gmail.com
+
                 </a>
               </div>
               <div className="bg-white dark:bg-zinc-800 p-4 rounded-xl border border-slate-100 dark:border-zinc-700 shadow-sm">

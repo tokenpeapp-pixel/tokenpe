@@ -4,7 +4,7 @@
 
 import { after } from 'next/server'
 import { supabase, getISTDateString } from '../../../lib/supabase'
-import { sendText, sendVoice, cleanPhone } from '../../../lib/messaging'
+import { sendText, sendVoice, sendTextAndVoice, cleanPhone } from '../../../lib/messaging'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
@@ -36,9 +36,9 @@ export async function POST(req) {
 
         const body = await req.json()
 
-        // ── 🔍 Write payload as a log entry into Supabase ───────────────────
+        // ── 🔍 Write payload as a log entry into Supabase (Background) ──────────
         try {
-            await supabase.from('patients').insert({
+            supabase.from('patients').insert({
                 clinic_id: '37785603-d390-4565-9fef-7f076b18de79', // Dr Sharma Clinic ID for logs
                 token: 'LOG',
                 phone: '0000000000',
@@ -47,9 +47,9 @@ export async function POST(req) {
                 status: 'skipped', // skipped so it doesn't clutter dashboard
                 date: getISTDateString(),
                 joined_at: new Date().toISOString()
-            })
+            }).then(() => {}).catch(e => console.error(e))
         } catch (logErr) {
-            console.error('[whatsapp] Failed to write payload log:', logErr.message)
+            console.error('[whatsapp] Failed to start log insert:', logErr.message)
         }
 
         // ── 🔍 FULL PAYLOAD LOG — helps debug Interakt variable names ──────────
@@ -141,8 +141,16 @@ export async function POST(req) {
             if (clinic.queue_paused) {
                 console.log(`[Join] ❌ Queue is paused for ${clinic.name}`)
                 const pausedMsg = `❌ *Queue Paused*\n\nThe queue is currently paused by the clinic.\n\nPlease try again later.`
-                await sendText(cleanPhone(phone), pausedMsg)
+                // Await to ensure Vercel doesn't kill the function before sending
+                await sendTextAndVoice({
+                    phone: cleanPhone(phone),
+                    language: language,
+                    event: 'paused',
+                    clinicName: clinic.name,
+                    textMessage: pausedMsg
+                })
                 
+                // Return 200 so Interakt flow continues, but we return token 'PAUSED'
                 return Response.json({
                     success: false,
                     message: 'Queue is currently paused.',
@@ -150,23 +158,36 @@ export async function POST(req) {
                 }, { status: 200 })
             }
 
-            // 2. Count patients in queue today
+            // 2. Count patients & calculate waits in PARALLEL
             const today = getISTDateString()
-            const { count } = await supabase
-                .from('patients')
-                .select('*', { count: 'exact', head: true })
-                .eq('clinic_id', clinic.id)
-                .eq('date', today)
+            const planId = clinic.plan_id || 'starter' // default to starter
+            
+            const [
+                { count },
+                { count: peopleAhead },
+                { data: recentDone }
+            ] = await Promise.all([
+                // Total patients today
+                supabase.from('patients').select('*', { count: 'exact', head: true })
+                    .eq('clinic_id', clinic.id).eq('date', today),
+                // People waiting ahead
+                supabase.from('patients').select('*', { count: 'exact', head: true })
+                    .eq('clinic_id', clinic.id).eq('date', today).in('status', ['waiting', 'called']),
+                // Recent done for dynamic wait time
+                planId !== 'starter' 
+                    ? supabase.from('patients').select('completed_at')
+                        .eq('clinic_id', clinic.id).eq('date', today).eq('status', 'done')
+                        .not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(10)
+                    : Promise.resolve({ data: null })
+            ])
 
             const position = count || 0
-
-            // 2.5 Check subscription limits
-            const planId = clinic.plan_id || 'starter' // default to starter
             const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
             
             if (position >= limit) {
                 console.log(`[Join] ❌ Limit reached for ${clinic.name}: ${position}/${limit}`)
                 const limitMsg = `❌ *Queue Full*\n\nThe clinic has reached its maximum daily patient limit.\n\nPlease ask the clinic reception to upgrade their TokenPe plan to add more patients today.`
+                // Await to ensure Vercel doesn't kill the function before sending
                 await sendText(cleanPhone(phone), limitMsg)
                 
                 return Response.json({
@@ -176,45 +197,25 @@ export async function POST(req) {
                 }, { status: 200 })
             }
 
-            // Calculate people actually waiting ahead
-            const { count: peopleAhead } = await supabase
-                .from('patients')
-                .select('*', { count: 'exact', head: true })
-                .eq('clinic_id', clinic.id)
-                .eq('date', today)
-                .in('status', ['waiting', 'called'])
-
             // Calculate dynamic wait time for Pro/Elite based on doctor's speed today
             let avgWaitPerPatient = 7 // Default 7 mins
-            if (planId !== 'starter') {
-                const { data: recentDone } = await supabase
-                    .from('patients')
-                    .select('completed_at')
-                    .eq('clinic_id', clinic.id)
-                    .eq('date', today)
-                    .eq('status', 'done')
-                    .not('completed_at', 'is', null)
-                    .order('completed_at', { ascending: false })
-                    .limit(10)
-
-                if (recentDone && recentDone.length >= 2) {
-                    let totalDiffMs = 0
-                    let diffCount = 0
-                    for (let i = 0; i < recentDone.length - 1; i++) {
-                        const t1 = new Date(recentDone[i].completed_at).getTime()
-                        const t2 = new Date(recentDone[i+1].completed_at).getTime()
-                        const diffMs = t1 - t2
-                        // Ignore huge gaps (> 30 mins) as the doctor might have taken a break
-                        if (diffMs >= 60000 && diffMs <= 1800000) {
-                            totalDiffMs += diffMs
-                            diffCount++
-                        }
+            if (planId !== 'starter' && recentDone && recentDone.length >= 2) {
+                let totalDiffMs = 0
+                let diffCount = 0
+                for (let i = 0; i < recentDone.length - 1; i++) {
+                    const t1 = new Date(recentDone[i].completed_at).getTime()
+                    const t2 = new Date(recentDone[i+1].completed_at).getTime()
+                    const diffMs = t1 - t2
+                    // Ignore huge gaps (> 30 mins) as the doctor might have taken a break
+                    if (diffMs >= 60000 && diffMs <= 1800000) {
+                        totalDiffMs += diffMs
+                        diffCount++
                     }
-                    if (diffCount > 0) {
-                        const calculatedAvg = Math.round((totalDiffMs / diffCount) / 60000)
-                        // Keep reasonable bounds (min 2 mins, max 15 mins)
-                        avgWaitPerPatient = Math.max(2, Math.min(calculatedAvg, 15))
-                    }
+                }
+                if (diffCount > 0) {
+                    const calculatedAvg = Math.round((totalDiffMs / diffCount) / 60000)
+                    // Keep reasonable bounds (min 2 mins, max 15 mins)
+                    avgWaitPerPatient = Math.max(2, Math.min(calculatedAvg, 15))
                 }
             }
 
@@ -307,6 +308,38 @@ _Powered by TokenPe_`
             })
 
             return Response.json({ success: true }, { status: 200 })
+        }
+
+        // ── RATE action ──────────────────────────────────────────────────────────
+        if (action === 'rate') {
+            const phone = pick(body, 'phone', 'Phone', 'mobile', 'waPhone', 'whatsapp', 'customer_phone')
+            const rawRating = pick(body, 'rating', 'Rating', 'score', 'message', 'text') // Capture the number sent
+            const rating = parseInt(String(rawRating).replace(/\D/g, '')) || 0
+
+            if (!phone || rating < 1 || rating > 5) {
+                return Response.json({ success: false, message: 'Invalid rating (must be 1-5)' }, { status: 400 })
+            }
+
+            const clean = cleanPhone(phone)
+            // Find their most recent 'done' visit
+            const { data: recent } = await supabase
+                .from('patients')
+                .select('id, rating')
+                .eq('phone', clean)
+                .eq('status', 'done')
+                .order('completed_at', { ascending: false })
+                .limit(1)
+
+            if (recent && recent.length > 0 && !recent[0].rating) {
+                await supabase.from('patients').update({ rating }).eq('id', recent[0].id)
+            }
+
+            after(async () => {
+                const stars = '⭐'.repeat(rating)
+                await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!`)
+            })
+
+            return Response.json({ success: true, rating }, { status: 200 })
         }
 
         console.warn('[whatsapp] ⚠️ Unknown action received:', action)

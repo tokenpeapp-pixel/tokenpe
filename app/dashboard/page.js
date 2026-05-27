@@ -637,6 +637,12 @@ export default function Dashboard() {
 
   async function addWalkIn() {
     if (!newPhone.trim()) return
+    
+    if (clinic?.queue_paused) {
+      addToast('Queue is currently paused. Please unpause to add patients.', 'error')
+      return
+    }
+
     const token = `T${String(patients.length + 1).padStart(3, '0')}`
     const today = getISTDateString()
     await supabase.from('patients').insert({

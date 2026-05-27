@@ -3,23 +3,23 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 
+// Helper to get IST Date
+function getISTDateString(date = new Date()) {
+  const istOffset = 5.5 * 60 * 60 * 1000
+  const istDate = new Date(date.getTime() + istOffset)
+  return istDate.toISOString().split('T')[0]
+}
+
 export default function AnalyticsPage() {
   const router = useRouter()
   const [clinic, setClinic] = useState(null)
   const [loading, setLoading] = useState(true)
   const [patients, setPatients] = useState([])
-  const [stats, setStats] = useState({
-    total: 0,
-    busiestDay: 'N/A',
-    peakHour: 'N/A',
-    dailyData: [],
-    heatmapData: [],
-    heatmapMax: 0
-  })
-  const [dateRange, setDateRange] = useState('30')
-  const [avgRating, setAvgRating] = useState(0)
+  const [lastPeriodPatients, setLastPeriodPatients] = useState([])
+  const [dateRange, setDateRange] = useState('today') // today, 7, 30, 90, 180, 365
+  const [aiInsights, setAiInsights] = useState(null)
+  const [loadingAi, setLoadingAi] = useState(false)
 
-  // 1. Load Clinic & Check Plan
   useEffect(() => {
     async function load() {
       const stored = localStorage.getItem('tokenpe_clinic')
@@ -27,53 +27,111 @@ export default function AnalyticsPage() {
         router.push('/login')
         return
       }
-
       const c = JSON.parse(stored)
       setClinic(c)
+      
+      // Default date range
+      if (c.plan_id === 'starter') setDateRange('today')
+      else if (c.plan_id === 'pro') setDateRange('30')
+      else setDateRange('30') // Elite default to 30
 
-      // Automatically force 7-days for starter plan, or 30-days for pro/elite if not already set.
-      if (c.plan_id === 'starter') {
-        setDateRange('7')
-      }
-
-      await fetchAnalytics(c.id, c.plan_id === 'starter' ? '7' : dateRange)
+      await fetchAnalytics(c, c.plan_id === 'starter' ? 'today' : '30')
     }
     load()
   }, [router])
 
-  // 2. Fetch Data
-  async function fetchAnalytics(clinicId, range = dateRange) {
-    // Get date based on range
+  async function fetchAnalytics(c, range) {
+    setLoading(true)
+    const today = new Date()
+    let days = 0
+    if (range !== 'today') days = parseInt(range)
+    
+    // Calculate cutoff date
     const d = new Date()
-    d.setDate(d.getDate() - parseInt(range))
-    const cutoffDate = d.toISOString().split('T')[0]
+    d.setDate(d.getDate() - days)
+    const cutoffDate = getISTDateString(d)
 
-    const { data } = await supabase
-      .from('patients')
-      .select('*')
-      .eq('clinic_id', clinicId)
-      .gte('date', cutoffDate)
-      .order('date', { ascending: false })
-      .order('joined_at', { ascending: false })
-
-    if (data) {
-      setPatients(data)
-      processData(data)
-      
-      const rated = data.filter(p => p.rating > 0)
-      if (rated.length > 0) {
-        const sum = rated.reduce((acc, p) => acc + p.rating, 0)
-        setAvgRating((sum / rated.length).toFixed(1))
-      }
+    // Fetch this period
+    let query = supabase.from('patients').select('*').eq('clinic_id', c.id)
+    if (range === 'today') {
+      query = query.eq('date', getISTDateString(new Date()))
     } else {
-      setLoading(false)
+      query = query.gte('date', cutoffDate)
     }
+
+    const { data: thisPeriodData } = await query
+
+    // Fetch last period (for monthly comparison)
+    let lastPeriodData = []
+    if (c.plan_id !== 'starter' && range !== 'today') {
+      const d2 = new Date(d)
+      d2.setDate(d2.getDate() - (days || 1))
+      const lastCutoff = getISTDateString(d2)
+      
+      const { data } = await supabase.from('patients')
+        .select('*')
+        .eq('clinic_id', c.id)
+        .gte('date', lastCutoff)
+        .lt('date', cutoffDate)
+      lastPeriodData = data || []
+    }
+
+    setPatients(thisPeriodData || [])
+    setLastPeriodPatients(lastPeriodData)
+    
+    // Fetch AI insights for Elite
+    if (c.plan_id === 'elite') {
+      fetchAiInsights(thisPeriodData || [])
+    }
+    
+    setLoading(false)
   }
 
-  // 2.5 Export CSV
+  async function fetchAiInsights(data) {
+    setLoadingAi(true)
+    try {
+      const totalPatients = data.length
+      const waitTimes = data.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
+      const avgWaitTime = waitTimes.length ? Math.round(waitTimes.reduce((a,b)=>a+b,0)/waitTimes.length) : 0
+      
+      // Calculate peak hour
+      const hourCounts = {}
+      data.forEach(p => {
+        if(p.joined_at) {
+          const h = new Date(p.joined_at).getHours()
+          hourCounts[h] = (hourCounts[h]||0)+1
+        }
+      })
+      let peakHour = 'N/A'
+      let maxH = 0
+      Object.keys(hourCounts).forEach(h => {
+        if(hourCounts[h] > maxH) { maxH = hourCounts[h]; peakHour = h + ':00' }
+      })
+
+      const payload = { totalPatients, avgWaitTime, peakHour }
+      const res = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      const result = await res.json()
+      if (result.success) setAiInsights(result.insights)
+    } catch(e) {
+      console.error(e)
+    }
+    setLoadingAi(false)
+  }
+
+  function handleDateChange(e) {
+    const val = e.target.value
+    if (clinic.plan_id === 'starter' && val !== 'today') return alert('Upgrade to Pro to view this date range.')
+    if (clinic.plan_id === 'pro' && !['today','7','30'].includes(val)) return alert('Upgrade to Elite to view this date range.')
+    setDateRange(val)
+    fetchAnalytics(clinic, val)
+  }
+
   function exportCSV() {
     if (!patients.length) return alert('No patient data to export.')
-
     const headers = ['Date', 'Time Joined', 'Token', 'Patient Name', 'Phone', 'Status', 'Wait Time (Mins)']
     const rows = patients.map(p => {
       const waitTime = p.completed_at ? Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000) : 'N/A'
@@ -87,388 +145,420 @@ export default function AnalyticsPage() {
         waitTime
       ]
     })
-
     const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `${clinic.name.replace(/\s+/g, '_')}_30Day_Report.csv`)
+    link.setAttribute('download', `${clinic?.name?.replace(/\s+/g, '_')}_Analytics.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
-  // 3. Crunch Numbers
-  function processData(data) {
-    const total = data.length
+  // --- DATA PROCESSING ---
+  const todayStr = getISTDateString(new Date())
+  const todayData = patients.filter(p => p.date === todayStr)
+  
+  // Section 1: Today
+  const todayTotal = todayData.length
+  const todayCompleted = todayData.filter(p => p.status === 'done').length
+  const todaySkipped = todayData.filter(p => p.status === 'skipped').length
+  const todayWaitTimes = todayData.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
+  const todayAvgWait = todayWaitTimes.length ? Math.round(todayWaitTimes.reduce((a,b)=>a+b,0)/todayWaitTimes.length) : 0
+  const todayCompletedPct = todayTotal ? Math.round((todayCompleted / todayTotal) * 100) : 0
 
-    // Busiest Day
-    const dayCounts = {}
-    data.forEach(p => {
-      dayCounts[p.date] = (dayCounts[p.date] || 0) + 1
-    })
+  // Section 2 & 3: Selected Range
+  const rangeTotal = patients.length
+  const rangeCompleted = patients.filter(p => p.status === 'done').length
+  const rangeSkipped = patients.filter(p => p.status === 'skipped').length
+  const rangeWaitTimes = patients.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
+  const rangeAvgWait = rangeWaitTimes.length ? Math.round(rangeWaitTimes.reduce((a,b)=>a+b,0)/rangeWaitTimes.length) : 0
+  
+  const phoneCounts = {}
+  let walkIns = 0
+  patients.forEach(p => {
+    if(p.phone) phoneCounts[p.phone] = (phoneCounts[p.phone]||0)+1
+    if(!p.joined_at || p.is_manual) walkIns++
+  })
+  const returningCount = Object.values(phoneCounts).filter(c => c > 1).length
+  const returningPct = rangeTotal ? Math.round((returningCount / rangeTotal) * 100) : 0
+  const newPct = rangeTotal ? 100 - returningPct : 0
+  const whatsappCount = rangeTotal - walkIns
+  const daysInRange = dateRange === 'today' ? 1 : parseInt(dateRange)
+  const avgPerDay = Math.round(rangeTotal / daysInRange)
 
-    let maxDayCount = 0
-    let busiestDate = 'N/A'
-    Object.keys(dayCounts).forEach(d => {
-      if (dayCounts[d] > maxDayCount) {
-        maxDayCount = dayCounts[d]
-        busiestDate = d
+  // Section 4: Heatmap (Mon-Sun, 8AM-8PM)
+  const heatmap = Array(7).fill(0).map(() => Array(13).fill(0))
+  let heatmapMax = 0
+  patients.forEach(p => {
+    if(p.joined_at) {
+      const d = new Date(p.joined_at)
+      let day = d.getDay() - 1 // Mon=0, Sun=6
+      if (day === -1) day = 6
+      const hour = d.getHours()
+      if (hour >= 8 && hour <= 20) {
+        heatmap[day][hour-8]++
+        if (heatmap[day][hour-8] > heatmapMax) heatmapMax = heatmap[day][hour-8]
       }
-    })
-
-    const formattedBusiest = busiestDate !== 'N/A'
-      ? new Date(busiestDate).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })
-      : 'N/A'
-
-    // Peak Hour
-    const hourCounts = {}
-    data.forEach(p => {
-      if (p.joined_at) {
-        const h = new Date(p.joined_at).getHours()
-        hourCounts[h] = (hourCounts[h] || 0) + 1
-      }
-    })
-
-    let maxHourCount = 0
-    let peakHourStr = 'N/A'
-    const heatmapData = []
-
-    Object.keys(hourCounts).forEach(h => {
-      if (hourCounts[h] > maxHourCount) {
-        maxHourCount = hourCounts[h]
-        const hr = parseInt(h)
-        const ampm = hr >= 12 ? 'PM' : 'AM'
-        const hr12 = hr % 12 || 12
-        peakHourStr = `${hr12}:00 ${ampm}`
-      }
-    })
-
-    // Generate heatmap array (from 8 AM to 8 PM)
-    for (let h = 8; h <= 20; h++) {
-        const ampm = h >= 12 ? 'PM' : 'AM'
-        const hr12 = h % 12 || 12
-        heatmapData.push({
-            label: `${hr12} ${ampm}`,
-            count: hourCounts[h] || 0
-        })
     }
+  })
+  const daysOfWeek = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
-    // Prepare Daily Data for Chart (last 7 days to keep it clean)
-    const chartData = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split('T')[0]
-      const label = d.toLocaleDateString('en-IN', { weekday: 'short' })
-      chartData.push({
-        label,
-        count: dayCounts[dateStr] || 0
-      })
+  // Section 5: Language Breakdown
+  const langCounts = {}
+  patients.forEach(p => {
+    const l = p.language || 'en'
+    langCounts[l] = (langCounts[l]||0)+1
+  })
+  const langMap = { hi:'हिंदी', en:'English', mr:'मराठी', gu:'ગુજરાતી', pa:'ਪੰਜਾਬੀ', ta:'தமிழ்', te:'తెలుగు', bn:'বাংলা', kn:'ಕನ್ನಡ', ml:'മലയാളം' }
+  const sortedLangs = Object.entries(langCounts).sort((a,b)=>b[1]-a[1])
+
+  // Section 6: Monthly Comparison (only makes sense if > today)
+  const lastTotal = lastPeriodPatients.length
+  const lastCompleted = lastPeriodPatients.filter(p => p.status === 'done').length
+  const lastCompletedPct = lastTotal ? Math.round((lastCompleted / lastTotal) * 100) : 0
+  const lastWaitTimes = lastPeriodPatients.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
+  const lastAvgWait = lastWaitTimes.length ? Math.round(lastWaitTimes.reduce((a,b)=>a+b,0)/lastWaitTimes.length) : 0
+  
+  const totalChange = lastTotal ? Math.round(((rangeTotal - lastTotal)/lastTotal)*100) : 0
+
+  // Section 7: Feedback
+  const ratings = {5:0, 4:0, 3:0, 2:0, 1:0}
+  let totalRating = 0
+  let ratingCount = 0
+  patients.forEach(p => {
+    if(p.rating > 0) {
+      ratings[p.rating] = (ratings[p.rating]||0)+1
+      totalRating += p.rating
+      ratingCount++
     }
+  })
+  const avgRating = ratingCount ? (totalRating/ratingCount).toFixed(1) : 0
 
-    setStats({
-      total,
-      busiestDay: formattedBusiest,
-      peakHour: peakHourStr,
-      dailyData: chartData,
-      heatmapData,
-      heatmapMax: Math.max(...heatmapData.map(d => d.count), 1)
-    })
-    setLoading(false)
-  }
-
-  // ── RENDER ────────────────────────────────────────────────────────────────
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A' }}>
-      <div style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#F59E0B', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div className="flex h-screen items-center justify-center bg-[#0F172A]">
+      <div className="w-10 h-10 border-4 border-white/10 border-t-[#F59E0B] rounded-full animate-spin"></div>
     </div>
   )
 
-  // Removed strict Elite blocker; Analytics now open to all (with varying limits)
+  const isStarter = clinic?.plan_id === 'starter'
+  const isPro = clinic?.plan_id === 'pro'
+  const isElite = clinic?.plan_id === 'elite'
 
-  // Calculate Max for Chart Scaling
-  const maxChartVal = Math.max(...stats.dailyData.map(d => d.count), 1)
+  const LockCard = ({ title, planRequired }) => (
+    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl border border-[#E2E8F0]">
+      <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center text-center max-w-sm">
+        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-2xl">🔒</div>
+        <h3 className="text-xl font-bold text-[#0F172A] mb-2">Unlock {title}</h3>
+        <p className="text-slate-500 mb-6 text-sm">Upgrade to the {planRequired} plan to access advanced analytics and grow your clinic.</p>
+        <button onClick={() => router.push('/dashboard/billing')} className="bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#059669] transition">
+          Upgrade Now
+        </button>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="analytics-root">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
       <style>{`
-        .analytics-root {
-          min-height: 100vh;
-          background: #F8FAFC;
-          font-family: 'Inter', sans-serif;
-          color: #0F172A;
-        }
-        
-        /* Print Styles - Crucial for the PDF generator */
         @media print {
           body { background: white !important; }
           .no-print { display: none !important; }
-          .print-header { display: block !important; border-bottom: 2px solid #F1F5F9; padding-bottom: 20px; margin-bottom: 30px; }
-          .report-card { box-shadow: none !important; border: 1px solid #E2E8F0 !important; break-inside: avoid; }
-          .chart-bar { background: #0F172A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .stat-value { color: #000 !important; }
-        }
-
-        .header {
-          background: #0F172A;
-          color: white;
-          padding: 20px 32px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .container {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 40px 24px;
-        }
-
-        .stat-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-
-        .stat-card {
-          background: white;
-          padding: 24px;
-          border-radius: 16px;
-          box-shadow: 0 4px 24px rgba(0,0,0,0.03);
-          border: 1px solid #F1F5F9;
-        }
-
-        .chart-container {
-          background: white;
-          padding: 32px;
-          border-radius: 16px;
-          box-shadow: 0 4px 24px rgba(0,0,0,0.03);
-          border: 1px solid #F1F5F9;
-          margin-bottom: 40px;
-        }
-
-        .bar-wrap {
-          display: flex;
-          align-items: flex-end;
-          gap: 16px;
-          height: 200px;
-          padding-top: 20px;
-          margin-top: 20px;
-          border-bottom: 2px solid #E2E8F0;
-        }
-
-        .bar-col {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 8px;
-        }
-
-        .chart-bar {
-          width: 100%;
-          max-width: 48px;
-          background: linear-gradient(180deg, #F59E0B, #D97706);
-          border-radius: 6px 6px 0 0;
-          transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .bar-label {
-          font-size: 0.8rem;
-          color: #64748B;
-          font-weight: 600;
-          margin-top: 8px;
-        }
-
-        /* MOBILE RESPONSIVE */
-        @media (max-width: 640px) {
-          .header {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 16px !important;
-            gap: 14px;
-          }
-          .header > div:last-child {
-            flex-wrap: wrap;
-            gap: 8px;
-          }
-          .header select,
-          .header button {
-            flex: 1;
-            min-width: 0;
-            font-size: 0.78rem !important;
-            padding: 10px 12px !important;
-          }
-          .container {
-            padding: 20px 14px;
-          }
-          .stat-grid {
-            grid-template-columns: 1fr;
-            gap: 12px;
-          }
-          .stat-card {
-            padding: 18px;
-          }
-          .stat-value {
-            font-size: 1.8rem !important;
-          }
-          .chart-container {
-            padding: 18px;
-            margin-bottom: 20px;
-          }
-          .bar-wrap {
-            gap: 6px;
-            height: 160px;
-          }
-          .bar-label {
-            font-size: 0.65rem;
-          }
-          .chart-bar {
-            max-width: 28px;
-          }
+          .shadow-sm, .shadow-xl { box-shadow: none !important; border: 1px solid #E2E8F0 !important; }
+          .bg-white { background: white !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
       `}</style>
-
-      {/* WEB HEADER (Hidden in PDF) */}
-      <div className="header no-print">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            ←
-          </button>
+      
+      {/* HEADER */}
+      <div className="bg-[#0F172A] text-white p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+        <div className="flex items-center gap-4">
+          <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition">←</button>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Analytics</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{clinic.name}</div>
+            <div className="text-xs text-[#94A3B8] font-bold tracking-widest uppercase mb-1">Analytics Dashboard</div>
+            <div className="text-2xl font-black">{clinic?.name}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <select 
             value={dateRange} 
-            onChange={(e) => {
-              if (clinic?.plan_id === 'starter' && e.target.value !== '7') return
-              if (clinic?.plan_id === 'pro' && parseInt(e.target.value) > 30) return
-              setDateRange(e.target.value)
-              setLoading(true)
-              fetchAnalytics(clinic.id, e.target.value)
-            }}
-            style={{ background: '#1E293B', color: 'white', border: '1px solid #334155', padding: '10px 16px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
+            onChange={handleDateChange}
+            className="bg-[#1E293B] border border-[#334155] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
           >
-            <option value="7">Last 7 Days (Starter)</option>
-            {clinic?.plan_id !== 'starter' && <option value="30">Last 30 Days (Pro)</option>}
-            {clinic?.plan_id === 'elite' && <option value="180">Last 6 Months (Elite)</option>}
-            {clinic?.plan_id === 'elite' && <option value="365">Last 1 Year (Elite)</option>}
+            <option value="today">Today Only {isStarter ? '' : '(Starter+)'}</option>
+            <option value="7">Last 7 Days {isStarter ? '🔒' : '(Pro+)'}</option>
+            <option value="30">Last 30 Days {isStarter ? '🔒' : '(Pro+)'}</option>
+            <option value="90">Last 3 Months {!isElite ? '🔒' : '(Elite)'}</option>
+            <option value="180">Last 6 Months {!isElite ? '🔒' : '(Elite)'}</option>
+            <option value="365">Last 1 Year {!isElite ? '🔒' : '(Elite)'}</option>
           </select>
-
           <button
-            onClick={() => clinic?.plan_id === 'starter' ? router.push('/dashboard/billing') : exportCSV()}
-            style={{ background: clinic?.plan_id === 'starter' ? '#334155' : '#10B981', color: clinic?.plan_id === 'starter' ? '#94A3B8' : 'white', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: clinic?.plan_id === 'starter' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            onClick={() => isStarter ? router.push('/dashboard/billing') : exportCSV()}
+            className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#1E293B] text-[#94A3B8] cursor-not-allowed' : 'bg-[#10B981] text-white hover:bg-[#059669]'}`}
           >
-            {clinic?.plan_id === 'starter' ? '🔒 CSV Export (Pro)' : '📥 Export CSV'}
+            {isStarter ? '🔒 CSV Export' : '📥 CSV'}
           </button>
           <button
-            onClick={() => clinic?.plan_id === 'starter' ? router.push('/dashboard/billing') : window.print()}
-            style={{ background: clinic?.plan_id === 'starter' ? '#334155' : '#F59E0B', color: clinic?.plan_id === 'starter' ? '#94A3B8' : '#000', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, cursor: clinic?.plan_id === 'starter' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            onClick={() => isStarter ? router.push('/dashboard/billing') : window.print()}
+            className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#1E293B] text-[#94A3B8] cursor-not-allowed' : 'bg-[#F59E0B] text-white hover:bg-[#D97706]'}`}
           >
-            {clinic?.plan_id === 'starter' ? '🔒 PDF Report (Pro)' : '📄 Download PDF'}
+            {isStarter ? '🔒 PDF Report' : '📄 PDF'}
           </button>
         </div>
       </div>
 
-      <div className="container">
-        {/* PDF HEADER (Hidden on web) */}
-        <div className="print-header" style={{ display: 'none' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A', marginBottom: 8 }}>Monthly Performance Report</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontSize: '1.1rem', color: '#64748B', fontWeight: 500 }}>Clinic: <strong>{clinic.name}</strong></div>
-              <div style={{ fontSize: '0.9rem', color: '#94A3B8', marginTop: 4 }}>Generated on: {new Date().toLocaleDateString('en-IN')}</div>
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+        
+        {/* PRINT HEADER ONLY */}
+        <div className="hidden print:block mb-8 border-b-2 border-[#E2E8F0] pb-4">
+          <h1 className="text-3xl font-black text-[#0F172A]">{clinic?.name}</h1>
+          <p className="text-[#64748B] font-semibold">Analytics Report • Generated {new Date().toLocaleDateString('en-IN')}</p>
+        </div>
+
+        {/* SEC 1: TODAY SNAPSHOT */}
+        <div>
+          <h2 className="text-xl font-black text-[#0F172A] mb-4">Today's Snapshot</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9]">
+              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Patients Today</div>
+              <div className="text-3xl font-black text-[#0F172A]">{todayTotal}</div>
             </div>
-            {avgRating > 0 && (
-              <div style={{ background: '#FEF3C7', padding: '10px 16px', borderRadius: 12, border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#B45309' }}>{avgRating}</span>
-                <span style={{ fontSize: '1.1rem', color: '#F59E0B' }}>★</span>
-                <span style={{ fontSize: '0.8rem', color: '#92400E', fontWeight: 600, marginLeft: 4 }}>Patient Rating</span>
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9]">
+              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Avg Wait Time</div>
+              <div className="text-3xl font-black text-[#F59E0B]">{todayAvgWait}<span className="text-sm font-medium text-[#94A3B8] ml-1">min</span></div>
+            </div>
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9]">
+              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Completed</div>
+              <div className="text-3xl font-black text-[#10B981]">{todayCompletedPct}%</div>
+            </div>
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9]">
+              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Skipped</div>
+              <div className="text-3xl font-black text-[#EF4444]">{todaySkipped}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* SEC 2 & 3: INSIGHTS & PERFORMANCE */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <h2 className="text-lg font-black text-[#0F172A] mb-6">Patient Insights</h2>
+            <div className="space-y-5">
+              <div className="flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">Total Patients</span>
+                <span className="font-bold text-lg">{rangeTotal}</span>
               </div>
+              <div className="w-full bg-[#F1F5F9] h-3 rounded-full overflow-hidden flex">
+                <div style={{width: `${returningPct}%`}} className="bg-[#7C3AED] h-full"></div>
+                <div style={{width: `${newPct}%`}} className="bg-[#38BDF8] h-full"></div>
+              </div>
+              <div className="flex justify-between text-sm">
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#7C3AED]"></div><span className="font-semibold text-[#0F172A]">Returning ({returningPct}%)</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#38BDF8]"></div><span className="font-semibold text-[#0F172A]">New ({newPct}%)</span></div>
+              </div>
+              <div className="pt-4 border-t border-[#F1F5F9] flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">WhatsApp Joins</span>
+                <span className="font-bold">{whatsappCount}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">Walk-ins</span>
+                <span className="font-bold">{walkIns}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">Avg Patients/Day</span>
+                <span className="font-bold">{avgPerDay}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <h2 className="text-lg font-black text-[#0F172A] mb-6">Queue Performance</h2>
+            <div className="space-y-5">
+              <div className="flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">Average Wait</span>
+                <span className="font-bold text-[#F59E0B]">{rangeAvgWait} mins</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">Completed vs Skipped</span>
+                <span className="font-bold text-[#10B981]">{rangeCompleted} <span className="text-[#94A3B8]">/</span> <span className="text-[#EF4444]">{rangeSkipped}</span></span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">WhatsApp Alerts Sent</span>
+                <span className="font-bold">{rangeTotal * 2}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">Voice Notes Generated</span>
+                <span className="font-bold">{rangeTotal * 2}</span>
+              </div>
+              <div className="pt-4 border-t border-[#F1F5F9] flex justify-between items-center">
+                <span className="text-[#64748B] font-semibold">Peak Queue Size</span>
+                <span className="font-bold text-xl">{heatmapMax}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SEC 4: HEATMAP */}
+        <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+          {isStarter && <LockCard title="Busy Hour Heatmap" planRequired="Pro" />}
+          <div className={isStarter ? 'blur-sm select-none' : ''}>
+            <h2 className="text-lg font-black text-[#0F172A] mb-6">Busy Hour Heatmap</h2>
+            <div className="overflow-x-auto">
+              <div className="min-w-[600px]">
+                <div className="flex mb-2">
+                  <div className="w-12"></div>
+                  {Array(13).fill(0).map((_,i) => (
+                    <div key={i} className="flex-1 text-center text-xs font-bold text-[#94A3B8]">
+                      {(i+8)%12||12}{i+8>=12?'p':'a'}
+                    </div>
+                  ))}
+                </div>
+                {daysOfWeek.map((day, dIdx) => (
+                  <div key={day} className="flex items-center mb-1 gap-1">
+                    <div className="w-12 text-xs font-bold text-[#64748B]">{day}</div>
+                    {heatmap[dIdx].map((count, hIdx) => {
+                      let opacity = 0.05
+                      if (heatmapMax > 0 && count > 0) {
+                        opacity = Math.max(0.15, count / heatmapMax)
+                      }
+                      return (
+                        <div 
+                          key={hIdx} 
+                          title={`${count} patients`}
+                          className="flex-1 h-8 rounded-sm transition-all hover:ring-2 hover:ring-[#0F172A]"
+                          style={{ backgroundColor: count === 0 ? '#F1F5F9' : `rgba(16, 185, 129, ${opacity})` }}
+                        ></div>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SEC 5 & 6 */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+            {isStarter && <LockCard title="Language Analytics" planRequired="Pro" />}
+            <div className={isStarter ? 'blur-sm select-none' : ''}>
+              <h2 className="text-lg font-black text-[#0F172A] mb-6">Language Breakdown</h2>
+              <div className="space-y-4">
+                {sortedLangs.slice(0,5).map(([code, count]) => (
+                  <div key={code}>
+                    <div className="flex justify-between text-sm font-semibold mb-1">
+                      <span>{langMap[code] || code}</span>
+                      <span>{Math.round((count/rangeTotal)*100)}%</span>
+                    </div>
+                    <div className="w-full bg-[#F1F5F9] h-2 rounded-full">
+                      <div className="bg-[#7C3AED] h-full rounded-full" style={{width: `${(count/rangeTotal)*100}%`}}></div>
+                    </div>
+                  </div>
+                ))}
+                {sortedLangs.length === 0 && <div className="text-[#94A3B8] text-sm italic">No language data available.</div>}
+              </div>
+            </div>
+          </div>
+
+          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+            {isStarter && <LockCard title="Monthly Comparison" planRequired="Pro" />}
+            <div className={isStarter ? 'blur-sm select-none' : ''}>
+              <h2 className="text-lg font-black text-[#0F172A] mb-6">Period Comparison</h2>
+              {totalChange > 0 ? (
+                <div className="bg-[#ECFDF5] text-[#065F46] p-3 rounded-xl text-sm font-bold mb-4 flex items-center gap-2">
+                  <span>📈</span> Your clinic grew {totalChange}% this period!
+                </div>
+              ) : (
+                <div className="bg-[#F8FAFC] text-[#64748B] p-3 rounded-xl text-sm font-bold mb-4">
+                  Compare this period vs previous period
+                </div>
+              )}
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[#94A3B8] border-b border-[#F1F5F9]">
+                    <th className="pb-2 font-semibold">Metric</th>
+                    <th className="pb-2 font-semibold text-right">Current</th>
+                    <th className="pb-2 font-semibold text-right">Previous</th>
+                  </tr>
+                </thead>
+                <tbody className="font-semibold text-[#0F172A]">
+                  <tr className="border-b border-[#F1F5F9]">
+                    <td className="py-3 text-[#64748B]">Total Patients</td>
+                    <td className="py-3 text-right">{rangeTotal}</td>
+                    <td className="py-3 text-right">{lastTotal}</td>
+                  </tr>
+                  <tr className="border-b border-[#F1F5F9]">
+                    <td className="py-3 text-[#64748B]">Completed %</td>
+                    <td className="py-3 text-right">{rangeTotal ? Math.round((rangeCompleted/rangeTotal)*100) : 0}%</td>
+                    <td className="py-3 text-right">{lastCompletedPct}%</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 text-[#64748B]">Avg Wait Time</td>
+                    <td className="py-3 text-right">{rangeAvgWait}m</td>
+                    <td className="py-3 text-right">{lastAvgWait}m</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* SEC 7: FEEDBACK */}
+        <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+          {!isElite && <LockCard title="Patient Feedback" planRequired="Elite" />}
+          <div className={!isElite ? 'blur-sm select-none' : ''}>
+            <h2 className="text-lg font-black text-[#0F172A] mb-6">Patient Feedback Summary</h2>
+            <div className="flex flex-col md:flex-row gap-8 items-center">
+              <div className="text-center">
+                <div className="text-6xl font-black text-[#F59E0B]">{avgRating}</div>
+                <div className="flex gap-1 text-[#F59E0B] my-2 text-xl justify-center">
+                  {'★★★★★'.split('').map((s,i) => <span key={i} className={i < Math.round(avgRating) ? '' : 'text-gray-200'}>{s}</span>)}
+                </div>
+                <div className="text-[#64748B] text-sm font-semibold">{ratingCount} reviews</div>
+              </div>
+              <div className="flex-1 w-full space-y-2">
+                {[5,4,3,2,1].map(star => (
+                  <div key={star} className="flex items-center gap-3 text-sm font-semibold">
+                    <span className="w-12 text-[#64748B]">{star} stars</span>
+                    <div className="flex-1 bg-[#F1F5F9] h-2 rounded-full">
+                      <div className="bg-[#F59E0B] h-full rounded-full" style={{width: `${ratingCount ? (ratings[star]/ratingCount)*100 : 0}%`}}></div>
+                    </div>
+                    <span className="w-8 text-right text-[#0F172A]">{ratingCount ? Math.round((ratings[star]/ratingCount)*100) : 0}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SEC 8: AI INSIGHTS */}
+        <div className="relative bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-1 rounded-2xl shadow-xl overflow-hidden">
+          {!isElite && <LockCard title="Smart AI Insights" planRequired="Elite" />}
+          <div className={`bg-[#0F172A] rounded-xl p-6 ${!isElite ? 'blur-sm select-none' : ''}`}>
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-2xl">🧠</span>
+              <h2 className="text-xl font-black text-white">TokenPe AI Insights</h2>
+            </div>
+            {loadingAi ? (
+              <div className="text-[#94A3B8] font-semibold animate-pulse">Generating insights using Claude AI...</div>
+            ) : aiInsights ? (
+              <div className="grid md:grid-cols-3 gap-4">
+                {aiInsights.map((insight, i) => (
+                  <div key={i} className="bg-white/5 border border-white/10 p-5 rounded-xl backdrop-blur-md">
+                    <div className="text-2xl mb-3">{insight.icon}</div>
+                    <p className="text-white text-sm font-semibold leading-relaxed">{insight.insight}</p>
+                    <div className={`mt-4 text-xs font-bold uppercase tracking-wider ${insight.type==='positive'?'text-[#10B981]':insight.type==='warning'?'text-[#F59E0B]':'text-[#38BDF8]'}`}>
+                      {insight.type}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[#94A3B8] font-semibold">Not enough data to generate insights yet.</div>
             )}
           </div>
         </div>
 
-        <div style={{ marginBottom: 32 }} className="no-print">
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px' }}>30-Day Overview</h1>
-          <p style={{ color: '#64748B' }}>Insights to help you optimize clinic operations and staff scheduling.</p>
-        </div>
-
-        {/* STATS GRID */}
-        <div className="stat-grid">
-          <div className="stat-card report-card">
-            <div style={{ fontSize: '2rem', marginBottom: 12 }}>👥</div>
-            <div style={{ color: '#64748B', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Total Patients</div>
-            <div className="stat-value" style={{ fontSize: '2.5rem', fontWeight: 900, color: '#F59E0B', marginTop: 4 }}>{stats.total}</div>
-            <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: 8 }}>In the last 30 days</div>
-          </div>
-
-          <div className="stat-card report-card">
-            <div style={{ fontSize: '2rem', marginBottom: 12 }}>🔥</div>
-            <div style={{ color: '#64748B', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Busiest Day</div>
-            <div className="stat-value" style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F172A', marginTop: 12 }}>{stats.busiestDay}</div>
-            <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: 10 }}>Highest footfall recorded</div>
-          </div>
-
-          <div className="stat-card report-card">
-            <div style={{ fontSize: '2rem', marginBottom: 12 }}>⏰</div>
-            <div style={{ color: '#64748B', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Peak Hour</div>
-            <div className="stat-value" style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F172A', marginTop: 12 }}>{stats.peakHour}</div>
-            <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: 10 }}>Most queue joins occurred</div>
-          </div>
-        </div>
-
-        {/* CHART SECTION */}
-        <div className="chart-container report-card">
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A' }}>Last 7 Days Trend</h2>
-          <p style={{ color: '#64748B', fontSize: '0.9rem', marginTop: 4 }}>Patient volume over the past week.</p>
-
-          <div className="bar-wrap">
-            {stats.dailyData.map((d, i) => {
-              const heightPct = (d.count / maxChartVal) * 100;
-              return (
-                <div key={i} className="bar-col">
-                  <div style={{ fontSize:'0.8rem', color:'#0F172A', fontWeight:700 }}>{d.count > 0 ? d.count : ''}</div>
-                  <div className="chart-bar" style={{ height: `${Math.max(heightPct, 2)}%` }}></div>
-                  <div className="bar-label">{d.label}</div>
-                </div>
-          )
-            })}
-          </div>
-        </div>
-
-        {/* HEATMAP SECTION */}
-        <div className="chart-container report-card">
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A' }}>Busy Hour Heatmap</h2>
-          <p style={{ color: '#64748B', fontSize: '0.9rem', marginTop: 4 }}>Footfall distribution by hour of the day.</p>
-
-          <div className="bar-wrap" style={{ height: 180, overflowX: 'auto', gap: 8, paddingBottom: 10 }}>
-            {stats.heatmapData?.map((d, i) => {
-              const heightPct = stats.heatmapMax > 0 ? (d.count / stats.heatmapMax) * 100 : 0;
-              const intensity = heightPct > 75 ? 'linear-gradient(180deg, #DC2626, #991B1B)' : heightPct > 40 ? 'linear-gradient(180deg, #F59E0B, #D97706)' : 'linear-gradient(180deg, #3B82F6, #1D4ED8)'
-              return (
-                <div key={i} className="bar-col" style={{ minWidth: 32 }}>
-                  <div style={{ fontSize:'0.75rem', color:'#0F172A', fontWeight:700 }}>{d.count > 0 ? d.count : ''}</div>
-                  <div className="chart-bar" style={{ height: `${Math.max(heightPct, 2)}%`, background: intensity, borderRadius: '4px 4px 0 0' }}></div>
-                  <div className="bar-label" style={{ fontSize: '0.7rem' }}>{d.label}</div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* PDF FOOTER */}
-      <div style={{ textAlign: 'center', marginTop: 40, paddingTop: 20, borderTop: '1px solid #E2E8F0', color: '#94A3B8', fontSize: '0.85rem' }} className="report-card">
-        Confidential report automatically generated by <strong>TokenPe Elite</strong>.
       </div>
     </div>
   )

@@ -592,8 +592,18 @@ export default function Dashboard() {
       return
     }
     const newStatus = !clinic.queue_paused
+    
+    // Attempt DB update first
+    const { error } = await supabase.from('clinics').update({ queue_paused: newStatus }).eq('id', clinic.id)
+    
+    if (error) {
+      console.error('Failed to toggle pause:', error.message)
+      addToast('Failed to pause queue. Please try again.', 'error')
+      return
+    }
+    
+    // Update local state only if DB update succeeds
     setClinic(prev => ({ ...prev, queue_paused: newStatus }))
-    await supabase.from('clinics').update({ queue_paused: newStatus }).eq('id', clinic.id)
     addToast(newStatus ? 'Queue is now PAUSED' : 'Queue is now ACTIVE', newStatus ? 'notify' : 'done')
   }
 

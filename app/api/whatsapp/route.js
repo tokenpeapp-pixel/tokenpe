@@ -248,7 +248,7 @@ export async function POST(req) {
                             language: language || 'en',
                             event: 'joined',
                             token: tokenNumber,
-                            position,
+                            position: peopleAhead || 0,
                             clinicName: clinic.name
                         })
                     } catch (err) {
@@ -261,7 +261,7 @@ export async function POST(req) {
             return Response.json({
                 success: true,
                 token: tokenNumber,
-                position: position,
+                position: peopleAhead || 0,
                 wait: waitMins,
                 clinicName: clinic.name,
                 name: name || 'Guest'

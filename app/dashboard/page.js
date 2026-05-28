@@ -407,6 +407,8 @@ export default function Dashboard() {
   const [historyDate, setHistoryDate] = useState(() => getISTYesterdayDateString())
   const [historyPatients, setHistoryPatients] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [historySearch, setHistorySearch] = useState('')
+  const [historyFilter, setHistoryFilter] = useState('all')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
@@ -1251,22 +1253,49 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'history' && (
-          <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12, background: 'white', padding: '16px 20px', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1E293B' }}>Select Date:</label>
-            <input
-              type="date"
-              value={historyDate}
-              max={new Date().toISOString().split('T')[0]}
-              min={
-                clinic?.plan_id === 'starter' 
-                  ? (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })() 
-                  : clinic?.plan_id === 'pro' 
-                    ? (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })() 
-                    : undefined
-              }
-              onChange={e => setHistoryDate(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500 }}
-            />
+          <div style={{ marginBottom: 16, background: 'white', padding: '16px 20px', borderRadius: 16, boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+            {/* Row 1: Date picker */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E293B', whiteSpace: 'nowrap' }}>📅 Date:</label>
+              <input
+                type="date"
+                value={historyDate}
+                max={new Date().toISOString().split('T')[0]}
+                min={
+                  clinic?.plan_id === 'starter' 
+                    ? (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })() 
+                    : clinic?.plan_id === 'pro' 
+                      ? (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })() 
+                      : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d.toISOString().split('T')[0] })()
+                }
+                onChange={e => setHistoryDate(e.target.value)}
+                style={{ flex: 1, padding: '8px 12px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500 }}
+              />
+            </div>
+            {/* Row 2: Search + Filter */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1, position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem', color: '#94A3B8' }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search name, phone, token..."
+                  value={historySearch}
+                  onChange={e => setHistorySearch(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px 9px 36px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500, boxSizing: 'border-box' }}
+                />
+              </div>
+              <select
+                value={historyFilter}
+                onChange={e => setHistoryFilter(e.target.value)}
+                style={{ padding: '9px 12px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 600, cursor: 'pointer', minWidth: 100 }}
+              >
+                <option value="all">All</option>
+                <option value="done">✅ Done</option>
+                <option value="waiting">🟡 Waiting</option>
+                <option value="called">🟢 Called</option>
+                <option value="skipped">⏭ Skipped</option>
+              </select>
+            </div>
           </div>
         )}
 
@@ -1282,9 +1311,29 @@ export default function Dashboard() {
           </div>
         )}
 
-        {activeTab === 'history' && !loadingHistory && historyPatients.map(p => (
-          <PatientCard key={p.id} patient={p} position={null} />
-        ))}
+        {activeTab === 'history' && !loadingHistory && (() => {
+          const q = historySearch.toLowerCase().trim()
+          const filtered = historyPatients.filter(p => {
+            const matchesFilter = historyFilter === 'all' || p.status === historyFilter
+            const matchesSearch = !q || 
+              (p.name || '').toLowerCase().includes(q) || 
+              (p.phone || '').includes(q) || 
+              (p.token || '').toLowerCase().includes(q)
+            return matchesFilter && matchesSearch
+          })
+          if (filtered.length === 0 && historyPatients.length > 0) {
+            return (
+              <div style={{ textAlign: 'center', padding: '40px 24px', color: '#94A3B8' }}>
+                <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔍</div>
+                <div style={{ fontWeight: 600, color: '#64748B' }}>No matching patients</div>
+                <div style={{ fontSize: '0.8rem', marginTop: 4 }}>Try a different search or filter</div>
+              </div>
+            )
+          }
+          return filtered.map(p => (
+            <PatientCard key={p.id} patient={p} position={null} />
+          ))
+        })()}
 
         {activeTab === 'active' && called.length > 0 && <div style={s.sectionLabel}>🟢 With Doctor Now</div>}
         {activeTab === 'active' && called.map(p => (

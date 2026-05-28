@@ -365,9 +365,9 @@ export default function BillingPage() {
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Patient Visit History</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>7 Days</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>30 Days</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 700 }}>365 Days</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Smart Wait Time Prediction</td>

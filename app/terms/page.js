@@ -157,7 +157,7 @@ We are committed to helping you integrate and resolve any issues with your Token
                 <strong className="text-slate-800 dark:text-white">Cancellation</strong>: You can cancel your subscription or delete your TokenPe account at any time via your user dashboard.
               </li>
               <li>
-                <strong className="text-slate-800 dark:text-white">Refunds</strong>: If you are enrolled in any paid usage tiers, charges are billed in advance. Refund requests for unused credits or platform issues can be requested by emailing our help desk at <a href="mailto:support@tokenpe.online" className="text-indigo-600 dark:text-indigo-400 hover:underline">support@tokenpe.online</a>.
+                <strong className="text-slate-800 dark:text-white">Refunds</strong>: If you are enrolled in any paid usage tiers, charges are billed in advance. Refund requests for unused credits or platform issues can be requested by emailing our help desk at <a href="mailto:tokenpe.online@gmail.com" className="text-indigo-600 dark:text-indigo-400 hover:underline">tokenpe.online@gmail.com</a>.
               </li>
             </ul>
           </section>

@@ -310,11 +310,29 @@ _Powered by TokenPe_`
             return Response.json({ success: true }, { status: 200 })
         }
 
-        // ── RATE action ──────────────────────────────────────────────────────────
-        if (action === 'rate') {
+        // ── RATE action (or auto-detect from reply) ──────────────────────────────
+        const rawText = pick(body, 'rating', 'Rating', 'score', 'message', 'text', 'body') || ''
+        const textStr = String(rawText).toLowerCase()
+        const starCount = (textStr.match(/⭐/g) || []).length
+        const isRatingReply = starCount > 0 || 
+                              textStr.includes('excellent') || 
+                              textStr.includes('good') || 
+                              textStr.includes('average') || 
+                              textStr.includes('fair') || 
+                              textStr.includes('poor') ||
+                              textStr.startsWith('rate_')
+
+        if (action === 'rate' || ( (action === 'message' || action === 'reply') && (isRatingReply || /^\s*[1-5]\s*$/.test(textStr)) ) || (!action && isRatingReply)) {
             const phone = pick(body, 'phone', 'Phone', 'mobile', 'waPhone', 'whatsapp', 'customer_phone')
-            const rawRating = pick(body, 'rating', 'Rating', 'score', 'message', 'text') // Capture the number sent
-            const rating = parseInt(String(rawRating).replace(/\D/g, '')) || 0
+            
+            // First check if there are star emojis
+            let rating = starCount
+            
+            // If no stars, try to find a digit
+            if (rating === 0) {
+                const match = String(rawText).match(/\d/)
+                rating = match ? parseInt(match[0]) : 0
+            }
 
             if (!phone || rating < 1 || rating > 5) {
                 return Response.json({ success: false, message: 'Invalid rating (must be 1-5)' }, { status: 400 })

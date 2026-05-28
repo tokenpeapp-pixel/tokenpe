@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { after } from 'next/server'
 import { supabase } from '../../../../lib/supabase'
-import { sendText, sendImage } from '../../../../lib/messaging'
+import { sendTemplateMessage } from '../../../../lib/messaging'
 
 export async function POST(req) {
   try {
@@ -53,9 +53,18 @@ export async function POST(req) {
       for (const phone of uniquePhones) {
         try {
           if (imageUrl) {
-            await sendImage(phone, imageUrl, formattedMessage)
+            await sendTemplateMessage({
+              phone,
+              templateName: 'tokenpe_broadcast_image',
+              bodyValues: [clinic.name, message || ' '],
+              headerValues: [imageUrl]
+            })
           } else {
-            await sendText(phone, formattedMessage)
+            await sendTemplateMessage({
+              phone,
+              templateName: 'tokenpe_broadcast',
+              bodyValues: [clinic.name, message || ' ']
+            })
           }
           sent++
           // Small delay to avoid rate limits

@@ -2,7 +2,7 @@
 // Marks patient as done, sends Consultation Complete text + voice note in parallel
 
 import { supabase } from '../../../../lib/supabase'
-import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
+import { sendText, sendVoice, cleanPhone, sendInteractiveRating } from '../../../../lib/messaging'
 
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
@@ -20,18 +20,15 @@ export async function POST(req) {
         const phone = cleanPhone(patientPhone)
 
         // 1. Fetch clinic to check plan
-        const { data: clinic } = await supabase.from('clinics').select('plan_id, code').eq('id', clinicId).single()
+        const { data: clinic } = await supabase.from('clinics').select('plan_id, code, subscription_status').eq('id', clinicId).single()
         const planId = clinic?.plan_id || 'starter'
         const clinicCode = clinic?.code || ''
-
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tokenpe.online'
-        const feedbackUrl = `${baseUrl}/feedback/${clinicCode}?patientId=${patientId}`
 
         const doneMsg = `✅ *Consultation Completed, ${patientName || 'Patient'}!*
 
 Thank you for visiting *${clinicName}*. We hope you feel better soon! 🌟
 
-${(planId === 'elite' || clinic?.subscription_status === 'trialing') ? `How was your visit? Please rate us here:\n${feedbackUrl}\n\n` : ''}Please don't hesitate to reach out if you have any questions.
+Please don't hesitate to reach out if you have any questions.
 
 _Powered by TokenPe_`
 
@@ -40,7 +37,11 @@ _Powered by TokenPe_`
             supabase.from('patients').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId),
             sendText(phone, doneMsg)
         ]
-        
+
+        if (planId === 'elite' || planId === 'pro' || clinic?.subscription_status === 'trialing') {
+            alerts.push(sendInteractiveRating(phone, clinicName))
+        }
+
         if (planId !== 'starter') {
             alerts.push(sendVoice({ phone, language: language || 'en', event: 'done', token, clinicName }))
         }

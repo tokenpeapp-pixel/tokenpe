@@ -297,8 +297,8 @@ _Powered by TokenPe_`
         }
 
         // ── RATE action (or auto-detect from reply) ──────────────────────────────
-        const rawText = pick(body, 'rating', 'Rating', 'score', 'message', 'text', 'body') || ''
-        const textStr = String(rawText).toLowerCase()
+        const rawText = pick(body, 'text', 'rating', 'Rating', 'score', 'message', 'body') || ''
+        const textStr = String(rawText).trim().toLowerCase()
         const starCount = (textStr.match(/⭐/g) || []).length
         const isRatingReply = starCount > 0 || 
                               textStr.includes('excellent') || 
@@ -306,36 +306,73 @@ _Powered by TokenPe_`
                               textStr.includes('average') || 
                               textStr.includes('fair') || 
                               textStr.includes('poor') ||
-                              textStr.startsWith('rate_')
+                              textStr.startsWith('rate_') ||
+                              /^[1-5]$/.test(textStr)
 
-        if (action === 'rate' || ( (action === 'message' || action === 'reply') && (isRatingReply || /^\s*[1-5]\s*$/.test(textStr)) ) || (!action && isRatingReply)) {
+        console.log(`[Rating Debug] action=${action} | rawText="${rawText}" | textStr="${textStr}" | isRatingReply=${isRatingReply}`)
+
+        if (action === 'rate' || action === 'reply' || action === 'message' || action === 'feedback' || isRatingReply) {
             const phone = pick(body, 'phone', 'Phone', 'mobile', 'waPhone', 'whatsapp', 'customer_phone')
             
             // First check if there are star emojis
             let rating = starCount
             
-            // If no stars, try to find a digit
+            // If no stars, try to find a digit 1-5
             if (rating === 0) {
-                const match = String(rawText).match(/\d/)
-                rating = match ? parseInt(match[0]) : 0
+                const match = String(rawText).trim().match(/^[1-5]$/)
+                if (match) {
+                    rating = parseInt(match[0])
+                } else {
+                    // Try extracting any digit from the text
+                    const digitMatch = String(rawText).match(/[1-5]/)
+                    rating = digitMatch ? parseInt(digitMatch[0]) : 0
+                }
             }
 
+            console.log(`[Rating Debug] phone=${phone} | rating=${rating}`)
+
             if (!phone || rating < 1 || rating > 5) {
+                console.warn(`[Rating] ❌ Invalid: phone=${phone}, rating=${rating}`)
                 return Response.json({ success: false, message: 'Invalid rating (must be 1-5)' }, { status: 400 })
             }
 
             const clean = cleanPhone(phone)
-            // Find their most recent 'done' visit
-            const { data: recent } = await supabase
+            const tenDigit = clean.startsWith('91') ? clean.slice(2) : clean
+            
+            // Find their most recent 'done' visit — try both phone formats
+            let { data: recent } = await supabase
                 .from('patients')
-                .select('id, rating')
+                .select('id, rating, phone')
                 .eq('phone', clean)
                 .eq('status', 'done')
                 .order('completed_at', { ascending: false })
                 .limit(1)
 
+            // If not found with 12-digit, try 10-digit
+            if (!recent || recent.length === 0) {
+                const { data: recent2 } = await supabase
+                    .from('patients')
+                    .select('id, rating, phone')
+                    .eq('phone', tenDigit)
+                    .eq('status', 'done')
+                    .order('completed_at', { ascending: false })
+                    .limit(1)
+                recent = recent2
+            }
+
+            console.log(`[Rating Debug] Found patient:`, JSON.stringify(recent))
+
             if (recent && recent.length > 0 && !recent[0].rating) {
-                await supabase.from('patients').update({ rating }).eq('id', recent[0].id)
+                const { error: updateErr } = await supabase.from('patients').update({ rating }).eq('id', recent[0].id)
+                if (updateErr) {
+                    console.error(`[Rating] ❌ Update failed:`, updateErr.message)
+                } else {
+                    console.log(`[Rating] ✅ Saved rating=${rating} for patient ${recent[0].id}`)
+                }
+            } else if (recent && recent.length > 0 && recent[0].rating) {
+                console.log(`[Rating] ℹ️ Patient already rated: ${recent[0].rating}`)
+            } else {
+                console.warn(`[Rating] ❌ No 'done' patient found for phone: ${clean} / ${tenDigit}`)
             }
 
             after(async () => {

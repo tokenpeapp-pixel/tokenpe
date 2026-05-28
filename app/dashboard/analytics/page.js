@@ -3,6 +3,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 
+// ─── PHONE MASKING (Privacy) ────────────────────────────────────────────────
+function maskPhone(phone) {
+  if (!phone) return ''
+  const p = String(phone).replace(/\D/g, '')
+  if (p.length <= 4) return '****'
+  return p.slice(0, 2) + '****' + p.slice(-4)
+}
+
 // Helper to get IST Date
 function getISTDateString(date = new Date()) {
   const istOffset = 5.5 * 60 * 60 * 1000
@@ -140,7 +148,7 @@ export default function AnalyticsPage() {
         new Date(p.joined_at).toLocaleTimeString('en-IN'),
         p.token,
         `"${p.name || 'Walk-in'}"`,
-        p.phone,
+        p.phone ? maskPhone(p.phone) : '',
         p.status.toUpperCase(),
         waitTime
       ]

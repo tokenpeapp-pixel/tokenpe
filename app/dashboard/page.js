@@ -3,6 +3,14 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
 
+// ─── PHONE MASKING (Privacy) ────────────────────────────────────────────────
+function maskPhone(phone) {
+  if (!phone) return ''
+  const p = String(phone).replace(/\D/g, '')
+  if (p.length <= 4) return '****'
+  return p.slice(0, 2) + '****' + p.slice(-4)
+}
+
 // ─── SOUNDS ────────────────────────────────────────────────────────────────
 function useSounds() {
   const audioCtx = useRef(null)
@@ -505,7 +513,7 @@ export default function Dashboard() {
             sounds.newPatient()
             setNewPatientAlert(payload.new)
             setTimeout(() => setNewPatientAlert(null), 5000)
-            addToast(`New patient joined: ${payload.new.name || payload.new.phone} — ${payload.new.token}`, 'new')
+            addToast(`New patient joined: ${payload.new.name || maskPhone(payload.new.phone)} — ${payload.new.token}`, 'new')
           }
         }
         if (payload.eventType === 'UPDATE') {
@@ -1080,7 +1088,7 @@ export default function Dashboard() {
         <div style={s.banner}>
           <div style={s.bannerDot} />
           🆕 New patient joined!&nbsp;
-          <strong>{newPatientAlert.name || newPatientAlert.phone} — {newPatientAlert.token}</strong>
+          <strong>{newPatientAlert.name || maskPhone(newPatientAlert.phone)} — {newPatientAlert.token}</strong>
         </div>
       )}
 
@@ -1298,7 +1306,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
           <span style={s.langBadge}>{LANG_NAMES[patient.language] || 'हिंदी'}</span>
         </div>
         <div style={s.patientMeta}>
-          📱 +91 {patient.phone} &nbsp;·&nbsp;
+          📱 +91 {maskPhone(patient.phone)} &nbsp;·&nbsp;
           🕒 {joinedTime} {isWaiting && `(⏳ ${waitMins}m)`} 
           {completedTime && ` → ✅ ${completedTime}`} &nbsp;·&nbsp;
           {position ? `#${position} in line` : patient.status.toUpperCase()}

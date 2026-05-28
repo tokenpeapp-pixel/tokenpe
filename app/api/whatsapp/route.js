@@ -36,21 +36,7 @@ export async function POST(req) {
 
         const body = await req.json()
 
-        // ── 🔍 Write payload as a log entry into Supabase (Background) ──────────
-        try {
-            supabase.from('patients').insert({
-                clinic_id: '37785603-d390-4565-9fef-7f076b18de79', // Dr Sharma Clinic ID for logs
-                token: 'LOG',
-                phone: '0000000000',
-                name: `PAYLOAD: ${JSON.stringify(body)}`.slice(0, 255),
-                language: 'en',
-                status: 'skipped', // skipped so it doesn't clutter dashboard
-                date: getISTDateString(),
-                joined_at: new Date().toISOString()
-            }).then(() => {}).catch(e => console.error(e))
-        } catch (logErr) {
-            console.error('[whatsapp] Failed to start log insert:', logErr.message)
-        }
+
 
         // ── 🔍 FULL PAYLOAD LOG — helps debug Interakt variable names ──────────
         console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))

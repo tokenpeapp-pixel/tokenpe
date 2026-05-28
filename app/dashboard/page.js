@@ -592,23 +592,27 @@ export default function Dashboard() {
       return
     }
     const newStatus = !clinic.queue_paused
-    
-    // Attempt DB update first via backend API to bypass RLS
-    const res = await fetch('/api/clinic/pause', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clinicId: clinic.id, queuePaused: newStatus })
-    })
-    
-    if (!res.ok) {
-      console.error('Failed to toggle pause')
-      addToast('Failed to pause queue. Please try again.', 'error')
-      return
-    }
-    
-    // Update local state only if DB update succeeds
+    // Optimistic UI update for instant feedback
     setClinic(prev => ({ ...prev, queue_paused: newStatus }))
     addToast(newStatus ? 'Queue is now PAUSED' : 'Queue is now ACTIVE', newStatus ? 'notify' : 'done')
+    
+    // Attempt DB update in background via backend API
+    try {
+      const res = await fetch('/api/clinic/pause', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, queuePaused: newStatus })
+      })
+      
+      if (!res.ok) {
+        throw new Error('Failed to toggle pause')
+      }
+    } catch (error) {
+      console.error('Failed to toggle pause:', error)
+      // Revert the state if the API call fails
+      setClinic(prev => ({ ...prev, queue_paused: !newStatus }))
+      addToast('Failed to pause queue. Reverted state.', 'error')
+    }
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────

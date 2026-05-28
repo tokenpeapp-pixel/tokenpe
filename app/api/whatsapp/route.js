@@ -345,7 +345,7 @@ _Powered by TokenPe_`
                 .select('id, rating, phone')
                 .eq('phone', clean)
                 .eq('status', 'done')
-                .order('completed_at', { ascending: false })
+                .order('joined_at', { ascending: false })
                 .limit(1)
 
             // If not found with 12-digit, try 10-digit
@@ -355,7 +355,7 @@ _Powered by TokenPe_`
                     .select('id, rating, phone')
                     .eq('phone', tenDigit)
                     .eq('status', 'done')
-                    .order('completed_at', { ascending: false })
+                    .order('joined_at', { ascending: false })
                     .limit(1)
                 recent = recent2
             }

@@ -1165,8 +1165,12 @@ export default function Dashboard() {
           {clinic?.queue_paused ? '⏸ Paused' : '▶️ Active'}
         </button>
         <button
-          style={{ ...s.btnAdd, opacity: isLimitReached ? 0.5 : 1, cursor: isLimitReached ? 'not-allowed' : 'pointer' }}
+          style={{ ...s.btnAdd, opacity: isLimitReached || clinic?.queue_paused ? 0.5 : 1, cursor: isLimitReached || clinic?.queue_paused ? 'not-allowed' : 'pointer' }}
           onClick={() => {
+            if (clinic?.queue_paused) {
+              addToast('Queue is currently paused. Please unpause to add walk-ins.', 'error')
+              return
+            }
             if (isLimitReached) {
               addToast(`Daily limit of ${limit} reached. Upgrade to add more!`, 'error')
               return
@@ -1174,7 +1178,7 @@ export default function Dashboard() {
             setShowAddForm(!showAddForm)
           }}
         >
-          {isLimitReached ? `🔒 Limit (${limit})` : '+ Walk-in'}
+          {clinic?.queue_paused ? '⏸ Queue Paused' : isLimitReached ? `🔒 Limit (${limit})` : '+ Walk-in'}
         </button>
         <button
           style={{ ...s.btnCall, opacity: waiting.length === 0 ? 0.4 : 1 }}

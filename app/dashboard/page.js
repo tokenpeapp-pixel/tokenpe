@@ -593,11 +593,15 @@ export default function Dashboard() {
     }
     const newStatus = !clinic.queue_paused
     
-    // Attempt DB update first
-    const { error } = await supabase.from('clinics').update({ queue_paused: newStatus }).eq('id', clinic.id)
+    // Attempt DB update first via backend API to bypass RLS
+    const res = await fetch('/api/clinic/pause', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clinicId: clinic.id, queuePaused: newStatus })
+    })
     
-    if (error) {
-      console.error('Failed to toggle pause:', error.message)
+    if (!res.ok) {
+      console.error('Failed to toggle pause')
       addToast('Failed to pause queue. Please try again.', 'error')
       return
     }

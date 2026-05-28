@@ -11,7 +11,7 @@ export async function POST(req) {
     })
 
     const PLAN_MAP = {
-      starter: process.env.RAZORPAY_PLAN_STARTER,
+      starter: 'plan_SunDLesE1mWb4O', // Temporary 10 INR Test Plan
       pro:     process.env.RAZORPAY_PLAN_PRO,
       elite:   process.env.RAZORPAY_PLAN_ELITE,
     }

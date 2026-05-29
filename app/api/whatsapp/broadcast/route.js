@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { after } from 'next/server'
-import { supabase } from '../../../../lib/supabase'
+import { supabaseAdmin } from '../../../../lib/supabase'
 import { sendTemplateMessage } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
 
@@ -18,7 +18,7 @@ export async function POST(req) {
     }
 
     // 1. Verify Clinic is Elite
-    const { data: clinic, error: clinicError } = await supabase
+    const { data: clinic, error: clinicError } = await supabaseAdmin
       .from('clinics')
       .select('*')
       .eq('id', clinicId)
@@ -33,7 +33,7 @@ export async function POST(req) {
     }
 
     // 2. Fetch Unique Patients
-    const { data: patients, error: patientError } = await supabase
+    const { data: patients, error: patientError } = await supabaseAdmin
       .from('patients')
       .select('phone')
       .eq('clinic_id', clinicId)

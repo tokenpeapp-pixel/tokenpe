@@ -39,11 +39,11 @@ export default function AnalyticsPage() {
       setClinic(c)
       
       // Default date range
-      if (c.plan_id === 'starter') setDateRange('today')
+      if (c.plan_id === 'starter') setDateRange('7')
       else if (c.plan_id === 'pro') setDateRange('30')
       else setDateRange('30') // Elite default to 30
 
-      await fetchAnalytics(c, c.plan_id === 'starter' ? 'today' : '30')
+      await fetchAnalytics(c, c.plan_id === 'starter' ? '7' : '30')
     }
     load()
   }, [router])
@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
 
   function handleDateChange(e) {
     const val = e.target.value
-    if (clinic.plan_id === 'starter' && val !== 'today') return alert('Upgrade to Pro to view this date range.')
+    if (clinic.plan_id === 'starter' && val !== 'today' && val !== '7') return alert('Upgrade to Pro to view this date range.')
     if (clinic.plan_id === 'pro' && !['today','7','30'].includes(val)) return alert('Upgrade to Elite to view this date range.')
     setDateRange(val)
     fetchAnalytics(clinic, val)
@@ -316,10 +316,10 @@ export default function AnalyticsPage() {
             onChange={handleDateChange}
             className="bg-[#1E293B] border border-[#334155] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
           >
-            <option value="today">Today Only {isStarter ? '' : '(Starter+)'}</option>
-            <option value="7">Last 7 Days {isStarter ? '🔒' : '(Pro+)'}</option>
+            <option value="today">Today Only</option>
+            <option value="7">Last 7 Days {isStarter ? '' : '(Starter+)'}</option>
             <option value="30">Last 30 Days {isStarter ? '🔒' : '(Pro+)'}</option>
-            <option value="90">Last 3 Months {!isElite ? '🔒' : '(Elite)'}</option>
+            <option value="90">Last 90 Days {isStarter || isPro ? '🔒' : '(Elite Only)'}</option>
             <option value="180">Last 6 Months {!isElite ? '🔒' : '(Elite)'}</option>
             <option value="365">Last 1 Year {!isElite ? '🔒' : '(Elite)'}</option>
           </select>
@@ -401,8 +401,10 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9]">
-            <h2 className="text-lg font-black text-[#0F172A] mb-6">Queue Performance</h2>
+          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+            {isStarter && <LockCard title="Advanced Queue Analytics" planRequired="Pro" />}
+            <div className={isStarter ? 'blur-sm select-none' : ''}>
+              <h2 className="text-lg font-black text-[#0F172A] mb-6">Queue Performance</h2>
             <div className="space-y-5">
               <div className="flex justify-between items-center">
                 <span className="text-[#64748B] font-semibold">Average Wait</span>
@@ -424,6 +426,7 @@ export default function AnalyticsPage() {
                 <span className="text-[#64748B] font-semibold">Peak Queue Size</span>
                 <span className="font-bold text-xl">{heatmapMax}</span>
               </div>
+            </div>
             </div>
           </div>
         </div>

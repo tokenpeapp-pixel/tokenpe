@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '../../../../lib/supabase'
+import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
   try {
@@ -7,6 +8,11 @@ export async function POST(req) {
     
     if (!clinicName || !email) {
       return NextResponse.json({ success: false, error: 'Name and email required' }, { status: 400 })
+    }
+
+    const session = await getSession()
+    if (!session || !session.clinicId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     // Verify user owns clinics with this email and has Elite plan

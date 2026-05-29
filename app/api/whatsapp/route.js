@@ -5,6 +5,9 @@
 import { after } from 'next/server'
 import { supabase, getISTDateString } from '../../../lib/supabase'
 import { sendText, sendVoice, sendTextAndVoice, cleanPhone } from '../../../lib/messaging'
+import crypto from 'crypto'
+import { maskPhone, maskName, maskSecret } from '../../../lib/mask'
+import { sanitizeName, validatePhone, validateClinicCode, validateRating } from '../../../lib/validate'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
@@ -26,8 +29,14 @@ export async function POST(req) {
         const secret = searchParams.get('secret')
 
         // 🛡️ Webhook Security
-        if (secret !== process.env.WEBHOOK_VERIFY_TOKEN) {
-            console.error(`[whatsapp] ❌ Unauthorized — secret="${secret}" expected="${process.env.WEBHOOK_VERIFY_TOKEN}"`)
+        const expectedSecret = process.env.WEBHOOK_VERIFY_TOKEN || ''
+        const isValid = expectedSecret && secret && crypto.timingSafeEqual(
+            Buffer.from(secret),
+            Buffer.from(expectedSecret)
+        )
+
+        if (!isValid) {
+            console.error(`[whatsapp] ❌ Unauthorized — Invalid webhook secret. Received: ${maskSecret(secret)}`)
             return Response.json({
                 success: false,
                 message: '❌ Unauthorized. Invalid webhook secret.'
@@ -39,7 +48,8 @@ export async function POST(req) {
 
 
         // ── 🔍 FULL PAYLOAD LOG — helps debug Interakt variable names ──────────
-        console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
+        // console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
+        console.log(`[whatsapp] ✅ Received action: ${pick(body, 'action', 'Action', 'event', 'type')}`)
 
         const action = pick(body, 'action', 'Action', 'event', 'type')
         const baseUrl = new URL(req.url).origin
@@ -48,8 +58,12 @@ export async function POST(req) {
         if (action === 'join') {
 
             // Accept multiple possible field names from Interakt Flow
-            const phone    = pick(body, 'phone', 'Phone', 'mobile', 'customer_phone', 'waPhone', 'whatsapp')
-            const name     = pick(body, 'name', 'Name', 'customer_name', 'patientName', 'fullName', 'full_name')
+            const rawPhone   = pick(body, 'phone', 'Phone', 'mobile', 'customer_phone', 'waPhone', 'whatsapp')
+            const rawName    = pick(body, 'name', 'Name', 'customer_name', 'patientName', 'fullName', 'full_name')
+            const rawLanguage = pick(body, 'language', 'Language', 'lang', 'preferred_language') || 'en'
+            
+            const phone = validatePhone(rawPhone)
+            const name = sanitizeName(rawName) || 'Guest'
             const rawLanguage = pick(body, 'language', 'Language', 'lang', 'preferred_language') || 'en'
 
             // Map Interakt list position numbers to language codes
@@ -72,19 +86,16 @@ export async function POST(req) {
             const rawCode = String(
                 pick(body, 'clinicCode', 'clinic_code', 'cliniccode', 'code', 'Code', 'JOIN') || ''
             )
-            const clinicCode = rawCode
-                .replace(/^JOIN\s*/i, '')
-                .trim()
-                .toUpperCase()
+            const clinicCode = validateClinicCode(rawCode.replace(/^JOIN\s*/i, ''))
 
-            console.log(`[Join] phone=${phone} | name=${name} | lang=${language} | clinicCode=${clinicCode}`)
+            console.log(`[Join] phone=${maskPhone(phone)} | name=${maskName(name)} | lang=${language} | clinicCode=${clinicCode}`)
 
             if (!phone) {
                 console.error('[Join] ❌ No phone number in payload. Keys received:', Object.keys(body).join(', '))
                 return Response.json({
                     success: false,
-                    message: '❌ No phone number provided',
-                    token: 'ERR', position: 0, wait: 'N/A', clinicName: 'Unknown', name: 'Guest'
+                    message: '❌ Invalid phone number format',
+                    token: 'ERR', position: 0, wait: 'N/A', clinicName: 'Unknown', name: name
                 }, { status: 200 })
             }
 
@@ -147,6 +158,35 @@ export async function POST(req) {
             // 2. Count patients & calculate waits in PARALLEL
             const today = getISTDateString()
             const planId = clinic.plan_id || 'starter' // default to starter
+            
+            // Item 5: Rate limit joins (3 per phone per day, unique names)
+            const cleanedPhone = cleanPhone(phone)
+            const { data: existingJoins } = await supabase
+                .from('patients')
+                .select('name')
+                .eq('clinic_id', clinic.id)
+                .eq('phone', cleanedPhone)
+                .eq('date', today)
+
+            if (existingJoins && existingJoins.length >= 3) {
+                console.log(`[Join] ❌ Rate limit reached for ${maskPhone(phone)} at ${clinic.name}`)
+                await sendText(cleanedPhone, `❌ *Limit Reached*\n\nYou can only join the queue 3 times per day from the same phone number.`)
+                return Response.json({
+                    success: false,
+                    message: 'Daily join limit reached for this phone number.',
+                    token: 'LIMIT', position: 0, wait: 'N/A', clinicName: clinic.name, name: name
+                }, { status: 200 })
+            }
+
+            if (existingJoins?.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                console.log(`[Join] ❌ Duplicate name for ${maskPhone(phone)}: ${maskName(name)}`)
+                await sendText(cleanedPhone, `❌ *Already Joined*\n\nA patient named "${name}" has already joined the queue today from this phone number.`)
+                return Response.json({
+                    success: false,
+                    message: 'A patient with this name has already joined.',
+                    token: 'DUPE', position: 0, wait: 'N/A', clinicName: clinic.name, name: name
+                }, { status: 200 })
+            }
             
             const [
                 { count },
@@ -216,15 +256,15 @@ export async function POST(req) {
             const insertPayload = {
                 clinic_id: clinic.id,
                 token: tokenNumber,
-                phone: cleanPhone(phone),
-                name: name || 'Guest',
+                phone: cleanedPhone,
+                name: name,
                 language: language || 'en',
                 status: 'waiting',
                 amount_paid: 0,
                 date: today,
                 joined_at: new Date().toISOString()
             }
-            console.log('[Join] Inserting patient:', JSON.stringify(insertPayload))
+            console.log(`[Join] Inserting patient: token=${tokenNumber}`)
 
             const { error: insertError } = await supabase.from('patients').insert(insertPayload)
 
@@ -233,18 +273,18 @@ export async function POST(req) {
                 return Response.json({ success: false, message: 'Failed to join queue', error: insertError.message }, { status: 500 })
             }
 
-            console.log(`[Join] ✅ ${name} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
+            console.log(`[Join] ✅ ${maskName(name)} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
 
             // 4. Send voice note and custom welcome text in background
             if (planId !== 'starter') {
                 after(async () => {
                     try {
                         if (clinic.welcome_message) {
-                            await sendText(cleanPhone(phone), `*Message from ${clinic.name}:*\n\n${clinic.welcome_message}`)
+                            await sendText(cleanedPhone, `*Message from ${clinic.name}:*\n\n${clinic.welcome_message}`)
                         }
                         
                         await sendVoice({
-                            phone: cleanPhone(phone),
+                            phone: cleanedPhone,
                             language: language || 'en',
                             event: 'joined',
                             token: tokenNumber,
@@ -328,11 +368,13 @@ _Powered by TokenPe_`
                     rating = digitMatch ? parseInt(digitMatch[0]) : 0
                 }
             }
+            
+            rating = validateRating(rating)
 
-            console.log(`[Rating Debug] phone=${phone} | rating=${rating}`)
+            console.log(`[Rating Debug] phone=${maskPhone(phone)} | rating=${rating}`)
 
-            if (!phone || rating < 1 || rating > 5) {
-                console.warn(`[Rating] ❌ Invalid: phone=${phone}, rating=${rating}`)
+            if (!phone || !rating) {
+                console.warn(`[Rating] ❌ Invalid: phone=${maskPhone(phone)}, rating=${rating}`)
                 return Response.json({ success: false, message: 'Invalid rating (must be 1-5)' }, { status: 400 })
             }
 
@@ -360,7 +402,7 @@ _Powered by TokenPe_`
                 recent = recent2
             }
 
-            console.log(`[Rating Debug] Found patient:`, JSON.stringify(recent))
+            console.log(`[Rating Debug] Found patient: id=${recent?.[0]?.id || 'none'}`)
 
             if (recent && recent.length > 0 && !recent[0].rating) {
                 const { error: updateErr } = await supabase.from('patients').update({ rating }).eq('id', recent[0].id)
@@ -372,7 +414,7 @@ _Powered by TokenPe_`
             } else if (recent && recent.length > 0 && recent[0].rating) {
                 console.log(`[Rating] ℹ️ Patient already rated: ${recent[0].rating}`)
             } else {
-                console.warn(`[Rating] ❌ No 'done' patient found for phone: ${clean} / ${tenDigit}`)
+                console.warn(`[Rating] ❌ No 'done' patient found for phone: ${maskPhone(clean)} / ${maskPhone(tenDigit)}`)
             }
 
             after(async () => {

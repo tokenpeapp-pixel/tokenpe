@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { after } from 'next/server'
 import { supabase } from '../../../../lib/supabase'
 import { sendTemplateMessage } from '../../../../lib/messaging'
+import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
   try {
@@ -9,6 +10,11 @@ export async function POST(req) {
     
     if (!clinicId || (!message && !imageUrl)) {
       return NextResponse.json({ success: false, error: 'Clinic ID and message or image required' }, { status: 400 })
+    }
+
+    const session = await getSession()
+    if (!session || session.clinicId !== clinicId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     // 1. Verify Clinic is Elite

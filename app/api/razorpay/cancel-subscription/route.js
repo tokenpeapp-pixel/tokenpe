@@ -1,5 +1,6 @@
 import Razorpay from 'razorpay'
 import { createClient } from '@supabase/supabase-js'
+import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
   try {
@@ -7,6 +8,11 @@ export async function POST(req) {
 
     if (!clinicId) {
       return Response.json({ error: 'Missing clinicId' }, { status: 400 })
+    }
+
+    const session = await getSession()
+    if (!session || session.clinicId !== clinicId) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const supabaseAdmin = createClient(

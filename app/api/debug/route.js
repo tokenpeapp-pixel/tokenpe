@@ -7,6 +7,12 @@ import { supabase } from '../../../lib/supabase'
 export async function GET(req) {
     const { searchParams } = new URL(req.url)
 
+    // 🛡️ Security: Lock this debug endpoint behind a secret
+    const secretKey = searchParams.get('key')
+    if (secretKey !== (process.env.DEBUG_SECRET || 'tokenpe_debug_fallback')) {
+        return Response.json({ error: 'Not Found' }, { status: 404 })
+    }
+
     // ── Test: simulate an Interakt join webhook ──────────────────────────────
     const testJoin = searchParams.get('testJoin') // ?testJoin=CLINIC_CODE
     if (testJoin) {

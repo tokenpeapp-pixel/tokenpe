@@ -13,19 +13,20 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            // Auto-redirect if already logged in
-            const existing = localStorage.getItem('tokenpe_clinic')
-            if (existing) {
-                try {
-                    const clinic = JSON.parse(existing)
-                    if (clinic && clinic.code) {
+            // Check session via API instead of localStorage directly to be secure
+            fetch('/api/auth/me')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.authenticated && data.clinic) {
+                        localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
+                        localStorage.setItem('clinicCode', data.clinic.code)
+                        localStorage.setItem('clinicPhone', data.clinic.phone)
                         router.replace('/dashboard')
-                        return
+                    } else {
+                        localStorage.removeItem('tokenpe_clinic')
                     }
-                } catch (_) {
-                    localStorage.removeItem('tokenpe_clinic')
-                }
-            }
+                })
+                .catch(() => {})
 
             const params = new URLSearchParams(window.location.search)
             const errType = params.get('error')
@@ -33,15 +34,16 @@ export default function LoginPage() {
                 setError('No clinic account found for this Google email. Please register first, or use your Clinic Code to log in.')
             }
         }
-    }, [])
+    }, [router])
 
-    // Login
     const [loginCode, setLoginCode] = useState('')
     const [loginPhone, setLoginPhone] = useState('')
+    const [loginPin, setLoginPin] = useState('')
 
     const [regName, setRegName] = useState('')
     const [regPhone, setRegPhone] = useState('')
     const [regEmail, setRegEmail] = useState('')
+    const [regPin, setRegPin] = useState('')
 
     function generateRandomCode() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -68,37 +70,34 @@ export default function LoginPage() {
         setError('')
         setLoading(true)
 
-        const { data, error } = await supabase
-            .from('clinics')
-            .select('*')
-            .eq('code', loginCode.toUpperCase().trim())
-            .eq('phone', loginPhone.trim())
-            .single()
-
-        if (error || !data) {
-            setError('Invalid clinic code or phone number.')
+        if (loginPin.length !== 4) {
+            setError('PIN must be exactly 4 digits.')
             setLoading(false)
             return
         }
 
-        // Generate a new clinic code on each login (invalidates old QR)
-        const newCode = generateRandomCode()
-        const { data: updated, error: updateErr } = await supabase
-            .from('clinics')
-            .update({ code: newCode })
-            .eq('id', data.id)
-            .select().single()
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: loginCode, phone: loginPhone, pin: loginPin })
+            })
+            const result = await res.json()
 
-        if (updateErr || !updated) {
+            if (!res.ok) {
+                setError(result.message || 'Login failed.')
+                setLoading(false)
+                return
+            }
+
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
+            localStorage.setItem('clinicCode', result.clinic.code)
+            localStorage.setItem('clinicPhone', result.clinic.phone)
+            router.push('/dashboard')
+        } catch (err) {
             setError('Something went wrong. Please try again.')
             setLoading(false)
-            return
         }
-
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(updated))
-        localStorage.setItem('clinicCode', updated.code)
-        localStorage.setItem('clinicPhone', updated.phone)
-        router.push('/dashboard')
     }
 
     async function handleRegister(e) {
@@ -106,34 +105,38 @@ export default function LoginPage() {
         setError('')
         setLoading(true)
 
-        // Always generate a random, unbranded code (Pro/Elite can customize later from QR modal)
-        let code = generateRandomCode()
-        // Ensure uniqueness with a simple retry
-        for (let i = 0; i < 5; i++) {
-            const { data: existing } = await supabase.from('clinics').select('id').eq('code', code).single()
-            if (!existing) break
-            code = generateRandomCode()
-        }
-
-        const { data, error } = await supabase
-            .from('clinics')
-            .insert({ name: regName, phone: regPhone, email: regEmail, code })
-            .select().single()
-
-        if (error) {
-            setError('Something went wrong. Please try again.')
+        if (regPin.length !== 4) {
+            setError('PIN must be exactly 4 digits.')
             setLoading(false)
             return
         }
 
-        setSuccess(`✅ Clinic registered! Redirecting to your dashboard...`)
-        setLoading(false)
-        setTimeout(() => {
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(data))
-            localStorage.setItem('clinicCode', data.code)
-            localStorage.setItem('clinicPhone', data.phone)
-            router.push('/dashboard')
-        }, 1200)
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: regName, phone: regPhone, email: regEmail, pin: regPin })
+            })
+            const result = await res.json()
+
+            if (!res.ok) {
+                setError(result.message || 'Registration failed.')
+                setLoading(false)
+                return
+            }
+
+            setSuccess(`✅ Clinic registered! Redirecting to your dashboard...`)
+            setLoading(false)
+            setTimeout(() => {
+                localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
+                localStorage.setItem('clinicCode', result.clinic.code)
+                localStorage.setItem('clinicPhone', result.clinic.phone)
+                router.push('/dashboard')
+            }, 1200)
+        } catch (err) {
+            setError('Something went wrong. Please try again.')
+            setLoading(false)
+        }
     }
 
     return (
@@ -404,6 +407,10 @@ export default function LoginPage() {
                                 <label>Registered Phone</label>
                                 <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
                             </div>
+                            <div className="field">
+                                <label>4-Digit PIN</label>
+                                <input value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
+                            </div>
                             <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
                                 {loading ? 'Signing in...' : 'Sign in →'}
                             </button>
@@ -421,6 +428,10 @@ export default function LoginPage() {
                             <div className="field">
                                 <label>Email <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span></label>
                                 <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" suppressHydrationWarning={true} />
+                            </div>
+                            <div className="field">
+                                <label>Set 4-Digit PIN *</label>
+                                <input value={regPin} onChange={e => setRegPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
                             </div>
                             <div style={{ background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#6d28d9', fontWeight: 500 }}>
                                 🎲 A unique clinic code will be auto-generated. You can customize it later from your dashboard.

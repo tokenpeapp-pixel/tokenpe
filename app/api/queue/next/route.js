@@ -4,6 +4,7 @@
 
 import { supabase, getISTDateString } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
+import { getSession } from '../../../../lib/auth'
 
 // ── Message text for each event ──────────────────────────────────────────────
 function getMessage(event, name, token, currentToken, clinicName) {
@@ -49,6 +50,11 @@ _Powered by TokenPe_`
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
+        const session = await getSession()
+        if (!session || !session.clinicId) {
+            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+        }
+
         const {
             clinicId,
             clinicName,
@@ -58,6 +64,10 @@ export async function POST(req) {
             token,
             language
         } = await req.json()
+
+        if (clinicId !== session.clinicId) {
+            return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
+        }
 
         const today = getISTDateString()
         const phone = cleanPhone(patientPhone)

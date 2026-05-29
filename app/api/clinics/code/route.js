@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
     try {
+        const session = await getSession()
+        if (!session || !session.clinicId) {
+            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+        }
+
         const body = await req.json()
         const { clinicId, newCode } = body
 
         if (!clinicId || !newCode) {
             return NextResponse.json({ success: false, message: 'Missing clinic ID or new code' }, { status: 400 })
+        }
+
+        if (clinicId !== session.clinicId) {
+            return NextResponse.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 
         const supabaseAdmin = createClient(

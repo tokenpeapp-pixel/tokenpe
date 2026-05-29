@@ -1,8 +1,18 @@
 import { supabase } from '../../../../lib/supabase'
+import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
     try {
+        const session = await getSession()
+        if (!session || !session.clinicId) {
+            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+        }
+
         const { clinicId, queuePaused } = await req.json()
+
+        if (clinicId !== session.clinicId) {
+            return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
+        }
         
         // We will update the clinic. Note: If RLS is enabled, the regular client 
         // won't be able to update unless the anon user is allowed, which is usually not.

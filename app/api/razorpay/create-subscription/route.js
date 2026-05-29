@@ -2,6 +2,7 @@
 // Creates a Razorpay subscription for the given plan tier
 import Razorpay from 'razorpay'
 import { createClient } from '@supabase/supabase-js'
+import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
   try {
@@ -20,6 +21,11 @@ export async function POST(req) {
 
     if (!clinicId || !planTier) {
       return Response.json({ error: 'Missing clinicId or planTier' }, { status: 400 })
+    }
+
+    const session = await getSession()
+    if (!session || session.clinicId !== clinicId) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const planId = PLAN_MAP[planTier]

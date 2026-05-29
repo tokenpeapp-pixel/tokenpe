@@ -3,10 +3,16 @@
 
 import { supabase } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
+import { getSession } from '../../../../lib/auth'
 
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
+        const session = await getSession()
+        if (!session || !session.clinicId) {
+            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+        }
+
         const {
             clinicId,
             clinicName,
@@ -15,6 +21,10 @@ export async function POST(req) {
             token,
             language
         } = await req.json()
+
+        if (clinicId !== session.clinicId) {
+            return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
+        }
 
         const phone = cleanPhone(patientPhone)
 

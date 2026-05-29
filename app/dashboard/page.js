@@ -678,7 +678,17 @@ export default function Dashboard() {
     sounds.skip()
     addToast(`${patient.name || patient.token} skipped`, 'skip')
 
-    await supabase.from('patients').update({ status: STATUS.SKIPPED }).eq('id', patient.id)
+    const res = await fetch('/api/queue/skip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patientId: patient.id })
+    })
+
+    if (!res.ok) {
+      addToast('Error skipping patient', 'error')
+      // Revert optimistic update
+      setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.WAITING } : p))
+    }
   }
 
   async function notifyPatient(patient) {
@@ -713,20 +723,33 @@ export default function Dashboard() {
     }
 
     const token = `T${String(patients.length + 1).padStart(3, '0')}`
-    const today = getISTDateString()
-    await supabase.from('patients').insert({
-      clinic_id: clinic.id, token,
-      name: newName.trim() || null,
-      phone: newPhone.trim(),
-      language: newLang,
-      status: STATUS.WAITING,
-      amount_paid: 0,
-      date: today,
-      joined_at: new Date().toISOString(),
-    })
-    setNewName(''); setNewPhone(''); setNewLang('hi')
-    setShowAddForm(false)
-    addToast(`${newName || newPhone} added as ${token}`, 'new')
+    
+    try {
+      const res = await fetch('/api/queue/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+           clinicId: clinic.id,
+           name: newName.trim() || null,
+           phone: newPhone.trim(),
+           token: token,
+           language: newLang || 'hi'
+        })
+      })
+      
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.message || 'Failed to add walk-in')
+
+      setNewName(''); setNewPhone(''); setNewLang('hi')
+      setShowAddForm(false)
+      addToast(`${newName || newPhone} added as ${token}`, 'new')
+      
+      // Note: Supabase realtime subscription will pick up the new patient 
+      // and update the patients list automatically, just like it did before.
+    } catch (err) {
+      console.error(err)
+      addToast('Error adding walk-in patient', 'error')
+    }
   }
 
   // ── Computed ────────────────────────────────────────────────────────────

@@ -134,8 +134,11 @@ function AuthCallbackContent() {
     useEffect(() => {
         async function processAuth() {
             try {
-                const { data: { user }, error: authError } = await supabase.auth.getUser()
-                if (authError || !user) { router.replace('/login'); return }
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+                if (sessionError || !session) { router.replace('/login'); return }
+                
+                const user = session.user
+                if (!user) { router.replace('/login'); return }
 
                 const intent = searchParams.get('intent') || 'login'
                 const { data: clinics, error: clinicError } = await supabase
@@ -158,7 +161,22 @@ function AuthCallbackContent() {
                             .from('clinics').update({ code: newCode }).eq('id', clinicData.id).select().single()
                         if (updated && !updateError) finalClinicData = updated
                     }
-                    setStatus('Logging you in...')
+                    setStatus('Logging you in securely...')
+                    
+                    // Secure JWT Session for Google Login
+                    await fetch('/api/auth/googleSession', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({ 
+                            clinicId: finalClinicData.id, 
+                            clinicCode: finalClinicData.code, 
+                            phone: finalClinicData.phone 
+                        })
+                    })
+
                     localStorage.setItem('clinicCode', finalClinicData.code)
                     localStorage.setItem('clinicPhone', finalClinicData.phone)
                     localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinicData))
@@ -205,6 +223,20 @@ function AuthCallbackContent() {
                         router.replace('/login?error=create_failed')
                         return
                     }
+
+                    // Secure JWT Session for Google Registration
+                    await fetch('/api/auth/googleSession', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({ 
+                            clinicId: insertedClinic.id, 
+                            clinicCode: insertedClinic.code, 
+                            phone: insertedClinic.phone 
+                        })
+                    })
 
                     localStorage.setItem('clinicCode', insertedClinic.code)
                     localStorage.setItem('clinicPhone', insertedClinic.phone)

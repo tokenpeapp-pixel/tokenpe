@@ -56,6 +56,56 @@ export async function POST(req) {
         const action = pick(body, 'action', 'Action', 'event', 'type')
         const baseUrl = new URL(req.url).origin
 
+        // ── MESSAGE RECEIVED (Feedback) ──────────────────────────────────────────
+        if (action === 'message_received' || action === 'message') {
+            const messageData = body.data?.message || body.message || body
+            const customerData = body.data?.customer || body.customer || body
+            
+            if (messageData && (messageData.type === 'chat' || messageData.text)) {
+                const text = (messageData.text || messageData.message || '').trim()
+                const phoneStr = customerData?.phone_number || pick(body, 'phone', 'customer_phone', 'waPhone', 'whatsapp')
+                const phone = validatePhone(phoneStr)
+                
+                if (phone && text) {
+                    console.log(`[whatsapp] Feedback received from ${maskPhone(phone)}: "${text.slice(0, 50)}"`)
+                    
+                    // Parse Rating: look for a number 1-5 at the start
+                    let rating = 0
+                    let feedbackText = text
+                    
+                    const match = text.match(/^([1-5])\s*(.*)$/is)
+                    if (match) {
+                        rating = parseInt(match[1])
+                        feedbackText = match[2].trim()
+                    }
+                    
+                    if (rating > 0 || feedbackText.length > 0) {
+                        // Find the most recent patient record for this phone
+                        const { data: latestPatient } = await supabaseAdmin
+                            .from('patients')
+                            .select('id')
+                            .eq('phone', phone)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single()
+                            
+                        if (latestPatient) {
+                            await supabaseAdmin
+                                .from('patients')
+                                .update({ 
+                                    rating: rating > 0 ? rating : null, 
+                                    feedback_text: feedbackText || null,
+                                    feedback_at: new Date().toISOString()
+                                })
+                                .eq('id', latestPatient.id)
+                            console.log(`[whatsapp] ✅ Saved feedback for patient ${latestPatient.id}`)
+                        }
+                    }
+                }
+            }
+            return Response.json({ success: true, message: 'Message processed' }, { status: 200 })
+        }
+
         // ── JOIN action ──────────────────────────────────────────────────────────
         if (action === 'join') {
 

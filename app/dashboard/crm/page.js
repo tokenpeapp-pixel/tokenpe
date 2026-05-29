@@ -47,24 +47,17 @@ export default function CRMPage() {
         return
       }
 
-      // Fetch total unique patient phones
-      const { data } = await supabase
-        .from('patients')
-        .select('phone, rating, feedback_text, name, date')
-        .eq('clinic_id', finalClinic.id)
-      
-      if (data) {
-        const uniquePhones = new Set(data.map(p => p.phone))
-        setTotalPatients(uniquePhones.size)
-        
-        const rated = data.filter(p => p.rating > 0)
-        if (rated.length > 0) {
-          const sum = rated.reduce((acc, p) => acc + p.rating, 0)
-          setAvgRating((sum / rated.length).toFixed(1))
-          
-          const feedbacks = rated.filter(p => p.feedback_text).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5)
-          setRecentFeedbacks(feedbacks)
+      // Fetch total unique patient phones securely via backend API
+      try {
+        const statsRes = await fetch('/api/crm/stats')
+        const stats = await statsRes.json()
+        if (stats.success) {
+          setTotalPatients(stats.totalPatients || 0)
+          setAvgRating(stats.avgRating || 0)
+          setRecentFeedbacks(stats.recentFeedbacks || [])
         }
+      } catch (err) {
+        console.error('Failed to fetch CRM stats:', err)
       }
       
       setLoading(false)
@@ -323,20 +316,29 @@ export default function CRMPage() {
             {recentFeedbacks.length === 0 ? (
               <div className="text-center p-8 bg-[#F8FAFC] rounded-xl border-2 border-dashed border-[#E2E8F0]">
                 <p className="text-[#94A3B8] font-bold">No text feedback received yet.</p>
-                <p className="text-[#CBD5E1] text-sm mt-1">Patients receive a feedback link automatically after their visit.</p>
+                <p className="text-[#CBD5E1] text-sm mt-1">Patients reply to the automated TokenPe WhatsApp feedback message after their visit.</p>
               </div>
             ) : (
               <div className="grid gap-4">
-                {recentFeedbacks.map((fb, idx) => (
-                  <div key={idx} className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
-                    <div className="flex justify-between mb-2">
-                      <span className="font-bold text-[#0F172A]">{fb.name || 'Anonymous'}</span>
-                      <span className="text-[#F59E0B] font-black tracking-widest">{'★'.repeat(fb.rating)}{'☆'.repeat(5 - fb.rating)}</span>
+                {recentFeedbacks.map((fb, idx) => {
+                  const timeStr = fb.feedback_at || fb.completed_at || fb.date
+                  const formattedTime = timeStr ? new Date(timeStr).toLocaleString('en-IN', { 
+                    timeZone: 'Asia/Kolkata', 
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                  }) : 'Unknown Date'
+                  
+                  return (
+                    <div key={idx} className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
+                      <div className="flex justify-between mb-2">
+                        <span className="font-bold text-[#0F172A]">{fb.name || 'Anonymous'}</span>
+                        <span className="text-[#F59E0B] font-black tracking-widest">{'★'.repeat(fb.rating)}{'☆'.repeat(5 - fb.rating)}</span>
+                      </div>
+                      <p className="text-[#475569] text-sm italic">"{fb.feedback_text}"</p>
+                      <div className="text-xs text-[#94A3B8] mt-2 text-right">{formattedTime}</div>
                     </div>
-                    <p className="text-[#475569] text-sm italic">"{fb.feedback_text}"</p>
-                    <div className="text-xs text-[#94A3B8] mt-2 text-right">{fb.date}</div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

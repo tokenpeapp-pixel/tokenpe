@@ -375,12 +375,7 @@ export default function BillingPage() {
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
                   </tr>
-                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Follow-up Reminder</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
-                  </tr>
+
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Busy Hour Heatmap</td>
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>

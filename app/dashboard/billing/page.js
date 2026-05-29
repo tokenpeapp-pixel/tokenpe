@@ -64,7 +64,7 @@ export default function BillingPage() {
         subscription_id: data.subscriptionId,
         name: 'TokenPe',
         description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan Subscription`,
-        image: '/logo.svg',
+        image: `${window.location.origin}/logo-light.svg`,
         prefill: {
           name: data.clinicName,
           email: data.clinicEmail,

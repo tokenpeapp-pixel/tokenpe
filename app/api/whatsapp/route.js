@@ -81,11 +81,11 @@ export async function POST(req) {
                     
                     if (rating > 0 || feedbackText.length > 0) {
                         // Find the most recent patient record for this phone
-                        const { data: latestPatient } = await supabaseAdmin
+                        const { data: latestPatient, error: lookupError } = await supabaseAdmin
                             .from('patients')
                             .select('id')
                             .eq('phone', phone)
-                            .order('created_at', { ascending: false })
+                            .order('joined_at', { ascending: false })
                             .limit(1)
                             .single()
                             

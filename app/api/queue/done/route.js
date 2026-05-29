@@ -54,7 +54,7 @@ _Powered by TokenPe_`
         }
 
         await Promise.all(alerts)
-        
+
         // Send rating AFTER the consultation messages so it arrives last in WhatsApp
         if (planId === 'elite' || planId === 'pro' || clinic?.subscription_status === 'trialing') {
             after(async () => {

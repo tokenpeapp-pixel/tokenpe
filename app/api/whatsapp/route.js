@@ -64,7 +64,6 @@ export async function POST(req) {
             
             const phone = validatePhone(rawPhone)
             const name = sanitizeName(rawName) || 'Guest'
-            const rawLanguage = pick(body, 'language', 'Language', 'lang', 'preferred_language') || 'en'
 
             // Map Interakt list position numbers to language codes
             // 1=मराठी 2=हिंदी 3=English 4=ગુજરાતી 5=ਪੰਜਾਬੀ 6=தமிழ் 7=తెలుగు 8=বাংলা 9=ಕನ್ನಡ 10=മലയാളം

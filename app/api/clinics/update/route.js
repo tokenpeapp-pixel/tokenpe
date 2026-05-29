@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
@@ -23,7 +23,7 @@ export async function POST(req) {
     if (welcomeMessage !== undefined) updates.welcome_message = welcomeMessage
     if (address !== undefined) updates.address = address
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('clinics')
       .update(updates)
       .eq('id', clinicId)

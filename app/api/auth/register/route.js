@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
 import { sanitizeName, validatePhone, validatePin } from '../../../../lib/validate'
@@ -27,7 +27,7 @@ export async function POST(req) {
         
         // Retry loop for unique code could be added, but 6 chars base32 is highly likely unique.
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('clinics')
             .insert({ name: cleanName, phone: cleanPhone, email, code, pin: cleanPin })
             .select().single()
@@ -45,7 +45,7 @@ export async function POST(req) {
         const token = await signToken(sessionPayload)
 
         // Set secure cookie
-        const cookieStore = cookies()
+        const cookieStore = await cookies()
         cookieStore.set('tokenpe_session', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',

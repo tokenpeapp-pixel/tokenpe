@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
@@ -15,7 +15,7 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Patient ID is required' }, { status: 400 })
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
             .from('patients')
             .update({ status: 'skipped' })
             .eq('id', patientId)

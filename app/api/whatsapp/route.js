@@ -3,7 +3,7 @@
 // Also handles: callnext action (from dashboard)
 
 import { after } from 'next/server'
-import { supabase, getISTDateString } from '../../../lib/supabase'
+import { supabase, supabaseAdmin, getISTDateString } from '../../../lib/supabase'
 import { sendText, sendVoice, sendTextAndVoice, cleanPhone } from '../../../lib/messaging'
 import crypto from 'crypto'
 import { maskPhone, maskName, maskSecret } from '../../../lib/mask'
@@ -267,7 +267,7 @@ export async function POST(req) {
             }
             console.log(`[Join] Inserting patient: token=${tokenNumber}`)
 
-            const { error: insertError } = await supabase.from('patients').insert(insertPayload)
+            const { error: insertError } = await supabaseAdmin.from('patients').insert(insertPayload)
 
             if (insertError) {
                 console.error('[Join] ❌ Insert failed:', insertError.message, insertError.details)
@@ -406,7 +406,7 @@ _Powered by TokenPe_`
             console.log(`[Rating Debug] Found patient: id=${recent?.[0]?.id || 'none'}`)
 
             if (recent && recent.length > 0 && !recent[0].rating) {
-                const { error: updateErr } = await supabase.from('patients').update({ rating }).eq('id', recent[0].id)
+                const { error: updateErr } = await supabaseAdmin.from('patients').update({ rating }).eq('id', recent[0].id)
                 if (updateErr) {
                     console.error(`[Rating] ❌ Update failed:`, updateErr.message)
                 } else {

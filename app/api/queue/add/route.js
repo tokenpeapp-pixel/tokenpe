@@ -1,4 +1,4 @@
-import { supabase, getISTDateString } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin, getISTDateString } from '../../../../lib/supabase'
 import { getSession } from '../../../../lib/auth'
 import { sanitizeName, validatePhone } from '../../../../lib/validate'
 
@@ -60,7 +60,7 @@ export async function POST(req) {
             joined_at: new Date().toISOString()
         }
 
-        const { data, error } = await supabase.from('patients').insert([newPatient]).select()
+        const { data, error } = await supabaseAdmin.from('patients').insert([newPatient]).select()
 
         if (error) {
             console.error('[queue/add] Error inserting:', error)

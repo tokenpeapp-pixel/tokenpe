@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
@@ -50,7 +50,7 @@ export async function POST(req) {
       subscription_status: 'active'
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('clinics')
       .insert(newClinic)
       .select()

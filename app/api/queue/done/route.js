@@ -1,7 +1,7 @@
 // FILE: /app/api/queue/done/route.js
 // Marks patient as done, sends Consultation Complete text + voice note in parallel
 
-import { supabase } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone, sendInteractiveRating } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
 
@@ -44,7 +44,7 @@ _Powered by TokenPe_`
 
         // 2. Mark done in DB + send text + send voice (if pro/elite) — all in parallel
         const alerts = [
-            supabase.from('patients').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId),
+            supabaseAdmin.from('patients').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId),
             sendText(phone, doneMsg)
         ]
 

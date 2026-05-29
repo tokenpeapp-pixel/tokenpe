@@ -60,7 +60,7 @@ export default function AnalyticsPage() {
     const cutoffDate = getISTDateString(d)
 
     // Fetch this period
-    let query = supabase.from('patients').select('*').eq('clinic_id', c.id)
+    let query = supabase.from('patients').select('*').eq('clinic_id', c.id).limit(100000)
     if (range === 'today') {
       query = query.eq('date', getISTDateString(new Date()))
     } else {
@@ -81,6 +81,7 @@ export default function AnalyticsPage() {
         .eq('clinic_id', c.id)
         .gte('date', lastCutoff)
         .lt('date', cutoffDate)
+        .limit(100000)
       lastPeriodData = data || []
     }
 
@@ -185,9 +186,30 @@ export default function AnalyticsPage() {
   
   const phoneCounts = {}
   let walkIns = 0
+  let exactAlertsSent = 0
+  let exactVoicesGenerated = 0
+  
   patients.forEach(p => {
     if(p.phone) phoneCounts[p.phone] = (phoneCounts[p.phone]||0)+1
     if(!p.joined_at || p.is_manual) walkIns++
+    
+    if (p.phone && !p.is_manual) {
+      // 1. Joined
+      exactAlertsSent++
+      if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
+      
+      // 2. Called/Done/Skipped (they get a 'Now' or 'Skipped' alert)
+      if (['called', 'done', 'skipped'].includes(p.status)) {
+        exactAlertsSent++
+        if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
+      }
+      
+      // 3. Done
+      if (p.status === 'done') {
+        exactAlertsSent++
+        if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
+      }
+    }
   })
   const returningCount = Object.values(phoneCounts).filter(c => c > 1).length
   const returningPct = rangeTotal ? Math.round((returningCount / rangeTotal) * 100) : 0
@@ -392,11 +414,11 @@ export default function AnalyticsPage() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#64748B] font-semibold">WhatsApp Alerts Sent</span>
-                <span className="font-bold">{rangeTotal * 2}</span>
+                <span className="font-bold">{exactAlertsSent}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#64748B] font-semibold">Voice Notes Generated</span>
-                <span className="font-bold">{rangeTotal * 2}</span>
+                <span className="font-bold">{exactVoicesGenerated}</span>
               </div>
               <div className="pt-4 border-t border-[#F1F5F9] flex justify-between items-center">
                 <span className="text-[#64748B] font-semibold">Peak Queue Size</span>

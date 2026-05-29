@@ -15,7 +15,7 @@ export async function GET(req) {
     // We use supabaseAdmin to bypass RLS securely on the server
     const { data: patients, error } = await supabaseAdmin
       .from('patients')
-      .select('phone, rating, feedback_text, feedback_at, name, date, completed_at')
+      .select('phone, crm_rating, feedback_text, feedback_at, name, date, completed_at')
       .eq('clinic_id', clinicId)
       
     if (error) {
@@ -35,10 +35,10 @@ export async function GET(req) {
     const uniquePhones = new Set(patients.map(p => p.phone).filter(Boolean))
     
     // Calculate average rating
-    const rated = patients.filter(p => p.rating && p.rating > 0)
+    const rated = patients.filter(p => p.crm_rating && p.crm_rating > 0)
     let avgRating = 0
     if (rated.length > 0) {
-      const sum = rated.reduce((acc, p) => acc + p.rating, 0)
+      const sum = rated.reduce((acc, p) => acc + p.crm_rating, 0)
       avgRating = (sum / rated.length).toFixed(1)
     }
 

@@ -332,7 +332,7 @@ export default function CRMPage() {
                     <div key={idx} className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
                       <div className="flex justify-between mb-2">
                         <span className="font-bold text-[#0F172A]">{fb.name || 'Anonymous'}</span>
-                        <span className="text-[#F59E0B] font-black tracking-widest">{'★'.repeat(fb.rating)}{'☆'.repeat(5 - fb.rating)}</span>
+                        <span className="text-[#F59E0B] font-black tracking-widest">{'★'.repeat(fb.crm_rating)}{'☆'.repeat(5 - fb.crm_rating)}</span>
                       </div>
                       <p className="text-[#475569] text-sm italic">"{fb.feedback_text}"</p>
                       <div className="text-xs text-[#94A3B8] mt-2 text-right">{formattedTime}</div>

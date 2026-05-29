@@ -93,7 +93,7 @@ export async function POST(req) {
                             await supabaseAdmin
                                 .from('patients')
                                 .update({ 
-                                    rating: rating > 0 ? rating : null, 
+                                    crm_rating: rating > 0 ? rating : null, 
                                     feedback_text: feedbackText || null,
                                     feedback_at: new Date().toISOString()
                                 })

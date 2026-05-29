@@ -30,10 +30,12 @@ export async function POST(req) {
 
         // 🛡️ Webhook Security
         const expectedSecret = process.env.WEBHOOK_VERIFY_TOKEN || ''
-        const isValid = expectedSecret && secret && crypto.timingSafeEqual(
-            Buffer.from(secret),
-            Buffer.from(expectedSecret)
-        )
+        const isValid = expectedSecret && secret && 
+            secret.length === expectedSecret.length &&
+            crypto.timingSafeEqual(
+                Buffer.from(secret),
+                Buffer.from(expectedSecret)
+            )
 
         if (!isValid) {
             console.error(`[whatsapp] ❌ Unauthorized — Invalid webhook secret. Received: ${maskSecret(secret)}`)

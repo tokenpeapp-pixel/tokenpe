@@ -189,9 +189,14 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         const imgUrl = URL.createObjectURL(blob)
         await new Promise(r => { img.onload = r; img.src = imgUrl })
 
+        // Fetch logo as blob to bypass cross-origin canvas tainting issues
+        const logoRes = await fetch(clinic.logo_url)
+        const logoBlob = await logoRes.blob()
+        const logoLocalUrl = URL.createObjectURL(logoBlob)
+
         const logo = new Image()
         logo.crossOrigin = 'Anonymous'
-        await new Promise(r => { logo.onload = r; logo.src = clinic.logo_url })
+        await new Promise(r => { logo.onload = r; logo.src = logoLocalUrl })
 
         const canvas = document.createElement('canvas')
         canvas.width = img.width
@@ -251,7 +256,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
           <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-light.svg" style="height:44px;width:auto" />
         </div>
         <div class="name">${clinic?.name}</div>
-        ${clinic?.address ? `<div style="font-size:11px;color:#64748b;margin-top:-2px;margin-bottom:8px;padding:0 10px">${clinic.address}</div>` : ''}
+        ${clinic?.address ? `<div style="font-size:11.5px;color:#64748b;margin-top:-2px;margin-bottom:8px;padding:0 10px;word-break:break-word;white-space:pre-wrap;line-height:1.4">${clinic.address}</div>` : ''}
         <div class="sub">Scan to join the OPD queue</div>
         <div style="position:relative; display:inline-block">
           <img src="${qrUrl}" />
@@ -283,7 +288,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
           <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: '44px', width: 'auto' }} />
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: '#1e293b' }}>{clinic?.name}</div>
-        {clinic?.address && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, marginBottom: 4, padding: '0 10px' }}>{clinic.address}</div>}
+        {clinic?.address && <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2, marginBottom: 4, padding: '0 10px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{clinic.address}</div>}
         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>Scan to join the OPD queue</div>
         <div style={{ background: '#f8fafc', borderRadius: 16, padding: 14, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 14, position: 'relative' }}>
           <img src={qrUrl} alt="QR Code" style={{ width: 190, height: 190, borderRadius: 10, display: 'block' }} />
@@ -300,23 +305,6 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
               {uploadingLogo ? 'Uploading...' : '📸 Upload Center Logo'}
               <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={handleLogoUpload} disabled={uploadingLogo} />
             </label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <input
-                type="text"
-                placeholder="Clinic Address for print (optional)"
-                value={addressInput}
-                onChange={e => setAddressInput(e.target.value)}
-                maxLength={60}
-                style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, outline: 'none' }}
-              />
-              <button
-                onClick={saveAddress}
-                disabled={savingAddress}
-                style={{ background: '#10B981', color: 'white', border: 'none', padding: '0 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: savingAddress ? 'not-allowed' : 'pointer' }}
-              >
-                {savingAddress ? '...' : (addressSuccess ? '✓' : 'Save')}
-              </button>
-            </div>
           </div>
         )}
 

@@ -24,6 +24,7 @@ export default function LoginPage() {
                         router.replace('/dashboard')
                     } else {
                         localStorage.removeItem('tokenpe_clinic')
+                        localStorage.removeItem('tokenpe_user_clinics')
                     }
                 })
                 .catch(() => {})
@@ -98,6 +99,7 @@ export default function LoginPage() {
             localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
             localStorage.setItem('clinicCode', result.clinic.code)
             localStorage.setItem('clinicPhone', result.clinic.phone)
+            localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
             router.push('/dashboard')
         } catch (err) {
             setError('Something went wrong. Please try again.')
@@ -136,6 +138,7 @@ export default function LoginPage() {
                 localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
                 localStorage.setItem('clinicCode', result.clinic.code)
                 localStorage.setItem('clinicPhone', result.clinic.phone)
+                localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
                 router.push('/dashboard')
             }, 1200)
         } catch (err) {

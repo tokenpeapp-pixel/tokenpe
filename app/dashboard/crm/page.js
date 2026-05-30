@@ -25,6 +25,24 @@ export default function CRMPage() {
   const [followupRecall, setFollowupRecall] = useState(false)
   const [followupMeds, setFollowupMeds] = useState(false)
   const [savingFollowups, setSavingFollowups] = useState(false)
+  const [userClinics, setUserClinics] = useState([])
+
+  async function loadCRMStats(clinicObj) {
+    if (clinicObj.plan_id !== 'elite' && clinicObj.plan_id !== 'pro' && clinicObj.subscription_status !== 'trialing') {
+      return
+    }
+    try {
+      const statsRes = await fetch(`/api/crm/stats?clinicId=${clinicObj.id}`)
+      const stats = await statsRes.json()
+      if (stats.success) {
+        setTotalPatients(stats.totalPatients || 0)
+        setAvgRating(stats.avgRating || 0)
+        setRecentFeedbacks(stats.recentFeedbacks || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch CRM stats:', err)
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -42,28 +60,40 @@ export default function CRMPage() {
       setFollowupRecall(finalClinic.smart_recall_enabled || false)
       setFollowupMeds(finalClinic.smart_meds_enabled || false)
 
-      if (finalClinic.plan_id !== 'elite' && finalClinic.plan_id !== 'pro' && finalClinic.subscription_status !== 'trialing') {
-        setLoading(false)
-        return
-      }
-
-      // Fetch total unique patient phones securely via backend API
+      // Load all branches for the branch selector
       try {
-        const statsRes = await fetch('/api/crm/stats')
-        const stats = await statsRes.json()
-        if (stats.success) {
-          setTotalPatients(stats.totalPatients || 0)
-          setAvgRating(stats.avgRating || 0)
-          setRecentFeedbacks(stats.recentFeedbacks || [])
-        }
-      } catch (err) {
-        console.error('Failed to fetch CRM stats:', err)
-      }
+        const storedClinics = localStorage.getItem('tokenpe_user_clinics')
+        if (storedClinics) setUserClinics(JSON.parse(storedClinics))
+      } catch (e) { /* ignore */ }
+
+      await loadCRMStats(finalClinic)
       
       setLoading(false)
     }
     load()
   }, [router])
+
+  async function handleBranchChange(e) {
+    const selectedId = e.target.value
+    const selected = userClinics.find(c => c.id === selectedId)
+    if (!selected) return
+    setLoading(true)
+    
+    // Fetch fresh clinic data for the selected branch
+    const { data: freshClinic } = await supabase.from('clinics').select('*').eq('id', selected.id).single()
+    const finalClinic = freshClinic || selected
+    
+    setClinic(finalClinic)
+    setWelcomeMsg(finalClinic.welcome_message || '')
+    setFollowupRecall(finalClinic.smart_recall_enabled || false)
+    setFollowupMeds(finalClinic.smart_meds_enabled || false)
+    setTotalPatients(0)
+    setAvgRating(0)
+    setRecentFeedbacks([])
+    
+    await loadCRMStats(finalClinic)
+    setLoading(false)
+  }
 
   async function saveWelcomeMessage() {
     setSavingWelcome(true)
@@ -191,6 +221,17 @@ export default function CRMPage() {
             <div className="text-xl font-black">{clinic.name}</div>
           </div>
         </div>
+        {userClinics.length > 1 && (
+          <select
+            value={clinic?.id || ''}
+            onChange={handleBranchChange}
+            className="bg-[#7C3AED] border border-[#6D28D9] text-white px-4 py-2.5 rounded-xl font-semibold outline-none text-sm"
+          >
+            {userClinics.map(uc => (
+              <option key={uc.id} value={uc.id}>🏥 {uc.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="max-w-4xl mx-auto p-4 sm:p-8 space-y-8">

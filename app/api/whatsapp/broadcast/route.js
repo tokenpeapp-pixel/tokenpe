@@ -13,8 +13,17 @@ export async function POST(req) {
     }
 
     const session = await getSession()
-    if (!session || session.clinicId !== clinicId) {
+    if (!session || !session.clinicId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Verify branch ownership: session clinic and target clinic must share the same email
+    if (session.clinicId !== clinicId) {
+      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
+      const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', clinicId).single()
+      if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
+        return NextResponse.json({ success: false, error: 'Unauthorized branch access' }, { status: 403 })
+      }
     }
 
     // 1. Verify Clinic is Elite

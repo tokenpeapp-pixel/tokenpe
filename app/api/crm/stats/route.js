@@ -9,7 +9,20 @@ export async function GET(req) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const clinicId = session.clinicId
+    // Allow fetching stats for a specific branch (verify ownership via email)
+    const { searchParams } = new URL(req.url)
+    const requestedClinicId = searchParams.get('clinicId')
+    let clinicId = session.clinicId
+
+    if (requestedClinicId && requestedClinicId !== session.clinicId) {
+      // Verify ownership: both clinics must share the same email
+      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
+      const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', requestedClinicId).single()
+      if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
+        return NextResponse.json({ success: false, error: 'Unauthorized branch access' }, { status: 403 })
+      }
+      clinicId = requestedClinicId
+    }
 
     // Fetch all patients for this clinic to calculate stats
     // We use supabaseAdmin to bypass RLS securely on the server

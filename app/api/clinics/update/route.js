@@ -15,8 +15,13 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: 'Clinic ID required' }, { status: 400 })
     }
 
+    // Verify branch ownership via email match
     if (clinicId !== session.clinicId) {
-      return NextResponse.json({ success: false, error: 'Unauthorized clinic access' }, { status: 403 })
+      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
+      const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', clinicId).single()
+      if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
+        return NextResponse.json({ success: false, error: 'Unauthorized clinic access' }, { status: 403 })
+      }
     }
 
     const updates = {}

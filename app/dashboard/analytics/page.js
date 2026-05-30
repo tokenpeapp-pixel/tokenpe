@@ -29,6 +29,7 @@ export default function AnalyticsPage() {
   const [customEnd, setCustomEnd] = useState('')
   const [aiInsights, setAiInsights] = useState(null)
   const [loadingAi, setLoadingAi] = useState(false)
+  const [userClinics, setUserClinics] = useState([])
 
   useEffect(() => {
     async function load() {
@@ -39,6 +40,12 @@ export default function AnalyticsPage() {
       }
       const c = JSON.parse(stored)
       setClinic(c)
+
+      // Load all branches for the branch selector
+      try {
+        const storedClinics = localStorage.getItem('tokenpe_user_clinics')
+        if (storedClinics) setUserClinics(JSON.parse(storedClinics))
+      } catch (e) { /* ignore */ }
       
       // Default date range
       if (c.plan_id === 'starter') setDateRange('7')
@@ -152,6 +159,19 @@ export default function AnalyticsPage() {
     if (planId === 'starter') return 7
     if (planId === 'pro') return 30
     return 3650 // Elite: ~10 years
+  }
+
+  function handleBranchChange(e) {
+    const selectedId = e.target.value
+    const selected = userClinics.find(c => c.id === selectedId)
+    if (!selected) return
+    setClinic(selected)
+    setPatients([])
+    setLastPeriodPatients([])
+    setAiInsights(null)
+    const range = selected.plan_id === 'starter' ? '7' : '30'
+    setDateRange(range)
+    fetchAnalytics(selected, range)
   }
 
   function handleDateChange(e) {
@@ -362,6 +382,17 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex flex-col gap-3 w-full sm:w-auto">
           <div className="flex flex-col sm:flex-row gap-3">
+            {userClinics.length > 1 && (
+              <select
+                value={clinic?.id || ''}
+                onChange={handleBranchChange}
+                className="bg-[#7C3AED] border border-[#6D28D9] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
+              >
+                {userClinics.map(uc => (
+                  <option key={uc.id} value={uc.id}>🏥 {uc.name}</option>
+                ))}
+              </select>
+            )}
             <select 
               value={dateRange} 
               onChange={handleDateChange}

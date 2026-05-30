@@ -24,7 +24,9 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [patients, setPatients] = useState([])
   const [lastPeriodPatients, setLastPeriodPatients] = useState([])
-  const [dateRange, setDateRange] = useState('today') // today, 7, 30, 90, 180, 365
+  const [dateRange, setDateRange] = useState('today') // today, 7, 30, 90, 180, 365, custom
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
   const [aiInsights, setAiInsights] = useState(null)
   const [loadingAi, setLoadingAi] = useState(false)
 
@@ -48,39 +50,53 @@ export default function AnalyticsPage() {
     load()
   }, [router])
 
-  async function fetchAnalytics(c, range) {
+  async function fetchAnalytics(c, range, cStart, cEnd) {
     setLoading(true)
-    const today = new Date()
+
+    let cutoffDate, endDate
     let days = 0
-    if (range !== 'today') days = parseInt(range)
-    
-    // Calculate cutoff date
-    const d = new Date()
-    d.setDate(d.getDate() - days)
-    const cutoffDate = getISTDateString(d)
+
+    if (range === 'custom' && cStart && cEnd) {
+      cutoffDate = cStart
+      endDate = cEnd
+      days = Math.max(1, Math.ceil((new Date(cEnd) - new Date(cStart)) / (1000 * 60 * 60 * 24)) + 1)
+    } else if (range === 'today') {
+      cutoffDate = getISTDateString(new Date())
+      endDate = cutoffDate
+      days = 1
+    } else {
+      days = parseInt(range)
+      const d = new Date()
+      d.setDate(d.getDate() - days)
+      cutoffDate = getISTDateString(d)
+      endDate = getISTDateString(new Date())
+    }
 
     // Fetch this period
     let query = supabase.from('patients').select('*').eq('clinic_id', c.id).limit(100000)
     if (range === 'today') {
-      query = query.eq('date', getISTDateString(new Date()))
+      query = query.eq('date', cutoffDate)
     } else {
-      query = query.gte('date', cutoffDate)
+      query = query.gte('date', cutoffDate).lte('date', endDate)
     }
 
     const { data: thisPeriodData } = await query
 
-    // Fetch last period (for monthly comparison)
+    // Fetch last period (for comparison)
     let lastPeriodData = []
     if (c.plan_id !== 'starter' && range !== 'today') {
-      const d2 = new Date(d)
-      d2.setDate(d2.getDate() - (days || 1))
-      const lastCutoff = getISTDateString(d2)
-      
+      const prevEnd = new Date(cutoffDate)
+      prevEnd.setDate(prevEnd.getDate() - 1)
+      const prevStart = new Date(prevEnd)
+      prevStart.setDate(prevStart.getDate() - days + 1)
+      const lastCutoff = getISTDateString(prevStart)
+      const lastEnd = getISTDateString(prevEnd)
+
       const { data } = await supabase.from('patients')
         .select('*')
         .eq('clinic_id', c.id)
         .gte('date', lastCutoff)
-        .lt('date', cutoffDate)
+        .lte('date', lastEnd)
         .limit(100000)
       lastPeriodData = data || []
     }
@@ -131,12 +147,46 @@ export default function AnalyticsPage() {
     setLoadingAi(false)
   }
 
+  // Plan-based max allowed lookback (in days)
+  function getMaxDays(planId) {
+    if (planId === 'starter') return 7
+    if (planId === 'pro') return 30
+    return 3650 // Elite: ~10 years
+  }
+
   function handleDateChange(e) {
     const val = e.target.value
+    if (val === 'custom') {
+      setDateRange('custom')
+      // Pre-fill with sensible defaults
+      const today = getISTDateString(new Date())
+      const maxDays = getMaxDays(clinic.plan_id)
+      const dAgo = new Date(); dAgo.setDate(dAgo.getDate() - Math.min(7, maxDays))
+      setCustomStart(getISTDateString(dAgo))
+      setCustomEnd(today)
+      return
+    }
     if (clinic.plan_id === 'starter' && val !== 'today' && val !== '7') return alert('Upgrade to Pro to view this date range.')
     if (clinic.plan_id === 'pro' && !['today','7','30'].includes(val)) return alert('Upgrade to Elite to view this date range.')
     setDateRange(val)
     fetchAnalytics(clinic, val)
+  }
+
+  function applyCustomRange() {
+    if (!customStart || !customEnd) return alert('Please select both start and end dates.')
+    if (customStart > customEnd) return alert('Start date cannot be after end date.')
+
+    const maxDays = getMaxDays(clinic.plan_id)
+    const today = new Date()
+    const startD = new Date(customStart)
+    const diffDays = Math.ceil((today - startD) / (1000 * 60 * 60 * 24))
+
+    if (diffDays > maxDays) {
+      const planName = clinic.plan_id === 'starter' ? 'Starter (7 days)' : 'Pro (30 days)'
+      return alert(`Your ${planName} plan allows viewing up to ${maxDays} days of history. Upgrade to unlock more!`)
+    }
+
+    fetchAnalytics(clinic, 'custom', customStart, customEnd)
   }
 
   function exportCSV() {
@@ -215,7 +265,7 @@ export default function AnalyticsPage() {
   const returningPct = rangeTotal ? Math.round((returningCount / rangeTotal) * 100) : 0
   const newPct = rangeTotal ? 100 - returningPct : 0
   const whatsappCount = rangeTotal - walkIns
-  const daysInRange = dateRange === 'today' ? 1 : parseInt(dateRange)
+  const daysInRange = dateRange === 'today' ? 1 : dateRange === 'custom' ? Math.max(1, Math.ceil((new Date(customEnd) - new Date(customStart)) / (1000 * 60 * 60 * 24)) + 1) : parseInt(dateRange)
   const avgPerDay = Math.round(rangeTotal / daysInRange)
 
   // Section 4: Heatmap (Mon-Sun, 8AM-8PM)
@@ -310,31 +360,68 @@ export default function AnalyticsPage() {
             <div className="text-2xl font-black">{clinic?.name}</div>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <select 
-            value={dateRange} 
-            onChange={handleDateChange}
-            className="bg-[#1E293B] border border-[#334155] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
-          >
-            <option value="today">Today Only</option>
-            <option value="7">Last 7 Days {isStarter ? '' : '(Starter+)'}</option>
-            <option value="30">Last 30 Days {isStarter ? '🔒' : '(Pro+)'}</option>
-            <option value="90">Last 90 Days {isStarter || isPro ? '🔒' : '(Elite Only)'}</option>
-            <option value="180">Last 6 Months {!isElite ? '🔒' : '(Elite)'}</option>
-            <option value="365">Last 1 Year {!isElite ? '🔒' : '(Elite)'}</option>
-          </select>
-          <button
-            onClick={() => isStarter ? router.push('/dashboard/billing') : exportCSV()}
-            className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#1E293B] text-[#94A3B8] cursor-not-allowed' : 'bg-[#10B981] text-white hover:bg-[#059669]'}`}
-          >
-            {isStarter ? '🔒 CSV Export' : '📥 CSV'}
-          </button>
-          <button
-            onClick={() => isStarter ? router.push('/dashboard/billing') : window.print()}
-            className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#1E293B] text-[#94A3B8] cursor-not-allowed' : 'bg-[#F59E0B] text-white hover:bg-[#D97706]'}`}
-          >
-            {isStarter ? '🔒 PDF Report' : '📄 PDF'}
-          </button>
+        <div className="flex flex-col gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <select 
+              value={dateRange} 
+              onChange={handleDateChange}
+              className="bg-[#1E293B] border border-[#334155] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
+            >
+              <option value="today">Today Only</option>
+              <option value="7">Last 7 Days</option>
+              <option value="30">Last 30 Days {isStarter ? '🔒' : ''}</option>
+              <option value="90">Last 90 Days {isStarter || isPro ? '🔒' : ''}</option>
+              <option value="180">Last 6 Months {!isElite ? '🔒' : ''}</option>
+              <option value="365">Last 1 Year {!isElite ? '🔒' : ''}</option>
+              <option value="custom">📅 Custom Range</option>
+            </select>
+            <button
+              onClick={() => isStarter ? router.push('/dashboard/billing') : exportCSV()}
+              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#1E293B] text-[#94A3B8] cursor-not-allowed' : 'bg-[#10B981] text-white hover:bg-[#059669]'}`}
+            >
+              {isStarter ? '🔒 CSV Export' : '📥 CSV'}
+            </button>
+            <button
+              onClick={() => isStarter ? router.push('/dashboard/billing') : window.print()}
+              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#1E293B] text-[#94A3B8] cursor-not-allowed' : 'bg-[#F59E0B] text-white hover:bg-[#D97706]'}`}
+            >
+              {isStarter ? '🔒 PDF Report' : '📄 PDF'}
+            </button>
+          </div>
+
+          {/* Custom Date Range Picker */}
+          {dateRange === 'custom' && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#1E293B] border border-[#334155] p-3 rounded-xl">
+              <div className="flex items-center gap-2 flex-1">
+                <label className="text-[#94A3B8] text-xs font-bold whitespace-nowrap">FROM</label>
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={e => setCustomStart(e.target.value)}
+                  max={customEnd || getISTDateString(new Date())}
+                  min={(() => { const d = new Date(); d.setDate(d.getDate() - getMaxDays(clinic?.plan_id)); return getISTDateString(d) })()}
+                  className="bg-[#0F172A] border border-[#475569] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <label className="text-[#94A3B8] text-xs font-bold whitespace-nowrap">TO</label>
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={e => setCustomEnd(e.target.value)}
+                  min={customStart}
+                  max={getISTDateString(new Date())}
+                  className="bg-[#0F172A] border border-[#475569] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
+                />
+              </div>
+              <button
+                onClick={applyCustomRange}
+                className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-5 py-2 rounded-lg font-bold text-sm transition whitespace-nowrap"
+              >
+                Apply ✓
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

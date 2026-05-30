@@ -589,6 +589,7 @@ export default function Dashboard() {
     localStorage.removeItem('clinicCode')
     localStorage.removeItem('clinicPhone')
     localStorage.removeItem('tokenpe_clinic')
+    await fetch('/api/auth/logout', { method: 'POST' })
     await supabase.auth.signOut()
     router.push('/login')
   }

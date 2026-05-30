@@ -52,26 +52,11 @@ export async function POST(req) {
         // Success — reset rate limiter
         loginLimiter.reset(ip)
 
-        // Generate a new clinic code on each login (invalidates old QR)
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-        let newCode = ''
-        for (let i = 0; i < 6; i++) newCode += chars[Math.floor(Math.random() * chars.length)]
-
-        const { data: updated, error: updateErr } = await supabase
-            .from('clinics')
-            .update({ code: newCode })
-            .eq('id', data.id)
-            .select().single()
-
-        if (updateErr || !updated) {
-            return Response.json({ success: false, message: 'Failed to rotate clinic code.' }, { status: 500 })
-        }
-
-        // Create JWT session
+        // Create JWT session using existing clinic data (no code rotation — doctors set custom codes)
         const sessionPayload = {
-            clinicId: updated.id,
-            clinicCode: updated.code,
-            phone: updated.phone
+            clinicId: data.id,
+            clinicCode: data.code,
+            phone: data.phone
         }
         const token = await signToken(sessionPayload)
 
@@ -85,7 +70,7 @@ export async function POST(req) {
             path: '/'
         })
 
-        return Response.json({ success: true, clinic: updated }, { status: 200 })
+        return Response.json({ success: true, clinic: data }, { status: 200 })
 
     } catch (error) {
         console.error('[Login API Error]', error)

@@ -57,7 +57,12 @@ export default function LoginPage() {
         setError('')
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: `${window.location.origin}/auth/callback?intent=${mode}` }
+            options: { 
+                redirectTo: `${window.location.origin}/auth/callback?intent=${mode}`,
+                queryParams: {
+                    prompt: 'select_account'
+                }
+            }
         })
         if (error) {
             setError('Google sign in failed. Please try again.')

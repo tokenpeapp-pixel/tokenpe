@@ -111,13 +111,13 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
     // Update localStorage
     const stored = localStorage.getItem('tokenpe_clinic')
     if (stored) {
-      try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean, address: addressInput })) } catch (_) {}
+      try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean, address: addressInput })) } catch (_) { }
     }
     localStorage.setItem('clinicCode', clean)
     // Save address directly via supabase
     await supabase.from('clinics').update({ address: addressInput }).eq('id', clinic.id)
     clinic.address = addressInput
-    
+
     onCodeUpdate(clean)
     setCodeSaving(false)
     setCodeSuccess(true)
@@ -134,16 +134,16 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
       // Re-using voice-notes bucket since it exists
       const { data, error } = await supabase.storage.from('voice-notes').upload(fileName, file, { upsert: true })
       if (error) throw error
-      
+
       const { data: { publicUrl } } = supabase.storage.from('voice-notes').getPublicUrl(fileName)
       await supabase.from('clinics').update({ logo_url: publicUrl }).eq('id', clinic.id)
-      
+
       clinic.logo_url = publicUrl // mutate locally for immediate render
       const stored = localStorage.getItem('tokenpe_clinic')
       if (stored) {
         localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), logo_url: publicUrl }))
       }
-    } catch(err) {
+    } catch (err) {
       alert('Error uploading logo: ' + err.message)
     }
     setUploadingLogo(false)
@@ -166,7 +166,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
           localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), address: addressInput }))
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     setSavingAddress(false)
   }
 
@@ -175,7 +175,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
     try {
       const res = await fetch(qrUrl)
       const blob = await res.blob()
-      
+
       if (!clinic?.logo_url) {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -188,25 +188,25 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         img.crossOrigin = 'Anonymous'
         const imgUrl = URL.createObjectURL(blob)
         await new Promise(r => { img.onload = r; img.src = imgUrl })
-        
+
         const logo = new Image()
         logo.crossOrigin = 'Anonymous'
         await new Promise(r => { logo.onload = r; logo.src = clinic.logo_url })
-        
+
         const canvas = document.createElement('canvas')
         canvas.width = img.width
         canvas.height = img.height
         const ctx = canvas.getContext('2d')
         ctx.drawImage(img, 0, 0)
-        
+
         const logoSize = img.width * 0.22
         const x = (img.width - logoSize) / 2
         const y = (img.height - logoSize) / 2
-        
+
         ctx.fillStyle = 'white'
         ctx.fillRect(x - 8, y - 8, logoSize + 16, logoSize + 16)
         ctx.drawImage(logo, x, y, logoSize, logoSize)
-        
+
         const finalUrl = canvas.toDataURL('image/png')
         const a = document.createElement('a')
         a.href = finalUrl
@@ -214,7 +214,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         a.click()
         URL.revokeObjectURL(imgUrl)
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e)
     }
     setDownloading(false)
@@ -293,7 +293,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
             </div>
           )}
         </div>
-        
+
         {planId === 'elite' && (
           <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <label style={{ display: 'inline-block', background: '#F5F3FF', color: '#7C3AED', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: uploadingLogo ? 'wait' : 'pointer', border: '1px dashed #C4B5FD' }}>
@@ -301,15 +301,15 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
               <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={handleLogoUpload} disabled={uploadingLogo} />
             </label>
             <div style={{ display: 'flex', gap: 6 }}>
-              <input 
-                type="text" 
-                placeholder="Clinic Address for print (optional)" 
-                value={addressInput} 
+              <input
+                type="text"
+                placeholder="Clinic Address for print (optional)"
+                value={addressInput}
                 onChange={e => setAddressInput(e.target.value)}
                 maxLength={60}
                 style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, outline: 'none' }}
               />
-              <button 
+              <button
                 onClick={saveAddress}
                 disabled={savingAddress}
                 style={{ background: '#10B981', color: 'white', border: 'none', padding: '0 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: savingAddress ? 'not-allowed' : 'pointer' }}
@@ -431,7 +431,7 @@ export default function Dashboard() {
       try {
         const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics')) || []
         setUserClinics(storedUserClinics)
-      } catch(e) {}
+      } catch (e) { }
 
       if (!clinicCode) {
         // Fallback: Check if user is logged in via Supabase (e.g., Google OAuth redirect)
@@ -444,11 +444,9 @@ export default function Dashboard() {
             const clinicData = clinics[0]
             setUserClinics(clinics)
             localStorage.setItem('tokenpe_user_clinics', JSON.stringify(clinics))
-            // Generate new clinic code on each login (invalidates old QR)
-            const newCode = clinicData.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7) + (Math.floor(Math.random() * 900) + 100)
-            const { data: updated } = await supabase
-              .from('clinics').update({ code: newCode }).eq('id', clinicData.id).select().single()
-            const finalClinic = updated || clinicData
+            
+            // We no longer overwrite the clinic code on login so custom codes are preserved!
+            const finalClinic = clinicData
             localStorage.setItem('clinicCode', finalClinic.code)
             localStorage.setItem('clinicPhone', finalClinic.phone)
             localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinic))
@@ -575,6 +573,14 @@ export default function Dashboard() {
   // ── Code Update Callback ─────────────────────────────────────
   function handleCodeUpdate(newCode) {
     setClinic(prev => ({ ...prev, code: newCode }))
+    
+    // Sync the new code into the userClinics array for the branch switcher
+    setUserClinics(prevClinics => {
+      const updated = prevClinics.map(c => c.id === clinic.id ? { ...c, code: newCode } : c)
+      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updated))
+      return updated
+    })
+
     addToast(`✅ Clinic code updated to ${newCode}! Share it with your patients.`, 'done')
   }
 
@@ -597,7 +603,7 @@ export default function Dashboard() {
     // Optimistic UI update for instant feedback
     setClinic(prev => ({ ...prev, queue_paused: newStatus }))
     addToast(newStatus ? 'Queue is now PAUSED' : 'Queue is now ACTIVE', newStatus ? 'notify' : 'done')
-    
+
     // Attempt DB update in background via backend API
     try {
       const res = await fetch('/api/clinic/pause', {
@@ -605,7 +611,7 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, queuePaused: newStatus })
       })
-      
+
       if (!res.ok) {
         throw new Error('Failed to toggle pause')
       }
@@ -716,34 +722,34 @@ export default function Dashboard() {
 
   async function addWalkIn() {
     if (!newPhone.trim()) return
-    
+
     if (clinic?.queue_paused) {
       addToast('Queue is currently paused. Please unpause to add patients.', 'error')
       return
     }
 
     const token = `T${String(patients.length + 1).padStart(3, '0')}`
-    
+
     try {
       const res = await fetch('/api/queue/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-           clinicId: clinic.id,
-           name: newName.trim() || null,
-           phone: newPhone.trim(),
-           token: token,
-           language: newLang || 'hi'
+          clinicId: clinic.id,
+          name: newName.trim() || null,
+          phone: newPhone.trim(),
+          token: token,
+          language: newLang || 'hi'
         })
       })
-      
+
       const result = await res.json()
       if (!res.ok) throw new Error(result.message || 'Failed to add walk-in')
 
       setNewName(''); setNewPhone(''); setNewLang('hi')
       setShowAddForm(false)
       addToast(`${newName || newPhone} added as ${token}`, 'new')
-      
+
       // Note: Supabase realtime subscription will pick up the new patient 
       // and update the patients list automatically, just like it did before.
     } catch (err) {
@@ -1032,7 +1038,7 @@ export default function Dashboard() {
                 <div className="dropdown-divider" />
               </>
             )}
-            
+
             {(clinic?.plan_id === 'elite' || clinic?.subscription_status === 'trialing') && userClinics.length < 3 && (
               <button className="dropdown-item" onClick={() => { setShowAddBranch(true); setMenuOpen(false); }} style={{ color: '#34D399', fontSize: '0.85rem' }}>
                 + Add New Branch
@@ -1100,7 +1106,7 @@ export default function Dashboard() {
                     if (data.success) {
                       const updatedClinics = [...userClinics, data.clinic]
                       localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedClinics))
-                      
+
                       // Also switch session to the new branch immediately
                       await fetch('/api/auth/switch', {
                         method: 'POST',
@@ -1216,7 +1222,7 @@ export default function Dashboard() {
       {/* ── Action Bar ── */}
       <div className="action-bar-responsive" style={s.actionBar}>
         <button style={s.btnQR} onClick={() => setShowQR(true)}>🔲 Generate QR</button>
-        <button 
+        <button
           style={{ ...s.btnGhost, color: clinic?.queue_paused ? '#EF4444' : '#10B981', borderColor: clinic?.queue_paused ? '#FECACA' : '#A7F3D0', fontWeight: 700 }}
           onClick={togglePause}
         >
@@ -1300,10 +1306,10 @@ export default function Dashboard() {
                 value={historyDate}
                 max={new Date().toISOString().split('T')[0]}
                 min={
-                  clinic?.plan_id === 'starter' 
-                    ? (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })() 
-                    : clinic?.plan_id === 'pro' 
-                      ? (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })() 
+                  clinic?.plan_id === 'starter'
+                    ? (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })()
+                    : clinic?.plan_id === 'pro'
+                      ? (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })()
                       : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d.toISOString().split('T')[0] })()
                 }
                 onChange={e => setHistoryDate(e.target.value)}
@@ -1353,9 +1359,9 @@ export default function Dashboard() {
           const q = historySearch.toLowerCase().trim()
           const filtered = historyPatients.filter(p => {
             const matchesFilter = historyFilter === 'all' || p.status === historyFilter
-            const matchesSearch = !q || 
-              (p.name || '').toLowerCase().includes(q) || 
-              (p.phone || '').includes(q) || 
+            const matchesSearch = !q ||
+              (p.name || '').toLowerCase().includes(q) ||
+              (p.phone || '').includes(q) ||
               (p.token || '').toLowerCase().includes(q)
             return matchesFilter && matchesSearch
           })
@@ -1416,7 +1422,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
         </div>
         <div style={s.patientMeta}>
           📱 +91 {maskPhone(patient.phone)} &nbsp;·&nbsp;
-          🕒 {joinedTime} {isWaiting && `(⏳ ${waitMins}m)`} 
+          🕒 {joinedTime} {isWaiting && `(⏳ ${waitMins}m)`}
           {completedTime && ` → ✅ ${completedTime}`} &nbsp;·&nbsp;
           {position ? `#${position} in line` : patient.status.toUpperCase()}
         </div>

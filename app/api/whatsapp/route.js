@@ -395,6 +395,18 @@ export async function POST(req) {
                         })
                     } catch (err) {
                         console.error('[Voice Background Error]', err)
+                        // Fallback: send text if Sarvam AI fails
+                        const { buildVoiceText } = require('../../../lib/messaging')
+                        const fallbackText = buildVoiceText({
+                            language: language || 'en',
+                            event: 'joined',
+                            token: tokenNumber,
+                            position: peopleAhead || 0,
+                            clinicName: clinic.name
+                        })
+                        if (fallbackText) {
+                            await sendText(cleanedPhone, `🎙️ *Voice Note Failed*\n\n${fallbackText}`)
+                        }
                     }
                 })
             }

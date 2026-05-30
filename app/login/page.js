@@ -147,6 +147,35 @@ export default function LoginPage() {
         }
     }
 
+    async function handleForgotPin(e) {
+        e.preventDefault()
+        setError('')
+        setSuccess('')
+        setLoading(true)
+        
+        try {
+            const res = await fetch('/api/auth/forgot-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: loginCode, phone: loginPhone })
+            })
+            const result = await res.json()
+            
+            if (!res.ok) {
+                setError(result.message || 'Failed to reset PIN.')
+            } else {
+                setSuccess(result.message)
+                setTimeout(() => {
+                    setMode('login')
+                    setSuccess('')
+                }, 4000)
+            }
+        } catch (err) {
+            setError('Something went wrong. Please try again.')
+        }
+        setLoading(false)
+    }
+
     return (
         <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", overflow: 'hidden' }} suppressHydrationWarning={true}>
             <style>{`
@@ -415,13 +444,33 @@ export default function LoginPage() {
                                 <label>Registered Phone</label>
                                 <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
                             </div>
-                            <div className="field">
+                            <div className="field" style={{ position: 'relative' }}>
                                 <label>4-Digit PIN</label>
                                 <input value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
+                                <button type="button" onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }} style={{ position: 'absolute', right: 0, top: 0, background: 'none', border: 'none', fontSize: 13, color: '#7C3AED', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>Forgot PIN?</button>
                             </div>
                             <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
                                 {loading ? 'Signing in...' : 'Sign in →'}
                             </button>
+                        </form>
+                    ) : mode === 'forgot' ? (
+                        <form onSubmit={handleForgotPin}>
+                            <div className="field">
+                                <label>Clinic Code</label>
+                                <input value={loginCode} onChange={e => setLoginCode(e.target.value)} placeholder="e.g. SHARMA001" required suppressHydrationWarning={true} />
+                            </div>
+                            <div className="field">
+                                <label>Registered Phone</label>
+                                <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
+                            </div>
+                            <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
+                                {loading ? 'Sending...' : 'Reset PIN via WhatsApp →'}
+                            </button>
+                            <div style={{ textAlign: 'center', marginTop: 16 }}>
+                                <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', fontSize: 13, color: '#64748b', cursor: 'pointer', fontWeight: 500 }}>
+                                    ← Back to Login
+                                </button>
+                            </div>
                         </form>
                     ) : (
                         <form onSubmit={handleRegister}>

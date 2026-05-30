@@ -237,7 +237,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
           <div className="sec-eye">Pricing</div>
           <h2 className="sec-h2">Simple. Affordable.</h2>
-          <p className="sec-sub" style={{ margin: "0 auto 0" }}>All plans include every feature.</p>
+          <p className="sec-sub" style={{ margin: "0 auto 0" }}>Choose the plan that fits your clinic's needs.</p>
         </div>
         <div className="plans">
           {[

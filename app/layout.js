@@ -20,6 +20,27 @@ export const metadata = {
     shortcut: "/logo-icon.svg",
     apple: "/logo-icon.svg",
   },
+  openGraph: {
+    title: "TokenPe - Smart WhatsApp Queues",
+    description: "Replace paper queues with real-time WhatsApp updates. Built for Indian Clinics.",
+    url: "https://tokenpe.online",
+    siteName: "TokenPe",
+    images: [
+      {
+        url: "https://tokenpe.online/og-image.png",
+        width: 1200,
+        height: 630,
+      }
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TokenPe - Smart WhatsApp Queues",
+    description: "Replace paper queues with real-time WhatsApp updates. Built for Indian Clinics.",
+    images: ["https://tokenpe.online/og-image.png"],
+  }
 };
 
 export default function RootLayout({ children }) {

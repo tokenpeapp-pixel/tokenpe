@@ -91,34 +91,47 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
       setCodeError('Code must be 3–12 alphanumeric characters.')
       return
     }
-    if (clean === clinic?.code) { setEditingCode(false); return }
-    setCodeSaving(true)
-    setCodeError('')
-    // Check uniqueness
-    const res = await fetch('/api/clinics/code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clinicId: clinic?.id, newCode: clean })
-    })
-
-    const result = await res.json()
-
-    if (!res.ok || !result.success) {
-      setCodeError(result.message || 'Failed to save. You might not have permission.')
-      setCodeSaving(false)
+    
+    const codeChanged = clean !== clinic?.code
+    const addressChanged = addressInput !== clinic?.address
+    
+    if (!codeChanged && !addressChanged) {
+      setEditingCode(false)
       return
     }
+
+    setCodeSaving(true)
+    setCodeError('')
+
+    if (codeChanged) {
+      // Check uniqueness via API
+      const res = await fetch('/api/clinics/code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic?.id, newCode: clean })
+      })
+      const result = await res.json()
+      if (!res.ok || !result.success) {
+        setCodeError(result.message || 'Failed to save. You might not have permission.')
+        setCodeSaving(false)
+        return
+      }
+      localStorage.setItem('clinicCode', clean)
+      onCodeUpdate(clean)
+    }
+
+    if (addressChanged) {
+      // Save address directly via supabase
+      await supabase.from('clinics').update({ address: addressInput }).eq('id', clinic.id)
+      clinic.address = addressInput
+    }
+
     // Update localStorage
     const stored = localStorage.getItem('tokenpe_clinic')
     if (stored) {
       try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean, address: addressInput })) } catch (_) { }
     }
-    localStorage.setItem('clinicCode', clean)
-    // Save address directly via supabase
-    await supabase.from('clinics').update({ address: addressInput }).eq('id', clinic.id)
-    clinic.address = addressInput
 
-    onCodeUpdate(clean)
     setCodeSaving(false)
     setCodeSuccess(true)
     setEditingCode(false)

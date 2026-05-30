@@ -425,13 +425,22 @@ export default function Dashboard() {
   // ── Load clinic from session (multi-clinic support) ─────────────────────
   useEffect(() => {
     async function loadClinic() {
-      // Get clinic code from localStorage (set during login)
+      // ── Step 1: Paint UI instantly from localStorage cache ──────────────
       let clinicCode = localStorage.getItem('clinicCode')
+      const cachedClinic = localStorage.getItem('tokenpe_clinic')
 
       try {
         const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics')) || []
         setUserClinics(storedUserClinics)
       } catch (e) { }
+
+      // Show cached clinic immediately so UI is visible right away
+      if (cachedClinic) {
+        try {
+          const parsed = JSON.parse(cachedClinic)
+          setClinic(parsed) // paint UI instantly from cache
+        } catch (e) { }
+      }
 
       if (!clinicCode) {
         // Fallback: Check if user is logged in via Supabase (e.g., Google OAuth redirect)
@@ -444,42 +453,45 @@ export default function Dashboard() {
             const clinicData = clinics[0]
             setUserClinics(clinics)
             localStorage.setItem('tokenpe_user_clinics', JSON.stringify(clinics))
-            
-            // We no longer overwrite the clinic code on login so custom codes are preserved!
             const finalClinic = clinicData
             localStorage.setItem('clinicCode', finalClinic.code)
             localStorage.setItem('clinicPhone', finalClinic.phone)
             localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinic))
             clinicCode = finalClinic.code
           } else {
-            // Logged into Google, but email does not exist as a clinic in the clinics table
             await supabase.auth.signOut()
             router.push('/login?error=no_clinic')
             return
           }
         } else {
-          // Not logged in — redirect to login
-          router.push('/login')
-          return
+          if (!cachedClinic) { router.push('/login'); return }
         }
       }
 
-      const { data: clinicData, error } = await supabase
-        .from('clinics').select('*').eq('code', clinicCode).single()
+      // ── Step 2: Refresh clinic from Supabase in background ──────────────
+      if (clinicCode) {
+        const { data: freshClinic, error } = await supabase
+          .from('clinics').select('*').eq('code', clinicCode).single()
 
-      if (error || !clinicData) {
-        // Invalid clinic — clear and redirect
-        localStorage.removeItem('clinicCode')
-        localStorage.removeItem('clinicPhone')
-        localStorage.removeItem('tokenpe_clinic')
-        router.push('/login')
-        return
+        if (error || !freshClinic) {
+          // Only redirect if we also have no cached clinic to show
+          if (!cachedClinic) {
+            localStorage.removeItem('clinicCode')
+            localStorage.removeItem('clinicPhone')
+            localStorage.removeItem('tokenpe_clinic')
+            router.push('/login')
+          }
+          return
+        }
+
+        // Update cache + state silently in background
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(freshClinic))
+        setClinic(freshClinic)
       }
-
-      setClinic(clinicData)
     }
     loadClinic()
   }, [])
+
 
   // ── Load patients when clinic or currentDate changes ───────────────────
   useEffect(() => {
@@ -582,6 +594,38 @@ export default function Dashboard() {
     })
 
     addToast(`✅ Clinic code updated to ${newCode}! Share it with your patients.`, 'done')
+  }
+
+  // ── Smooth Branch Switcher (no reload) ─────────────────────────────────
+  async function switchToBranch(targetClinic) {
+    setMenuOpen(false)
+    setShowAddBranch(false)
+    if (targetClinic.id === clinic?.id) return
+
+    // Optimistically switch UI immediately — no flash, no reload
+    setClinic(targetClinic)
+    setPatients([])
+    setLoading(true)
+    localStorage.setItem('clinicCode', targetClinic.code)
+    localStorage.setItem('clinicPhone', targetClinic.phone)
+    localStorage.setItem('tokenpe_clinic', JSON.stringify(targetClinic))
+
+    // Update session cookie in background (don't await — keep UI fast)
+    fetch('/api/auth/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetClinicId: targetClinic.id })
+    })
+
+    // Fetch fresh patients for the new branch
+    const { data: patientsData } = await supabase
+      .from('patients').select('*')
+      .eq('clinic_id', targetClinic.id)
+      .eq('date', currentDate)
+      .order('joined_at', { ascending: true })
+    setPatients(patientsData || [])
+    setLoading(false)
+    addToast(`✅ Switched to ${targetClinic.name}`, 'done')
   }
 
   // ── Logout ──────────────────────────────────────────────────────────────
@@ -1021,19 +1065,7 @@ export default function Dashboard() {
               <>
                 <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 }}>Switch Clinic</div>
                 {userClinics.map(uc => (
-                  <button key={uc.id} className="dropdown-item" style={{ padding: '8px 16px', background: uc.id === clinic?.id ? 'rgba(124,58,237,0.15)' : 'transparent', color: uc.id === clinic?.id ? '#A78BFA' : 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }} onClick={async () => {
-                    if (uc.id !== clinic?.id) {
-                      await fetch('/api/auth/switch', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ targetClinicId: uc.id })
-                      })
-                    }
-                    localStorage.setItem('clinicCode', uc.code)
-                    localStorage.setItem('clinicPhone', uc.phone)
-                    localStorage.setItem('tokenpe_clinic', JSON.stringify(uc))
-                    window.location.reload()
-                  }}>
+                  <button key={uc.id} className="dropdown-item" style={{ padding: '8px 16px', background: uc.id === clinic?.id ? 'rgba(124,58,237,0.15)' : 'transparent', color: uc.id === clinic?.id ? '#A78BFA' : 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }} onClick={() => switchToBranch(uc)}>
                     {uc.id === clinic?.id ? '✓ ' : '○ '}{uc.name}
                   </button>
                 ))}
@@ -1107,19 +1139,11 @@ export default function Dashboard() {
                     const data = await res.json()
                     if (data.success) {
                       const updatedClinics = [...userClinics, data.clinic]
+                      setUserClinics(updatedClinics)
                       localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedClinics))
-
-                      // Also switch session to the new branch immediately
-                      await fetch('/api/auth/switch', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ targetClinicId: data.clinic.id })
-                      })
-
-                      localStorage.setItem('clinicCode', data.clinic.code)
-                      localStorage.setItem('clinicPhone', data.clinic.phone)
-                      localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
-                      window.location.reload()
+                      setAddingBranch(false)
+                      // Smooth switch to new branch — no reload
+                      await switchToBranch(data.clinic)
                     } else {
                       alert(data.error || 'Failed to create branch')
                       setAddingBranch(false)

@@ -12,37 +12,41 @@ export default function BillingPage() {
   const [showDetails, setShowDetails] = useState(false)
 
   useEffect(() => {
+    // Inject Razorpay eagerly so it's ready before user clicks Upgrade
+    if (!document.getElementById('razorpay-checkout-js')) {
+      const script = document.createElement('script')
+      script.id = 'razorpay-checkout-js'
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.async = true
+      document.head.appendChild(script)
+    }
+
     async function load() {
       const stored = localStorage.getItem('tokenpe_clinic')
       if (!stored) { router.push('/login'); return }
       const clinicData = JSON.parse(stored)
 
-      // Always fetch fresh from Supabase for latest plan info
-      const { data: fresh } = await supabase
-        .from('clinics').select('*').eq('id', clinicData.id).single()
-      const finalData = fresh || clinicData
-      setClinic(finalData)
-      localStorage.setItem('tokenpe_clinic', JSON.stringify(finalData))
+      // Show cached clinic instantly, then refresh in background in parallel
+      setClinic(clinicData)
+      setLoading(false)
 
       const today = getISTDateString()
-      const { count } = await supabase
-        .from('patients')
-        .select('*', { count: 'exact', head: true })
-        .eq('clinic_id', finalData.id).eq('date', today)
-      setTodayCount(count || 0)
-      setLoading(false)
+
+      // Fetch fresh clinic + today count in parallel
+      const [freshResult, countResult] = await Promise.all([
+        supabase.from('clinics').select('*').eq('id', clinicData.id).single(),
+        supabase.from('patients').select('*', { count: 'exact', head: true }).eq('clinic_id', clinicData.id).eq('date', today)
+      ])
+
+      if (freshResult.data) {
+        setClinic(freshResult.data)
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(freshResult.data))
+      }
+      setTodayCount(countResult.count || 0)
     }
     load()
   }, [router])
 
-  // Load Razorpay script
-  useEffect(() => {
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.async = true
-    document.head.appendChild(script)
-    return () => document.head.removeChild(script)
-  }, [])
 
   const handleUpgrade = useCallback(async (tier) => {
     if (!clinic || upgrading) return

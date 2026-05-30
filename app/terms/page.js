@@ -3,87 +3,24 @@
 import Link from "next/link";
 
 export default function TermsOfService() {
-  const handleDownload = () => {
-    const markdownContent = `# Terms of Service and Support Policy for TokenPe
-
-**Effective Date: May 19, 2026**
-
-Welcome to **TokenPe** (accessible from https://tokenpe.online). These Terms of Service outline the rules and regulations for the use of TokenPe's Platform and Services.
-
-By accessing this website, we assume you accept these terms and conditions. Do not continue to use TokenPe if you do not agree to take all of the terms and conditions stated on this page.
-
----
-
-## 1. User Account Responsibilities
-To use our services, you must register and maintain an active user account:
-* Account Security: You are entirely responsible for maintaining the confidentiality of your login credentials and session tokens.
-* Acceptable Use: You agree not to use TokenPe for any unlawful activities, malicious network attacks, automated bulk spamming, or fraudulent messaging.
-* Account Termination: We reserve the right to suspend or terminate accounts that violate our security guidelines or engage in abusive platform usage without prior notice.
-
----
-
-## 2. Notification Deliverability and Limitations
-* Delivery Channels: TokenPe utilizes third-party global telecommunication routes and cloud message gateways to deliver real-time notifications and alerts.
-* Carrier Delays: We strive to achieve instant delivery, but we are not liable for delayed or undelivered notifications resulting from local network outages, carrier filters, device settings, or telecommunication network dropouts.
-* Carrier Charges: Standard messaging rates or data charges from your mobile operator may apply when receiving notifications on your device.
-
----
-
-## 3. Intellectual Property
-Unless otherwise stated, TokenPe and/or its licensors own the intellectual property rights for all material, logo designs, backend structures, and code on TokenPe. All intellectual property rights are reserved. You may access this from TokenPe for your own personal use subjected to restrictions set in these terms.
-
----
-
-## 4. Refund and Service Cancellation Policy
-* Cancellation: You can cancel your subscription or delete your TokenPe account at any time via your user dashboard.
-* Refunds: If you are enrolled in any paid usage tiers, charges are billed in advance. Refund requests for unused credits or platform issues can be requested by emailing our help desk at tokenpe.online@gmail.com
-
----
-
-## 5. Support and Contact Information
-We are committed to helping you integrate and resolve any issues with your TokenPe experience:
-* Support Desk Email: tokenpe.online@gmail.com
-* Expected Response Time: Under 24 hours for all integration and configuration issues.
-* Corporate Address: Mumbai, Maharashtra, India.`;
-
-    const blob = new Blob([markdownContent], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "tokenpe-terms-of-service.md";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 py-12 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
       <div className="max-w-4xl mx-auto">
         {/* Navigation / Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-zinc-800">
-          <div>
-            <Link href="/" className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline mb-2 group">
-              <svg className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Home
-            </Link>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Terms & Support Policy
-            </h1>
-            <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-              Effective Date: May 19, 2026 | Last Updated: May 19, 2026
-            </p>
-          </div>
-          <button
-            onClick={handleDownload}
-            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        <div className="mb-8 pb-6 border-b border-slate-200 dark:border-zinc-800">
+          <Link href="/" className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline mb-2 group">
+            <svg className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Download Terms
-          </button>
+            Back to Home
+          </Link>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Terms & Support Policy
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+            Effective Date: May 19, 2026 | Last Updated: May 30, 2026
+          </p>
         </div>
 
         {/* Content Card with Glassmorphism / Sleek design */}
@@ -154,10 +91,10 @@ We are committed to helping you integrate and resolve any issues with your Token
             </h2>
             <ul className="list-disc pl-6 space-y-2 text-slate-600 dark:text-zinc-300">
               <li>
-                <strong className="text-slate-800 dark:text-white">Cancellation</strong>: You can cancel your subscription or delete your TokenPe account at any time via your user dashboard.
+                <strong className="text-slate-800 dark:text-white">Cancellation</strong>: You can cancel your subscription at any time via your user dashboard. Your subscription will remain active until the end of your billing cycle.
               </li>
               <li>
-                <strong className="text-slate-800 dark:text-white">Refunds</strong>: If you are enrolled in any paid usage tiers, charges are billed in advance. Refund requests for unused credits or platform issues can be requested by emailing our help desk at <a href="mailto:tokenpe.online@gmail.com" className="text-indigo-600 dark:text-indigo-400 hover:underline">tokenpe.online@gmail.com</a>.
+                <strong className="text-slate-800 dark:text-white">Refunds (7-Day Money Back)</strong>: We offer a full refund if you are unsatisfied with the service within the first 7 days of your initial purchase. To request a refund, email us at <a href="mailto:tokenpe.online@gmail.com" className="text-indigo-600 dark:text-indigo-400 hover:underline">tokenpe.online@gmail.com</a> with your registered account details. Refunds are processed within 5-7 business days to the original payment method. After 7 days, all purchases are non-refundable.
               </li>
             </ul>
           </section>

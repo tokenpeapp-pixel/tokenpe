@@ -194,13 +194,8 @@ export async function POST(req) {
             }
 
             // ── Builder Test Safeguard ─────────────────────────────────────────────
-            if (
-                !clinicCode ||
-                clinicCode.includes('{') ||
-                clinicCode.includes('}') ||
-                clinicCode === 'PLACEHOLDER' ||
-                clinicCode.includes('VARIABLE')
-            ) {
+            const isTestPayload = rawCode.includes('{') || rawCode.includes('}') || rawCode === 'PLACEHOLDER' || rawCode.includes('VARIABLE')
+            if (isTestPayload) {
                 console.log('[Join] 🧪 Test mode detected — returning mock response')
                 return Response.json({
                     success: true,
@@ -209,6 +204,15 @@ export async function POST(req) {
                     wait: 'You are next!',
                     clinicName: 'Demo Clinic',
                     name: name || 'Guest'
+                }, { status: 200 })
+            }
+
+            if (!clinicCode) {
+                console.error(`[Join] ❌ Invalid or missing clinic code. rawCode was: "${rawCode}"`)
+                return Response.json({
+                    success: false,
+                    message: '❌ Invalid clinic code. Please scan the QR code again.',
+                    token: 'ERR', position: 0, wait: 'N/A', clinicName: 'Unknown', name: name || 'Guest'
                 }, { status: 200 })
             }
 

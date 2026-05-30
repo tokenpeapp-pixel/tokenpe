@@ -81,6 +81,10 @@ export async function POST(req) {
               bodyValues: [clinic.name, message || ' ']
             })
           }
+
+          // Send CRM Rating immediately after
+          await new Promise(r => setTimeout(r, 200)) // delay between template and text
+          await sendCRMInteractiveRating(phone, clinic.name)
           
           sent++
           // Small delay to avoid rate limits

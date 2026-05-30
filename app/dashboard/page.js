@@ -950,9 +950,9 @@ export default function Dashboard() {
           }
           .action-bar-responsive {
             display: grid !important;
-            grid-template-columns: 1fr;
-            gap: 12px !important;
-            padding: 16px !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px !important;
+            padding: 12px 14px !important;
           }
           .action-bar-responsive button {
             font-size: 0.78rem !important;

@@ -235,7 +235,9 @@ export default function BillingPage() {
               <div style={{ color: '#cbd5e1', marginTop: 10, fontSize: 15, lineHeight: 1.7 }}>
                 {isTrial
                   ? `Trial ends on ${trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Upgrade now to keep your features!`
-                  : `Your ${planName} plan renews on ${clinic.current_period_end ? new Date(clinic.current_period_end).toLocaleDateString('en-IN') : 'N/A'}.`}
+                  : (clinic.current_period_end 
+                      ? `Your ${planName} plan renews on ${new Date(clinic.current_period_end).toLocaleDateString('en-IN')}.`
+                      : `Your ${planName} plan is currently active.`)}
               </div>
             </div>
 

@@ -1,21 +1,22 @@
-import { createClient } from '@supabase/supabase-js'
+const fs = require('fs')
+const { createClient } = require('@supabase/supabase-js')
 
-const supabaseUrl = 'https://tjqynkjwpmhyxhrqamjh.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqcXlua2p3cG1oeXhocnFhbWpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzIyMjMsImV4cCI6MjA5NDUwODIyM30.Xjk8RR6V56EXTX7JrAf-6DQ-1Z0m-qa0lgC9pyHB7Zw'
+const env = fs.readFileSync('.env.local', 'utf8')
+const getEnv = (key) => env.split('\n').find(l => l.startsWith(key))?.split('=')[1]?.trim()
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(
+  getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+  getEnv('SUPABASE_SERVICE_ROLE_KEY')
+)
 
-async function getCols() {
+async function fix() {
   const { data, error } = await supabase
     .from('clinics')
-    .select('*')
-    .limit(1)
-  
-  if (data && data.length > 0) {
-    console.log(Object.keys(data[0]))
-  } else {
-    console.log(error)
-  }
+    .update({ subscription_status: 'trialing' })
+    .is('current_period_end', null)
+    .eq('subscription_status', 'active')
+    
+  console.log('Fixed:', data, error)
 }
 
-getCols()
+fix()

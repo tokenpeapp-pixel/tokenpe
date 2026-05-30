@@ -141,9 +141,14 @@ export default function BillingPage() {
   const planName = planId === 'starter' ? 'Starter' : planId === 'pro' ? 'Pro' : 'Elite'
   const percentage = limit === Infinity ? 0 : Math.min((todayCount / limit) * 100, 100)
 
-  const trialEnd = clinic.trial_ends_at
-    ? new Date(clinic.trial_ends_at)
-    : (clinic.created_at ? new Date(new Date(clinic.created_at).getTime() + 14 * 24 * 60 * 60 * 1000) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+  const userClinics = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]') : []
+  const oldestClinic = userClinics.length > 0 
+    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0]) 
+    : clinic
+
+  const trialEnd = oldestClinic?.trial_ends_at
+    ? new Date(oldestClinic.trial_ends_at)
+    : (oldestClinic?.created_at ? new Date(new Date(oldestClinic.created_at).getTime() + 14 * 24 * 60 * 60 * 1000) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
 
   const daysLeft = isTrial
     ? Math.max(0, Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)))

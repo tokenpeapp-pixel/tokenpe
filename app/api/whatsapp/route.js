@@ -176,11 +176,16 @@ export async function POST(req) {
             }
             const language = languageMap[String(rawLanguage).toLowerCase()] || languageMap[String(rawLanguage)] || rawLanguage || 'en'
 
-            // Accept clinic code variants + strip "JOIN " prefix
-            const rawCode = String(
+            // Accept clinic code variants + aggressively clean to handle mobile QR scanner bugs (e.g. JOIN%20CODE, JOIN+CODE, JOIN CITY HO 123)
+            let rawCode = String(
                 pick(body, 'clinicCode', 'clinic_code', 'cliniccode', 'code', 'Code', 'JOIN') || ''
             )
-            const clinicCode = validateClinicCode(rawCode.replace(/^JOIN\s*/i, ''))
+            // 1. Decode any URL artifacts (in case the QR scanner failed to decode ?text=)
+            // 2. Replace the word "JOIN" (case insensitive)
+            // 3. Remove ALL non-alphanumeric characters (spaces, %, dashes, etc.)
+            const cleanedCode = decodeURIComponent(rawCode).replace(/\+/g, ' ').replace(/JOIN/i, '').replace(/[^A-Z0-9]/gi, '')
+            
+            const clinicCode = validateClinicCode(cleanedCode)
 
             console.log(`[Join] phone=${maskPhone(phone)} | name=${maskName(name)} | lang=${language} | clinicCode=${clinicCode}`)
 

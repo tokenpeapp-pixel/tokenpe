@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '../../../../lib/supabase'
-import { sendTemplateMessage } from '../../../../lib/messaging'
+import { sendTemplateMessage, sendCRMInteractiveRating } from '../../../../lib/messaging'
 
 export async function GET(req) {
   try {
@@ -21,8 +21,8 @@ export async function GET(req) {
       
     if (clinicError) throw clinicError
 
-    // Filter only active Elite/Trial
-    const activeClinics = clinics.filter(c => c.plan_id === 'elite' || c.subscription_status === 'trialing')
+    // Filter only active Pro, Elite, or Trial
+    const activeClinics = clinics.filter(c => c.plan_id === 'elite' || c.plan_id === 'pro' || c.subscription_status === 'trialing')
     
     if (activeClinics.length === 0) {
       return NextResponse.json({ success: true, message: 'No active clinics with follow-ups enabled' })
@@ -57,6 +57,11 @@ export async function GET(req) {
               templateName: 'tokenpe_meds_reminder',
               bodyValues: [patient.name || 'Patient', clinic.name]
             })
+            
+            // Send CRM Rating immediately after
+            await new Promise(r => setTimeout(r, 200)) // delay between template and text
+            await sendCRMInteractiveRating(patient.phone, clinic.name)
+            
             medsSent++
             await new Promise(r => setTimeout(r, 100))
           }
@@ -85,6 +90,11 @@ export async function GET(req) {
               templateName: 'tokenpe_recall_reminder',
               bodyValues: [patient.name || 'Patient', clinic.name]
             })
+
+            // Send CRM Rating immediately after
+            await new Promise(r => setTimeout(r, 200)) // delay between template and text
+            await sendCRMInteractiveRating(patient.phone, clinic.name)
+
             recallSent++
             await new Promise(r => setTimeout(r, 100))
           }

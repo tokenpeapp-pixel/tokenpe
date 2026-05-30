@@ -42,7 +42,7 @@ export default function CRMPage() {
       setFollowupRecall(finalClinic.smart_recall_enabled || false)
       setFollowupMeds(finalClinic.smart_meds_enabled || false)
 
-      if (finalClinic.plan_id !== 'elite' && finalClinic.subscription_status !== 'trialing') {
+      if (finalClinic.plan_id !== 'elite' && finalClinic.plan_id !== 'pro' && finalClinic.subscription_status !== 'trialing') {
         setLoading(false)
         return
       }
@@ -157,17 +157,19 @@ export default function CRMPage() {
     </div>
   )
 
-  if (clinic?.plan_id !== 'elite' && clinic?.subscription_status !== 'trialing') {
+  const isEliteOrTrial = clinic?.plan_id === 'elite' || clinic?.subscription_status === 'trialing'
+
+  if (clinic?.plan_id !== 'elite' && clinic?.plan_id !== 'pro' && clinic?.subscription_status !== 'trialing') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white p-4 font-sans">
         <div className="bg-white/5 border border-white/10 p-8 rounded-3xl text-center max-w-sm w-full">
           <div className="text-5xl mb-4">🥇</div>
-          <h2 className="text-2xl font-black mb-3">Elite Feature</h2>
+          <h2 className="text-2xl font-black mb-3">Premium Feature</h2>
           <p className="text-[#94A3B8] text-sm leading-relaxed mb-6">
-            Patient CRM and Broadcasts are strictly available to Elite plan members. Upgrade to engage your patients!
+            Patient CRM and Smart Follow-ups are available to Pro and Elite plan members. Upgrade to engage your patients!
           </p>
           <button onClick={() => router.push('/dashboard/billing')} className="w-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] text-black py-3 rounded-xl font-black mb-3 transition hover:scale-105">
-            Upgrade to Elite
+            Upgrade Plan
           </button>
           <button onClick={() => router.push('/dashboard')} className="w-full bg-transparent text-[#94A3B8] py-3 rounded-xl font-bold hover:text-white transition">
             Back to Dashboard
@@ -199,7 +201,15 @@ export default function CRMPage() {
 
         <div className="space-y-8">
           {/* Welcome Message */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9]">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden">
+            {!isEliteOrTrial && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
+                <div className="text-3xl mb-2">🥇</div>
+                <h3 className="text-lg font-black text-[#0F172A] mb-2">Elite Feature</h3>
+                <p className="text-[#64748B] text-sm mb-4 font-medium">Upgrade to Elite to set a personalized WhatsApp welcome message.</p>
+                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#0F172A] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition hover:scale-105">Upgrade to Elite</button>
+              </div>
+            )}
             <h2 className="text-lg font-black mb-2">Personalized Welcome Message</h2>
             <p className="text-[#64748B] text-sm mb-5">This message will be appended to the standard TokenPe WhatsApp reply when a patient joins your queue.</p>
             
@@ -223,7 +233,15 @@ export default function CRMPage() {
           </div>
 
           {/* Broadcasts */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9]">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden">
+            {!isEliteOrTrial && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
+                <div className="text-3xl mb-2">🚀</div>
+                <h3 className="text-lg font-black text-[#0F172A] mb-2">Elite Feature</h3>
+                <p className="text-[#64748B] text-sm mb-4 font-medium">Upgrade to Elite to send mass WhatsApp broadcasts to all your patients.</p>
+                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#0F172A] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition hover:scale-105">Upgrade to Elite</button>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-5">
               <div>
                 <h2 className="text-lg font-black mb-2">WhatsApp Broadcast</h2>

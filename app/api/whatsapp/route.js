@@ -56,54 +56,97 @@ export async function POST(req) {
         const action = pick(body, 'action', 'Action', 'event', 'type')
         const baseUrl = new URL(req.url).origin
 
-        // ── MESSAGE RECEIVED (Feedback) ──────────────────────────────────────────
-        if (action === 'message_received' || action === 'message') {
-            const messageData = body.data?.message || body.message || body
+        // ── MESSAGE / RATING RECEIVED ─────────────────────────────────────────────
+        const rawText = pick(body, 'text', 'rating', 'Rating', 'score', 'message', 'body') || (body.data?.message?.text) || (body.message?.text) || (body.message?.message) || ''
+        const textStr = String(rawText).trim()
+        const textStrLower = textStr.toLowerCase()
+        const starCount = (textStr.match(/⭐/g) || []).length
+        const isRatingReply = starCount > 0 || 
+                              textStrLower.includes('excellent') || 
+                              textStrLower.includes('good') || 
+                              textStrLower.includes('average') || 
+                              textStrLower.includes('fair') || 
+                              textStrLower.includes('poor') ||
+                              textStrLower.startsWith('rate_') ||
+                              /^[c]?[1-5](\s+|$)/i.test(textStr)
+
+        if (action === 'message_received' || action === 'message' || action === 'rate' || action === 'reply' || action === 'feedback' || isRatingReply) {
             const customerData = body.data?.customer || body.customer || body
-            
-            if (messageData && (messageData.type === 'chat' || messageData.text)) {
-                const text = (messageData.text || messageData.message || '').trim()
-                const phoneStr = customerData?.phone_number || pick(body, 'phone', 'customer_phone', 'waPhone', 'whatsapp')
-                const phone = validatePhone(phoneStr)
+            const phoneStr = customerData?.phone_number || pick(body, 'phone', 'Phone', 'mobile', 'waPhone', 'whatsapp', 'customer_phone')
+            const phone = validatePhone(phoneStr)
+
+            if (phone && textStr) {
+                console.log(`[whatsapp] Incoming message from ${maskPhone(phone)}: "${textStr.slice(0, 50)}"`)
                 
-                if (phone && text) {
-                    console.log(`[whatsapp] Feedback received from ${maskPhone(phone)}: "${text.slice(0, 50)}"`)
+                const clean = cleanPhone(phone)
+                const tenDigit = clean.startsWith('91') ? clean.slice(2) : clean
+
+                // 1. Check for CRM Rating explicitly (C1 to C5)
+                const crmMatch = textStr.match(/^[cC]\s*([1-5])(?:\s+(.*))?$/is)
+                if (crmMatch) {
+                    const crmRating = parseInt(crmMatch[1])
+                    const feedbackText = (crmMatch[2] || '').trim()
                     
-                    // Parse Rating: look for a number 1-5 at the start
-                    let rating = 0
-                    let feedbackText = text
-                    
-                    const match = text.match(/^([1-5])\s*(.*)$/is)
-                    if (match) {
-                        rating = parseInt(match[1])
-                        feedbackText = match[2].trim()
+                    // Find most recent patient (any status) to attach CRM feedback
+                    let { data: latestPatient } = await supabaseAdmin.from('patients').select('id').eq('phone', clean).order('joined_at', { ascending: false }).limit(1).single()
+                    if (!latestPatient) {
+                        const { data } = await supabaseAdmin.from('patients').select('id').eq('phone', tenDigit).order('joined_at', { ascending: false }).limit(1).single()
+                        latestPatient = data
                     }
-                    
-                    if (rating > 0 || feedbackText.length > 0) {
-                        // Find the most recent patient record for this phone
-                        const { data: latestPatient, error: lookupError } = await supabaseAdmin
+
+                    if (latestPatient?.id) {
+                        await supabaseAdmin
                             .from('patients')
-                            .select('id')
-                            .eq('phone', phone)
-                            .order('joined_at', { ascending: false })
-                            .limit(1)
-                            .single()
-                            
-                        if (latestPatient) {
-                            await supabaseAdmin
-                                .from('patients')
-                                .update({ 
-                                    crm_rating: rating > 0 ? rating : null, 
-                                    feedback_text: feedbackText || null,
-                                    feedback_at: new Date().toISOString()
-                                })
-                                .eq('id', latestPatient.id)
-                            console.log(`[whatsapp] ✅ Saved feedback for patient ${latestPatient.id}`)
-                        }
+                            .update({ 
+                                crm_rating: crmRating, 
+                                feedback_text: feedbackText || null,
+                                feedback_at: new Date().toISOString()
+                            })
+                            .eq('id', latestPatient.id)
+                        console.log(`[whatsapp] ✅ Saved CRM rating=${crmRating} for patient ${latestPatient.id}`)
+                        after(async () => {
+                            await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your feedback for our recent update!`)
+                        })
+                    }
+                    return Response.json({ success: true, message: 'CRM Rating processed' }, { status: 200 })
+                }
+                
+                // 2. Check for Normal Rating
+                let rating = starCount
+                if (rating === 0) {
+                    const match = textStr.match(/^[1-5]$/)
+                    if (match) {
+                        rating = parseInt(match[0])
+                    } else {
+                        const digitMatch = textStr.match(/[1-5]/)
+                        rating = digitMatch ? parseInt(digitMatch[0]) : 0
                     }
                 }
+                
+                if (rating >= 1 && rating <= 5) {
+                    // Find most recent 'done' visit
+                    let { data: recent } = await supabase.from('patients').select('id, rating, phone').eq('phone', clean).eq('status', 'done').order('joined_at', { ascending: false }).limit(1)
+                    if (!recent || recent.length === 0) {
+                        const { data: recent2 } = await supabase.from('patients').select('id, rating, phone').eq('phone', tenDigit).eq('status', 'done').order('joined_at', { ascending: false }).limit(1)
+                        recent = recent2
+                    }
+
+                    if (recent && recent.length > 0 && !recent[0].rating) {
+                        await supabaseAdmin.from('patients').update({ rating }).eq('id', recent[0].id)
+                        console.log(`[whatsapp] ✅ Saved Normal rating=${rating} for patient ${recent[0].id}`)
+                        after(async () => {
+                            const stars = '⭐'.repeat(rating)
+                            await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!`)
+                        })
+                    }
+                    return Response.json({ success: true, message: 'Normal Rating processed' }, { status: 200 })
+                }
             }
-            return Response.json({ success: true, message: 'Message processed' }, { status: 200 })
+            
+            // If it's just a regular message, return 200 to acknowledge
+            if (action === 'message_received' || action === 'message' || action === 'reply') {
+                return Response.json({ success: true, message: 'Message acknowledged' }, { status: 200 })
+            }
         }
 
         // ── JOIN action ──────────────────────────────────────────────────────────
@@ -326,11 +369,10 @@ export async function POST(req) {
 
             console.log(`[Join] ✅ ${maskName(name)} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
 
-            // 4. Send voice note and custom welcome text in background
             if (planId !== 'starter') {
                 after(async () => {
                     try {
-                        if (clinic.welcome_message) {
+                        if (clinic.welcome_message && (planId === 'elite' || clinic.subscription_status === 'trialing')) {
                             await sendText(cleanedPhone, `*Message from ${clinic.name}:*\n\n${clinic.welcome_message}`)
                         }
                         
@@ -387,94 +429,6 @@ _Powered by TokenPe_`
             return Response.json({ success: true }, { status: 200 })
         }
 
-        // ── RATE action (or auto-detect from reply) ──────────────────────────────
-        const rawText = pick(body, 'text', 'rating', 'Rating', 'score', 'message', 'body') || ''
-        const textStr = String(rawText).trim().toLowerCase()
-        const starCount = (textStr.match(/⭐/g) || []).length
-        const isRatingReply = starCount > 0 || 
-                              textStr.includes('excellent') || 
-                              textStr.includes('good') || 
-                              textStr.includes('average') || 
-                              textStr.includes('fair') || 
-                              textStr.includes('poor') ||
-                              textStr.startsWith('rate_') ||
-                              /^[1-5]$/.test(textStr)
-
-        console.log(`[Rating Debug] action=${action} | rawText="${rawText}" | textStr="${textStr}" | isRatingReply=${isRatingReply}`)
-
-        if (action === 'rate' || action === 'reply' || action === 'message' || action === 'feedback' || isRatingReply) {
-            const phone = pick(body, 'phone', 'Phone', 'mobile', 'waPhone', 'whatsapp', 'customer_phone')
-            
-            // First check if there are star emojis
-            let rating = starCount
-            
-            // If no stars, try to find a digit 1-5
-            if (rating === 0) {
-                const match = String(rawText).trim().match(/^[1-5]$/)
-                if (match) {
-                    rating = parseInt(match[0])
-                } else {
-                    // Try extracting any digit from the text
-                    const digitMatch = String(rawText).match(/[1-5]/)
-                    rating = digitMatch ? parseInt(digitMatch[0]) : 0
-                }
-            }
-            
-            rating = validateRating(rating)
-
-            console.log(`[Rating Debug] phone=${maskPhone(phone)} | rating=${rating}`)
-
-            if (!phone || !rating) {
-                console.warn(`[Rating] ❌ Invalid: phone=${maskPhone(phone)}, rating=${rating}`)
-                return Response.json({ success: false, message: 'Invalid rating (must be 1-5)' }, { status: 400 })
-            }
-
-            const clean = cleanPhone(phone)
-            const tenDigit = clean.startsWith('91') ? clean.slice(2) : clean
-            
-            // Find their most recent 'done' visit — try both phone formats
-            let { data: recent } = await supabase
-                .from('patients')
-                .select('id, rating, phone')
-                .eq('phone', clean)
-                .eq('status', 'done')
-                .order('joined_at', { ascending: false })
-                .limit(1)
-
-            // If not found with 12-digit, try 10-digit
-            if (!recent || recent.length === 0) {
-                const { data: recent2 } = await supabase
-                    .from('patients')
-                    .select('id, rating, phone')
-                    .eq('phone', tenDigit)
-                    .eq('status', 'done')
-                    .order('joined_at', { ascending: false })
-                    .limit(1)
-                recent = recent2
-            }
-
-            console.log(`[Rating Debug] Found patient: id=${recent?.[0]?.id || 'none'}`)
-
-            if (recent && recent.length > 0 && !recent[0].rating) {
-                const { error: updateErr } = await supabaseAdmin.from('patients').update({ rating }).eq('id', recent[0].id)
-                if (updateErr) {
-                    console.error(`[Rating] ❌ Update failed:`, updateErr.message)
-                } else {
-                    console.log(`[Rating] ✅ Saved rating=${rating} for patient ${recent[0].id}`)
-                }
-            } else if (recent && recent.length > 0 && recent[0].rating) {
-                console.log(`[Rating] ℹ️ Patient already rated: ${recent[0].rating}`)
-            } else {
-                console.warn(`[Rating] ❌ No 'done' patient found for phone: ${maskPhone(clean)} / ${maskPhone(tenDigit)}`)
-            }
-
-            after(async () => {
-                const stars = '⭐'.repeat(rating)
-                await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!`)
-            })
-
-            return Response.json({ success: true, rating }, { status: 200 })
-        }
 
         console.warn('[whatsapp] ⚠️ Unknown action received:', action)
         return Response.json({ error: 'Unknown action', receivedAction: action }, { status: 400 })

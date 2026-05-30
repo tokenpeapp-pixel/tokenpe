@@ -1013,7 +1013,14 @@ export default function Dashboard() {
               <>
                 <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 }}>Switch Clinic</div>
                 {userClinics.map(uc => (
-                  <button key={uc.id} className="dropdown-item" style={{ padding: '8px 16px', background: uc.id === clinic?.id ? 'rgba(124,58,237,0.15)' : 'transparent', color: uc.id === clinic?.id ? '#A78BFA' : 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }} onClick={() => {
+                  <button key={uc.id} className="dropdown-item" style={{ padding: '8px 16px', background: uc.id === clinic?.id ? 'rgba(124,58,237,0.15)' : 'transparent', color: uc.id === clinic?.id ? '#A78BFA' : 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }} onClick={async () => {
+                    if (uc.id !== clinic?.id) {
+                      await fetch('/api/auth/switch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ targetClinicId: uc.id })
+                      })
+                    }
                     localStorage.setItem('clinicCode', uc.code)
                     localStorage.setItem('clinicPhone', uc.phone)
                     localStorage.setItem('tokenpe_clinic', JSON.stringify(uc))
@@ -1093,6 +1100,14 @@ export default function Dashboard() {
                     if (data.success) {
                       const updatedClinics = [...userClinics, data.clinic]
                       localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedClinics))
+                      
+                      // Also switch session to the new branch immediately
+                      await fetch('/api/auth/switch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ targetClinicId: data.clinic.id })
+                      })
+
                       localStorage.setItem('clinicCode', data.clinic.code)
                       localStorage.setItem('clinicPhone', data.clinic.phone)
                       localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))

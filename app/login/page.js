@@ -39,7 +39,7 @@ export default function LoginPage() {
         }
     }, [router])
 
-    const [loginCode, setLoginCode] = useState('')
+    const [loginEmail, setLoginEmail] = useState('')
     const [loginPhone, setLoginPhone] = useState('')
     const [loginPin, setLoginPin] = useState('')
 
@@ -88,7 +88,7 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: loginCode, phone: loginPhone, pin: loginPin })
+                body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin })
             })
             const result = await res.json()
 
@@ -161,7 +161,7 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/forgot-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: loginCode, phone: loginPhone })
+                body: JSON.stringify({ email: loginEmail, phone: loginPhone })
             })
             const result = await res.json()
             
@@ -450,8 +450,8 @@ export default function LoginPage() {
                     {mode === 'login' ? (
                         <form onSubmit={handleLogin}>
                             <div className="field">
-                                <label>Clinic Code</label>
-                                <input value={loginCode} onChange={e => setLoginCode(e.target.value)} placeholder="e.g. SHARMA001" required suppressHydrationWarning={true} />
+                                <label>Registered Email</label>
+                                <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
                                 <label>Registered Phone</label>
@@ -469,8 +469,8 @@ export default function LoginPage() {
                     ) : mode === 'forgot' ? (
                         <form onSubmit={handleForgotPin}>
                             <div className="field">
-                                <label>Clinic Code</label>
-                                <input value={loginCode} onChange={e => setLoginCode(e.target.value)} placeholder="e.g. SHARMA001" required suppressHydrationWarning={true} />
+                                <label>Registered Email</label>
+                                <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
                                 <label>Registered Phone</label>
@@ -496,7 +496,7 @@ export default function LoginPage() {
                                 <input value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
-                                <label>Email <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span></label>
+                                <label>Email</label>
                                 <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" suppressHydrationWarning={true} />
                             </div>
                             <div className="field">

@@ -1,6 +1,8 @@
 import { supabase } from '../../../../lib/supabase'
-import { sendText } from '../../../../lib/messaging'
 import { rateLimit } from '../../../../lib/rateLimit'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 
 const forgotLimiter = rateLimit({ maxAttempts: 3, windowMs: 15 * 60 * 1000 })
 
@@ -14,25 +16,25 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { code, phone } = body
+        const { email, phone } = body
 
-        if (!code || !phone) {
+        if (!email || !phone) {
             return Response.json({ success: false, message: 'Missing fields' }, { status: 400 })
         }
 
-        const cleanCode = String(code).trim().toUpperCase()
+        const cleanEmail = String(email).trim().toLowerCase()
         const cleanPhone = String(phone).replace(/\D/g, '')
 
         const { data: clinic, error } = await supabase
             .from('clinics')
-            .select('id, name, phone')
-            .eq('code', cleanCode)
+            .select('id, name, phone, email')
+            .eq('email', cleanEmail)
             .eq('phone', cleanPhone)
             .single()
 
         if (error || !clinic) {
             forgotLimiter.recordFailure(ip)
-            return Response.json({ success: false, message: 'Invalid clinic code or phone number.' }, { status: 404 })
+            return Response.json({ success: false, message: 'Invalid email or phone number.' }, { status: 404 })
         }
 
         // Generate a new 4-digit PIN
@@ -49,12 +51,30 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Failed to reset PIN. Please try again.' }, { status: 500 })
         }
 
-        // Send the new PIN via WhatsApp
-        const msg = `🚨 *Password Reset*\n\nYour new TokenPe PIN is: *${newPin}*\n\nPlease log in using this PIN.`
-        await sendText(cleanPhone, msg)
+        // Send the new PIN via Email
+        try {
+            await resend.emails.send({
+                from: 'TokenPe <support@tokenpe.online>',
+                to: clinic.email,
+                subject: '🔑 Your TokenPe PIN Reset',
+                html: `
+                    <div style="font-family: sans-serif; padding: 20px;">
+                        <h2 style="color: #7C3AED;">Password Reset</h2>
+                        <p>Hi ${clinic.name},</p>
+                        <p>Your new TokenPe PIN is: <strong style="font-size: 24px;">${newPin}</strong></p>
+                        <p>Please log in using this PIN. For security, you should not share this PIN with anyone.</p>
+                        <br/>
+                        <p>Thank you,<br/>The TokenPe Team</p>
+                    </div>
+                `
+            })
+        } catch (emailErr) {
+            console.error('[Forgot PIN] Failed to send email:', emailErr)
+            return Response.json({ success: false, message: 'PIN updated, but failed to send email.' }, { status: 500 })
+        }
 
         forgotLimiter.reset(ip)
-        return Response.json({ success: true, message: 'A new PIN has been sent to your registered WhatsApp number.' }, { status: 200 })
+        return Response.json({ success: true, message: 'A new PIN has been sent to your registered email address.' }, { status: 200 })
 
     } catch (error) {
         console.error('[Forgot PIN Error]', error)

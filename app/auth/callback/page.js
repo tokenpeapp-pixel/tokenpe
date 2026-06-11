@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString } from '../../../lib/supabase'
 
-import CelebrationScreen from '../components/CelebrationScreen'
+import CelebrationScreen from '../../components/CelebrationScreen'
 
 // ─── MAIN CALLBACK ────────────────────────────────────────────────────────────
 function AuthCallbackContent() {

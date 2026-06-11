@@ -17,31 +17,31 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { code, phone, pin } = body
+        const { email, phone, pin } = body
 
-        if (!code || !phone || !pin) {
+        if (!email || !phone || !pin) {
             return Response.json({ success: false, message: 'Missing fields' }, { status: 400 })
         }
 
         // Input validation
-        const cleanCode = validateClinicCode(code)
+        const cleanEmail = email.trim().toLowerCase()
         const cleanPhone = validatePhone(phone)
         const cleanPin = validatePin(pin)
 
-        if (!cleanCode || !cleanPhone || !cleanPin) {
+        if (!cleanEmail || !cleanPhone || !cleanPin) {
             return Response.json({ success: false, message: 'Invalid input format.' }, { status: 400 })
         }
 
         const { data, error } = await supabase
             .from('clinics')
             .select('*')
-            .eq('code', cleanCode)
+            .eq('email', cleanEmail)
             .eq('phone', cleanPhone)
             .single()
 
         if (error || !data) {
             loginLimiter.recordFailure(ip)
-            return Response.json({ success: false, message: 'Invalid clinic code or phone number.' }, { status: 401 })
+            return Response.json({ success: false, message: 'Invalid email or phone number.' }, { status: 401 })
         }
 
         if (data.pin !== cleanPin) {

@@ -2,6 +2,10 @@
 // Handles Razorpay subscription webhook events to update clinic plans in Supabase
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
+import { Resend } from 'resend'
+import { sendText, cleanPhone } from '../../../../lib/messaging'
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 
 export async function POST(req) {
   try {
@@ -44,6 +48,8 @@ export async function POST(req) {
     if (eventType === 'subscription.activated' || eventType === 'subscription.charged') {
       // Payment successful — upgrade clinic plan
       const periodEnd = new Date(sub.current_end * 1000).toISOString()
+      const { data: currentClinic } = await supabaseAdmin.from('clinics').select('name, email, phone').eq('id', clinicId).single()
+
       const { error } = await supabaseAdmin
         .from('clinics')
         .update({
@@ -55,7 +61,55 @@ export async function POST(req) {
         .eq('id', clinicId)
 
       if (error) console.error('[Razorpay Webhook] DB update error:', error)
-      else console.log(`[Razorpay Webhook] ✅ Clinic ${clinicId} upgraded to ${planTier}`)
+      else {
+        console.log(`[Razorpay Webhook] ✅ Clinic ${clinicId} upgraded to ${planTier}`)
+        
+        // Send Confirmations only if it's newly activated or charged
+        if (currentClinic && eventType === 'subscription.charged') {
+          const planName = planTier.charAt(0).toUpperCase() + planTier.slice(1)
+          
+          // 1. Email Confirmation
+          if (currentClinic.email) {
+            try {
+              await resend.emails.send({
+                from: 'TokenPe <support@tokenpe.online>',
+                to: currentClinic.email,
+                subject: `🎉 Upgrade Successful: Welcome to TokenPe ${planName}!`,
+                html: `
+                  <div style="font-family:Inter,sans-serif;max-width:540px;margin:auto;padding:32px;background:#0f172a;color:#e2e8f0;border-radius:16px;">
+                    <img src="https://tokenpe.online/logo.svg" alt="TokenPe" style="height:36px;margin-bottom:24px;" />
+                    <h2 style="color:#10b981;font-size:22px;margin-bottom:8px;">Payment Successful! 🎉</h2>
+                    <p style="color:#94a3b8;">Hi <strong style="color:#fff">${currentClinic.name}</strong>,</p>
+                    <p>Your clinic has been successfully upgraded to the <strong>${planName} Plan</strong>.</p>
+                    <p>Your subscription is now active and will automatically renew on <strong>${new Date(sub.current_end * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>.</p>
+                    <a href="https://tokenpe.online/dashboard" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;margin-top:16px;">
+                      Go to Dashboard →
+                    </a>
+                  </div>
+                `
+              })
+            } catch (e) { console.error('Failed to send confirmation email', e) }
+          }
+
+          // 2. WhatsApp Confirmation
+          if (currentClinic.phone) {
+            const waMsg = `🎉 *Payment Successful!*
+
+Hi *${currentClinic.name}*,
+
+Welcome to the *TokenPe ${planName} Plan*! 🚀
+Your clinic's features have been unlocked instantly.
+
+Next renewal date: *${new Date(sub.current_end * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}*
+
+Access your dashboard now:
+👉 https://tokenpe.online/dashboard
+
+_Powered by TokenPe_`
+            await sendText(cleanPhone(currentClinic.phone), waMsg)
+          }
+        }
+      }
     }
 
     if (eventType === 'subscription.halted' || eventType === 'subscription.cancelled') {

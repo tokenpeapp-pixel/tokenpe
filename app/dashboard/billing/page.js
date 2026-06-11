@@ -92,6 +92,9 @@ export default function BillingPage() {
               // Stop polling once webhook has set the plan end date
               if (fresh.current_period_end || attempts >= maxAttempts) {
                 setUpgrading(null)
+                if (fresh.current_period_end && fresh.plan_id !== 'starter' && fresh.plan_id !== 'canceled') {
+                  alert(`🎉 Payment Successful! Your clinic has been upgraded to the ${fresh.plan_id.toUpperCase()} Plan. All features are now unlocked!`)
+                }
                 return
               }
             }

@@ -937,6 +937,23 @@ export default function Dashboard() {
           font-weight: 500;
         }
 
+        .stat-chip {
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.08);
+          padding: 6px 14px;
+          border-radius: 24px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1) inset;
+        }
+
+        .stat-top {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
         .desktop-only-logout {
           display: flex;
           align-items: center;
@@ -988,6 +1005,27 @@ export default function Dashboard() {
             border-top: 1px solid rgba(255,255,255,0.08);
             padding-top: 12px;
             justify-content: space-between;
+          }
+          
+          .stat-chip {
+            padding: 8px 4px !important;
+            flex-direction: column !important;
+            justify-content: center;
+            gap: 2px !important;
+          }
+          
+          .stat-top {
+            gap: 6px !important;
+          }
+          
+          .stat-label {
+            font-size: 0.65rem !important;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
           }
           
           .mobile-only-live {
@@ -1279,19 +1317,25 @@ export default function Dashboard() {
         </div>
 
         <div className="header-mid-row">
-          <div style={s.statChip}>
-            <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#f97316,#fb923c)', boxShadow: '0 0 8px rgba(249,115,22,0.6)' }} />
-            <span className="stat-num">{waiting.length}</span>
+          <div className="stat-chip">
+            <div className="stat-top">
+              <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#f97316,#fb923c)', boxShadow: '0 0 8px rgba(249,115,22,0.6)' }} />
+              <span className="stat-num">{waiting.length}</span>
+            </div>
             <span className="stat-label">Waiting</span>
           </div>
-          <div style={s.statChip}>
-            <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#10b981,#34d399)', boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
-            <span className="stat-num">{called.length}</span>
+          <div className="stat-chip">
+            <div className="stat-top">
+              <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#10b981,#34d399)', boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
+              <span className="stat-num">{called.length}</span>
+            </div>
             <span className="stat-label">With Doctor</span>
           </div>
-          <div style={s.statChip}>
-            <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#6366f1,#818cf8)', boxShadow: '0 0 8px rgba(99,102,241,0.6)' }} />
-            <span className="stat-num">{done.length}</span>
+          <div className="stat-chip">
+            <div className="stat-top">
+              <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#6366f1,#818cf8)', boxShadow: '0 0 8px rgba(99,102,241,0.6)' }} />
+              <span className="stat-num">{done.length}</span>
+            </div>
             <span className="stat-label">Done</span>
           </div>
         </div>

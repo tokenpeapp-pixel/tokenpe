@@ -143,33 +143,33 @@ export default function LandingPage() {
           <span className="nl" onClick={() => go("features")}>Features</span>
           <span className="nl" onClick={() => go("how")}>How it works</span>
           <span className="nl" onClick={() => go("pricing")}>Pricing</span>
-          <button className="nav-btn" onClick={() => router.push("/login")}>Get Started ΓåÆ</button>
+          <button className="nav-btn" onClick={() => router.push("/login")}>Get Started →</button>
         </div>
-        <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? "Γ£ò" : "Γÿ░"}</button>
+        <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? "✕" : "☰"}</button>
       </nav>
       <div className={`mmenu ${menuOpen ? "open" : ""}`}>
         <span className="mlink" onClick={() => go("features")}>Features</span>
         <span className="mlink" onClick={() => go("how")}>How it works</span>
         <span className="mlink" onClick={() => go("pricing")}>Pricing</span>
-        <span className="mbtn" onClick={() => router.push("/login")}>Get Started ΓåÆ</span>
+        <span className="mbtn" onClick={() => router.push("/login")}>Get Started →</span>
       </div>
 
       {/* HERO */}
       <section className="hero">
         <div className="orb1" /><div className="orb2" /><div className="orb3" />
-        <div className="hero-badge"><span className="badge-dot" />≡ƒç«≡ƒç│ Built for India's 6 lakh+ clinics</div>
+        <div className="hero-badge"><span className="badge-dot" />🇮🇳 Built for India's 6 lakh+ clinics</div>
         <h1 className="hero-h1">No more waiting.<br /><span className="grad-text">Queue smarter.</span></h1>
         <p className="hero-sub">Replace your clinic's paper token chaos with a WhatsApp-based digital queue. Patients wait at home. Voice updates in 10 languages. Zero apps needed.</p>
         <div className="hero-btns">
-          <button className="btn-hero-primary" onClick={() => router.push("/login")}>Start Free Trial ΓåÆ</button>
+          <button className="btn-hero-primary" onClick={() => router.push("/login")}>Start Free Trial →</button>
           <button className="btn-hero-ghost" onClick={() => go("how")}>See how it works</button>
         </div>
-        <p className="hero-note"><span>No app for patients</span>┬╖<span>Any phone</span>┬╖<span>2 min setup</span></p>
+        <p className="hero-note"><span>No app for patients</span>·<span>Any phone</span>·<span>2 min setup</span></p>
       </section>
 
       {/* TRUST */}
       <div className="trust">
-        {[["≡ƒÆ¼", "100%", "WhatsApp Native"], ["≡ƒç«≡ƒç│", "Built for", "Indian Clinics"], ["≡ƒÄÖ∩╕Å", "10", "Languages"], ["ΓÜí", "2 min", "Setup time"]].map(([ic, v, l]) => (
+        {[["💬", "100%", "WhatsApp Native"], ["🇮🇳", "Built for", "Indian Clinics"], ["🎙️", "10", "Languages"], ["⚡", "2 min", "Setup time"]].map(([ic, v, l]) => (
           <div key={l} className="trust-item">
             <span className="trust-icon">{ic}</span>
             <span className="trust-text"><span className="trust-val">{v}</span> {l}</span>
@@ -187,15 +187,15 @@ export default function LandingPage() {
         <div className="sec-inner">
           <div className="sec-eye">Features</div>
           <h2 className="sec-h2">Everything your clinic needs</h2>
-          <p className="sec-sub">One tool that replaces paper tokens, crowded waiting rooms, and manual calling ΓÇö forever.</p>
+          <p className="sec-sub">One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.</p>
           <div className="feat-grid">
             {[
-              { ico: "≡ƒÄÖ∩╕Å", bg: "linear-gradient(135deg,#f0fdf4,#dcfce7)", title: "Voice in 10 Indian languages", desc: "Patients get WhatsApp voice updates in Hindi, Tamil, Telugu, Marathi, Gujarati and 5 more." },
-              { ico: "≡ƒÆ¼", bg: "linear-gradient(135deg,#eff6ff,#dbeafe)", title: "WhatsApp ΓÇö zero app needed", desc: "Scan QR ΓåÆ join queue. No downloads, no logins. Works on any phone, even a basic one." },
-              { ico: "ΓÜí", bg: "linear-gradient(135deg,#fdf4ff,#f3e8ff)", title: "Real-time live dashboard", desc: "See who's waiting, with doctor, and done ΓÇö all updating live as patients move through." },
-              { ico: "≡ƒöö", bg: "linear-gradient(135deg,#fff7ed,#ffedd5)", title: "Smart automatic alerts", desc: "10-away, 5-away, and your-turn alerts sent automatically. Zero manual effort needed." },
-              { ico: "≡ƒôà", bg: "linear-gradient(135deg,#f0f9ff,#e0f2fe)", title: "History by date", desc: "View complete patient records for any past date. Know daily volume at a glance." },
-              { ico: "≡ƒö▓", bg: "linear-gradient(135deg,#fff1f2,#ffe4e6)", title: "QR code + print card", desc: "Generate your clinic's unique QR. Download PNG or print a ready-to-display card." },
+              { ico: "🎙️", bg: "linear-gradient(135deg,#f0fdf4,#dcfce7)", title: "Voice in 10 Indian languages", desc: "Patients get WhatsApp voice updates in Hindi, Tamil, Telugu, Marathi, Gujarati and 5 more." },
+              { ico: "💬", bg: "linear-gradient(135deg,#eff6ff,#dbeafe)", title: "WhatsApp — zero app needed", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone, even a basic one." },
+              { ico: "⚡", bg: "linear-gradient(135deg,#fdf4ff,#f3e8ff)", title: "Real-time live dashboard", desc: "See who's waiting, with doctor, and done — all updating live as patients move through." },
+              { ico: "🔔", bg: "linear-gradient(135deg,#fff7ed,#ffedd5)", title: "Smart automatic alerts", desc: "10-away, 5-away, and your-turn alerts sent automatically. Zero manual effort needed." },
+              { ico: "📅", bg: "linear-gradient(135deg,#f0f9ff,#e0f2fe)", title: "History by date", desc: "View complete patient records for any past date. Know daily volume at a glance." },
+              { ico: "🔲", bg: "linear-gradient(135deg,#fff1f2,#ffe4e6)", title: "QR code + print card", desc: "Generate your clinic's unique QR. Download PNG or print a ready-to-display card." },
             ].map(f => (
               <div key={f.title} className="feat-card">
                 <div className="feat-ico" style={{ background: f.bg }}>{f.ico}</div>
@@ -223,7 +223,7 @@ export default function LandingPage() {
           <div className="steps">
             {[
               { n: "1", t: "Register your clinic", d: "Sign up in 2 minutes with Google or your clinic code. Get your unique WhatsApp QR instantly." },
-              { n: "2", t: "Display the QR at reception", d: "Print the card or show on a screen. Patients scan once and they're in the queue ΓÇö no app needed." },
+              { n: "2", t: "Display the QR at reception", d: "Print the card or show on a screen. Patients scan once and they're in the queue — no app needed." },
               { n: "3", t: "Call patients with one tap", d: "Press 'Call Next' on your dashboard. The patient gets a WhatsApp text + voice note in their language." },
             ].map(s => (
               <div key={s.n} className="step">
@@ -251,16 +251,16 @@ export default function LandingPage() {
         </div>
         <div className="plans">
           {[
-            { name: "Starter", desc: "Perfect for small clinics", price: "Γé╣499", per: "/mo", feats: ["50 patients/day", "Standard WhatsApp Alerts", "Basic 7-day Analytics", "Auto-Generated Code"], hot: false },
-            { name: "Pro", desc: "For busy clinics that want to look professional", price: "Γé╣999", per: "/mo", feats: ["150 patients/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "Queue Pause & Smart Wait Time", "30-Day History & Heatmap"], hot: true },
-            { name: "Elite", desc: "For hospitals, polyclinics & top doctors", price: "Γé╣1999", per: "/mo", feats: ["Unlimited patients", "Multi-Clinic Management", "Monthly PDF Reports", "VIP WhatsApp Support", "CRM Broadcasts"], hot: false },
+            { name: "Starter", desc: "Perfect for small clinics", price: "₹499", per: "/mo", feats: ["50 patients/day", "Standard WhatsApp Alerts", "Basic 7-day Analytics", "Auto-Generated Code"], hot: false },
+            { name: "Pro", desc: "For busy clinics that want to look professional", price: "₹999", per: "/mo", feats: ["150 patients/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "Queue Pause & Smart Wait Time", "30-Day History & Heatmap"], hot: true },
+            { name: "Elite", desc: "For hospitals, polyclinics & top doctors", price: "₹1999", per: "/mo", feats: ["Unlimited patients", "Multi-Clinic Management", "Monthly PDF Reports", "VIP WhatsApp Support", "CRM Broadcasts"], hot: false },
           ].map(p => (
             <div key={p.name} className={`plan${p.hot ? " hot" : ""}`}>
-              {p.hot && <div className="plan-badge">Γ£ª Most Popular</div>}
+              {p.hot && <div className="plan-badge">✦ Most Popular</div>}
               <div><div className="plan-name">{p.name}</div><div className="plan-desc">{p.desc}</div></div>
               <div className="plan-price">{p.price}<span>{p.per}</span></div>
-              <div className="plan-feats">{p.feats.map(f => <div key={f} className="pf"><span className="pf-check">Γ£ô</span>{f}</div>)}</div>
-              <button className={`plan-btn${p.hot ? "" : " ghost"}`} onClick={() => router.push("/login")}>Get started ΓåÆ</button>
+              <div className="plan-feats">{p.feats.map(f => <div key={f} className="pf"><span className="pf-check">✓</span>{f}</div>)}</div>
+              <button className={`plan-btn${p.hot ? "" : " ghost"}`} onClick={() => router.push("/login")}>Get started →</button>
             </div>
           ))}
         </div>
@@ -283,7 +283,7 @@ export default function LandingPage() {
         <div className="cta-orb" />
         <h2 className="cta-h2">Ready to transform your clinic?</h2>
         <p className="cta-sub">Join clinics across India already using TokenPe to manage queues and delight patients.</p>
-        <button className="cta-btn" onClick={() => router.push("/login")}>Start your free trial ΓåÆ</button>
+        <button className="cta-btn" onClick={() => router.push("/login")}>Start your free trial →</button>
       </section>
 
       {/* FOOTER */}
@@ -294,7 +294,7 @@ export default function LandingPage() {
           <a href="mailto:tokenpe.online@gmail.com" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "14px", fontWeight: "600", transition: "color 0.2s" }} onMouseOver={e => e.target.style.color = "white"} onMouseOut={e => e.target.style.color = "#94a3b8"}>Contact Support</a>
         </div>
         <div style={{ fontSize: "13px", opacity: 0.7 }}>
-          Made with Γ¥ñ∩╕Å from TokenPe <br />
+          Made with ❤️ from TokenPe <br />
           &copy; {new Date().getFullYear()} TokenPe. All rights reserved.
         </div>
       </footer>
@@ -303,7 +303,7 @@ export default function LandingPage() {
       {showDetails && (
         <div onClick={() => setShowDetails(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyItems: "center", padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#fff", width: "100%", maxWidth: 800, maxHeight: "90vh", overflowY: "auto", borderRadius: 24, padding: "40px 32px", position: "relative", margin: "auto" }}>
-            <button onClick={() => setShowDetails(false)} style={{ position: "absolute", top: 20, right: 20, background: "#f1f5f9", border: "none", width: 36, height: 36, borderRadius: "50%", fontSize: 20, cursor: "pointer", color: "#64748b" }}>├ù</button>
+            <button onClick={() => setShowDetails(false)} style={{ position: "absolute", top: 20, right: 20, background: "#f1f5f9", border: "none", width: 36, height: 36, borderRadius: "50%", fontSize: 20, cursor: "pointer", color: "#64748b" }}>×</button>
             <h2 style={{ fontSize: 28, fontWeight: 900, color: "#0f172a", marginBottom: 8, letterSpacing: "-1px" }}>Detailed Feature Breakdown</h2>
             <p style={{ color: "#64748b", marginBottom: 32 }}>A comprehensive look at what's included in every TokenPe subscription tier.</p>
             
@@ -332,9 +332,9 @@ export default function LandingPage() {
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>AI Voice Notes (10 languages)</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Clinic Code</td>
@@ -350,9 +350,9 @@ export default function LandingPage() {
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Queue Pause Button</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Patient Visit History</td>
@@ -362,52 +362,52 @@ export default function LandingPage() {
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Smart Wait Time Prediction</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
 
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Busy Hour Heatmap</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Personalized Welcome Message</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Multi-Location (3 clinics)</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Patient Feedback & Star Rating</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>CRM Broadcasts</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Smart Patient Follow-ups</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Monthly PDF Report</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>ΓÇö</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>Γ£ô</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Dashboard Analytics</td>

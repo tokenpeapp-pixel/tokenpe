@@ -63,7 +63,7 @@ export async function POST(req) {
       const { error } = await supabaseAdmin
         .from('clinics')
         .update({
-          plan_id: 'starter',
+          plan_id: eventType === 'subscription.cancelled' ? 'canceled' : 'starter',
           subscription_status: eventType === 'subscription.cancelled' ? 'canceled' : 'past_due',
         })
         .eq('id', clinicId)

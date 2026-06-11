@@ -827,6 +827,33 @@ export default function Dashboard() {
     </div>
   )
 
+  // ── Subscription Canceled / Account Locked ──────────────────────────────
+  const isAccountLocked = clinic?.subscription_status === 'canceled' || clinic?.plan_id === 'canceled'
+  if (isAccountLocked) return (
+    <div style={{ minHeight: '100vh', background: '#0a0514', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: 56, marginBottom: 24 }}>🔒</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Account Paused</h1>
+        <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
+          Your subscription has ended. Your patient data is safe — reactivate any plan to continue using TokenPe.
+        </p>
+        <button
+          onClick={() => router.push('/dashboard/billing')}
+          style={{ width: '100%', padding: '16px 24px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', marginBottom: 16, boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}
+        >
+          Reactivate Plan →
+        </button>
+        <button
+          onClick={logout}
+          style={{ width: '100%', padding: '12px 24px', background: 'transparent', color: '#64748b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+        >
+          Sign Out
+        </button>
+        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Questions? Email <a href="mailto:support@tokenpe.online" style={{ color: '#a78bfa' }}>support@tokenpe.online</a></p>
+      </div>
+    </div>
+  )
+
   return (
     <div style={s.root}>
       <style>{`

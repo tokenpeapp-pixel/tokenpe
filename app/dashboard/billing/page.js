@@ -174,7 +174,7 @@ export default function BillingPage() {
     {
       tier: 'starter', name: 'Starter', price: '₹499', emoji: '🥉',
       features: ['Up to 50 patients/day', 'Standard WhatsApp Alerts', 'Basic 7-day Analytics', 'Auto-Generated Clinic Code'],
-      btnColor: 'rgba(255,255,255,0.1)', textColor: '#fff', glow: 'none', popular: false
+      btnColor: 'linear-gradient(135deg, #0ea5e9, #2563eb)', textColor: '#fff', glow: '0 8px 24px rgba(14,165,233,0.3)', popular: false
     },
     {
       tier: 'pro', name: 'Pro', price: '₹999', emoji: '🥈',

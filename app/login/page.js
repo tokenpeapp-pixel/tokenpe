@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
+import CelebrationScreen from '../components/CelebrationScreen'
 
 export default function LoginPage() {
     const router = useRouter()
@@ -10,6 +11,7 @@ export default function LoginPage() {
     const [googleLoading, setGoogleLoading] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState('')
+    const [celebration, setCelebration] = useState(null)
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -132,15 +134,17 @@ export default function LoginPage() {
                 return
             }
 
-            setSuccess(`✅ Clinic registered! Redirecting to your dashboard...`)
             setLoading(false)
-            setTimeout(() => {
-                localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
-                localStorage.setItem('clinicCode', result.clinic.code)
-                localStorage.setItem('clinicPhone', result.clinic.phone)
-                localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
-                router.push('/dashboard')
-            }, 1200)
+            
+            // Set localStorage 
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
+            localStorage.setItem('clinicCode', result.clinic.code)
+            localStorage.setItem('clinicPhone', result.clinic.phone)
+            localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
+            
+            // Trigger celebration pop-up!
+            setCelebration({ clinicName: result.clinic.name, trialEnd: result.clinic.trial_ends_at })
+            
         } catch (err) {
             setError('Something went wrong. Please try again.')
             setLoading(false)
@@ -174,6 +178,10 @@ export default function LoginPage() {
             setError('Something went wrong. Please try again.')
         }
         setLoading(false)
+    }
+
+    if (celebration) {
+        return <CelebrationScreen clinicName={celebration.clinicName} trialEnd={celebration.trialEnd} onDone={() => router.push('/dashboard')} />
     }
 
     return (

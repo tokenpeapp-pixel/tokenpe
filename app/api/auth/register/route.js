@@ -27,9 +27,22 @@ export async function POST(req) {
         
         // Retry loop for unique code could be added, but 6 chars base32 is highly likely unique.
 
+        // 14 day trial
+        const trialEndsAt = new Date()
+        trialEndsAt.setDate(trialEndsAt.getDate() + 14)
+
         const { data, error } = await supabaseAdmin
             .from('clinics')
-            .insert({ name: cleanName, phone: cleanPhone, email, code, pin: cleanPin })
+            .insert({ 
+                name: cleanName, 
+                phone: cleanPhone, 
+                email, 
+                code, 
+                pin: cleanPin,
+                plan_id: 'elite',
+                subscription_status: 'trialing',
+                trial_ends_at: trialEndsAt.toISOString()
+            })
             .select().single()
 
         if (error) {

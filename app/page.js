@@ -76,7 +76,7 @@ export default function LandingPage() {
         .btn-ghost{background:transparent;color:var(--text);padding:16px 32px;border-radius:100px;font-size:16px;font-weight:600;cursor:pointer;border:1px solid var(--border);transition:all 0.2s}
         .btn-ghost:hover{background:var(--surface);border-color:var(--muted)}
         
-        .hero-note{color:var(--muted);font-size:13px;font-weight:500;margin-bottom:40px}
+        .hero-note{color:var(--muted);font-size:13px;font-weight:500;margin-bottom:40px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center}
         .hero-note span{margin:0 8px;color:var(--border)}
 
         .stat-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:40px;margin-bottom:20px}
@@ -381,8 +381,8 @@ export default function LandingPage() {
             </div>
           </div>
           
-          <div style={{ textAlign: "center", marginTop: 40 }}>
-            <button onClick={() => setShowDetails(true)} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: "14px", fontWeight: "600", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 4 }}>
+          <div style={{ textAlign: "center", marginTop: 40, padding: "0 20px" }}>
+            <button onClick={() => setShowDetails(true)} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: "14px", fontWeight: "600", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 4, whiteSpace: "normal", lineHeight: 1.5 }}>
               📄 View Detailed Feature Breakdown & Terms
             </button>
           </div>

@@ -10,6 +10,9 @@ export default function BillingPage() {
   const [todayCount, setTodayCount] = useState(0)
   const [upgrading, setUpgrading] = useState(null) // 'starter' | 'pro' | 'elite'
   const [showDetails, setShowDetails] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [isCanceling, setIsCanceling] = useState(false)
 
   useEffect(() => {
     // Inject Razorpay eagerly so it's ready before user clicks Upgrade
@@ -103,28 +106,30 @@ export default function BillingPage() {
     }
   }, [clinic, upgrading])
 
-  const handleCancel = async () => {
-    if (!confirm('Are you sure you want to cancel your active subscription? You will instantly lose access to premium features and be downgraded to Starter.')) return;
+  const executeCancel = async () => {
+    setIsCanceling(true)
     try {
       setUpgrading('cancel')
       const res = await fetch('/api/razorpay/cancel-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id })
+        body: JSON.stringify({ clinicId: clinic.id, reason: cancelReason })
       })
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to cancel')
 
-      alert('Subscription canceled successfully.')
+      alert(`Subscription canceled. You will retain access to your ${planName} plan features until the end of your current billing period.`)
       const { data: fresh } = await supabase.from('clinics').select('*').eq('id', clinic.id).single()
       if (fresh) {
         setClinic(fresh)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
       }
+      setShowCancelModal(false)
     } catch (err) {
       alert(`Error: ${err.message}`)
     } finally {
       setUpgrading(null)
+      setIsCanceling(false)
     }
   }
 
@@ -285,6 +290,13 @@ export default function BillingPage() {
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', color: '#cbd5e1', fontSize: 14, lineHeight: 2.1, flex: 1 }}>
                   {plan.features.map(f => <li key={f}>✔️ {f}</li>)}
                 </ul>
+                {!isCurrent && (
+                  <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginBottom: 12, lineHeight: 1.4 }}>
+                    {isTrial
+                      ? `Your trial ends without any auto-charge. Choose this plan to continue.`
+                      : `Renews monthly at ${plan.price}/mo automatically. Cancel anytime from this page.`}
+                  </div>
+                )}
                 <button
                   onClick={() => !isCurrent && handleUpgrade(plan.tier)}
                   disabled={isCurrent || !!upgrading}
@@ -294,7 +306,7 @@ export default function BillingPage() {
                 </button>
                 {isCurrent && plan.tier !== 'starter' && !isTrial && (
                   <button
-                    onClick={handleCancel}
+                    onClick={() => setShowCancelModal(true)}
                     disabled={!!upgrading}
                     style={{ width: '100%', padding: '12px 24px', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: 'pointer', marginTop: 12, transition: 'all 0.2s', opacity: upgrading ? 0.5 : 1 }}
                   >
@@ -447,6 +459,46 @@ export default function BillingPage() {
 
             <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
               <strong>Terms of Subscription:</strong> All plans automatically renew monthly. You can cancel your subscription at any time from the billing dashboard. The free trial is available for 14 days and provides full access to Elite features. After the trial, you must choose a plan to continue service.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CANCEL MODAL */}
+      {showCancelModal && (
+        <div onClick={() => setShowCancelModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyItems: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#0f172a", width: "100%", maxWidth: 440, borderRadius: 24, padding: "32px", position: "relative", margin: "auto", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", textAlign: 'center' }}>
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 12 }}>Cancel Subscription</h2>
+            <p style={{ color: "#94a3b8", marginBottom: 24, fontSize: 14 }}>We're sad to see you go! Your plan will instantly downgrade to Starter. Could you let us know why you're leaving? (Optional)</p>
+            
+            <select 
+              value={cancelReason} 
+              onChange={e => setCancelReason(e.target.value)} 
+              style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none', marginBottom: 24, fontSize: 14 }}
+            >
+              <option value="" style={{ color: 'black' }}>Select a reason...</option>
+              <option value="too_expensive" style={{ color: 'black' }}>Too expensive</option>
+              <option value="missing_features" style={{ color: 'black' }}>Missing features I need</option>
+              <option value="hard_to_use" style={{ color: 'black' }}>Too hard to use</option>
+              <option value="not_enough_patients" style={{ color: 'black' }}>Not getting enough patients</option>
+              <option value="other" style={{ color: 'black' }}>Other reason</option>
+            </select>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={executeCancel} 
+                disabled={isCanceling}
+                style={{ flex: 1, padding: '12px', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: isCanceling ? 'not-allowed' : 'pointer', opacity: isCanceling ? 0.7 : 1 }}
+              >
+                {isCanceling ? 'Canceling...' : 'Confirm Cancel'}
+              </button>
+              <button 
+                onClick={() => setShowCancelModal(false)} 
+                disabled={isCanceling}
+                style={{ flex: 1, padding: '12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: isCanceling ? 'not-allowed' : 'pointer', opacity: isCanceling ? 0.7 : 1 }}
+              >
+                Keep My Plan
+              </button>
             </div>
           </div>
         </div>

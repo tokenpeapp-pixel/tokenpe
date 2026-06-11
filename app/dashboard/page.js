@@ -816,6 +816,9 @@ export default function Dashboard() {
   const planId = clinic?.plan_id || 'starter'
   const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
   const isLimitReached = patients.length >= limit
+  const trialEnd = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
+  const daysLeft = trialEnd ? Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)) : 0
+  const showTrialWarning = clinic?.subscription_status === 'trialing' && daysLeft <= 3 && daysLeft >= 0
 
   if (loading) return (
     <div style={s.loadingScreen}>
@@ -1185,6 +1188,13 @@ export default function Dashboard() {
 
       {/* ── QR Modal ── */}
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} onCodeUpdate={handleCodeUpdate} router={router} />}
+
+      {/* ── Trial Warning Banner ── */}
+      {showTrialWarning && (
+        <div style={{ background: '#DC2626', color: 'white', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative' }}>
+          ⚠️ Your Elite Free Trial ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}. You will be charged ₹1999/mo starting {trialEnd.toLocaleDateString('en-IN')}. <button onClick={() => router.push('/dashboard/billing')} style={{ background: 'white', color: '#DC2626', border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Manage Billing</button>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <header className="dash-header">

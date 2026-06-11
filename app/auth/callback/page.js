@@ -73,13 +73,6 @@ function ConfettiCanvas() {
 
 // ─── CELEBRATION SCREEN ───────────────────────────────────────────────────────
 function CelebrationScreen({ clinicName, trialEnd, onDone }) {
-    const [count, setCount] = useState(6)
-    useEffect(() => {
-        if (count <= 0) { onDone(); return }
-        const t = setTimeout(() => setCount(c => c - 1), 1000)
-        return () => clearTimeout(t)
-    }, [count, onDone])
-
     return (
         <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%)', fontFamily:"'Inter','DM Sans',sans-serif", color:'#fff', flexDirection:'column', textAlign:'center', padding:24, position:'relative', overflow:'hidden' }}>
             <ConfettiCanvas />
@@ -112,7 +105,7 @@ function CelebrationScreen({ clinicName, trialEnd, onDone }) {
                     ))}
                 </div>
                 <button onClick={onDone} style={{ width:'100%', padding:'16px 24px', background:'linear-gradient(135deg,#7c3aed,#5b21b6)', border:'none', borderRadius:16, color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer', boxShadow:'0 8px 32px rgba(124,58,237,0.5)', letterSpacing:0.3 }}>
-                    🚀 Enter Your Dashboard ({count}s)
+                    🚀 Enter Your Dashboard
                 </button>
             </div>
             <style>{`

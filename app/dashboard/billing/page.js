@@ -79,16 +79,26 @@ export default function BillingPage() {
         },
         theme: { color: '#7C3AED' },
         handler: async function (response) {
-          // Payment captured — refresh clinic from DB (webhook will update it)
-          setTimeout(async () => {
+          // Payment captured — poll DB until webhook sets current_period_end (up to 10s)
+          const maxAttempts = 5
+          let attempts = 0
+          const poll = async () => {
+            attempts++
             const { data: fresh } = await supabase
               .from('clinics').select('*').eq('id', clinic.id).single()
             if (fresh) {
               setClinic(fresh)
               localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
+              // Stop polling once webhook has set the plan end date
+              if (fresh.current_period_end || attempts >= maxAttempts) {
+                setUpgrading(null)
+                return
+              }
             }
-            setUpgrading(null)
-          }, 2500)
+            if (attempts < maxAttempts) setTimeout(poll, 2000)
+            else setUpgrading(null)
+          }
+          setTimeout(poll, 2000)
         },
         modal: { ondismiss: () => setUpgrading(null) }
       }
@@ -245,9 +255,9 @@ export default function BillingPage() {
               <div style={{ color: '#cbd5e1', marginTop: 10, fontSize: 15, lineHeight: 1.7 }}>
                 {isTrial
                   ? `Trial ends on ${trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Upgrade now to keep your features!`
-                  : (clinic.current_period_end 
-                      ? `Your ${planName} plan renews on ${new Date(clinic.current_period_end).toLocaleDateString('en-IN')}.`
-                      : `Your ${planName} plan is currently active.`)}
+                  : clinic.current_period_end
+                    ? <>Next billing date: <strong style={{ color: '#a78bfa' }}>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
+                    : <span style={{ color: '#64748b', fontSize: 13 }}>⏳ Confirming billing date... (may take a few seconds)</span>}
               </div>
             </div>
 

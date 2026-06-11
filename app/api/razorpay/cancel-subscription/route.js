@@ -77,9 +77,9 @@ export async function POST(req) {
       const planLabel = clinic.plan_id === 'elite' ? 'Elite ₹1999' : clinic.plan_id === 'pro' ? 'Pro ₹999' : 'Starter ₹499'
       const reasonLabel = reason || 'Not provided'
       await resend.emails.send({
-        from: 'TokenPe Alerts <support@tokenpe.online>',
+        from: 'onboarding@resend.dev',
         to: 'tokenpe.online@gmail.com',
-        subject: `🚨 Cancellation: ${clinicName} cancelled their ${planLabel} plan`,
+        subject: `⚠️ Subscription Canceled: ${clinic.name}`,
         html: `
           <h2>Subscription Cancelled</h2>
           <p><strong>Clinic:</strong> ${clinicName}</p>

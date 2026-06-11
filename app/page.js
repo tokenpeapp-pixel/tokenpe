@@ -174,11 +174,27 @@ export default function LandingPage() {
           .step-num{margin:0 auto 24px}
         }
         @media(max-width:768px){
+          .nav{padding:0 20px}
           .nav-links{display:none}
           .hamburger{display:block}
+          .hero{padding:100px 20px 60px}
+          .hero-h1{font-size:38px;line-height:1.15}
+          .hero-sub{font-size:16px;margin-bottom:32px}
+          .hero-btns{flex-direction:column;gap:12px;width:100%}
+          .btn-green, .btn-ghost{width:100%}
+          .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:32px}
+          .stat-badge{width:100%;justify-content:center;font-size:11px;padding:8px 4px;white-space:normal;text-align:center}
+          .mockup{max-width:100%}
+          .mockup-body{height:320px}
+          .sec{padding:80px 20px}
+          .sec-h2{font-size:32px}
+          .sec-sub{font-size:16px;margin-bottom:32px}
           .bento{grid-template-columns:1fr}
-          .footer{flex-direction:column;text-align:center;justify-content:center}
+          .plan{padding:32px 24px}
           .plan.pro{transform:none}
+          .cta-wrapper{padding:80px 20px}
+          .footer{padding:40px 20px;gap:24px}
+          .footer-links{flex-direction:column;gap:16px;align-items:center}
         }
       `}</style>
 

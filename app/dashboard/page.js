@@ -818,7 +818,7 @@ export default function Dashboard() {
   const isLimitReached = patients.length >= limit
   const trialEnd = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
   const daysLeft = trialEnd ? Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)) : 0
-  const showTrialWarning = clinic?.subscription_status === 'trialing' && trialEnd && daysLeft <= 3 && daysLeft >= 0
+  const showTrialWarning = clinic?.subscription_status === 'trialing' && trialEnd && daysLeft >= 0
   const isTrialExpired = clinic?.subscription_status === 'trialing' && trialEnd && daysLeft < 0
 
   if (loading) return (
@@ -1246,8 +1246,8 @@ export default function Dashboard() {
 
       {/* ── Trial Warning Banner ── */}
       {showTrialWarning && (
-        <div style={{ background: '#DC2626', color: 'white', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative' }}>
-          ⚠️ Your Elite Free Trial ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'} on {trialEnd?.toLocaleDateString('en-IN')}. Your account will be paused (no auto-charge). <button onClick={() => router.push('/dashboard/billing')} style={{ background: 'white', color: '#DC2626', border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Choose a Plan</button>
+        <div style={{ background: daysLeft <= 3 ? '#DC2626' : 'rgba(124,58,237,0.15)', color: daysLeft <= 3 ? 'white' : '#C4B5FD', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative', borderBottom: daysLeft <= 3 ? 'none' : '1px solid rgba(124,58,237,0.3)' }}>
+          {daysLeft <= 3 ? '⚠️ Your' : '✨ You are on the'} Elite Free Trial. Ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'} on {trialEnd?.toLocaleDateString('en-IN')}. <button onClick={() => router.push('/dashboard/billing')} style={{ background: daysLeft <= 3 ? 'white' : 'rgba(124,58,237,0.2)', color: daysLeft <= 3 ? '#DC2626' : '#fff', border: daysLeft <= 3 ? 'none' : '1px solid rgba(124,58,237,0.4)', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Choose a Plan</button>
         </div>
       )}
 

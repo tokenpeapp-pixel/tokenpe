@@ -48,6 +48,12 @@ export default function LoginPage() {
     const [regEmail, setRegEmail] = useState('')
     const [regPin, setRegPin] = useState('')
 
+    // OTP reset flow
+    const [otpToken, setOtpToken] = useState('')
+    const [otpCode, setOtpCode] = useState('')
+    const [newPin, setNewPin] = useState('')
+    const [confirmPin, setConfirmPin] = useState('')
+
     function generateRandomCode() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
         let code = ''
@@ -151,28 +157,63 @@ export default function LoginPage() {
         }
     }
 
-    async function handleForgotPin(e) {
+    async function handleSendOtp(e) {
         e.preventDefault()
         setError('')
         setSuccess('')
         setLoading(true)
-        
         try {
-            const res = await fetch('/api/auth/forgot-pin', {
+            const res = await fetch('/api/auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: loginEmail, phone: loginPhone })
             })
             const result = await res.json()
-            
+            if (!res.ok) {
+                setError(result.message || 'Failed to send OTP.')
+            } else {
+                setOtpToken(result.otpToken)
+                setMode('verify-otp')
+                setSuccess('OTP sent! Check your email.')
+            }
+        } catch (err) {
+            setError('Something went wrong. Please try again.')
+        }
+        setLoading(false)
+    }
+
+    async function handleResetPin(e) {
+        e.preventDefault()
+        setError('')
+        setSuccess('')
+        if (newPin !== confirmPin) {
+            setError('PINs do not match.')
+            return
+        }
+        if (newPin.length !== 4) {
+            setError('PIN must be exactly 4 digits.')
+            return
+        }
+        setLoading(true)
+        try {
+            const res = await fetch('/api/auth/reset-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ otpToken, otp: otpCode, newPin })
+            })
+            const result = await res.json()
             if (!res.ok) {
                 setError(result.message || 'Failed to reset PIN.')
             } else {
-                setSuccess(result.message)
+                setSuccess('✅ PIN updated! You can now log in.')
+                setOtpToken('')
+                setOtpCode('')
+                setNewPin('')
+                setConfirmPin('')
                 setTimeout(() => {
                     setMode('login')
                     setSuccess('')
-                }, 4000)
+                }, 2500)
             }
         } catch (err) {
             setError('Something went wrong. Please try again.')
@@ -467,7 +508,10 @@ export default function LoginPage() {
                             </button>
                         </form>
                     ) : mode === 'forgot' ? (
-                        <form onSubmit={handleForgotPin}>
+                        <form onSubmit={handleSendOtp}>
+                            <div style={{ background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#6d28d9', fontWeight: 500 }}>
+                                🔐 Enter your registered email and phone. We'll send a 6-digit OTP to your inbox.
+                            </div>
                             <div className="field">
                                 <label>Registered Email</label>
                                 <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
@@ -477,12 +521,35 @@ export default function LoginPage() {
                                 <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
                             </div>
                             <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
-                                {loading ? 'Sending...' : 'Reset PIN via WhatsApp →'}
+                                {loading ? 'Sending OTP...' : 'Send OTP to Email →'}
                             </button>
                             <div style={{ textAlign: 'center', marginTop: 16 }}>
-                                <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', fontSize: 13, color: '#64748b', cursor: 'pointer', fontWeight: 500 }}>
-                                    ← Back to Login
-                                </button>
+                                <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', fontSize: 13, color: '#64748b', cursor: 'pointer', fontWeight: 500 }}>← Back to Login</button>
+                            </div>
+                        </form>
+                    ) : mode === 'verify-otp' ? (
+                        <form onSubmit={handleResetPin}>
+                            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#16a34a', fontWeight: 500 }}>
+                                ✅ Check your email for the 6-digit OTP. It expires in 10 minutes.
+                            </div>
+                            <div className="field">
+                                <label>6-Digit OTP</label>
+                                <input value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="123456" required type="text" inputMode="numeric" maxLength={6} style={{ letterSpacing: 6, fontSize: 22, textAlign: 'center', fontWeight: 700 }} suppressHydrationWarning={true} />
+                            </div>
+                            <div className="field">
+                                <label>New 4-Digit PIN</label>
+                                <input value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
+                            </div>
+                            <div className="field">
+                                <label>Confirm New PIN</label>
+                                <input value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
+                            </div>
+                            <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
+                                {loading ? 'Updating PIN...' : 'Reset PIN →'}
+                            </button>
+                            <div style={{ textAlign: 'center', marginTop: 16, display: 'flex', gap: 16, justifyContent: 'center' }}>
+                                <button type="button" onClick={handleSendOtp} style={{ background: 'none', border: 'none', fontSize: 13, color: '#7C3AED', cursor: 'pointer', fontWeight: 600 }}>Resend OTP</button>
+                                <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', fontSize: 13, color: '#64748b', cursor: 'pointer', fontWeight: 500 }}>← Back to Login</button>
                             </div>
                         </form>
                     ) : (

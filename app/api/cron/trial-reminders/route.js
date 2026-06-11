@@ -11,7 +11,7 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 async function sendEmail(to, subject, html) {
   try {
     await resend.emails.send({
-      from: 'onboarding@resend.dev', // Must use this for unverified Resend free tier
+      from: 'TokenPe <support@tokenpe.online>',
       to,
       subject,
       html

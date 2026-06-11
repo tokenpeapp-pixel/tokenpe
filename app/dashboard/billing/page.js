@@ -152,6 +152,7 @@ export default function BillingPage() {
 
   const planId = clinic?.plan_id || 'starter'
   const isTrial = clinic?.subscription_status === 'trialing'
+  const isCancelPending = clinic?.subscription_status === 'cancel_at_period_end'
   const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
   const planName = planId === 'starter' ? 'Starter' : planId === 'pro' ? 'Pro' : 'Elite'
   const percentage = limit === Infinity ? 0 : Math.min((todayCount / limit) * 100, 100)
@@ -165,9 +166,9 @@ export default function BillingPage() {
     ? new Date(oldestClinic.trial_ends_at)
     : (oldestClinic?.created_at ? new Date(new Date(oldestClinic.created_at).getTime() + 14 * 24 * 60 * 60 * 1000) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
 
-  const daysLeft = isTrial
-    ? Math.max(0, Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)))
-    : null
+  const realDaysLeft = trialEnd ? Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)) : 0
+  const daysLeft = isTrial ? Math.max(0, realDaysLeft) : null
+  const isTrialExpired = clinic?.subscription_status === 'trialing' && trialEnd && realDaysLeft < 0
 
   const plans = [
     {

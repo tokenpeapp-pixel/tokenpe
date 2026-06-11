@@ -157,8 +157,8 @@ export default function BillingPage() {
   const percentage = limit === Infinity ? 0 : Math.min((todayCount / limit) * 100, 100)
 
   const userClinics = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]') : []
-  const oldestClinic = userClinics.length > 0 
-    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0]) 
+  const oldestClinic = userClinics.length > 0
+    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0])
     : clinic
 
   const trialEnd = oldestClinic?.trial_ends_at
@@ -480,10 +480,10 @@ export default function BillingPage() {
           <div onClick={e => e.stopPropagation()} style={{ background: "#0f172a", width: "100%", maxWidth: 440, borderRadius: 24, padding: "32px", position: "relative", margin: "auto", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", textAlign: 'center' }}>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 12 }}>Cancel Subscription</h2>
             <p style={{ color: "#94a3b8", marginBottom: 24, fontSize: 14 }}>We're sad to see you go! Your plan will instantly downgrade to Starter. Could you let us know why you're leaving? (Optional)</p>
-            
-            <select 
-              value={cancelReason} 
-              onChange={e => setCancelReason(e.target.value)} 
+
+            <select
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
               style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none', marginBottom: 24, fontSize: 14 }}
             >
               <option value="" style={{ color: 'black' }}>Select a reason...</option>
@@ -495,15 +495,15 @@ export default function BillingPage() {
             </select>
 
             <div style={{ display: 'flex', gap: 12 }}>
-              <button 
-                onClick={executeCancel} 
+              <button
+                onClick={executeCancel}
                 disabled={isCanceling}
                 style={{ flex: 1, padding: '12px', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: isCanceling ? 'not-allowed' : 'pointer', opacity: isCanceling ? 0.7 : 1 }}
               >
                 {isCanceling ? 'Canceling...' : 'Confirm Cancel'}
               </button>
-              <button 
-                onClick={() => setShowCancelModal(false)} 
+              <button
+                onClick={() => setShowCancelModal(false)}
                 disabled={isCanceling}
                 style={{ flex: 1, padding: '12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: isCanceling ? 'not-allowed' : 'pointer', opacity: isCanceling ? 0.7 : 1 }}
               >

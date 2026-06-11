@@ -91,10 +91,10 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
       setCodeError('Code must be 3–12 alphanumeric characters.')
       return
     }
-    
+
     const codeChanged = clean !== clinic?.code
     const addressChanged = addressInput !== clinic?.address
-    
+
     if (!codeChanged && !addressChanged) {
       setEditingCode(false)
       return
@@ -586,7 +586,7 @@ export default function Dashboard() {
   // ── Code Update Callback ─────────────────────────────────────
   function handleCodeUpdate(newCode) {
     setClinic(prev => ({ ...prev, code: newCode }))
-    
+
     // Sync the new code into the userClinics array for the branch switcher
     setUserClinics(prevClinics => {
       const updated = prevClinics.map(c => c.id === clinic.id ? { ...c, code: newCode } : c)
@@ -816,10 +816,14 @@ export default function Dashboard() {
   const planId = clinic?.plan_id || 'starter'
   const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
   const isLimitReached = patients.length >= limit
-  const trialEnd = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
+  const oldestClinic = userClinics?.length > 0 
+    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0]) 
+    : clinic
+
+  const trialEnd = oldestClinic?.trial_ends_at ? new Date(oldestClinic.trial_ends_at) : null
   const daysLeft = trialEnd ? Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)) : 0
-  const showTrialWarning = clinic?.subscription_status === 'trialing' && trialEnd && daysLeft >= 0
-  const isTrialExpired = clinic?.subscription_status === 'trialing' && trialEnd && daysLeft < 0
+  const showTrialWarning = oldestClinic?.subscription_status === 'trialing' && trialEnd && daysLeft <= 3 && daysLeft >= 0
+  const isTrialExpired = oldestClinic?.subscription_status === 'trialing' && trialEnd && daysLeft < 0
 
   if (loading) return (
     <div style={s.loadingScreen}>

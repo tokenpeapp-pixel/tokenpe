@@ -3,62 +3,167 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Global Reset & Rendering ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  /* Improve font rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* Smooth page transitions */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Make all buttons feel instantly responsive */
+/* ── Butter-Smooth Button Physics ───────────────────────────────────────── */
 button {
-  -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: opacity 0.1s ease, transform 0.1s ease;
-}
-button:active {
-  opacity: 0.8;
-  transform: scale(0.97);
+  will-change: transform;
+  transition: transform 0.18s var(--ease-spring), opacity 0.15s ease, box-shadow 0.18s ease;
+  cursor: pointer;
 }
 
-/* Hardware-accelerate all animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+button:active:not(:disabled) {
+  transform: scale(0.95) !important;
+  opacity: 0.88;
+}
+
+/* Primary action buttons — bigger bounce */
+.btn-primary, .btn-submit {
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease, background 0.2s ease !important;
+}
+.btn-primary:hover:not(:disabled), .btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35) !important;
+}
+.btn-primary:active:not(:disabled), .btn-submit:active:not(:disabled) {
+  transform: scale(0.96) translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2) !important;
+}
+
+/* ── Scroll-Reveal Utility ──────────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+  will-change: opacity, transform;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.08s; }
+.reveal-delay-2 { transition-delay: 0.16s; }
+.reveal-delay-3 { transition-delay: 0.24s; }
+.reveal-delay-4 { transition-delay: 0.32s; }
+.reveal-delay-5 { transition-delay: 0.40s; }
+
+/* ── Page Entry Animations ──────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.fade-in {
-  animation: fadeIn 0.18s ease forwards;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  50%       { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.08); }
 }
 
-/* Smooth scrolling everywhere */
-html {
-  scroll-behavior: smooth;
+.animate-fade-up    { animation: fadeUp 0.5s var(--ease-out) both; }
+.animate-fade-in    { animation: fadeIn 0.35s ease both; }
+.animate-scale-in   { animation: scaleIn 0.4s var(--ease-spring) both; }
+.animate-slide-right{ animation: slideRight 0.4s var(--ease-out) both; }
+.animate-slide-down { animation: slideDown 0.25s var(--ease-out) both; }
+
+.animate-delay-1 { animation-delay: 0.06s; }
+.animate-delay-2 { animation-delay: 0.12s; }
+.animate-delay-3 { animation-delay: 0.18s; }
+.animate-delay-4 { animation-delay: 0.24s; }
+.animate-delay-5 { animation-delay: 0.30s; }
+.animate-delay-6 { animation-delay: 0.36s; }
+
+/* ── Hover Glow Cards ───────────────────────────────────────────────────── */
+.hover-card {
+  transition: transform 0.25s var(--ease-spring), box-shadow 0.25s ease, border-color 0.25s ease !important;
+  will-change: transform;
+}
+.hover-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(124, 58, 237, 0.15) !important;
 }
 
-/* Skeleton loader pulse */
+/* ── Input Focus Pulse ──────────────────────────────────────────────────── */
+input:focus, textarea:focus, select:focus {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* ── Skeleton Shimmer ───────────────────────────────────────────────────── */
 @keyframes shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 800px 100%;
-  animation: shimmer 1.2s infinite linear;
+  background: linear-gradient(90deg, #1e1e2e 25%, #2a2a3e 50%, #1e1e2e 75%);
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
   border-radius: 8px;
+}
+
+/* ── Smooth page mount (wraps layout children) ──────────────────────────── */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: pageFadeIn 0.35s var(--ease-out) both;
+}
+
+/* ── Spinner ────────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2.5px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ── Reduce motion for accessibility ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
 }

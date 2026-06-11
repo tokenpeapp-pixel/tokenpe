@@ -198,10 +198,10 @@ export default function CRMPage() {
           <p className="text-[#94A3B8] text-sm leading-relaxed mb-6">
             Patient CRM and Smart Follow-ups are available to Pro and Elite plan members. Upgrade to engage your patients!
           </p>
-          <button onClick={() => router.push('/dashboard/billing')} className="w-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] text-black py-3 rounded-xl font-black mb-3 transition hover:scale-105">
+          <button onClick={() => router.push('/dashboard/billing')} className="w-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] text-black py-3 rounded-xl font-black mb-3">
             Upgrade Plan
           </button>
-          <button onClick={() => router.push('/dashboard')} className="w-full bg-transparent text-[#94A3B8] py-3 rounded-xl font-bold hover:text-white transition">
+          <button onClick={() => router.push('/dashboard')} className="w-full bg-transparent text-[#94A3B8] py-3 rounded-xl font-bold hover:text-white">
             Back to Dashboard
           </button>
         </div>
@@ -213,7 +213,7 @@ export default function CRMPage() {
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans pb-20">
       <div className="bg-[#0F172A] text-white px-4 py-6 sm:px-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition">
+          <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center">
             ←
           </button>
           <div>
@@ -242,13 +242,13 @@ export default function CRMPage() {
 
         <div className="space-y-8">
           {/* Welcome Message */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden hover-card">
             {!isEliteOrTrial && (
               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
                 <div className="text-3xl mb-2">🥇</div>
                 <h3 className="text-lg font-black text-[#0F172A] mb-2">Elite Feature</h3>
                 <p className="text-[#64748B] text-sm mb-4 font-medium">Upgrade to Elite to set a personalized WhatsApp welcome message.</p>
-                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#0F172A] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition hover:scale-105">Upgrade to Elite</button>
+                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#0F172A] text-white px-6 py-2.5 rounded-xl font-bold text-sm">Upgrade to Elite</button>
               </div>
             )}
             <h2 className="text-lg font-black mb-2">Personalized Welcome Message</h2>
@@ -265,7 +265,7 @@ export default function CRMPage() {
               <button 
                 onClick={saveWelcomeMessage}
                 disabled={savingWelcome}
-                className={`bg-[#7C3AED] text-white px-6 py-2.5 rounded-xl font-bold transition ${savingWelcome ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#6D28D9]'}`}
+                className={`bg-[#7C3AED] text-white px-6 py-2.5 rounded-xl font-bold ${savingWelcome ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#6D28D9]'}`}
               >
                 {savingWelcome ? 'Saving...' : 'Save Welcome Message'}
               </button>
@@ -274,13 +274,13 @@ export default function CRMPage() {
           </div>
 
           {/* Broadcasts */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden hover-card">
             {!isEliteOrTrial && (
               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
                 <div className="text-3xl mb-2">🚀</div>
                 <h3 className="text-lg font-black text-[#0F172A] mb-2">Elite Feature</h3>
                 <p className="text-[#64748B] text-sm mb-4 font-medium">Upgrade to Elite to send mass WhatsApp broadcasts to all your patients.</p>
-                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#0F172A] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition hover:scale-105">Upgrade to Elite</button>
+                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#0F172A] text-white px-6 py-2.5 rounded-xl font-bold text-sm">Upgrade to Elite</button>
               </div>
             )}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-5">
@@ -315,7 +315,7 @@ export default function CRMPage() {
               <button 
                 onClick={sendBroadcast}
                 disabled={sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)}
-                className={`bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold transition flex items-center justify-center ${(sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#059669]'}`}
+                className={`bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center ${(sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#059669]'}`}
               >
                 {sendingBroadcast ? 'Sending...' : '📢 Send Broadcast'}
               </button>
@@ -330,7 +330,7 @@ export default function CRMPage() {
           </div>
 
           {/* Smart Follow-ups */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9]">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
             <h2 className="text-lg font-black mb-2">Smart Patient Follow-ups</h2>
             <p className="text-[#64748B] text-sm mb-6">Automate your patient retention with intelligent WhatsApp reminders.</p>
 
@@ -360,7 +360,7 @@ export default function CRMPage() {
           </div>
 
           {/* Patient Feedback */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9]">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
               <div>
                 <h2 className="text-lg font-black mb-2">Patient Feedback</h2>

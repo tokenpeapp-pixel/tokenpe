@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
@@ -7,6 +7,16 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const go = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
+
+  // Scroll-reveal: observe elements with .reveal class
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } }),
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+    );
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <>
@@ -20,8 +30,9 @@ export default function LandingPage() {
         .nav-links{display:flex;gap:32px;align-items:center}
         .nl{color:rgba(255,255,255,0.55);font-size:14px;font-weight:500;cursor:pointer;transition:color .15s;text-decoration:none}
         .nl:hover{color:#fff}
-        .nav-btn{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;box-shadow:0 4px 20px rgba(124,58,237,0.4);transition:opacity .2s,transform .15s}
-        .nav-btn:hover{opacity:.9;transform:translateY(-1px)}
+        .nav-btn{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;box-shadow:0 4px 20px rgba(124,58,237,0.4);transition:transform 0.2s cubic-bezier(0.16,1,0.3,1),box-shadow 0.2s ease,opacity 0.15s;will-change:transform}
+        .nav-btn:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(124,58,237,0.55)}
+        .nav-btn:active{transform:scale(0.95)}
         .hamburger{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer}
         .mmenu{display:none;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(8,8,24,0.97);backdrop-filter:blur(20px);z-index:199;border-bottom:1px solid rgba(255,255,255,0.08)}
         .mmenu.open{display:flex}
@@ -41,10 +52,12 @@ export default function LandingPage() {
         .grad-text{background:linear-gradient(135deg,#7C3AED,#06B6D4,#10B981);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
         .hero-sub{color:rgba(255,255,255,0.5);font-size:clamp(15px,2.2vw,20px);max-width:560px;line-height:1.7;margin:0 auto 40px;position:relative;z-index:1}
         .hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1;margin-bottom:16px}
-        .btn-hero-primary{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;padding:16px 36px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;border:none;box-shadow:0 8px 32px rgba(124,58,237,0.45);transition:transform .15s,box-shadow .2s}
-        .btn-hero-primary:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(124,58,237,0.55)}
-        .btn-hero-ghost{background:rgba(255,255,255,0.07);color:#fff;padding:16px 36px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,0.15);transition:background .15s,transform .15s;backdrop-filter:blur(8px)}
-        .btn-hero-ghost:hover{background:rgba(255,255,255,0.12);transform:translateY(-3px)}
+        .btn-hero-primary{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;padding:16px 36px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;border:none;box-shadow:0 8px 32px rgba(124,58,237,0.45);transition:transform 0.22s cubic-bezier(0.16,1,0.3,1),box-shadow 0.22s ease;will-change:transform}
+        .btn-hero-primary:hover{transform:translateY(-4px);box-shadow:0 20px 56px rgba(124,58,237,0.6)}
+        .btn-hero-primary:active{transform:scale(0.96)}
+        .btn-hero-ghost{background:rgba(255,255,255,0.07);color:#fff;padding:16px 36px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,0.15);transition:background 0.2s,transform 0.22s cubic-bezier(0.16,1,0.3,1);backdrop-filter:blur(8px);will-change:transform}
+        .btn-hero-ghost:hover{background:rgba(255,255,255,0.13);transform:translateY(-4px)}
+        .btn-hero-ghost:active{transform:scale(0.96)}
         .hero-note{color:rgba(255,255,255,0.25);font-size:12px;position:relative;z-index:1}
         .hero-note span{margin:0 8px}
 
@@ -64,9 +77,9 @@ export default function LandingPage() {
         .sec-h2{font-size:clamp(28px,4.5vw,48px);font-weight:900;letter-spacing:-1.5px;margin-bottom:14px;color:#0f172a}
         .sec-sub{color:#64748b;font-size:16px;line-height:1.7;max-width:520px;margin-bottom:60px}
         .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
-        .feat-card{background:#fff;border:1px solid #F1F5F9;border-radius:20px;padding:28px;transition:all .25s;position:relative;overflow:hidden}
+        .feat-card{background:#fff;border:1px solid #F1F5F9;border-radius:20px;padding:28px;transition:transform 0.28s cubic-bezier(0.16,1,0.3,1),box-shadow 0.28s ease,border-color 0.2s;position:relative;overflow:hidden;will-change:transform}
         .feat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(6,182,212,0.04));opacity:0;transition:opacity .25s}
-        .feat-card:hover{border-color:rgba(124,58,237,0.25);box-shadow:0 20px 60px rgba(124,58,237,0.08);transform:translateY(-4px)}
+        .feat-card:hover{border-color:rgba(124,58,237,0.3);box-shadow:0 24px 64px rgba(124,58,237,0.12);transform:translateY(-6px)}
         .feat-card:hover::before{opacity:1}
         .feat-ico{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
         .feat-title{font-size:15px;font-weight:800;color:#0f172a;margin-bottom:8px}
@@ -78,7 +91,8 @@ export default function LandingPage() {
         .how-sec .sec-h2{color:#fff}
         .how-sec .sec-sub{color:rgba(255,255,255,0.45)}
         .steps{display:flex;flex-direction:column;margin-top:50px}
-        .step{display:flex;gap:24px;padding:28px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+        .step{display:flex;gap:24px;padding:28px 0;border-bottom:1px solid rgba(255,255,255,0.06);transition:transform 0.25s cubic-bezier(0.16,1,0.3,1);will-change:transform}
+        .step:hover{transform:translateX(8px)}
         .step:last-child{border-bottom:none}
         .step-num{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#7C3AED,#4F46E5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:900;flex-shrink:0;box-shadow:0 8px 24px rgba(124,58,237,0.4)}
         .step-title{color:#fff;font-size:16px;font-weight:700;margin-bottom:6px}
@@ -87,9 +101,10 @@ export default function LandingPage() {
         /* PRICING */
         .pricing-sec{padding:100px 24px;background:#fafbff}
         .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:50px;max-width:900px;margin-left:auto;margin-right:auto}
-        .plan{background:#fff;border:1.5px solid #E2E8F0;border-radius:24px;padding:32px 28px;display:flex;flex-direction:column;gap:20px;transition:all .25s;position:relative}
-        .plan:hover{box-shadow:0 24px 64px rgba(0,0,0,0.08);transform:translateY(-4px)}
+        .plan{background:#fff;border:1.5px solid #E2E8F0;border-radius:24px;padding:32px 28px;display:flex;flex-direction:column;gap:20px;transition:transform 0.28s cubic-bezier(0.16,1,0.3,1),box-shadow 0.28s ease;position:relative;will-change:transform}
+        .plan:hover{box-shadow:0 28px 72px rgba(0,0,0,0.1);transform:translateY(-6px)}
         .plan.hot{border:2px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#7C3AED,#06B6D4) border-box;box-shadow:0 16px 48px rgba(124,58,237,0.15)}
+        .plan.hot:hover{box-shadow:0 28px 80px rgba(124,58,237,0.3);transform:translateY(-8px)}
         .plan-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;padding:5px 20px;border-radius:100px;font-size:11px;font-weight:700;white-space:nowrap}
         .plan-name{font-size:16px;font-weight:800;color:#0f172a}
         .plan-desc{font-size:12px;color:#94a3b8;margin-top:2px}
@@ -98,17 +113,19 @@ export default function LandingPage() {
         .plan-feats{display:flex;flex-direction:column;gap:10px;flex:1}
         .pf{font-size:13px;color:#475569;display:flex;align-items:center;gap:10px}
         .pf-check{color:#7C3AED;font-weight:900;font-size:14px}
-        .plan-btn{width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;box-shadow:0 4px 20px rgba(124,58,237,0.3);transition:opacity .2s,transform .15s}
-        .plan-btn:hover{opacity:.9;transform:translateY(-2px)}
+        .plan-btn{width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;box-shadow:0 4px 20px rgba(124,58,237,0.3);transition:transform 0.2s cubic-bezier(0.16,1,0.3,1),box-shadow 0.2s ease;will-change:transform}
+        .plan-btn:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(124,58,237,0.45)}
+        .plan-btn:active{transform:scale(0.96)}
         .plan-btn.ghost{background:#F8FAFC;color:#7C3AED;box-shadow:none;border:1.5px solid #E2E8F0}
 
         /* CTA */
         .cta-sec{padding:100px 24px;text-align:center;background:linear-gradient(135deg,#080818 0%,#1a0b3b 50%,#080818 100%);position:relative;overflow:hidden}
-        .cta-orb{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,0.3) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+        .cta-orb{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,0.3) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:pulse-glow 3s ease-in-out infinite}
         .cta-h2{color:#fff;font-size:clamp(32px,5vw,56px);font-weight:900;letter-spacing:-2px;margin-bottom:16px;position:relative;z-index:1}
         .cta-sub{color:rgba(255,255,255,0.5);font-size:16px;line-height:1.7;margin-bottom:36px;max-width:440px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
-        .cta-btn{position:relative;z-index:1;display:inline-block;background:linear-gradient(135deg,#7C3AED,#06B6D4);color:#fff;padding:18px 48px;border-radius:16px;font-size:17px;font-weight:800;cursor:pointer;border:none;box-shadow:0 12px 40px rgba(124,58,237,0.5);transition:transform .15s,box-shadow .2s}
-        .cta-btn:hover{transform:translateY(-3px);box-shadow:0 20px 60px rgba(124,58,237,0.6)}
+        .cta-btn{position:relative;z-index:1;display:inline-block;background:linear-gradient(135deg,#7C3AED,#06B6D4);color:#fff;padding:18px 48px;border-radius:16px;font-size:17px;font-weight:800;cursor:pointer;border:none;box-shadow:0 12px 40px rgba(124,58,237,0.5);transition:transform 0.22s cubic-bezier(0.16,1,0.3,1),box-shadow 0.22s ease;will-change:transform}
+        .cta-btn:hover{transform:translateY(-4px);box-shadow:0 24px 64px rgba(124,58,237,0.65)}
+        .cta-btn:active{transform:scale(0.96)}
 
         /* FOOTER */
         .footer{background:#06060f;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;border-top:1px solid rgba(255,255,255,0.05)}
@@ -157,14 +174,14 @@ export default function LandingPage() {
       {/* HERO */}
       <section className="hero">
         <div className="orb1" /><div className="orb2" /><div className="orb3" />
-        <div className="hero-badge"><span className="badge-dot" />🇮🇳 Built for India's 6 lakh+ clinics</div>
-        <h1 className="hero-h1">No more waiting.<br /><span className="grad-text">Queue smarter.</span></h1>
-        <p className="hero-sub">Replace your clinic's paper token chaos with a WhatsApp-based digital queue. Patients wait at home. Voice updates in 10 languages. Zero apps needed.</p>
-        <div className="hero-btns">
+        <div className="hero-badge animate-fade-up"><span className="badge-dot" />🇮🇳 Built for India's 6 lakh+ clinics</div>
+        <h1 className="hero-h1 animate-fade-up animate-delay-1">No more waiting.<br /><span className="grad-text">Queue smarter.</span></h1>
+        <p className="hero-sub animate-fade-up animate-delay-2">Replace your clinic's paper token chaos with a WhatsApp-based digital queue. Patients wait at home. Voice updates in 10 languages. Zero apps needed.</p>
+        <div className="hero-btns animate-fade-up animate-delay-3">
           <button className="btn-hero-primary" onClick={() => router.push("/login")}>Start Free Trial →</button>
           <button className="btn-hero-ghost" onClick={() => go("how")}>See how it works</button>
         </div>
-        <p className="hero-note"><span>No app for patients</span>·<span>Any phone</span>·<span>2 min setup</span></p>
+        <p className="hero-note animate-fade-up animate-delay-4"><span>No app for patients</span>·<span>Any phone</span>·<span>2 min setup</span></p>
       </section>
 
       {/* TRUST */}
@@ -185,9 +202,9 @@ export default function LandingPage() {
       {/* FEATURES */}
       <section id="features" className="sec">
         <div className="sec-inner">
-          <div className="sec-eye">Features</div>
-          <h2 className="sec-h2">Everything your clinic needs</h2>
-          <p className="sec-sub">One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.</p>
+          <div className="sec-eye reveal">Features</div>
+          <h2 className="sec-h2 reveal reveal-delay-1">Everything your clinic needs</h2>
+          <p className="sec-sub reveal reveal-delay-2">One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.</p>
           <div className="feat-grid">
             {[
               { ico: "🎙️", bg: "linear-gradient(135deg,#f0fdf4,#dcfce7)", title: "Voice in 10 Indian languages", desc: "Patients get WhatsApp voice updates in Hindi, Tamil, Telugu, Marathi, Gujarati and 5 more." },
@@ -196,8 +213,8 @@ export default function LandingPage() {
               { ico: "🔔", bg: "linear-gradient(135deg,#fff7ed,#ffedd5)", title: "Smart automatic alerts", desc: "10-away, 5-away, and your-turn alerts sent automatically. Zero manual effort needed." },
               { ico: "📅", bg: "linear-gradient(135deg,#f0f9ff,#e0f2fe)", title: "History by date", desc: "View complete patient records for any past date. Know daily volume at a glance." },
               { ico: "🔲", bg: "linear-gradient(135deg,#fff1f2,#ffe4e6)", title: "QR code + print card", desc: "Generate your clinic's unique QR. Download PNG or print a ready-to-display card." },
-            ].map(f => (
-              <div key={f.title} className="feat-card">
+            ].map((f, i) => (
+              <div key={f.title} className={`feat-card reveal reveal-delay-${(i % 3) + 1}`}>
                 <div className="feat-ico" style={{ background: f.bg }}>{f.ico}</div>
                 <div className="feat-title">{f.title}</div>
                 <div className="feat-desc">{f.desc}</div>
@@ -217,16 +234,16 @@ export default function LandingPage() {
       {/* HOW */}
       <section id="how" className="how-sec">
         <div className="how-inner">
-          <div className="sec-eye">How it works</div>
-          <h2 className="sec-h2">Up and running in 3 steps</h2>
-          <p className="sec-sub">No IT team needed. No hardware. No complexity.</p>
+          <div className="sec-eye reveal">How it works</div>
+          <h2 className="sec-h2 reveal reveal-delay-1">Up and running in 3 steps</h2>
+          <p className="sec-sub reveal reveal-delay-2">No IT team needed. No hardware. No complexity.</p>
           <div className="steps">
             {[
               { n: "1", t: "Register your clinic", d: "Sign up in 2 minutes with Google or your clinic code. Get your unique WhatsApp QR instantly." },
               { n: "2", t: "Display the QR at reception", d: "Print the card or show on a screen. Patients scan once and they're in the queue — no app needed." },
               { n: "3", t: "Call patients with one tap", d: "Press 'Call Next' on your dashboard. The patient gets a WhatsApp text + voice note in their language." },
-            ].map(s => (
-              <div key={s.n} className="step">
+            ].map((s, i) => (
+              <div key={s.n} className={`step reveal reveal-delay-${i + 1}`}>
                 <div className="step-num">{s.n}</div>
                 <div><div className="step-title">{s.t}</div><div className="step-desc">{s.d}</div></div>
               </div>
@@ -245,17 +262,17 @@ export default function LandingPage() {
       {/* PRICING */}
       <section id="pricing" className="pricing-sec">
         <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
-          <div className="sec-eye">Pricing</div>
-          <h2 className="sec-h2">Simple. Affordable.</h2>
-          <p className="sec-sub" style={{ margin: "0 auto 0" }}>Choose the plan that fits your clinic's needs.</p>
+          <div className="sec-eye reveal">Pricing</div>
+          <h2 className="sec-h2 reveal reveal-delay-1">Simple. Affordable.</h2>
+          <p className="sec-sub reveal reveal-delay-2" style={{ margin: "0 auto 0" }}>Choose the plan that fits your clinic's needs.</p>
         </div>
         <div className="plans">
           {[
             { name: "Starter", desc: "Perfect for small clinics", price: "₹499", per: "/mo", feats: ["50 patients/day", "Standard WhatsApp Alerts", "Basic 7-day Analytics", "Auto-Generated Code"], hot: false },
             { name: "Pro", desc: "For busy clinics that want to look professional", price: "₹999", per: "/mo", feats: ["150 patients/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "Queue Pause & Smart Wait Time", "30-Day History & Heatmap"], hot: true },
             { name: "Elite", desc: "For hospitals, polyclinics & top doctors", price: "₹1999", per: "/mo", feats: ["Unlimited patients", "Multi-Clinic Management", "Monthly PDF Reports", "VIP WhatsApp Support", "CRM Broadcasts"], hot: false },
-          ].map(p => (
-            <div key={p.name} className={`plan${p.hot ? " hot" : ""}`}>
+          ].map((p, i) => (
+            <div key={p.name} className={`plan${p.hot ? " hot" : ""} reveal reveal-delay-${i + 1}`}>
               {p.hot && <div className="plan-badge">✦ Most Popular</div>}
               <div><div className="plan-name">{p.name}</div><div className="plan-desc">{p.desc}</div></div>
               <div className="plan-price">{p.price}<span>{p.per}</span></div>

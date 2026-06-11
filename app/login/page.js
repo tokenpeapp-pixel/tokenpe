@@ -246,9 +246,10 @@ export default function LoginPage() {
                     border: 1px solid rgba(255,255,255,0.08);
                     border-radius: 14px;
                     padding: 14px 18px;
-                    transition: background 0.2s, transform 0.2s;
+                    transition: background 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+                    will-change: transform;
                 }
-                .feature-item:hover { background: rgba(255,255,255,0.09); transform: translateX(4px); }
+                .feature-item:hover { background: rgba(255,255,255,0.1); transform: translateX(6px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
                 .feature-icon {
                     width: 36px; height: 36px; border-radius: 10px;
                     background: rgba(255,255,255,0.1);
@@ -280,11 +281,13 @@ export default function LoginPage() {
                     background: #fff; color: #0f172a;
                     font-size: 14px; font-weight: 600;
                     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-                    transition: all 0.2s; margin-bottom: 22px;
+                    transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease, background 0.15s ease; margin-bottom: 22px;
                     font-family: inherit;
+                    will-change: transform;
                 }
-                .btn-google:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-                .btn-google:disabled { opacity: 0.6; cursor: not-allowed; }
+                .btn-google:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: 0 6px 20px rgba(0,0,0,0.09); transform: translateY(-2px); }
+                .btn-google:active { transform: scale(0.97); }
+                .btn-google:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
                 .or-divider {
                     display: flex; align-items: center; gap: 12px;
@@ -327,9 +330,11 @@ export default function LoginPage() {
                     background: linear-gradient(135deg, #7C3AED, #4F46E5); color: #fff;
                     border: none; border-radius: 10px;
                     font-size: 15px; font-weight: 700; cursor: pointer;
-                    transition: all 0.2s; margin-top: 6px; font-family: inherit;
+                    transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease, background 0.2s ease; margin-top: 6px; font-family: inherit;
+                    will-change: transform;
                 }
-                .btn-submit:hover { background: linear-gradient(135deg, #6d28d9, #4338ca); box-shadow: 0 6px 20px rgba(124,58,237,0.3); transform: translateY(-1px); }
+                .btn-submit:hover:not(:disabled) { background: linear-gradient(135deg, #6d28d9, #4338ca); box-shadow: 0 10px 30px rgba(124,58,237,0.4); transform: translateY(-2px); }
+                .btn-submit:active:not(:disabled) { transform: scale(0.96); box-shadow: 0 3px 10px rgba(124,58,237,0.25); }
                 .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
                 .alert-error {
@@ -366,15 +371,15 @@ export default function LoginPage() {
                         Digital OPD queue management for modern clinics. No crowding. No confusion.
                     </p>
                     <div className="feature-list">
-                        <div className="feature-item">
+                        <div className="feature-item animate-slide-right animate-delay-2">
                             <div className="feature-icon">🎙️</div>
                             <span className="feature-text">Voice updates in 10 Indian languages</span>
                         </div>
-                        <div className="feature-item">
+                        <div className="feature-item animate-slide-right animate-delay-3">
                             <div className="feature-icon">💬</div>
                             <span className="feature-text">Patients join via WhatsApp — zero app needed</span>
                         </div>
-                        <div className="feature-item">
+                        <div className="feature-item animate-slide-right animate-delay-4">
                             <div className="feature-icon">🔔</div>
                             <span className="feature-text">Real-time notifications for every action</span>
                         </div>
@@ -386,7 +391,7 @@ export default function LoginPage() {
 
             {/* RIGHT PANEL */}
             <div className="right-panel">
-                <div className="form-box">
+                <div className="form-box animate-fade-up">
                     <div className="form-title">{mode === 'login' ? 'Welcome back' : 'New Clinic'}</div>
                     <div className="form-subtitle">
                         {mode === 'login' ? 'Sign in to your TokenPe dashboard' : 'Register your clinic and get started in 2 minutes'}

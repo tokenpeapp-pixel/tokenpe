@@ -304,7 +304,7 @@ export default function BillingPage() {
             const isLoading = upgrading === plan.tier
             const isDisabled = (isCurrent && !canReactivate) || !!upgrading
             return (
-              <div key={plan.tier} style={{ background: plan.popular ? 'linear-gradient(180deg,rgba(124,58,237,0.12) 0%,rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.02)', border: plan.popular ? '2px solid #7c3aed' : '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              <div key={plan.tier} className="hover-card" style={{ background: plan.popular ? 'linear-gradient(180deg,rgba(124,58,237,0.12) 0%,rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.02)', border: plan.popular ? '2px solid #7c3aed' : '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', position: 'relative' }}>
                 {plan.popular && <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: '#7c3aed', color: '#fff', padding: '4px 16px', borderRadius: 20, fontSize: 12, fontWeight: 800, letterSpacing: 1, whiteSpace: 'nowrap' }}>MOST POPULAR</div>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: 24 }}>{plan.emoji}</span>
@@ -325,7 +325,7 @@ export default function BillingPage() {
                 <button
                   onClick={() => (!isCurrent || canReactivate) && handleUpgrade(plan.tier)}
                   disabled={isDisabled}
-                  style={{ width: '100%', padding: '15px 24px', background: (isCurrent && !canReactivate) ? 'rgba(255,255,255,0.05)' : plan.btnColor, color: (isCurrent && !canReactivate) ? '#64748b' : plan.textColor, border: (isCurrent && !canReactivate) ? '1px solid rgba(255,255,255,0.1)' : 'none', borderRadius: 14, fontWeight: 800, fontSize: 15, cursor: (isCurrent && !canReactivate) ? 'default' : 'pointer', boxShadow: (isCurrent && !canReactivate) ? 'none' : plan.glow, opacity: upgrading && upgrading !== plan.tier ? 0.5 : 1, transition: 'transform 0.15s,box-shadow 0.15s' }}
+                  style={{ width: '100%', padding: '15px 24px', background: (isCurrent && !canReactivate) ? 'rgba(255,255,255,0.05)' : plan.btnColor, color: (isCurrent && !canReactivate) ? '#64748b' : plan.textColor, border: (isCurrent && !canReactivate) ? '1px solid rgba(255,255,255,0.1)' : 'none', borderRadius: 14, fontWeight: 800, fontSize: 15, cursor: (isCurrent && !canReactivate) ? 'default' : 'pointer', boxShadow: (isCurrent && !canReactivate) ? 'none' : plan.glow, opacity: upgrading && upgrading !== plan.tier ? 0.5 : 1 }}
                 >
                   {isLoading ? '⏳ Opening checkout...' : canReactivate ? '🔄 Reactivate Plan' : isCurrent ? '✓ Current Plan' : `Upgrade to ${plan.name}`}
                 </button>

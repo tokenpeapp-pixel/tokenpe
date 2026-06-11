@@ -352,7 +352,7 @@ export default function AnalyticsPage() {
         <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-2xl">🔒</div>
         <h3 className="text-xl font-bold text-[#0F172A] mb-2">Unlock {title}</h3>
         <p className="text-slate-500 mb-6 text-sm">Upgrade to the {planRequired} plan to access advanced analytics and grow your clinic.</p>
-        <button onClick={() => router.push('/dashboard/billing')} className="bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#059669] transition">
+        <button onClick={() => router.push('/dashboard/billing')} className="bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#059669]">
           Upgrade Now
         </button>
       </div>
@@ -374,7 +374,7 @@ export default function AnalyticsPage() {
       {/* HEADER */}
       <div className="bg-[#0F172A] text-white p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition">←</button>
+          <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center">←</button>
           <div>
             <div className="text-xs text-[#94A3B8] font-bold tracking-widest uppercase mb-1">Analytics Dashboard</div>
             <div className="text-2xl font-black">{clinic?.name}</div>
@@ -447,7 +447,7 @@ export default function AnalyticsPage() {
               </div>
               <button
                 onClick={applyCustomRange}
-                className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-5 py-2 rounded-lg font-bold text-sm transition whitespace-nowrap"
+                className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-5 py-2 rounded-lg font-bold text-sm whitespace-nowrap"
               >
                 Apply ✓
               </button>
@@ -468,19 +468,19 @@ export default function AnalyticsPage() {
         <div>
           <h2 className="text-xl font-black text-[#0F172A] mb-4">Today's Snapshot</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Patients Today</div>
               <div className="text-3xl font-black text-[#0F172A]">{todayTotal}</div>
             </div>
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Avg Wait Time</div>
               <div className="text-3xl font-black text-[#F59E0B]">{todayAvgWait}<span className="text-sm font-medium text-[#94A3B8] ml-1">min</span></div>
             </div>
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Completed</div>
               <div className="text-3xl font-black text-[#10B981]">{todayCompletedPct}%</div>
             </div>
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9]">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Skipped</div>
               <div className="text-3xl font-black text-[#EF4444]">{todaySkipped}</div>
             </div>
@@ -489,7 +489,7 @@ export default function AnalyticsPage() {
 
         {/* SEC 2 & 3: INSIGHTS & PERFORMANCE */}
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9]">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
             <h2 className="text-lg font-black text-[#0F172A] mb-6">Patient Insights</h2>
             <div className="space-y-5">
               <div className="flex justify-between items-center">
@@ -519,7 +519,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
             {isStarter && <LockCard title="Advanced Queue Analytics" planRequired="Pro" />}
             <div className={isStarter ? 'blur-sm select-none' : ''}>
               <h2 className="text-lg font-black text-[#0F172A] mb-6">Queue Performance</h2>
@@ -550,7 +550,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* SEC 4: HEATMAP */}
-        <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+        <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
           {isStarter && <LockCard title="Busy Hour Heatmap" planRequired="Pro" />}
           <div className={isStarter ? 'blur-sm select-none' : ''}>
             <h2 className="text-lg font-black text-[#0F172A] mb-6">Busy Hour Heatmap</h2>
@@ -590,7 +590,7 @@ export default function AnalyticsPage() {
 
         {/* SEC 5 & 6 */}
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
             {isStarter && <LockCard title="Language Analytics" planRequired="Pro" />}
             <div className={isStarter ? 'blur-sm select-none' : ''}>
               <h2 className="text-lg font-black text-[#0F172A] mb-6">Language Breakdown</h2>
@@ -611,7 +611,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
             {isStarter && <LockCard title="Monthly Comparison" planRequired="Pro" />}
             <div className={isStarter ? 'blur-sm select-none' : ''}>
               <h2 className="text-lg font-black text-[#0F172A] mb-6">Period Comparison</h2>
@@ -655,7 +655,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* SEC 7: FEEDBACK */}
-        <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden">
+        <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
           {!isElite && <LockCard title="Patient Feedback" planRequired="Elite" />}
           <div className={!isElite ? 'blur-sm select-none' : ''}>
             <h2 className="text-lg font-black text-[#0F172A] mb-6">Patient Feedback Summary</h2>
@@ -683,7 +683,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* SEC 8: AI INSIGHTS */}
-        <div className="relative bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-1 rounded-2xl shadow-xl overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-1 rounded-2xl shadow-xl overflow-hidden hover-card">
           {!isElite && <LockCard title="Smart AI Insights" planRequired="Elite" />}
           <div className={`bg-[#0F172A] rounded-xl p-6 ${!isElite ? 'blur-sm select-none' : ''}`}>
             <div className="flex items-center gap-3 mb-6">

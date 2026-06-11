@@ -1068,6 +1068,40 @@ export default function Dashboard() {
           }
         }
 
+        /* ── SMOOTH BUTTON PHYSICS (Dashboard-wide) ── */
+        .action-bar-responsive button,
+        .patient-card-actions button,
+        .hamburger-btn {
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                      box-shadow 0.2s ease,
+                      opacity 0.15s ease,
+                      background 0.15s ease !important;
+          will-change: transform;
+        }
+        .action-bar-responsive button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          filter: brightness(1.05);
+        }
+        .action-bar-responsive button:active:not(:disabled) {
+          transform: scale(0.94) translateY(0) !important;
+        }
+        .patient-card-actions button:hover:not(:disabled) {
+          transform: translateY(-1px);
+          filter: brightness(1.05);
+        }
+        .patient-card-actions button:active:not(:disabled) {
+          transform: scale(0.93) !important;
+        }
+        .hamburger-btn:active {
+          transform: scale(0.88) !important;
+        }
+        .dropdown-item {
+          transition: background 0.14s ease, color 0.14s ease, transform 0.18s cubic-bezier(0.16,1,0.3,1) !important;
+        }
+        .dropdown-item:active {
+          transform: scale(0.96) !important;
+        }
+
         /* DROPDOWN MENU STYLES */
         .dropdown-menu {
           position: fixed;

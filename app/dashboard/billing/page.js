@@ -245,19 +245,28 @@ export default function BillingPage() {
               <div style={{ fontSize: 13, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700, marginBottom: 8 }}>Current Plan</div>
               <div style={{ fontSize: 36, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 {planName}
-                {isTrial && (
+                {isTrial && !isTrialExpired && (
                   <span style={{ fontSize: 13, background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', padding: '4px 12px', borderRadius: 20, fontWeight: 800, letterSpacing: 0.5 }}>
                     🎁 FREE TRIAL — {daysLeft} days left
+                  </span>
+                )}
+                {isTrialExpired && (
+                  <span style={{ fontSize: 13, background: 'linear-gradient(135deg,#dc2626,#991b1b)', color: '#fff', padding: '4px 12px', borderRadius: 20, fontWeight: 800, letterSpacing: 0.5 }}>
+                    ⚠️ TRIAL EXPIRED
                   </span>
                 )}
                 {!isTrial && <span style={{ fontSize: 13, background: 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', padding: '4px 12px', borderRadius: 20, fontWeight: 700 }}>ACTIVE</span>}
               </div>
               <div style={{ color: '#cbd5e1', marginTop: 10, fontSize: 15, lineHeight: 1.7 }}>
-                {isTrial
-                  ? `Trial ends on ${trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Upgrade now to keep your features!`
-                  : clinic.current_period_end
-                    ? <>Next billing date: <strong style={{ color: '#a78bfa' }}>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
-                    : <span style={{ color: '#64748b', fontSize: 13 }}>⏳ Confirming billing date... (may take a few seconds)</span>}
+                {isTrialExpired
+                  ? <span style={{ color: '#f87171', fontWeight: 600 }}>Your free trial expired on {trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Please choose a paid plan below to restore access to your dashboard.</span>
+                  : isTrial
+                    ? `Trial ends on ${trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Upgrade now to keep your features!`
+                    : isCancelPending && clinic.current_period_end
+                      ? <span style={{ color: '#f87171' }}>⚠️ Cancellation scheduled — full access until <strong>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. No further charges.</span>
+                      : clinic.current_period_end
+                        ? <>Next billing date: <strong style={{ color: '#a78bfa' }}>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
+                        : <span style={{ color: '#64748b', fontSize: 13 }}>⏳ Confirming billing date... (may take a few seconds)</span>}
               </div>
             </div>
 

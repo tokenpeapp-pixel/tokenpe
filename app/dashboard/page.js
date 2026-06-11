@@ -819,11 +819,39 @@ export default function Dashboard() {
   const trialEnd = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
   const daysLeft = trialEnd ? Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)) : 0
   const showTrialWarning = clinic?.subscription_status === 'trialing' && trialEnd && daysLeft <= 3 && daysLeft >= 0
+  const isTrialExpired = clinic?.subscription_status === 'trialing' && trialEnd && daysLeft < 0
 
   if (loading) return (
     <div style={s.loadingScreen}>
       <div style={s.spinner} />
       <p style={{ color: '#64748B', marginTop: 16 }}>Loading TokenPe...</p>
+    </div>
+  )
+
+  // ── Trial Expired Lockout ───────────────────────────────────────────────
+  if (isTrialExpired) return (
+    <div style={{ minHeight: '100vh', background: '#0a0514', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #f59e0b, #d97706)' }} />
+        <div style={{ fontSize: 56, marginBottom: 24 }}>⏳</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Free Trial Ended</h1>
+        <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
+          We hope you loved TokenPe! Your 14-day Elite trial has expired. To continue using the dashboard and keep your clinic data safe, please choose a plan.
+        </p>
+        <button
+          onClick={() => router.push('/dashboard/billing')}
+          style={{ width: '100%', padding: '16px 24px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', marginBottom: 16, boxShadow: '0 8px 24px rgba(245,158,11,0.25)' }}
+        >
+          View Plans & Upgrade →
+        </button>
+        <button
+          onClick={logout}
+          style={{ width: '100%', padding: '12px 24px', background: 'transparent', color: '#64748b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+        >
+          Sign Out
+        </button>
+        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Need help? Email <a href="mailto:support@tokenpe.online" style={{ color: '#f59e0b' }}>support@tokenpe.online</a></p>
+      </div>
     </div>
   )
 

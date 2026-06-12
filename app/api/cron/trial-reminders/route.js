@@ -126,6 +126,26 @@ _Powered by TokenPe_`
 
         remindersSent.push({ clinic: clinic.name, type: 'trial_expiry', recommended: recommendedPlan, avgPerDay })
       }
+      // ── TODAY: Trial Ends Today (Email Only) ──
+      else if (daysLeft >= -0.5 && daysLeft <= 0.5) {
+        const emailHtml = `
+          <div style="font-family:Inter,sans-serif;max-width:540px;margin:auto;padding:32px;background:#0f172a;color:#e2e8f0;border-radius:16px;">
+            <img src="https://tokenpe.online/logo.svg" alt="TokenPe" style="height:36px;margin-bottom:24px;" />
+            <h2 style="color:#ef4444;font-size:22px;margin-bottom:8px;">Your Free Trial Ends TODAY! ⏳</h2>
+            <p style="color:#94a3b8;">Hi <strong style="color:#fff">${clinic.name}</strong>,</p>
+            <p>Your <strong>TokenPe Elite Free Trial</strong> officially ends <strong>today</strong>.</p>
+            <p>To avoid any interruption to your clinic's digital queue and AI voice alerts, please select a plan now.</p>
+            <div style="margin-top:24px;">
+              <a href="https://tokenpe.online/dashboard/billing" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;">
+                Upgrade Plan Now →
+              </a>
+            </div>
+            <p style="margin-top:24px;font-size:12px;color:#475569;">Questions? Email support@tokenpe.online</p>
+          </div>
+        `
+        await sendEmail(clinic.email, `⏳ Action Required: Your TokenPe Trial ends TODAY!`, emailHtml)
+        remindersSent.push({ clinic: clinic.name, type: 'trial_expiry_today' })
+      }
     }
 
     // ── 2. PAID PLAN RENEWAL REMINDERS ──────────────────────────────────────
@@ -179,6 +199,20 @@ _Powered by TokenPe_`
         }
 
         remindersSent.push({ clinic: clinic.name, type: 'plan_renewal', plan: planName })
+      }
+      // ── TODAY: Plan Renews Today (Email Only) ──
+      else if (daysToRenewal >= -0.5 && daysToRenewal <= 0.5) {
+        const planName = clinic.plan_id === 'elite' ? 'Elite' : clinic.plan_id === 'pro' ? 'Pro' : 'Starter'
+        const planPrice = clinic.plan_id === 'elite' ? '₹1999' : clinic.plan_id === 'pro' ? '₹999' : '₹499'
+        const emailHtml = `
+          <p>Hi <strong>${clinic.name}</strong>,</p>
+          <p>Your <strong>TokenPe ${planName} Plan</strong> is renewing <strong>TODAY</strong>.</p>
+          <p>💳 <strong>Amount: ${planPrice}/month</strong> is being charged to your saved payment method via Razorpay.</p>
+          <p><a href="https://tokenpe.online/dashboard/billing" style="background:#7C3AED;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;">Manage Subscription →</a></p>
+          <br><p style="color:#94a3b8;font-size:12px;">If you have questions, contact support@tokenpe.online</p>
+        `
+        await sendEmail(clinic.email, `🔄 Your TokenPe ${planName} Plan renews TODAY (${planPrice})`, emailHtml)
+        remindersSent.push({ clinic: clinic.name, type: 'plan_renewal_today', plan: planName })
       }
     }
 

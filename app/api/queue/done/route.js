@@ -59,7 +59,7 @@ _Powered by TokenPe_`
         if (planId === 'elite' || planId === 'pro' || clinic?.subscription_status === 'trialing') {
             after(async () => {
                 await new Promise(r => setTimeout(r, 2000))
-                await sendInteractiveRating(phone, clinicName)
+                await sendInteractiveRating(phone, clinicName, language || 'en')
             })
         }
 

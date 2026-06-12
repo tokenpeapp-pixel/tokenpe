@@ -42,7 +42,7 @@ export async function GET(req) {
 
         const { data: medsPatients } = await supabase
           .from('patients')
-          .select('phone, name')
+          .select('phone, name, language')
           .eq('clinic_id', clinic.id)
           .eq('date', dateStr3)
           .eq('status', 'done')
@@ -60,7 +60,7 @@ export async function GET(req) {
             
             // Send CRM Rating immediately after
             await new Promise(r => setTimeout(r, 200)) // delay between template and text
-            await sendCRMInteractiveRating(patient.phone, clinic.name)
+            await sendCRMInteractiveRating(patient.phone, clinic.name, patient.language || 'en')
             
             medsSent++
             await new Promise(r => setTimeout(r, 100))
@@ -76,7 +76,7 @@ export async function GET(req) {
 
         const { data: recallPatients } = await supabase
           .from('patients')
-          .select('phone, name')
+          .select('phone, name, language')
           .eq('clinic_id', clinic.id)
           .eq('date', dateStr90)
           .eq('status', 'done')
@@ -93,7 +93,7 @@ export async function GET(req) {
 
             // Send CRM Rating immediately after
             await new Promise(r => setTimeout(r, 200)) // delay between template and text
-            await sendCRMInteractiveRating(patient.phone, clinic.name)
+            await sendCRMInteractiveRating(patient.phone, clinic.name, patient.language || 'en')
 
             recallSent++
             await new Promise(r => setTimeout(r, 100))

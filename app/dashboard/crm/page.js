@@ -8,6 +8,8 @@ export default function CRMPage() {
   const [clinic, setClinic] = useState(null)
   const [loading, setLoading] = useState(true)
   const [totalPatients, setTotalPatients] = useState(0)
+  const [medsReachable, setMedsReachable] = useState(0)
+  const [recallReachable, setRecallReachable] = useState(0)
   const [avgRating, setAvgRating] = useState(0)
   const [recentFeedbacks, setRecentFeedbacks] = useState([])
   
@@ -36,6 +38,8 @@ export default function CRMPage() {
       const stats = await statsRes.json()
       if (stats.success) {
         setTotalPatients(stats.totalPatients || 0)
+        setMedsReachable(stats.medsReachable || 0)
+        setRecallReachable(stats.recallReachable || 0)
         setAvgRating(stats.avgRating || 0)
         setRecentFeedbacks(stats.recentFeedbacks || [])
       }
@@ -88,6 +92,8 @@ export default function CRMPage() {
     setFollowupRecall(finalClinic.smart_recall_enabled || false)
     setFollowupMeds(finalClinic.smart_meds_enabled || false)
     setTotalPatients(0)
+    setMedsReachable(0)
+    setRecallReachable(0)
     setAvgRating(0)
     setRecentFeedbacks([])
     
@@ -337,7 +343,10 @@ export default function CRMPage() {
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] gap-4">
                 <div>
-                  <h3 className="text-base font-bold text-[#0F172A] mb-1">90-Day Routine Recall 🔄</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-base font-bold text-[#0F172A]">90-Day Routine Recall 🔄</h3>
+                    <span className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">{recallReachable} Reachable Today</span>
+                  </div>
                   <p className="text-sm text-[#64748B]">Automatically messages patients 90 days after their visit to schedule a routine check-up.</p>
                 </div>
                 <label className="relative inline-block w-11 h-6 flex-shrink-0 cursor-pointer">
@@ -348,7 +357,10 @@ export default function CRMPage() {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] gap-4">
                 <div>
-                  <h3 className="text-base font-bold text-[#0F172A] mb-1">Medicine Reminders 💊</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-base font-bold text-[#0F172A]">Medicine Reminders 💊</h3>
+                    <span className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">{medsReachable} Reachable Today</span>
+                  </div>
                   <p className="text-sm text-[#64748B]">Sends a friendly "Did you start your medicines?" check-in 3 days post-visit.</p>
                 </div>
                 <label className="relative inline-block w-11 h-6 flex-shrink-0 cursor-pointer">

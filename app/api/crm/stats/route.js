@@ -28,7 +28,7 @@ export async function GET(req) {
     // We use supabaseAdmin to bypass RLS securely on the server
     const { data: patients, error } = await supabaseAdmin
       .from('patients')
-      .select('phone, crm_rating, feedback_text, feedback_at, name, date, completed_at')
+      .select('phone, crm_rating, feedback_text, feedback_at, name, date, completed_at, status')
       .eq('clinic_id', clinicId)
       
     if (error) {
@@ -39,6 +39,8 @@ export async function GET(req) {
       return NextResponse.json({
         success: true,
         totalPatients: 0,
+        medsReachable: 0,
+        recallReachable: 0,
         avgRating: 0,
         recentFeedbacks: []
       })
@@ -65,9 +67,23 @@ export async function GET(req) {
       })
       .slice(0, 10)
 
+    // Calculate reachable today for meds (3 days ago, status done)
+    const threeDaysAgo = new Date()
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+    const dateStr3 = threeDaysAgo.toISOString().split('T')[0]
+    const medsReachable = new Set(patients.filter(p => p.date === dateStr3 && p.status === 'done').map(p => p.phone).filter(Boolean)).size
+
+    // Calculate reachable today for recall (90 days ago, status done)
+    const ninetyDaysAgo = new Date()
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+    const dateStr90 = ninetyDaysAgo.toISOString().split('T')[0]
+    const recallReachable = new Set(patients.filter(p => p.date === dateStr90 && p.status === 'done').map(p => p.phone).filter(Boolean)).size
+
     return NextResponse.json({
       success: true,
       totalPatients: uniquePhones.size,
+      medsReachable,
+      recallReachable,
       avgRating,
       recentFeedbacks: feedbacks
     })

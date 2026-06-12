@@ -568,16 +568,23 @@ export default function AnalyticsPage() {
                   <div key={day} className="flex items-center mb-1 gap-1">
                     <div className="w-12 text-xs font-bold text-[#64748B]">{day}</div>
                     {heatmap[dIdx].map((count, hIdx) => {
-                      let opacity = 0.05
+                      let bgColor = '#F1F5F9' // 0 patients (gray)
                       if (heatmapMax > 0 && count > 0) {
-                        opacity = Math.max(0.15, count / heatmapMax)
+                        const ratio = count / heatmapMax
+                        if (ratio > 0.75) {
+                          bgColor = `rgba(239, 68, 68, ${Math.max(0.7, ratio)})` // Red for most
+                        } else if (ratio > 0.35) {
+                          bgColor = `rgba(16, 185, 129, ${Math.max(0.6, ratio)})` // Solid green for medium
+                        } else {
+                          bgColor = `rgba(16, 185, 129, 0.3)` // Light green for less
+                        }
                       }
                       return (
                         <div 
                           key={hIdx} 
                           title={`${count} patients`}
                           className="flex-1 h-8 rounded-sm transition-all hover:ring-2 hover:ring-[#0F172A]"
-                          style={{ backgroundColor: count === 0 ? '#F1F5F9' : `rgba(239, 68, 68, ${opacity})` }}
+                          style={{ backgroundColor: bgColor }}
                         ></div>
                       )
                     })}

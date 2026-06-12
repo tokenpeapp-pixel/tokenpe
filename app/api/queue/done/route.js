@@ -1,7 +1,7 @@
 // FILE: /app/api/queue/done/route.js
 // Marks patient as done, sends Consultation Complete text + voice note in parallel
 
-import { after } from 'next/server'
+
 import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone, sendInteractiveRating } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
@@ -57,10 +57,8 @@ _Powered by TokenPe_`
 
         // Send rating AFTER the consultation messages so it arrives last in WhatsApp
         if (planId === 'elite' || planId === 'pro' || clinic?.subscription_status === 'trialing') {
-            after(async () => {
-                await new Promise(r => setTimeout(r, 2000))
-                await sendInteractiveRating(phone, clinicName, language || 'en')
-            })
+            await new Promise(r => setTimeout(r, 1500))
+            await sendInteractiveRating(phone, clinicName, language || 'en')
         }
 
         return Response.json({ success: true, done: token })

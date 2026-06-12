@@ -35,8 +35,8 @@ export async function POST(req) {
         const { data, error } = await supabase
             .from('clinics')
             .select('*')
-            .eq('email', cleanEmail)
-            .eq('phone', cleanPhone)
+            .ilike('email', cleanEmail)
+            .like('phone', `%${cleanPhone.slice(-10)}`)
             .single()
 
         if (error || !data) {

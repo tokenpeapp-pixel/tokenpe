@@ -57,7 +57,9 @@ export async function POST(req) {
         const baseUrl = new URL(req.url).origin
 
         // ── MESSAGE / RATING RECEIVED ─────────────────────────────────────────────
-        const rawText = pick(body, 'text', 'rating', 'Rating', 'score', 'message', 'body') || (body.data?.message?.text) || (body.message?.text) || (body.message?.message) || ''
+        const interactiveTitle = body.data?.message?.interactive?.list_reply?.title || body.message?.interactive?.list_reply?.title || ''
+        const interactiveId = body.data?.message?.interactive?.list_reply?.id || body.message?.interactive?.list_reply?.id || ''
+        const rawText = interactiveTitle || interactiveId || pick(body, 'text', 'rating', 'Rating', 'score', 'message', 'body') || (body.data?.message?.text) || (body.message?.text) || (body.message?.message) || ''
         const textStr = String(rawText).trim()
         const textStrLower = textStr.toLowerCase()
         const starCount = (textStr.match(/⭐/g) || []).length

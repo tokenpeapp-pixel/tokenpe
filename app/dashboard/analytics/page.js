@@ -357,6 +357,23 @@ export default function AnalyticsPage() {
     </div>
   )
 
+  const getSnapshotTitle = () => {
+    if (dateRange === 'today') return "Today's Snapshot"
+    if (dateRange === '7') return "7 Days Snapshot"
+    if (dateRange === '30') return "30 Days Snapshot"
+    if (dateRange === '90') return "90 Days Snapshot"
+    if (dateRange === '180') return "6 Months Snapshot"
+    if (dateRange === '365') return "1 Year Snapshot"
+    if (dateRange === 'custom') {
+      if (!customStart || !customEnd) return "Custom Period Snapshot"
+      const formatOpts = { day: '2-digit', month: 'short', year: 'numeric' }
+      const s = new Date(customStart).toLocaleDateString('en-IN', formatOpts)
+      const e = new Date(customEnd).toLocaleDateString('en-IN', formatOpts)
+      return `${s} - ${e} Snapshot`
+    }
+    return 'Period Snapshot'
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
       <style>{`
@@ -465,7 +482,7 @@ export default function AnalyticsPage() {
         {/* SEC 1: PERIOD SNAPSHOT */}
         <div>
           <h2 className="text-xl font-black text-[#0F172A] mb-4">
-            {dateRange === 'today' ? "Today's Snapshot" : dateRange === 'custom' ? "Custom Period Snapshot" : `${dateRange} Days Snapshot`}
+            {getSnapshotTitle()}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">

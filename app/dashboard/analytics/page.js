@@ -554,8 +554,8 @@ export default function AnalyticsPage() {
           {isStarter && <LockCard title="Busy Hour Heatmap" planRequired="Pro" />}
           <div className={isStarter ? 'blur-sm select-none' : ''}>
             <h2 className="text-lg font-black text-[#0F172A] mb-6">Busy Hour Heatmap</h2>
-            <div className="overflow-x-auto">
-              <div className="min-w-[600px]">
+            <div className="overflow-x-auto pb-4 custom-scrollbar">
+              <div className="min-w-[800px] pr-4">
                 <div className="flex mb-2">
                   <div className="w-12"></div>
                   {Array(24).fill(0).map((_,i) => (

@@ -563,8 +563,8 @@ export default function LoginPage() {
                                 <input value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
-                                <label>Email</label>
-                                <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" suppressHydrationWarning={true} />
+                                <label>Registered Email *</label>
+                                <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
                             </div>
                             <div className="field">
                                 <label>Set 4-Digit PIN *</label>

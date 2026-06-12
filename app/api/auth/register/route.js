@@ -8,7 +8,7 @@ export async function POST(req) {
         const body = await req.json()
         const { name, phone, email, pin } = body
 
-        if (!name || !phone || !pin) {
+        if (!name || !phone || !email || !pin) {
             return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
         }
 
@@ -16,7 +16,7 @@ export async function POST(req) {
         const cleanPhone = validatePhone(phone)
         const cleanPin = validatePin(pin)
 
-        if (!cleanName || !cleanPhone || !cleanPin) {
+        if (!cleanName || !cleanPhone || !email || !cleanPin) {
             return Response.json({ success: false, message: 'Invalid input format.' }, { status: 400 })
         }
 
@@ -24,7 +24,7 @@ export async function POST(req) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
         let code = ''
         for (let j = 0; j < 6; j++) code += chars[Math.floor(Math.random() * chars.length)]
-        
+
         // Retry loop for unique code could be added, but 6 chars base32 is highly likely unique.
 
         // 14 day trial
@@ -33,11 +33,11 @@ export async function POST(req) {
 
         const { data, error } = await supabaseAdmin
             .from('clinics')
-            .insert({ 
-                name: cleanName, 
-                phone: cleanPhone, 
-                email, 
-                code, 
+            .insert({
+                name: cleanName,
+                phone: cleanPhone,
+                email,
+                code,
                 pin: cleanPin,
                 plan_id: 'elite',
                 subscription_status: 'trialing',

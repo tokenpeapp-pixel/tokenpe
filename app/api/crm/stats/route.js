@@ -59,7 +59,6 @@ export async function GET(req) {
 
     // Get recent feedback (sort by feedback_at, then completed_at, then date)
     const feedbacks = rated
-      .filter(p => p.feedback_text)
       .sort((a, b) => {
         const timeA = new Date(a.feedback_at || a.completed_at || a.date).getTime()
         const timeB = new Date(b.feedback_at || b.completed_at || b.date).getTime()

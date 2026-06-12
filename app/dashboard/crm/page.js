@@ -405,7 +405,9 @@ export default function CRMPage() {
                         <span className="font-bold text-[#0F172A]">{fb.name || 'Anonymous'}</span>
                         <span className="text-[#F59E0B] font-black tracking-widest">{'★'.repeat(fb.crm_rating)}{'☆'.repeat(5 - fb.crm_rating)}</span>
                       </div>
-                      <p className="text-[#475569] text-sm italic">"{fb.feedback_text}"</p>
+                      <p className={`text-sm italic ${fb.feedback_text ? 'text-[#475569]' : 'text-[#94A3B8]'}`}>
+                        {fb.feedback_text ? `"${fb.feedback_text}"` : 'Rated without comment'}
+                      </p>
                       <div className="text-xs text-[#94A3B8] mt-2 text-right">{formattedTime}</div>
                     </div>
                   )

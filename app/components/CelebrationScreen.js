@@ -77,7 +77,7 @@ export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
             {/* Glow blob */}
             <div style={{ position:'absolute', width:600, height:600, background:'radial-gradient(circle,rgba(124,58,237,0.3) 0%,transparent 70%)', borderRadius:'50%', top:'50%', left:'50%', transform:'translate(-50%,-50%)', zIndex:0, animation:'pulse 2s ease-in-out infinite' }} />
             {/* Card */}
-            <div style={{ position:'relative', zIndex:5, background:'rgba(255,255,255,0.05)', backdropFilter:'blur(20px)', border:'1px solid rgba(124,58,237,0.4)', borderRadius:32, padding:'48px 40px', maxWidth:500, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.5)', animation:'slideUp 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
+            <div style={{ position:'relative', zIndex:5, background:'rgba(255,255,255,0.05)', backdropFilter:'blur(20px)', border:'1px solid rgba(124,58,237,0.4)', borderRadius:32, padding:'40px 24px', maxWidth:500, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.5)', animation:'slideUp 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
                 <div style={{ fontSize:80, marginBottom:4, lineHeight:1, animation:'bounce 0.6s ease 0.3s both' }}>🎉</div>
                 <div style={{ fontSize:15, fontWeight:700, color:'#f59e0b', letterSpacing:2, textTransform:'uppercase', marginBottom:8 }}>🎊 Trial Activated 🎊</div>
                 <div style={{ fontSize:28, fontWeight:900, marginBottom:20, letterSpacing:'-0.5px', lineHeight:1.25 }}>
@@ -90,10 +90,9 @@ export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
                     <span style={{ fontSize:20 }}>🥇</span>
                     <span style={{ fontWeight:800, color:'#fbbf24', fontSize:15, letterSpacing:0.5 }}>14-DAY ELITE PLAN — FREE!</span>
                 </div>
-                <div style={{ color:'rgba(255,255,255,0.7)', lineHeight:1.9, marginBottom:28, fontSize:15 }}>
-                    You have <strong style={{ color:'#a78bfa' }}>unlimited patients</strong>, AI voice notes,<br />
-                    and all Elite features unlocked — free until&nbsp;
-                    <strong style={{ color:'#34d399' }}>
+                <div style={{ color:'rgba(255,255,255,0.7)', lineHeight:1.7, marginBottom:28, fontSize:15, padding:'0 10px' }}>
+                    You have <strong style={{ color:'#a78bfa' }}>unlimited patients</strong>, AI voice notes, 
+                    and all Elite features unlocked — free until <strong style={{ color:'#34d399', whiteSpace:'nowrap' }}>
                         {new Date(trialEnd).toLocaleDateString('en-IN',{ day:'numeric', month:'long', year:'numeric' })}
                     </strong>.
                 </div>

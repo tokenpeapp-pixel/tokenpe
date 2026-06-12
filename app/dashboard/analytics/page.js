@@ -465,7 +465,7 @@ export default function AnalyticsPage() {
         {/* SEC 1: PERIOD SNAPSHOT */}
         <div>
           <h2 className="text-xl font-black text-[#0F172A] mb-4">
-            {dateRange === 'today' ? "Today's Snapshot" : 'Period Snapshot'}
+            {dateRange === 'today' ? "Today's Snapshot" : dateRange === 'custom' ? "Custom Period Snapshot" : `${dateRange} Days Snapshot`}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
@@ -690,21 +690,21 @@ export default function AnalyticsPage() {
         </div>
 
         {/* SEC 8: AI INSIGHTS */}
-        <div className="relative bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-1 rounded-2xl shadow-xl overflow-hidden hover-card">
+        <div className="relative bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-1 rounded-2xl shadow-xl overflow-hidden hover-card print:bg-none print:shadow-none print:p-0 print:border print:border-[#E2E8F0] print:break-inside-avoid">
           {!isElite && <LockCard title="Smart AI Insights" planRequired="Elite" />}
-          <div className={`bg-[#0F172A] rounded-xl p-6 ${!isElite ? 'blur-sm select-none' : ''}`}>
+          <div className={`bg-[#0F172A] rounded-xl p-6 print:bg-white print:p-5 ${!isElite ? 'blur-sm select-none' : ''}`}>
             <div className="flex items-center gap-3 mb-6">
               <span className="text-2xl">🧠</span>
-              <h2 className="text-xl font-black text-white">TokenPe AI Insights</h2>
+              <h2 className="text-xl font-black text-white print:text-[#0F172A]">TokenPe AI Insights</h2>
             </div>
             {loadingAi ? (
-              <div className="text-[#94A3B8] font-semibold animate-pulse">Generating insights using Claude AI...</div>
+              <div className="text-[#94A3B8] font-semibold animate-pulse print:text-[#64748B]">Generating insights using TokenPe AI...</div>
             ) : aiInsights ? (
               <div className="grid md:grid-cols-3 gap-4">
                 {aiInsights.map((insight, i) => (
-                  <div key={i} className="bg-white/5 border border-white/10 p-5 rounded-xl backdrop-blur-md">
+                  <div key={i} className="bg-white/5 border border-white/10 p-5 rounded-xl backdrop-blur-md print:bg-[#F8FAFC] print:border-[#E2E8F0] print:break-inside-avoid print:backdrop-blur-none">
                     <div className="text-2xl mb-3">{insight.icon}</div>
-                    <p className="text-white text-sm font-semibold leading-relaxed">{insight.insight}</p>
+                    <p className="text-white text-sm font-semibold leading-relaxed print:text-[#0F172A]">{insight.insight}</p>
                     <div className={`mt-4 text-xs font-bold uppercase tracking-wider ${insight.type==='positive'?'text-[#10B981]':insight.type==='warning'?'text-[#F59E0B]':'text-[#38BDF8]'}`}>
                       {insight.type}
                     </div>
@@ -712,7 +712,7 @@ export default function AnalyticsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-[#94A3B8] font-semibold">Not enough data to generate insights yet.</div>
+              <div className="text-[#94A3B8] font-semibold print:text-[#64748B]">Not enough data to generate insights yet.</div>
             )}
           </div>
         </div>

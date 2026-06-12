@@ -288,8 +288,8 @@ export default function AnalyticsPage() {
   const daysInRange = dateRange === 'today' ? 1 : dateRange === 'custom' ? Math.max(1, Math.ceil((new Date(customEnd) - new Date(customStart)) / (1000 * 60 * 60 * 24)) + 1) : parseInt(dateRange)
   const avgPerDay = Math.round(rangeTotal / daysInRange)
 
-  // Section 4: Heatmap (Mon-Sun, 8AM-8PM)
-  const heatmap = Array(7).fill(0).map(() => Array(13).fill(0))
+  // Section 4: Heatmap (Mon-Sun, 24 Hours)
+  const heatmap = Array(7).fill(0).map(() => Array(24).fill(0))
   let heatmapMax = 0
   patients.forEach(p => {
     if(p.joined_at) {
@@ -297,10 +297,8 @@ export default function AnalyticsPage() {
       let day = d.getDay() - 1 // Mon=0, Sun=6
       if (day === -1) day = 6
       const hour = d.getHours()
-      if (hour >= 8 && hour <= 20) {
-        heatmap[day][hour-8]++
-        if (heatmap[day][hour-8] > heatmapMax) heatmapMax = heatmap[day][hour-8]
-      }
+      heatmap[day][hour]++
+      if (heatmap[day][hour] > heatmapMax) heatmapMax = heatmap[day][hour]
     }
   })
   const daysOfWeek = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
@@ -464,25 +462,27 @@ export default function AnalyticsPage() {
           <p className="text-[#64748B] font-semibold">Analytics Report • Generated {new Date().toLocaleDateString('en-IN')}</p>
         </div>
 
-        {/* SEC 1: TODAY SNAPSHOT */}
+        {/* SEC 1: PERIOD SNAPSHOT */}
         <div>
-          <h2 className="text-xl font-black text-[#0F172A] mb-4">Today's Snapshot</h2>
+          <h2 className="text-xl font-black text-[#0F172A] mb-4">
+            {dateRange === 'today' ? "Today's Snapshot" : 'Period Snapshot'}
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Patients Today</div>
-              <div className="text-3xl font-black text-[#0F172A]">{todayTotal}</div>
+              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Patients</div>
+              <div className="text-3xl font-black text-[#0F172A]">{rangeTotal}</div>
             </div>
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Avg Wait Time</div>
-              <div className="text-3xl font-black text-[#F59E0B]">{todayAvgWait}<span className="text-sm font-medium text-[#94A3B8] ml-1">min</span></div>
+              <div className="text-3xl font-black text-[#F59E0B]">{rangeAvgWait}<span className="text-sm font-medium text-[#94A3B8] ml-1">min</span></div>
             </div>
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Completed</div>
-              <div className="text-3xl font-black text-[#10B981]">{todayCompletedPct}%</div>
+              <div className="text-3xl font-black text-[#10B981]">{rangeTotal ? Math.round((rangeCompleted / rangeTotal) * 100) : 0}%</div>
             </div>
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Skipped</div>
-              <div className="text-3xl font-black text-[#EF4444]">{todaySkipped}</div>
+              <div className="text-3xl font-black text-[#EF4444]">{rangeSkipped}</div>
             </div>
           </div>
         </div>
@@ -558,9 +558,9 @@ export default function AnalyticsPage() {
               <div className="min-w-[600px]">
                 <div className="flex mb-2">
                   <div className="w-12"></div>
-                  {Array(13).fill(0).map((_,i) => (
+                  {Array(24).fill(0).map((_,i) => (
                     <div key={i} className="flex-1 text-center text-xs font-bold text-[#94A3B8]">
-                      {(i+8)%12||12}{i+8>=12?'p':'a'}
+                      {i === 0 ? '12a' : i < 12 ? i+'a' : i === 12 ? '12p' : (i-12)+'p'}
                     </div>
                   ))}
                 </div>
@@ -577,7 +577,7 @@ export default function AnalyticsPage() {
                           key={hIdx} 
                           title={`${count} patients`}
                           className="flex-1 h-8 rounded-sm transition-all hover:ring-2 hover:ring-[#0F172A]"
-                          style={{ backgroundColor: count === 0 ? '#F1F5F9' : `rgba(16, 185, 129, ${opacity})` }}
+                          style={{ backgroundColor: count === 0 ? '#F1F5F9' : `rgba(239, 68, 68, ${opacity})` }}
                         ></div>
                       )
                     })}

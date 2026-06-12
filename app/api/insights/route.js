@@ -20,10 +20,10 @@ export async function POST(req) {
             })
         }
 
-        const prompt = `You are a medical clinic analytics assistant for Indian clinics. Based on these stats:
+        const prompt = `You are a medical clinic analytics assistant for Indian clinics. Based strictly on the exact metrics provided in this JSON data:
 ${JSON.stringify(body, null, 2)}
 
-Give 3 short actionable insights in simple English that a doctor would find valuable. Each insight max 2 sentences.
+Provide 3 highly specific, actionable insights that explicitly mention the data numbers (e.g., mention the exact wait time in minutes, or the peak hour). Do NOT give generic advice like "consider adding staff" unless the wait times are extremely high (e.g. > 40 mins) or the volume is enormous. Keep each insight short, max 2 sentences.
 Format your response ONLY as a raw JSON array of objects with fields: "icon" (a single emoji), "insight" (the text), "type" (choose one: "positive", "warning", "tip"). No markdown, no extra text, just the JSON array.`
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -36,7 +36,7 @@ Format your response ONLY as a raw JSON array of objects with fields: "icon" (a 
                 model: 'llama-3.3-70b-versatile',
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 500,
-                temperature: 0.5
+                temperature: 0.7
             })
         })
 

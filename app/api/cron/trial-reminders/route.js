@@ -103,27 +103,6 @@ export async function GET(req) {
           emailHtml
         )
 
-        // WhatsApp — plain text, no template needed
-        if (clinic.phone) {
-          const waMsg = `⏳ *TokenPe Trial Ending in 3 Days!*
-
-Hi *${clinic.name}*,
-
-Your TokenPe Elite Free Trial ends on *${dateStr}*.
-
-🚫 *No automatic charge* — your account will simply be paused.
-
-${recommendedEmoji} Based on your *${avgPerDay} avg patients/day*, we recommend:
-
-*${recommendedPlan} Plan — ${recommendedPrice}/mo*
-
-👉 Choose your plan now:
-https://tokenpe.online/dashboard/billing
-
-_Powered by TokenPe_`
-          await sendText(cleanPhone(clinic.phone), waMsg)
-        }
-
         remindersSent.push({ clinic: clinic.name, type: 'trial_expiry', recommended: recommendedPlan, avgPerDay })
       }
       // ── TODAY: Trial Ends Today (Email Only) ──
@@ -180,23 +159,6 @@ _Powered by TokenPe_`
           `Your TokenPe ${planName} Plan renews in 3 days (${planPrice})`,
           emailHtml
         )
-
-        // WhatsApp — plain text, no template needed
-        if (clinic.phone) {
-          const waMsg = `🔔 *TokenPe ${planName} Plan Renewing in 3 Days*
-
-Hi *${clinic.name}*,
-
-Your *TokenPe ${planName} Plan (${planPrice}/mo)* will automatically renew on *${dateStr}*.
-
-💳 The amount will be charged to your saved payment method via Razorpay.
-
-Want to cancel before the renewal?
-👉 https://tokenpe.online/dashboard/billing
-
-_Powered by TokenPe_`
-          await sendText(cleanPhone(clinic.phone), waMsg)
-        }
 
         remindersSent.push({ clinic: clinic.name, type: 'plan_renewal', plan: planName })
       }

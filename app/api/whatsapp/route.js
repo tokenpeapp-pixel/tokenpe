@@ -90,13 +90,13 @@ export async function POST(req) {
                     const feedbackText = (crmMatch[2] || '').trim()
                     
                     // Find most recent patient (any status) to attach CRM feedback
-                    let { data: latestPatient } = await supabaseAdmin.from('patients').select('id').eq('phone', clean).order('joined_at', { ascending: false }).limit(1).single()
+                    let { data: latestPatient } = await supabaseAdmin.from('patients').select('id, crm_rating').eq('phone', clean).order('joined_at', { ascending: false }).limit(1).single()
                     if (!latestPatient) {
-                        const { data } = await supabaseAdmin.from('patients').select('id').eq('phone', tenDigit).order('joined_at', { ascending: false }).limit(1).single()
+                        const { data } = await supabaseAdmin.from('patients').select('id, crm_rating').eq('phone', tenDigit).order('joined_at', { ascending: false }).limit(1).single()
                         latestPatient = data
                     }
 
-                    if (latestPatient?.id) {
+                    if (latestPatient?.id && !latestPatient.crm_rating) {
                         await supabaseAdmin
                             .from('patients')
                             .update({ 
@@ -109,6 +109,8 @@ export async function POST(req) {
                         after(async () => {
                             await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your feedback for our recent update!`)
                         })
+                    } else if (latestPatient?.crm_rating) {
+                        console.log(`[whatsapp] ⏭️ CRM rating already exists for patient ${latestPatient.id}, ignoring duplicate.`)
                     }
                     return Response.json({ success: true, message: 'CRM Rating processed' }, { status: 200 })
                 }
@@ -140,6 +142,8 @@ export async function POST(req) {
                             const stars = '⭐'.repeat(rating)
                             await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!`)
                         })
+                    } else if (recent && recent.length > 0 && recent[0].rating) {
+                        console.log(`[whatsapp] ⏭️ Normal rating already exists for patient ${recent[0].id}, ignoring duplicate.`)
                     }
                     return Response.json({ success: true, message: 'Normal Rating processed' }, { status: 200 })
                 }

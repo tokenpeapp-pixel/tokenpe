@@ -587,11 +587,13 @@ export default function AnalyticsPage() {
                     {heatmap[dIdx].map((count, hIdx) => {
                       let bgColor = '#F1F5F9' // 0 patients (gray)
                       if (heatmapMax > 0 && count > 0) {
-                        const ratio = count / heatmapMax
-                        if (ratio > 0.75) {
-                          bgColor = `rgba(239, 68, 68, ${Math.max(0.7, ratio)})` // Red for most
-                        } else if (ratio > 0.35) {
-                          bgColor = `rgba(16, 185, 129, ${Math.max(0.6, ratio)})` // Solid green for medium
+                        const normalizedMax = Math.max(heatmapMax, 6) // Baseline of 6 patients (10 mins/patient) for peak volume
+                        const ratio = count / normalizedMax
+                        
+                        if (ratio >= 0.75) {
+                          bgColor = `rgba(239, 68, 68, ${Math.max(0.7, count / heatmapMax)})` // Red for most
+                        } else if (ratio >= 0.35) {
+                          bgColor = `rgba(16, 185, 129, ${Math.max(0.6, count / heatmapMax)})` // Solid green for medium
                         } else {
                           bgColor = `rgba(16, 185, 129, 0.3)` // Light green for less
                         }

@@ -57,7 +57,6 @@ _Powered by TokenPe_`
 
         // Send rating AFTER the consultation messages so it arrives last in WhatsApp
         if (planId === 'elite' || planId === 'pro' || clinic?.subscription_status === 'trialing') {
-            await new Promise(r => setTimeout(r, 1500))
             await sendInteractiveRating(phone, clinicName, language || 'en')
         }
 

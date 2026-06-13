@@ -51,8 +51,8 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Failed to create clinic. Phone may already be registered.' }, { status: 500 })
         }
 
-        // Send welcome email in background
-        sendWelcomeEmail(email, cleanName).catch(console.error)
+        // Send welcome email
+        await sendWelcomeEmail(email, cleanName)
 
         // Create JWT session
         const sessionPayload = {

@@ -33,8 +33,8 @@ export async function POST(req) {
         }
 
         if (isNewRegistration) {
-            // Send welcome email in background
-            sendWelcomeEmail(clinic.email, name || 'Doctor').catch(console.error)
+            // Send welcome email
+            await sendWelcomeEmail(clinic.email, name || 'Doctor')
         }
 
 

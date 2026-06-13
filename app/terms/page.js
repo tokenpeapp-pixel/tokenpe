@@ -87,14 +87,17 @@ export default function TermsOfService() {
           <section className="space-y-3">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-bold">4</span>
-              Refund and Service Cancellation Policy
+              Cancellation, Trials, and Strict No-Refund Policy
             </h2>
             <ul className="list-disc pl-6 space-y-2 text-slate-600 dark:text-zinc-300">
               <li>
-                <strong className="text-slate-800 dark:text-white">Cancellation</strong>: You can cancel your subscription at any time via your user dashboard. Your subscription will remain active until the end of your billing cycle.
+                <strong className="text-slate-800 dark:text-white">Cancellation</strong>: You can cancel your subscription at any time via your user dashboard.
               </li>
               <li>
-                <strong className="text-slate-800 dark:text-white">Refunds (7-Day Money Back)</strong>: We offer a full refund if you are unsatisfied with the service within the first 7 days of your initial purchase. To request a refund, email us at <a href="mailto:tokenpe.online@gmail.com" className="text-indigo-600 dark:text-indigo-400 hover:underline">tokenpe.online@gmail.com</a> with your registered account details. Refunds are processed within 5-7 business days to the original payment method. After 7 days, all purchases are non-refundable.
+                <strong className="text-slate-800 dark:text-white">14-Day Free Trial</strong>: New clinic registrations are automatically enrolled in a 14-Day Elite Plan trial. At the end of this trial period, if a paid subscription is not activated, access to the platform will be temporarily locked to protect your data until a plan is chosen.
+              </li>
+              <li>
+                <strong className="text-slate-800 dark:text-white">Strict No Refund Policy</strong>: All payments are non-refundable. We do not provide refunds or credits for any partial-month subscription periods or unused time. When you cancel your subscription, you will continue to have access to your paid features until the end of your current billing cycle, after which your account will be securely locked until a new plan is chosen.
               </li>
             </ul>
           </section>

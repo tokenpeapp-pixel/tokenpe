@@ -1,114 +1,81 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 
-// ─── CONFETTI ENGINE ──────────────────────────────────────────────────────────
-export function ConfettiCanvas() {
-    const canvasRef = useRef(null)
-    useEffect(() => {
-        const canvas = canvasRef.current
-        if (!canvas) return
-        const ctx = canvas.getContext('2d')
-        canvas.width = window.innerWidth
-        canvas.height = window.innerHeight
-        const COLORS = ['#7C3AED','#8B5CF6','#C4B5FD','#10B981','#F59E0B','#EF4444','#3B82F6','#EC4899','#fff']
-        const SHAPES = ['circle','rect','triangle']
-        const particles = []
-        const origins = [
-            { x: canvas.width * 0.3, y: canvas.height * 0.4 },
-            { x: canvas.width * 0.7, y: canvas.height * 0.35 },
-            { x: canvas.width * 0.5, y: canvas.height * 0.25 },
-        ]
-        for (let i = 0; i < 220; i++) {
-            const origin = origins[i % origins.length]
-            const angle = Math.random() * Math.PI * 2
-            const speed = 4 + Math.random() * 14
-            particles.push({
-                x: origin.x + (Math.random() - 0.5) * 60,
-                y: origin.y + (Math.random() - 0.5) * 60,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - 10,
-                color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
-                size: 6 + Math.random() * 10,
-                rotation: Math.random() * Math.PI * 2,
-                rotSpeed: (Math.random() - 0.5) * 0.2,
-                opacity: 1,
-                gravity: 0.35 + Math.random() * 0.2,
-            })
-        }
-        let animId
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height)
-            let alive = false
-            for (const p of particles) {
-                if (p.opacity <= 0) continue
-                alive = true
-                p.x += p.vx; p.y += p.vy; p.vy += p.gravity
-                p.vx *= 0.99; p.rotation += p.rotSpeed
-                if (p.y > canvas.height * 0.65) p.opacity -= 0.02
-                ctx.save()
-                ctx.globalAlpha = Math.max(0, p.opacity)
-                ctx.translate(p.x, p.y); ctx.rotate(p.rotation)
-                ctx.fillStyle = p.color
-                if (p.shape === 'circle') {
-                    ctx.beginPath(); ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2); ctx.fill()
-                } else if (p.shape === 'rect') {
-                    ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2)
-                } else {
-                    ctx.beginPath(); ctx.moveTo(0, -p.size / 2)
-                    ctx.lineTo(p.size / 2, p.size / 2); ctx.lineTo(-p.size / 2, p.size / 2)
-                    ctx.closePath(); ctx.fill()
-                }
-                ctx.restore()
-            }
-            if (alive) animId = requestAnimationFrame(draw)
-        }
-        draw()
-        return () => cancelAnimationFrame(animId)
-    }, [])
-    return <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:10 }} />
-}
-
-// ─── CELEBRATION SCREEN ───────────────────────────────────────────────────────
 export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
+    const [mounted, setMounted] = useState(false)
+    
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
     return (
-        <div style={{ position:'fixed', top:0, left:0, width:'100vw', height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%)', fontFamily:"'Inter','DM Sans',sans-serif", color:'#fff', flexDirection:'column', textAlign:'center', padding:24, zIndex:99999, overflow:'hidden' }}>
-            <ConfettiCanvas />
-            {/* Glow blob */}
-            <div style={{ position:'absolute', width:600, height:600, background:'radial-gradient(circle,rgba(124,58,237,0.3) 0%,transparent 70%)', borderRadius:'50%', top:'50%', left:'50%', transform:'translate(-50%,-50%)', zIndex:0, animation:'pulse 2s ease-in-out infinite' }} />
-            {/* Card */}
-            <div style={{ position:'relative', zIndex:5, background:'rgba(255,255,255,0.05)', backdropFilter:'blur(20px)', border:'1px solid rgba(124,58,237,0.4)', borderRadius:32, padding:'40px 24px', maxWidth:500, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.5)', animation:'slideUp 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
-                <div style={{ fontSize:80, marginBottom:4, lineHeight:1, animation:'bounce 0.6s ease 0.3s both' }}>🎉</div>
-                <div style={{ fontSize:15, fontWeight:700, color:'#f59e0b', letterSpacing:2, textTransform:'uppercase', marginBottom:8 }}>🎊 Trial Activated 🎊</div>
-                <div style={{ fontSize:28, fontWeight:900, marginBottom:20, letterSpacing:'-0.5px', lineHeight:1.25 }}>
-                    Welcome to TokenPe,<br />
-                    <span style={{ background:'linear-gradient(90deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
-                        {clinicName}!
-                    </span>
+        <div style={{ position:'fixed', top:0, left:0, width:'100vw', height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#000', backgroundImage:'radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.12), transparent 70%)', fontFamily:"'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", color:'#fff', flexDirection:'column', textAlign:'center', padding:24, zIndex:99999, overflow:'hidden' }}>
+            
+            {/* Ambient animated glow */}
+            <div style={{ position:'absolute', width:'80vw', height:'80vw', maxWidth:600, maxHeight:600, background:'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', top:'50%', left:'50%', transform:'translate(-50%,-50%)', filter:'blur(60px)', animation:'pulseGlow 4s ease-in-out infinite alternate', pointerEvents:'none' }} />
+
+            <div style={{ position:'relative', zIndex:10, width:'100%', maxWidth:420, opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(20px)', transition:'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                
+                {/* Premium Success Badge */}
+                <div style={{ margin:'0 auto 32px', width:72, height:72, borderRadius:20, background:'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(0,0,0,0))', border:'1px solid rgba(139, 92, 246, 0.3)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 40px rgba(139, 92, 246, 0.15)', position:'relative' }}>
+                    <div style={{ position:'absolute', inset:0, borderRadius:20, background:'inherit', filter:'blur(10px)', opacity:0.5 }} />
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position:'relative', zIndex:2 }}>
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#c4b5fd" />
+                                <stop offset="100%" stopColor="#8b5cf6" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M20 6L9 17l-5-5" strokeDasharray="30" strokeDashoffset={mounted ? 0 : 30} style={{ transition:'stroke-dashoffset 0.8s ease-out 0.2s' }} />
+                    </svg>
                 </div>
-                <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.08))', border:'1.5px solid rgba(245,158,11,0.5)', borderRadius:20, padding:'10px 24px', marginBottom:24 }}>
-                    <span style={{ fontSize:20 }}>🥇</span>
-                    <span style={{ fontWeight:800, color:'#fbbf24', fontSize:15, letterSpacing:0.5 }}>14-DAY ELITE PLAN — FREE!</span>
+
+                <div style={{ fontSize:13, fontWeight:600, color:'#a78bfa', letterSpacing:1.5, textTransform:'uppercase', marginBottom:12, animation:'fadeInUp 0.8s ease-out 0.3s both' }}>
+                    Welcome to TokenPe
                 </div>
-                <div style={{ color:'rgba(255,255,255,0.7)', lineHeight:1.7, marginBottom:28, fontSize:15, padding:'0 10px' }}>
-                    You have <strong style={{ color:'#a78bfa' }}>unlimited patients</strong>, AI voice notes, 
-                    and all Elite features unlocked — free until <strong style={{ color:'#34d399', whiteSpace:'nowrap' }}>
-                        {new Date(trialEnd).toLocaleDateString('en-IN',{ day:'numeric', month:'long', year:'numeric' })}
-                    </strong>.
-                </div>
-                <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap', marginBottom:32 }}>
-                    {['♾️ Unlimited Patients','🎙️ AI Voice Notes','🔑 Custom Clinic Code','⚡ Priority Support'].map(f => (
-                        <span key={f} style={{ background:'rgba(124,58,237,0.2)', border:'1px solid rgba(124,58,237,0.4)', borderRadius:20, padding:'5px 14px', fontSize:12, fontWeight:700, color:'#c4b5fd' }}>{f}</span>
+                
+                <h1 style={{ fontSize:32, fontWeight:700, margin:'0 0 16px', letterSpacing:'-0.03em', animation:'fadeInUp 0.8s ease-out 0.4s both', color:'#f8fafc' }}>
+                    Account Created
+                </h1>
+
+                <p style={{ fontSize:15, color:'#94a3b8', lineHeight:1.6, marginBottom:36, animation:'fadeInUp 0.8s ease-out 0.5s both', padding:'0 10px' }}>
+                    <strong style={{ color:'#e2e8f0', fontWeight:600 }}>{clinicName}</strong> is now live. We've unlocked the <strong style={{ color:'#c4b5fd', fontWeight:600 }}>Elite Plan</strong> for you, completely free until {new Date(trialEnd).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}.
+                </p>
+
+                <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:40, animation:'fadeInUp 0.8s ease-out 0.6s both' }}>
+                    {[
+                        { icon: '✓', text: 'Unlimited queue management' },
+                        { icon: '✓', text: 'AI voice announcements' },
+                        { icon: '✓', text: 'Automated WhatsApp notifications' }
+                    ].map((feature, i) => (
+                        <div key={i} style={{ display:'flex', alignItems:'center', gap:14, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:12, padding:'14px 18px', fontSize:14, color:'#cbd5e1', textAlign:'left' }}>
+                            <span style={{ color:'#a78bfa', fontWeight:'bold', fontSize:14 }}>{feature.icon}</span>
+                            <span style={{ fontWeight: 500 }}>{feature.text}</span>
+                        </div>
                     ))}
                 </div>
-                <button onClick={onDone} style={{ width:'100%', padding:'16px 24px', background:'linear-gradient(135deg,#7c3aed,#5b21b6)', border:'none', borderRadius:16, color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer', boxShadow:'0 8px 32px rgba(124,58,237,0.5)', letterSpacing:0.3 }}>
-                    🚀 Enter Your Dashboard
+
+                <button 
+                    onClick={onDone} 
+                    style={{ 
+                        width:'100%', padding:'16px', background:'#fff', color:'#000', border:'none', borderRadius:12, fontSize:15, fontWeight:600, cursor:'pointer', transition:'all 0.2s ease', animation:'fadeInUp 0.8s ease-out 0.7s both', outline:'none', boxShadow:'0 4px 14px 0 rgba(255,255,255,0.1)'
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,255,255,0.15)' }}
+                    onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(255,255,255,0.1)' }}
+                >
+                    Go to Dashboard
                 </button>
             </div>
+
             <style>{`
-                @keyframes slideUp { from{opacity:0;transform:translateY(40px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
-                @keyframes pulse { 0%,100%{opacity:0.6;transform:translate(-50%,-50%) scale(1)} 50%{opacity:1;transform:translate(-50%,-50%) scale(1.15)} }
-                @keyframes bounce { 0%{transform:scale(0) rotate(-20deg)} 60%{transform:scale(1.2) rotate(5deg)} 100%{transform:scale(1) rotate(0)} }
+                @keyframes fadeInUp { 
+                    from { opacity: 0; transform: translateY(15px); } 
+                    to { opacity: 1; transform: translateY(0); } 
+                }
+                @keyframes pulseGlow { 
+                    from { opacity: 0.5; } 
+                    to { opacity: 1; } 
+                }
             `}</style>
         </div>
     )

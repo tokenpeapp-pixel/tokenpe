@@ -35,22 +35,25 @@ export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
                 </div>
                 
                 <h1 style={{ fontSize:32, fontWeight:700, margin:'0 0 16px', letterSpacing:'-0.03em', animation:'fadeInUp 0.8s ease-out 0.4s both', color:'#f8fafc' }}>
-                    Account Created
+                    Congratulations! 🎉
                 </h1>
 
-                <p style={{ fontSize:15, color:'#94a3b8', lineHeight:1.6, marginBottom:36, animation:'fadeInUp 0.8s ease-out 0.5s both', padding:'0 10px' }}>
-                    <strong style={{ color:'#e2e8f0', fontWeight:600 }}>{clinicName}</strong> is now live. We've unlocked the <strong style={{ color:'#c4b5fd', fontWeight:600 }}>Elite Plan</strong> for you, completely free until {new Date(trialEnd).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}.
+                <p style={{ fontSize:15, color:'#94a3b8', lineHeight:1.6, marginBottom:32, animation:'fadeInUp 0.8s ease-out 0.5s both', padding:'0 10px' }}>
+                    <strong style={{ color:'#e2e8f0', fontWeight:600 }}>{clinicName}</strong> is now live. We've unlocked the <strong style={{ color:'#c4b5fd', fontWeight:600 }}>14-Day Elite Plan Trial</strong> for you, completely free until {new Date(trialEnd).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}.
                 </p>
 
-                <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:40, animation:'fadeInUp 0.8s ease-out 0.6s both' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:40, animation:'fadeInUp 0.8s ease-out 0.6s both' }}>
                     {[
-                        { icon: '✓', text: 'Unlimited queue management' },
-                        { icon: '✓', text: 'AI voice announcements' },
-                        { icon: '✓', text: 'Automated WhatsApp notifications' }
+                        { icon: '✓', text: 'Unlimited Patients' },
+                        { icon: '✓', text: 'AI Voice in 10 Languages' },
+                        { icon: '✓', text: 'WhatsApp CRM & Alerts' },
+                        { icon: '✓', text: 'Advanced Analytics' },
+                        { icon: '✓', text: 'Multi-Branch Support' },
+                        { icon: '✓', text: 'Priority Support Line' }
                     ].map((feature, i) => (
-                        <div key={i} style={{ display:'flex', alignItems:'center', gap:14, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:12, padding:'14px 18px', fontSize:14, color:'#cbd5e1', textAlign:'left' }}>
+                        <div key={i} style={{ display:'flex', alignItems:'center', gap:10, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:12, padding:'12px', fontSize:13, color:'#cbd5e1', textAlign:'left' }}>
                             <span style={{ color:'#a78bfa', fontWeight:'bold', fontSize:14 }}>{feature.icon}</span>
-                            <span style={{ fontWeight: 500 }}>{feature.text}</span>
+                            <span style={{ fontWeight: 500, lineHeight: 1.3 }}>{feature.text}</span>
                         </div>
                     ))}
                 </div>

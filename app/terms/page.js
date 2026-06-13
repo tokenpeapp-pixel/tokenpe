@@ -103,9 +103,28 @@ export default function TermsOfService() {
           </section>
 
           {/* Section 5 */}
+          <section className="space-y-3">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-bold">5</span>
+              Medical Disclaimer & Limitation of Liability
+            </h2>
+            <ul className="list-disc pl-6 space-y-2 text-slate-600 dark:text-zinc-300">
+              <li>
+                <strong className="text-slate-800 dark:text-white">Not a Healthcare Provider</strong>: TokenPe provides a software utility for queue and communication management. We do not provide medical advice, triage services, or emergency health interventions. TokenPe is not liable for medical emergencies, delays in patient care, or any outcomes arising from the use of our queueing system.
+              </li>
+              <li>
+                <strong className="text-slate-800 dark:text-white">Limitation of Liability</strong>: To the maximum extent permitted by law, TokenPe shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or goodwill, resulting from your use of the platform or any platform downtime.
+              </li>
+              <li>
+                <strong className="text-slate-800 dark:text-white">Indemnification</strong>: You agree to indemnify and hold TokenPe harmless from any claims, damages, or legal actions arising from your misuse of the platform, including sending unauthorized communications or failing to obtain proper patient consent for messaging.
+              </li>
+            </ul>
+          </section>
+
+          {/* Section 6 */}
           <section className="bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-6 space-y-4">
             <h2 className="text-xl sm:text-2xl font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-bold">5</span>
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-bold">6</span>
               Support and Contact Information
             </h2>
             <p className="text-slate-600 dark:text-zinc-300">

@@ -95,6 +95,25 @@ export default function PrivacyPolicy() {
           <section className="space-y-3">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-bold">4</span>
+              Data Processing & Compliance (DPDP Act)
+            </h2>
+            <p className="text-slate-600 dark:text-zinc-300">
+              For clinics operating in India, TokenPe adheres to the principles of the Digital Personal Data Protection (DPDP) Act, 2023:
+            </p>
+            <ul className="list-disc pl-6 space-y-2 text-slate-600 dark:text-zinc-300">
+              <li>
+                <strong className="text-slate-800 dark:text-white">Data Processor Status</strong>: TokenPe acts strictly as a "Data Processor" providing queue management utility. The Clinic utilizing TokenPe is the "Data Fiduciary" and is solely responsible for obtaining necessary patient consent before adding patient phone numbers into the TokenPe system for messaging.
+              </li>
+              <li>
+                <strong className="text-slate-800 dark:text-white">Data Retention</strong>: Patient visit history and data are retained securely for the duration of the Clinic's subscription. Upon subscription cancellation or account deletion, all associated patient data may be permanently purged or anonymized in accordance with our retention policy.
+              </li>
+            </ul>
+          </section>
+
+          {/* Section 5 */}
+          <section className="space-y-3">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-bold">5</span>
               Third-Party Services and Gateways
             </h2>
             <p className="text-slate-600 dark:text-zinc-300">
@@ -113,10 +132,10 @@ export default function PrivacyPolicy() {
             </ul>
           </section>
 
-          {/* Section 5 */}
+          {/* Section 6 */}
           <section className="bg-rose-50/50 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-6 space-y-3">
             <h2 className="text-xl sm:text-2xl font-bold text-rose-900 dark:text-rose-200 flex items-center gap-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 text-sm font-bold">5</span>
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 text-sm font-bold">6</span>
               Data Deletion Requests
             </h2>
             <p className="text-rose-950/80 dark:text-rose-200/80">
@@ -131,10 +150,10 @@ export default function PrivacyPolicy() {
             </ol>
           </section>
 
-          {/* Section 6 */}
+          {/* Section 7 */}
           <section className="space-y-3">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-bold">6</span>
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-bold">7</span>
               Consent
             </h2>
             <p className="text-slate-600 dark:text-zinc-300">

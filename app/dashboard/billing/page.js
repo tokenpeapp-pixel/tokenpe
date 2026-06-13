@@ -499,7 +499,7 @@ export default function BillingPage() {
         <div onClick={() => setShowCancelModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyItems: "center", padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#0f172a", width: "100%", maxWidth: 440, borderRadius: 24, padding: "32px", position: "relative", margin: "auto", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", textAlign: 'center' }}>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 12 }}>Cancel Subscription</h2>
-            <p style={{ color: "#94a3b8", marginBottom: 24, fontSize: 14 }}>We're sad to see you go! Your plan will instantly downgrade to Starter. Could you let us know why you're leaving? (Optional)</p>
+            <p style={{ color: "#94a3b8", marginBottom: 24, fontSize: 14 }}>We're sad to see you go! You will retain premium access until the end of your billing cycle, after which your account will be securely locked until a new plan is chosen. Could you let us know why you're leaving? (Optional)</p>
 
             <select
               value={cancelReason}

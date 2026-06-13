@@ -1,25 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function TermsOfService() {
+  const [backLink, setBackLink] = useState("/");
+  const [backText, setBackText] = useState("Back to Home");
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const clinic = localStorage.getItem('tokenpe_clinic');
+      if (clinic) {
+        setBackLink('/dashboard');
+        setBackText('Back to Dashboard');
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 py-12 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
       <div className="max-w-4xl mx-auto">
         {/* Navigation / Header */}
         <div className="mb-8 pb-6 border-b border-slate-200 dark:border-zinc-800">
-          <Link href="/" className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline mb-2 group">
+          <Link href={backLink} className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline mb-2 group">
             <svg className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Home
+            {backText}
           </Link>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Terms & Support Policy
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-            Effective Date: May 19, 2026 | Last Updated: May 30, 2026
+            Effective Date: May 19, 2026 | Last Updated: June 13, 2026
           </p>
         </div>
 

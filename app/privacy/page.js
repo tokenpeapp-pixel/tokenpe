@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-            Effective Date: May 19, 2026 | Last Updated: May 30, 2026
+            Effective Date: May 19, 2026 | Last Updated: June 13, 2026
           </p>
         </div>
 
@@ -47,10 +47,10 @@ export default function PrivacyPolicy() {
             </p>
             <ul className="list-disc pl-6 space-y-2 text-slate-600 dark:text-zinc-300">
               <li>
-                <strong className="text-slate-800 dark:text-white">Account Registration Details</strong>: When you register for an account, we collect your name, email address, password, and security tokens to establish a secure session.
+                <strong className="text-slate-800 dark:text-white">Account Registration Details</strong>: When you register for an account, we collect your name, email address, secure 4-digit PIN, and security tokens to establish a secure session.
               </li>
               <li>
-                <strong className="text-slate-800 dark:text-white">Notification Details</strong>: We collect and store your registered phone number to route important transactional and notification alerts.
+                <strong className="text-slate-800 dark:text-white">Notification Details</strong>: We collect and store your registered phone number and email address to route important transactional and notification alerts.
               </li>
               <li>
                 <strong className="text-slate-800 dark:text-white">Log Files</strong>: TokenPe follows a standard procedure of using log files. The information collected by log files includes internet protocol (IP) addresses, browser type, Internet Service Provider (ISP), date and time stamp, referring/exit pages, and possibly the number of clicks.

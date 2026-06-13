@@ -35,7 +35,8 @@ Unless otherwise stated, TokenPe and/or its licensors own the intellectual prope
 ## 4. Refund and Service Cancellation Policy
 
 * **Cancellation**: You can cancel your subscription or delete your TokenPe account at any time via your user dashboard.
-* **Refunds**: If you are enrolled in any paid usage tiers, charges are billed in advance. Refund requests for unused credits or platform issues can be requested by emailing our help desk at **support@tokenpe.online**.
+* **14-Day Free Trial**: New clinic registrations are automatically enrolled in a 14-Day Elite Plan trial. At the end of this trial period, if a paid subscription is not activated, access to the platform will be temporarily locked to protect your data until a plan is chosen.
+* **Refunds**: If you are enrolled in any paid usage tiers, charges are billed in advance. Refund requests for unused credits or platform issues can be requested by emailing our help desk at **tokenpe.online@gmail.com**.
 
 ---
 
@@ -43,6 +44,6 @@ Unless otherwise stated, TokenPe and/or its licensors own the intellectual prope
 
 We are committed to helping you integrate and resolve any issues with your TokenPe experience:
 
-* **Support Desk Email**: **support@tokenpe.online**
+* **Support Desk Email**: **tokenpe.online@gmail.com**
 * **Expected Response Time**: Under **24 hours** for all integration and configuration issues.
 * **Corporate Address**: Mumbai, Maharashtra, India.

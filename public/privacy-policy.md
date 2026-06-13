@@ -4,7 +4,7 @@
 
 At **TokenPe** (accessible from `https://tokenpe.online`), one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by TokenPe and how we use it.
 
-If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at **support@tokenpe.online**.
+If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at **tokenpe.online@gmail.com**.
 
 This Privacy Policy applies only to our online activities and is valid for visitors to our website with regards to the information that they shared and/or collect in TokenPe.
 
@@ -55,7 +55,7 @@ We only share essential information with third-party processors to fulfill our c
 
 We respect your right to control your personal data. If you want to delete your TokenPe account and erase all associated personal details (including email, phone number, and logs) from our databases, you can do so easily:
 
-1. Send an email to **support@tokenpe.online** with the subject line `Data Deletion Request`.
+1. Send an email to **tokenpe.online@gmail.com** with the subject line `Data Deletion Request`.
 2. Include the registered email address of the account you want to delete.
 3. Our team will verify ownership and permanently erase your database records within **48 hours**, sending you a confirmation email once completed.
 

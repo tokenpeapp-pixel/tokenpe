@@ -1,11 +1,13 @@
 import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
 import { supabase } from '../../../../lib/supabase'
+import { sendWelcomeEmail } from '../../../../lib/messaging'
+
 
 export async function POST(req) {
     try {
         const body = await req.json()
-        const { clinicId, clinicCode, phone } = body
+        const { clinicId, clinicCode, phone, isNewRegistration, name } = body
         const authHeader = req.headers.get('Authorization')
 
         if (!clinicId || !clinicCode || !authHeader) {
@@ -29,6 +31,12 @@ export async function POST(req) {
         if (clinicError || !clinic || clinic.email !== user.email) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
+
+        if (isNewRegistration) {
+            // Send welcome email in background
+            sendWelcomeEmail(clinic.email, name || 'Doctor').catch(console.error)
+        }
+
 
         // Create JWT session
         const sessionPayload = {

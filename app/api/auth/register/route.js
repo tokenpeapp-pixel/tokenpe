@@ -2,6 +2,8 @@ import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
 import { sanitizeName, validatePhone, validatePin } from '../../../../lib/validate'
+import { sendWelcomeEmail } from '../../../../lib/messaging'
+
 
 export async function POST(req) {
     try {
@@ -48,6 +50,9 @@ export async function POST(req) {
         if (error) {
             return Response.json({ success: false, message: 'Failed to create clinic. Phone may already be registered.' }, { status: 500 })
         }
+
+        // Send welcome email in background
+        sendWelcomeEmail(email, cleanName).catch(console.error)
 
         // Create JWT session
         const sessionPayload = {

@@ -115,7 +115,9 @@ function AuthCallbackContent() {
                         body: JSON.stringify({ 
                             clinicId: insertedClinic.id, 
                             clinicCode: insertedClinic.code, 
-                            phone: insertedClinic.phone 
+                            phone: insertedClinic.phone,
+                            name: insertedClinic.name,
+                            isNewRegistration: true
                         })
                     })
 

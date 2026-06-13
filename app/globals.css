@@ -29,42 +29,29 @@ body {
 }
 
 /* ── Butter-Smooth Button Physics ───────────────────────────────────────── */
-button, .btn-interactive, a.btn-primary, a.btn-secondary {
+button {
   touch-action: manipulation;
-  will-change: transform, box-shadow, opacity;
-  transition: transform 0.25s var(--ease-spring), opacity 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease !important;
+  will-change: transform;
+  transition: transform 0.18s var(--ease-spring), opacity 0.15s ease, box-shadow 0.18s ease;
   cursor: pointer;
 }
 
-button:active:not(:disabled), .btn-interactive:active, a.btn-primary:active, a.btn-secondary:active {
-  transform: scale(0.96) !important;
-  opacity: 0.9;
+button:active:not(:disabled) {
+  transform: scale(0.95) !important;
+  opacity: 0.88;
 }
 
 /* Primary action buttons — bigger bounce */
-.btn-primary, .btn-submit, a.btn-primary {
-  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-out), background 0.2s ease !important;
+.btn-primary, .btn-submit {
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease, background 0.2s ease !important;
 }
-.btn-primary:hover:not(:disabled), .btn-submit:hover:not(:disabled), a.btn-primary:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35), 0 2px 8px rgba(124, 58, 237, 0.2) !important;
+.btn-primary:hover:not(:disabled), .btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35) !important;
 }
-.btn-primary:active:not(:disabled), .btn-submit:active:not(:disabled), a.btn-primary:active {
+.btn-primary:active:not(:disabled), .btn-submit:active:not(:disabled) {
   transform: scale(0.96) translateY(0) !important;
   box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2) !important;
-}
-
-/* Secondary & Danger action buttons */
-.btn-danger {
-  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-out), background 0.2s ease !important;
-}
-.btn-danger:hover:not(:disabled) {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35) !important;
-}
-.btn-danger:active:not(:disabled) {
-  transform: scale(0.96) translateY(0) !important;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2) !important;
 }
 
 /* ── Scroll-Reveal Utility ──────────────────────────────────────────────── */

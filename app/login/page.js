@@ -330,7 +330,8 @@ export default function LoginPage() {
                     background: #fff; color: #0f172a;
                     font-size: 14px; font-weight: 600;
                     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-                    margin-bottom: 22px; font-family: inherit;
+                    transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease, background 0.15s ease; margin-bottom: 22px;
+                    font-family: inherit;
                     will-change: transform;
                 }
                 .btn-google:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: 0 6px 20px rgba(0,0,0,0.09); transform: translateY(-2px); }
@@ -353,7 +354,7 @@ export default function LoginPage() {
                     flex: 1; padding: 11px 10px;
                     font-size: 14px; font-weight: 600;
                     border: none; background: transparent; cursor: pointer;
-                    color: #94a3b8; font-family: inherit;
+                    color: #94a3b8; transition: all 0.2s; font-family: inherit;
                     display: flex; align-items: center; justify-content: center; gap: 6px;
                 }
                 .tab-btn.active {
@@ -378,7 +379,7 @@ export default function LoginPage() {
                     background: linear-gradient(135deg, #7C3AED, #4F46E5); color: #fff;
                     border: none; border-radius: 10px;
                     font-size: 15px; font-weight: 700; cursor: pointer;
-                    margin-top: 6px; font-family: inherit;
+                    transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease, background 0.2s ease; margin-top: 6px; font-family: inherit;
                     will-change: transform;
                 }
                 .btn-submit:hover:not(:disabled) { background: linear-gradient(135deg, #6d28d9, #4338ca); box-shadow: 0 10px 30px rgba(124,58,237,0.4); transform: translateY(-2px); }

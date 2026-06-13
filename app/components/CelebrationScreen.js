@@ -60,11 +60,11 @@ export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
 
                 <button 
                     onClick={onDone} 
+                    className="btn-interactive"
                     style={{ 
-                        width:'100%', padding:'16px', background:'#fff', color:'#000', border:'none', borderRadius:12, fontSize:15, fontWeight:600, cursor:'pointer', transition:'all 0.2s ease', animation:'fadeInUp 0.8s ease-out 0.7s both', outline:'none', boxShadow:'0 4px 14px 0 rgba(255,255,255,0.1)'
+                        width:'100%', padding:'16px', background:'#fff', color:'#000', border:'none', borderRadius:12, fontSize:15, fontWeight:600, outline:'none', boxShadow:'0 4px 14px 0 rgba(255,255,255,0.1)',
+                        animation:'fadeInUp 0.8s ease-out 0.7s both'
                     }}
-                    onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,255,255,0.15)' }}
-                    onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(255,255,255,0.1)' }}
                 >
                     Go to Dashboard
                 </button>

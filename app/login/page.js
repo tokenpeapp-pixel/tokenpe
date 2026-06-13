@@ -441,6 +441,10 @@ export default function LoginPage() {
             {/* RIGHT PANEL */}
             <div className="right-panel">
                 <div className="form-box animate-fade-up">
+                    <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24, padding: 0 }} suppressHydrationWarning={true}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Back to Home
+                    </button>
                     <div className="form-title">{mode === 'login' ? 'Welcome back' : 'New Clinic'}</div>
                     <div className="form-subtitle">
                         {mode === 'login' ? 'Sign in to your TokenPe dashboard' : 'Register your clinic and get started in 2 minutes'}

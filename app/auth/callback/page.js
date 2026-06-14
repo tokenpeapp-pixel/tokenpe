@@ -83,7 +83,7 @@ function AuthCallbackContent() {
                     const num = (Math.abs(hash) % 900) + 100
                     const newCode = `${clean}${num}`
                     const trialEndsAt = new Date()
-                    trialEndsAt.setDate(trialEndsAt.getDate() + 14)
+                    trialEndsAt.setDate(trialEndsAt.getDate() + 7)
 
                     const newClinicData = {
                         name: user.user_metadata?.full_name || 'My Clinic',

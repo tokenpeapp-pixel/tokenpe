@@ -167,7 +167,7 @@ export default function BillingPage() {
 
   const trialEnd = oldestClinic?.trial_ends_at
     ? new Date(oldestClinic.trial_ends_at)
-    : (oldestClinic?.created_at ? new Date(new Date(oldestClinic.created_at).getTime() + 14 * 24 * 60 * 60 * 1000) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+    : (oldestClinic?.created_at ? new Date(new Date(oldestClinic.created_at).getTime() + 7 * 24 * 60 * 60 * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
 
   const realDaysLeft = trialEnd ? Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)) : 0
   const daysLeft = isTrial ? Math.max(0, realDaysLeft) : null
@@ -488,7 +488,7 @@ export default function BillingPage() {
             </div>
 
             <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
-              <strong>Terms of Subscription:</strong> All plans automatically renew monthly. You can cancel your subscription at any time from the billing dashboard. The free trial is available for 14 days and provides full access to Elite features. After the trial, you must choose a plan to continue service, otherwise access to the platform will be temporarily locked to protect your data.
+              <strong>Terms of Subscription:</strong> All plans automatically renew monthly. You can cancel your subscription at any time from the billing dashboard. The free trial is available for 7 days and provides full access to Elite features. After the trial, you must choose a plan to continue service, otherwise access to the platform will be temporarily locked to protect your data.
             </div>
           </div>
         </div>

@@ -35,7 +35,7 @@ Unless otherwise stated, TokenPe and/or its licensors own the intellectual prope
 ## 4. Refund and Service Cancellation Policy
 
 * **Cancellation**: You can cancel your subscription or delete your TokenPe account at any time via your user dashboard.
-* **14-Day Free Trial**: New clinic registrations are automatically enrolled in a 14-Day Elite Plan trial. At the end of this trial period, if a paid subscription is not activated, access to the platform will be temporarily locked to protect your data until a plan is chosen.
+* **7-Day Free Trial**: New clinic registrations are automatically enrolled in a 7-Day Elite Plan trial. At the end of this trial period, if a paid subscription is not activated, access to the platform will be temporarily locked to protect your data until a plan is chosen.
 * **Strict No Refund Policy**: All payments are non-refundable. We do not provide refunds or credits for any partial-month subscription periods or unused time. When you cancel your subscription, you will continue to have access to your paid features until the end of your current billing cycle, after which your account will be locked until a new plan is chosen.
 
 ---

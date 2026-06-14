@@ -840,7 +840,7 @@ export default function Dashboard() {
         <div style={{ fontSize: 56, marginBottom: 24 }}>⏳</div>
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Free Trial Ended</h1>
         <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-          We hope you loved TokenPe! Your 14-day Elite trial has expired. To continue using the dashboard and keep your clinic data safe, please choose a plan.
+          We hope you loved TokenPe! Your 7-day Elite trial has expired. To continue using the dashboard and keep your clinic data safe, please choose a plan.
         </p>
         <button
           onClick={() => router.push('/dashboard/billing')}

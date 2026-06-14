@@ -151,6 +151,176 @@ export default function LandingPage() {
           .footer{flex-direction:column;text-align:center;padding:32px 20px;gap:24px}
           .footer-links{flex-direction:column;gap:16px}
         }
+
+        /* 7-DAY TRIAL SECTION */
+        .trial-sec{
+          padding: 100px 24px;
+          background: linear-gradient(160deg, #06040f 0%, #0f0527 40%, #060d1f 100%);
+          position: relative;
+          overflow: hidden;
+          text-align: center;
+        }
+        .trial-sec::before{
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse 80% 50% at 20% 30%, rgba(124,58,237,0.18) 0%, transparent 70%),
+            radial-gradient(ellipse 60% 40% at 80% 70%, rgba(6,182,212,0.12) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .trial-countdown{
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.15));
+          border: 1px solid rgba(124,58,237,0.4);
+          border-radius: 100px;
+          padding: 8px 22px;
+          margin-bottom: 32px;
+          position: relative;
+          z-index: 1;
+        }
+        .trial-pulse{
+          width: 8px; height: 8px; border-radius: 50%;
+          background: #a78bfa;
+          box-shadow: 0 0 0 0 rgba(167,139,250,0.6);
+          animation: pulse-ring 1.8s ease-out infinite;
+        }
+        @keyframes pulse-ring{
+          0%{box-shadow:0 0 0 0 rgba(167,139,250,0.7)}
+          70%{box-shadow:0 0 0 10px rgba(167,139,250,0)}
+          100%{box-shadow:0 0 0 0 rgba(167,139,250,0)}
+        }
+        .trial-countdown-text{
+          font-size: 12px;
+          font-weight: 700;
+          color: #c4b5fd;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+        }
+        .trial-h2{
+          font-size: clamp(32px, 5.5vw, 62px);
+          font-weight: 900;
+          letter-spacing: -2px;
+          color: #fff;
+          line-height: 1.05;
+          margin-bottom: 20px;
+          position: relative;
+          z-index: 1;
+        }
+        .trial-sub{
+          font-size: clamp(15px, 2vw, 18px);
+          color: rgba(255,255,255,0.45);
+          max-width: 520px;
+          margin: 0 auto 56px;
+          line-height: 1.75;
+          position: relative;
+          z-index: 1;
+        }
+        .trial-cards{
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          max-width: 900px;
+          margin: 0 auto 56px;
+          position: relative;
+          z-index: 1;
+        }
+        .trial-card{
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 20px;
+          padding: 24px 20px;
+          transition: transform 0.28s cubic-bezier(0.16,1,0.3,1), border-color 0.2s, background 0.2s;
+          backdrop-filter: blur(8px);
+          text-align: left;
+        }
+        .trial-card:hover{
+          transform: translateY(-6px);
+          border-color: rgba(124,58,237,0.4);
+          background: rgba(124,58,237,0.08);
+        }
+        .trial-card-icon{ font-size: 28px; margin-bottom: 14px; display: block; }
+        .trial-card-title{ font-size: 14px; font-weight: 800; color: #f1f5f9; margin-bottom: 6px; }
+        .trial-card-desc{ font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.65; }
+        .trial-cta-wrap{ position: relative; z-index: 1; }
+        .trial-btn{
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          background: linear-gradient(135deg, #7C3AED, #06B6D4);
+          color: #fff;
+          padding: 18px 48px;
+          border-radius: 16px;
+          font-size: 17px;
+          font-weight: 800;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 12px 40px rgba(124,58,237,0.45), 0 0 0 1px rgba(124,58,237,0.2);
+          transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease;
+          will-change: transform;
+          letter-spacing: -0.3px;
+        }
+        .trial-btn:hover{ transform: translateY(-4px); box-shadow: 0 24px 64px rgba(124,58,237,0.65), 0 0 0 1px rgba(124,58,237,0.3); }
+        .trial-btn:active{ transform: scale(0.96); }
+        .trial-guarantee{
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 24px;
+          margin-top: 24px;
+          flex-wrap: wrap;
+          position: relative;
+          z-index: 1;
+        }
+        .trial-g-item{
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 12px;
+          color: rgba(255,255,255,0.35);
+          font-weight: 500;
+        }
+        .trial-g-icon{ color: #34d399; font-size: 13px; }
+        .trial-days-badge{
+          position: relative;
+          z-index: 1;
+          display: inline-block;
+          margin-bottom: 28px;
+        }
+        .trial-days-num{
+          font-size: clamp(72px, 14vw, 140px);
+          font-weight: 900;
+          letter-spacing: -8px;
+          background: linear-gradient(135deg, #a78bfa 0%, #06B6D4 50%, #34d399 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          line-height: 1;
+          display: block;
+        }
+        .trial-days-label{
+          display: block;
+          font-size: 14px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.35);
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          margin-top: -8px;
+        }
+        @media(max-width: 640px){
+          .trial-sec{ padding: 72px 20px; }
+          .trial-cards{ grid-template-columns: 1fr 1fr; gap: 12px; }
+          .trial-card{ padding: 18px 16px; }
+          .trial-btn{ width: 100%; justify-content: center; padding: 16px 32px; font-size: 16px; }
+          .trial-guarantee{ gap: 12px; }
+          .trial-days-num{ letter-spacing: -4px; }
+        }
+        @media(max-width: 400px){
+          .trial-cards{ grid-template-columns: 1fr; }
+        }
+
       `}</style>
 
       {/* NAV */}
@@ -181,7 +351,7 @@ export default function LandingPage() {
           <button className="btn-hero-primary" onClick={() => router.push("/login")}>Start Free Trial →</button>
           <button className="btn-hero-ghost" onClick={() => go("how")}>See how it works</button>
         </div>
-        <p className="hero-note animate-fade-up animate-delay-4"><span>No app for patients</span>·<span>Any phone</span>·<span>2 min setup</span></p>
+        <p className="hero-note animate-fade-up animate-delay-4"><span>No app for patients</span>·<span>Any phone</span>·<span>7-Day Elite Trial — Free</span></p>
       </section>
 
       {/* TRUST */}
@@ -295,12 +465,76 @@ export default function LandingPage() {
         </svg>
       </div>
 
-      {/* CTA */}
+      {/* 7-DAY ELITE TRIAL SECTION */}
+      <section className="trial-sec">
+        {/* Floating orbs */}
+        <div style={{ position:'absolute', width:'500px', height:'500px', borderRadius:'50%', background:'radial-gradient(circle,rgba(124,58,237,0.1) 0%,transparent 70%)', top:'-100px', right:'-100px', pointerEvents:'none', animation:'float1 9s ease-in-out infinite' }} />
+        <div style={{ position:'absolute', width:'400px', height:'400px', borderRadius:'50%', background:'radial-gradient(circle,rgba(6,182,212,0.08) 0%,transparent 70%)', bottom:'-80px', left:'-80px', pointerEvents:'none', animation:'float2 11s ease-in-out infinite' }} />
+
+        {/* Live badge */}
+        <div className="trial-countdown reveal">
+          <span className="trial-pulse" />
+          <span className="trial-countdown-text">🎁 Limited time — Start Free Today</span>
+        </div>
+
+        {/* Big 7 */}
+        <div className="trial-days-badge reveal">
+          <span className="trial-days-num">7</span>
+          <span className="trial-days-label">Day Free Trial</span>
+        </div>
+
+        <h2 className="trial-h2 reveal reveal-delay-1">
+          Full Elite access.<br />
+          <span style={{ background:'linear-gradient(135deg,#a78bfa,#06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>Zero rupees upfront.</span>
+        </h2>
+        <p className="trial-sub reveal reveal-delay-2">
+          Every new clinic gets a full 7-day Elite Plan trial — our most powerful tier — completely free. No credit card. No auto-charge. No risk.
+        </p>
+
+        {/* Feature cards */}
+        <div className="trial-cards">
+          {[
+            { icon: '🏆', title: 'Elite Plan Unlocked', desc: 'Access every premium feature from day one. Nothing held back.' },
+            { icon: '👥', title: 'Unlimited Patients', desc: 'No daily cap during trial. Serve as many patients as you want.' },
+            { icon: '🎙️', title: 'AI Voice in 10 Languages', desc: 'Voice alerts in Hindi, Tamil, Telugu, Marathi, Gujarati & more.' },
+            { icon: '📊', title: 'Full CRM & Analytics', desc: 'Heatmaps, broadcast messages, follow-ups, and detailed reports.' },
+            { icon: '💬', title: 'WhatsApp CRM', desc: 'Smart patient follow-ups and broadcast campaigns ready to go.' },
+            { icon: '🔒', title: 'No Auto-Charge', desc: 'Trial ends, account pauses. You choose a plan only when ready.' },
+          ].map((c, i) => (
+            <div key={c.title} className={`trial-card reveal reveal-delay-${(i % 3) + 1}`}>
+              <span className="trial-card-icon">{c.icon}</span>
+              <div className="trial-card-title">{c.title}</div>
+              <div className="trial-card-desc">{c.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="trial-cta-wrap reveal">
+          <button className="trial-btn" onClick={() => router.push('/login')}>
+            Start My 7-Day Free Trial
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+          <div className="trial-guarantee">
+            <span className="trial-g-item"><span className="trial-g-icon">✓</span> No credit card required</span>
+            <span className="trial-g-item"><span className="trial-g-icon">✓</span> No auto-charge after trial</span>
+            <span className="trial-g-item"><span className="trial-g-icon">✓</span> Cancel anytime</span>
+            <span className="trial-g-item"><span className="trial-g-icon">✓</span> 2-minute setup</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Wave Divider: Trial (Dark) to CTA (Dark) */}
+      <div className="wave-div" style={{ background: "#080818" }}>
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#06040f"></path>
+        </svg>
+      </div>
       <section className="cta-sec">
         <div className="cta-orb" />
         <h2 className="cta-h2">Ready to transform your clinic?</h2>
         <p className="cta-sub">Join clinics across India already using TokenPe to manage queues and delight patients.</p>
-        <button className="cta-btn" onClick={() => router.push("/login")}>Start your free trial →</button>
+        <button className="cta-btn" onClick={() => router.push("/login")}>Claim your 7-Day Free Trial →</button>
       </section>
 
       {/* FOOTER */}
@@ -443,7 +677,7 @@ export default function LandingPage() {
             </div>
             
             <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid #e2e8f0", fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
-              <strong>Terms of Subscription:</strong> All plans automatically renew monthly. You can cancel your subscription at any time from the billing dashboard. The free trial is available for 14 days and provides full access to Elite features. After the trial, you must choose a plan to continue service, otherwise access to the platform will be temporarily locked to protect your data.
+              <strong>Terms of Subscription:</strong> All plans automatically renew monthly. You can cancel your subscription at any time from the billing dashboard. The free trial is available for 7 days and provides full access to Elite features. After the trial, you must choose a plan to continue service, otherwise access to the platform will be temporarily locked to protect your data.
             </div>
           </div>
         </div>

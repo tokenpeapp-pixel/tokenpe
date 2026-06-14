@@ -29,9 +29,9 @@ export async function POST(req) {
 
         // Retry loop for unique code could be added, but 6 chars base32 is highly likely unique.
 
-        // 14 day trial
+        // 7 day trial
         const trialEndsAt = new Date()
-        trialEndsAt.setDate(trialEndsAt.getDate() + 14)
+        trialEndsAt.setDate(trialEndsAt.getDate() + 7)
 
         const { data, error } = await supabaseAdmin
             .from('clinics')

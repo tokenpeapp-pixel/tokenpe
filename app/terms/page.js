@@ -107,7 +107,7 @@ export default function TermsOfService() {
                 <strong className="text-slate-800 dark:text-white">Cancellation</strong>: You can cancel your subscription at any time via your user dashboard.
               </li>
               <li>
-                <strong className="text-slate-800 dark:text-white">14-Day Free Trial</strong>: New clinic registrations are automatically enrolled in a 14-Day Elite Plan trial. At the end of this trial period, if a paid subscription is not activated, access to the platform will be temporarily locked to protect your data until a plan is chosen.
+                <strong className="text-slate-800 dark:text-white">7-Day Free Trial</strong>: New clinic registrations are automatically enrolled in a 7-Day Elite Plan trial. At the end of this trial period, if a paid subscription is not activated, access to the platform will be temporarily locked to protect your data until a plan is chosen.
               </li>
               <li>
                 <strong className="text-slate-800 dark:text-white">Strict No Refund Policy</strong>: All payments are non-refundable. We do not provide refunds or credits for any partial-month subscription periods or unused time. When you cancel your subscription, you will continue to have access to your paid features until the end of your current billing cycle, after which your account will be securely locked until a new plan is chosen.

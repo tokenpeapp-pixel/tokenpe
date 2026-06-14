@@ -270,7 +270,7 @@ export default function LandingPage() {
           {[
             { name: "Starter", desc: "Perfect for small clinics", price: "₹499", per: "/mo", feats: ["50 patients/day", "Standard WhatsApp Alerts", "Basic 7-day Analytics", "Auto-Generated Code"], hot: false },
             { name: "Pro", desc: "For busy clinics that want to look professional", price: "₹999", per: "/mo", feats: ["150 patients/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "Queue Pause & Smart Wait Time", "30-Day History & Heatmap"], hot: true },
-            { name: "Elite", desc: "For hospitals, polyclinics & top doctors", price: "₹1999", per: "/mo", feats: ["Unlimited patients", "Multi-Clinic Management", "Monthly PDF Reports", "VIP WhatsApp Support", "CRM Broadcasts"], hot: false },
+            { name: "Elite", desc: "For hospitals, polyclinics & top doctors", price: "₹1999", per: "/mo", feats: ["Unlimited patients", "Multi-Clinic Management", "Report Download (PDF/CSV)", "VIP WhatsApp Support", "CRM Broadcasts"], hot: false },
           ].map((p, i) => (
             <div key={p.name} className={`plan${p.hot ? " hot" : ""} reveal reveal-delay-${i + 1}`}>
               {p.hot && <div className="plan-badge">✦ Most Popular</div>}
@@ -421,10 +421,10 @@ export default function LandingPage() {
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Monthly PDF Report</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#cbd5e1" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#10b981", fontWeight: 600 }}>✓</td>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Report Download (PDF/CSV)</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>7 Days</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>30 Days</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 700 }}>Unlimited</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Dashboard Analytics</td>

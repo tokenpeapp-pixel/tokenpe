@@ -170,14 +170,15 @@ export default function LandingPage() {
           pointer-events: none;
         }
         .trial-countdown{
-          display: inline-flex;
+          display: flex;
+          width: fit-content;
+          margin: 0 auto 32px;
           align-items: center;
           gap: 10px;
           background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.15));
           border: 1px solid rgba(124,58,237,0.4);
           border-radius: 100px;
           padding: 8px 22px;
-          margin-bottom: 32px;
           position: relative;
           z-index: 1;
         }
@@ -286,8 +287,9 @@ export default function LandingPage() {
         .trial-days-badge{
           position: relative;
           z-index: 1;
-          display: inline-block;
-          margin-bottom: 28px;
+          display: block;
+          width: fit-content;
+          margin: 0 auto 28px;
         }
         .trial-days-num{
           font-size: clamp(72px, 14vw, 140px);

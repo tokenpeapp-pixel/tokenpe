@@ -363,9 +363,73 @@ export default function LandingPage() {
           </div>
         ))}
       </div>
-      <div className="wave-div">
+      {/* Wave Divider: Trust to Trial */}
+      <div className="wave-div" style={{ background: "#06040f" }}>
         <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
           <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#0d0d20"></path>
+        </svg>
+      </div>
+
+      {/* 7-DAY ELITE TRIAL SECTION */}
+      <section className="trial-sec">
+        {/* Floating orbs */}
+        <div style={{ position:'absolute', width:'500px', height:'500px', borderRadius:'50%', background:'radial-gradient(circle,rgba(124,58,237,0.1) 0%,transparent 70%)', top:'-100px', right:'-100px', pointerEvents:'none', animation:'float1 9s ease-in-out infinite' }} />
+        <div style={{ position:'absolute', width:'400px', height:'400px', borderRadius:'50%', background:'radial-gradient(circle,rgba(6,182,212,0.08) 0%,transparent 70%)', bottom:'-80px', left:'-80px', pointerEvents:'none', animation:'float2 11s ease-in-out infinite' }} />
+
+        {/* Live badge */}
+        <div className="trial-countdown reveal">
+          <span className="trial-pulse" />
+          <span className="trial-countdown-text">🎁 Limited time — Start Free Today</span>
+        </div>
+
+        {/* Big 7 */}
+        <div className="trial-days-badge reveal">
+          <span className="trial-days-num">7</span>
+          <span className="trial-days-label">Day Free Trial</span>
+        </div>
+
+        <h2 className="trial-h2 reveal reveal-delay-1">
+          Full Elite access.<br />
+          <span style={{ background:'linear-gradient(135deg,#a78bfa,#06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>Zero rupees upfront.</span>
+        </h2>
+        <p className="trial-sub reveal reveal-delay-2">
+          Every new clinic gets a full 7-day Elite Plan trial — our most powerful tier — completely free. No credit card. No auto-charge. No risk.
+        </p>
+
+        {/* Feature cards */}
+        <div className="trial-cards" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", maxWidth: "800px" }}>
+          {[
+            { icon: '👑', title: 'Full Elite Access', desc: 'Experience every premium feature instantly. No limits.' },
+            { icon: '💳', title: 'No Credit Card Needed', desc: 'Start your trial with zero upfront payment details.' },
+            { icon: '🔒', title: 'Zero Risk Guarantee', desc: 'Account safely pauses if you choose not to upgrade.' },
+          ].map((c, i) => (
+            <div key={c.title} className={`trial-card reveal reveal-delay-${(i % 3) + 1}`}>
+              <span className="trial-card-icon">{c.icon}</span>
+              <div className="trial-card-title">{c.title}</div>
+              <div className="trial-card-desc">{c.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="trial-cta-wrap reveal">
+          <button className="trial-btn" onClick={() => router.push('/login')}>
+            Start My 7-Day Free Trial
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+          <div className="trial-guarantee">
+            <span className="trial-g-item"><span className="trial-g-icon">✓</span> No credit card required</span>
+            <span className="trial-g-item"><span className="trial-g-icon">✓</span> No auto-charge after trial</span>
+            <span className="trial-g-item"><span className="trial-g-icon">✓</span> Cancel anytime</span>
+            <span className="trial-g-item"><span className="trial-g-icon">✓</span> 2-minute setup</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Wave Divider: Trial to Features */}
+      <div className="wave-div" style={{ background: "#fff" }}>
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#06040f"></path>
         </svg>
       </div>
 
@@ -465,71 +529,7 @@ export default function LandingPage() {
         </svg>
       </div>
 
-      {/* 7-DAY ELITE TRIAL SECTION */}
-      <section className="trial-sec">
-        {/* Floating orbs */}
-        <div style={{ position:'absolute', width:'500px', height:'500px', borderRadius:'50%', background:'radial-gradient(circle,rgba(124,58,237,0.1) 0%,transparent 70%)', top:'-100px', right:'-100px', pointerEvents:'none', animation:'float1 9s ease-in-out infinite' }} />
-        <div style={{ position:'absolute', width:'400px', height:'400px', borderRadius:'50%', background:'radial-gradient(circle,rgba(6,182,212,0.08) 0%,transparent 70%)', bottom:'-80px', left:'-80px', pointerEvents:'none', animation:'float2 11s ease-in-out infinite' }} />
 
-        {/* Live badge */}
-        <div className="trial-countdown reveal">
-          <span className="trial-pulse" />
-          <span className="trial-countdown-text">🎁 Limited time — Start Free Today</span>
-        </div>
-
-        {/* Big 7 */}
-        <div className="trial-days-badge reveal">
-          <span className="trial-days-num">7</span>
-          <span className="trial-days-label">Day Free Trial</span>
-        </div>
-
-        <h2 className="trial-h2 reveal reveal-delay-1">
-          Full Elite access.<br />
-          <span style={{ background:'linear-gradient(135deg,#a78bfa,#06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>Zero rupees upfront.</span>
-        </h2>
-        <p className="trial-sub reveal reveal-delay-2">
-          Every new clinic gets a full 7-day Elite Plan trial — our most powerful tier — completely free. No credit card. No auto-charge. No risk.
-        </p>
-
-        {/* Feature cards */}
-        <div className="trial-cards">
-          {[
-            { icon: '🏆', title: 'Elite Plan Unlocked', desc: 'Access every premium feature from day one. Nothing held back.' },
-            { icon: '👥', title: 'Unlimited Patients', desc: 'No daily cap during trial. Serve as many patients as you want.' },
-            { icon: '🎙️', title: 'AI Voice in 10 Languages', desc: 'Voice alerts in Hindi, Tamil, Telugu, Marathi, Gujarati & more.' },
-            { icon: '📊', title: 'Full CRM & Analytics', desc: 'Heatmaps, broadcast messages, follow-ups, and detailed reports.' },
-            { icon: '💬', title: 'WhatsApp CRM', desc: 'Smart patient follow-ups and broadcast campaigns ready to go.' },
-            { icon: '🔒', title: 'No Auto-Charge', desc: 'Trial ends, account pauses. You choose a plan only when ready.' },
-          ].map((c, i) => (
-            <div key={c.title} className={`trial-card reveal reveal-delay-${(i % 3) + 1}`}>
-              <span className="trial-card-icon">{c.icon}</span>
-              <div className="trial-card-title">{c.title}</div>
-              <div className="trial-card-desc">{c.desc}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <div className="trial-cta-wrap reveal">
-          <button className="trial-btn" onClick={() => router.push('/login')}>
-            Start My 7-Day Free Trial
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
-          <div className="trial-guarantee">
-            <span className="trial-g-item"><span className="trial-g-icon">✓</span> No credit card required</span>
-            <span className="trial-g-item"><span className="trial-g-icon">✓</span> No auto-charge after trial</span>
-            <span className="trial-g-item"><span className="trial-g-icon">✓</span> Cancel anytime</span>
-            <span className="trial-g-item"><span className="trial-g-icon">✓</span> 2-minute setup</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Wave Divider: Trial (Dark) to CTA (Dark) */}
-      <div className="wave-div" style={{ background: "#080818" }}>
-        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#06040f"></path>
-        </svg>
-      </div>
       <section className="cta-sec">
         <div className="cta-orb" />
         <h2 className="cta-h2">Ready to transform your clinic?</h2>

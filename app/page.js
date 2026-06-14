@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import WhatsAppDemo from "./components/WhatsAppDemo";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -40,7 +41,11 @@ export default function LandingPage() {
         .mbtn{padding:16px 32px;color:#a78bfa;font-weight:700;cursor:pointer}
 
         /* HERO */
-        .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 80px;background:#080818;position:relative;overflow:hidden}
+        .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:120px 24px 80px;background:#080818;position:relative;overflow:hidden}
+        .hero-inner{display:flex;align-items:center;justify-content:space-between;max-width:1150px;width:100%;gap:60px;position:relative;z-index:1}
+        .hero-content{flex:1;text-align:left;max-width:580px}
+        .hero-visual{flex:1;display:flex;justify-content:center;align-items:center;perspective:1000px}
+        
         .orb1{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,0.25) 0%,transparent 70%);top:-100px;left:-100px;pointer-events:none;animation:float1 8s ease-in-out infinite}
         .orb2{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,0.2) 0%,transparent 70%);bottom:-80px;right:-80px;pointer-events:none;animation:float2 10s ease-in-out infinite}
         .orb3{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(236,72,153,0.15) 0%,transparent 70%);top:50%;left:60%;pointer-events:none;animation:float1 12s ease-in-out infinite reverse}
@@ -48,18 +53,19 @@ export default function LandingPage() {
         @keyframes float2{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(24px) scale(0.97)}}
         .hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.35);border-radius:100px;padding:6px 18px;font-size:12px;color:#c4b5fd;margin-bottom:28px;font-weight:600;letter-spacing:.5px;position:relative;z-index:1}
         .badge-dot{width:6px;height:6px;border-radius:50%;background:#7C3AED;box-shadow:0 0 8px #7C3AED}
-        .hero-h1{font-size:clamp(40px,7vw,80px);font-weight:900;line-height:1.05;letter-spacing:-3px;color:#fff;position:relative;z-index:1;margin-bottom:24px}
+        .hero-h1{font-size:clamp(40px,5vw,72px);font-weight:900;line-height:1.05;letter-spacing:-3px;color:#fff;position:relative;z-index:1;margin-bottom:24px}
         .grad-text{background:linear-gradient(135deg,#7C3AED,#06B6D4,#10B981);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .hero-sub{color:rgba(255,255,255,0.5);font-size:clamp(15px,2.2vw,20px);max-width:560px;line-height:1.7;margin:0 auto 40px;position:relative;z-index:1}
-        .hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1;margin-bottom:16px}
+        .hero-sub{color:rgba(255,255,255,0.5);font-size:clamp(15px,1.8vw,18px);max-width:560px;line-height:1.7;margin:0 0 40px 0;position:relative;z-index:1}
+        .hero-btns{display:flex;gap:14px;justify-content:flex-start;flex-wrap:wrap;position:relative;z-index:1;margin-bottom:16px}
         .btn-hero-primary{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;padding:16px 36px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;border:none;box-shadow:0 8px 32px rgba(124,58,237,0.45);transition:transform 0.22s cubic-bezier(0.16,1,0.3,1),box-shadow 0.22s ease;will-change:transform}
         .btn-hero-primary:hover{transform:translateY(-4px);box-shadow:0 20px 56px rgba(124,58,237,0.6)}
         .btn-hero-primary:active{transform:scale(0.96)}
         .btn-hero-ghost{background:rgba(255,255,255,0.07);color:#fff;padding:16px 36px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,0.15);transition:background 0.2s,transform 0.22s cubic-bezier(0.16,1,0.3,1);backdrop-filter:blur(8px);will-change:transform}
         .btn-hero-ghost:hover{background:rgba(255,255,255,0.13);transform:translateY(-4px)}
         .btn-hero-ghost:active{transform:scale(0.96)}
-        .hero-note{color:rgba(255,255,255,0.25);font-size:12px;position:relative;z-index:1}
-        .hero-note span{margin:0 8px}
+        .hero-note{display:flex;gap:12px;color:rgba(255,255,255,0.25);font-size:12px;position:relative;z-index:1}
+        .hero-note span{display:flex;align-items:center}
+        .hero-note span:not(:last-child)::after{content:'·';margin-left:12px}
 
         /* TRUST BAR */
         .trust{background:#0d0d20;padding:20px 32px 30px;display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.05)}
@@ -134,11 +140,18 @@ export default function LandingPage() {
         .flink:hover{color:rgba(255,255,255,0.7)}
         .footer-made{color:rgba(255,255,255,0.2);font-size:11px}
 
+        @media(max-width:1024px){
+          .hero{padding-top:140px}
+          .hero-inner{flex-direction:column;text-align:center;gap:48px}
+          .hero-content{text-align:center;max-width:100%;display:flex;flex-direction:column;align-items:center}
+          .hero-sub{margin:0 auto 40px auto}
+          .hero-btns, .hero-note{justify-content:center}
+        }
         @media(max-width:768px){
           .nav{padding:0 20px}
           .nav-links{display:none}
           .hamburger{display:block}
-          .hero{padding:80px 20px 60px}
+          .hero{padding:100px 20px 60px}
           .hero-h1{font-size:36px;letter-spacing:-1px}
           .hero-sub{font-size:15px;margin-bottom:32px}
           .hero-btns{flex-direction:column;gap:12px;width:100%}
@@ -346,14 +359,21 @@ export default function LandingPage() {
       {/* HERO */}
       <section className="hero">
         <div className="orb1" /><div className="orb2" /><div className="orb3" />
-        <div className="hero-badge animate-fade-up"><span className="badge-dot" />🇮🇳 Built for India's 6 lakh+ clinics</div>
-        <h1 className="hero-h1 animate-fade-up animate-delay-1">No more waiting.<br /><span className="grad-text">Queue smarter.</span></h1>
-        <p className="hero-sub animate-fade-up animate-delay-2">Replace your clinic's paper token chaos with a WhatsApp-based digital queue. Patients wait at home. Voice updates in 10 languages. Zero apps needed.</p>
-        <div className="hero-btns animate-fade-up animate-delay-3">
-          <button className="btn-hero-primary" onClick={() => router.push("/login")}>Start Free Trial →</button>
-          <button className="btn-hero-ghost" onClick={() => go("how")}>See how it works</button>
+        <div className="hero-inner">
+          <div className="hero-content">
+            <div className="hero-badge animate-fade-up"><span className="badge-dot" />🇮🇳 Built for India's 6 lakh+ clinics</div>
+            <h1 className="hero-h1 animate-fade-up animate-delay-1">No more waiting.<br /><span className="grad-text">Queue smarter.</span></h1>
+            <p className="hero-sub animate-fade-up animate-delay-2">Replace your clinic's paper token chaos with a WhatsApp-based digital queue. Patients wait at home. Voice updates in 10 languages. Zero apps needed.</p>
+            <div className="hero-btns animate-fade-up animate-delay-3">
+              <button className="btn-hero-primary" onClick={() => router.push("/login")}>Start Free Trial →</button>
+              <button className="btn-hero-ghost" onClick={() => go("how")}>See how it works</button>
+            </div>
+            <p className="hero-note animate-fade-up animate-delay-4"><span>No app for patients</span><span>Any phone</span><span>7-Day Elite Trial</span></p>
+          </div>
+          <div className="hero-visual animate-fade-up animate-delay-2">
+            <WhatsAppDemo />
+          </div>
         </div>
-        <p className="hero-note animate-fade-up animate-delay-4"><span>No app for patients</span>·<span>Any phone</span>·<span>7-Day Elite Trial — Free</span></p>
       </section>
 
       {/* TRUST */}

@@ -186,7 +186,7 @@ export default function BillingPage() {
     },
     {
       tier: 'elite', name: 'Elite', price: '₹1999', emoji: '🥇',
-      features: ['Unlimited patients/day', 'Monthly PDF Analytics Report', 'Multi-Clinic Management', 'VIP WhatsApp Support', 'CRM Broadcasts'],
+      features: ['Unlimited patients/day', 'Report Download (PDF/CSV)', 'Multi-Clinic Management', 'VIP WhatsApp Support', 'CRM Broadcasts'],
       btnColor: '#f59e0b', textColor: '#000', glow: '0 8px 24px rgba(245,158,11,0.4)', popular: false
     }
   ]
@@ -466,10 +466,10 @@ export default function BillingPage() {
                     <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Monthly PDF Report</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#475569" }}>—</td>
-                    <td style={{ textAlign: "center", padding: "16px 8px", color: "#34d399", fontWeight: 600 }}>✓</td>
+                    <td style={{ padding: "16px 8px", fontWeight: 600 }}>Report Download (PDF/CSV)</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px" }}>7 Days</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 600 }}>30 Days</td>
+                    <td style={{ textAlign: "center", padding: "16px 8px", fontWeight: 700 }}>Unlimited</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <td style={{ padding: "16px 8px", fontWeight: 600 }}>Dashboard Analytics</td>

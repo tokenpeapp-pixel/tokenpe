@@ -172,6 +172,7 @@ export default function BillingPage() {
   const realDaysLeft = trialEnd ? Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)) : 0
   const daysLeft = isTrial ? Math.max(0, realDaysLeft) : null
   const isTrialExpired = clinic?.subscription_status === 'trialing' && trialEnd && realDaysLeft < 0
+  const isCanceled = clinic?.subscription_status === 'canceled'
 
   const plans = [
     {
@@ -259,18 +260,21 @@ export default function BillingPage() {
                     ⚠️ TRIAL EXPIRED
                   </span>
                 )}
-                {!isTrial && <span style={{ fontSize: 13, background: 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', padding: '4px 12px', borderRadius: 20, fontWeight: 700 }}>ACTIVE</span>}
+                {!isTrial && !isCanceled && <span style={{ fontSize: 13, background: 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', padding: '4px 12px', borderRadius: 20, fontWeight: 700 }}>ACTIVE</span>}
+                {isCanceled && <span style={{ fontSize: 13, background: 'rgba(239,68,68,0.2)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', padding: '4px 12px', borderRadius: 20, fontWeight: 700 }}>CANCELED</span>}
               </div>
               <div style={{ color: '#cbd5e1', marginTop: 10, fontSize: 15, lineHeight: 1.7 }}>
                 {isTrialExpired
                   ? <span style={{ color: '#f87171', fontWeight: 600 }}>Your free trial expired on {trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Please choose a paid plan below to restore access to your dashboard.</span>
                   : isTrial
                     ? `Trial ends on ${trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Upgrade now to keep your features!`
-                    : isCancelPending && clinic.current_period_end
-                      ? <span style={{ color: '#f87171' }}>⚠️ Cancellation scheduled — full access until <strong>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. No further charges.</span>
-                      : clinic.current_period_end
-                        ? <>Next billing date: <strong style={{ color: '#a78bfa' }}>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
-                        : <span style={{ color: '#64748b', fontSize: 13 }}>⏳ Confirming billing date... (may take a few seconds)</span>}
+                    : isCanceled
+                      ? <span style={{ color: '#f87171', fontWeight: 600 }}>Subscription ended. Please reactivate a plan to restore service.</span>
+                      : isCancelPending && clinic.current_period_end
+                        ? <span style={{ color: '#f87171' }}>⚠️ Cancellation scheduled — full access until <strong>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. No further charges.</span>
+                        : clinic.current_period_end
+                          ? <>Next billing date: <strong style={{ color: '#a78bfa' }}>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
+                          : <span style={{ color: '#64748b', fontSize: 13 }}>⏳ Confirming billing date... (may take a few seconds)</span>}
               </div>
             </div>
 
@@ -293,14 +297,15 @@ export default function BillingPage() {
 
         {/* PRICING PLANS */}
         <h2 style={{ fontSize: 26, fontWeight: 900, marginBottom: 8, textAlign: 'center', letterSpacing: '-0.5px' }}>
-          {isTrial ? 'Choose Your Plan Before Trial Ends' : 'Upgrade Your Plan'}
+          {isTrial ? 'Choose Your Plan Before Trial Ends' : isCanceled ? 'Reactivate Your Plan' : 'Upgrade Your Plan'}
         </h2>
         <p style={{ textAlign: 'center', color: '#64748b', marginBottom: 36, fontSize: 15 }}>All plans auto-renew monthly. Cancel anytime.</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 24 }}>
           {plans.map(plan => {
             const isCurrent = planId === plan.tier && !isTrial
-            const canReactivate = isCurrent && isCancelPending && plan.tier !== 'starter'
+            const canReactivate = isCurrent && (isCancelPending || isCanceled)
+
             const isLoading = upgrading === plan.tier
             const isDisabled = (isCurrent && !canReactivate) || !!upgrading
             return (

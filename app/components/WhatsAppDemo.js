@@ -1,390 +1,349 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
+// ── Flow data ────────────────────────────────────────────────────────────────
+
+const FLOW = [
+  { side: "pat", type: "text", time: "9:56 AM", text: "JOIN CITYCLINIC", delay: 1000 },
+  { side: "bot", type: "join-card", time: "9:56 AM", delay: 1200 },
+  { side: "pat", type: "join-reply", time: "9:56 AM", delay: 1000 },
+  { side: "bot", type: "text", time: "9:57 AM", text: "👤 Please enter your full name 👇", delay: 1500 },
+  { side: "pat", type: "text", time: "9:57 AM", text: "Dipak Shah", delay: 1000 },
+  { side: "bot", type: "lang-card", time: "9:57 AM", delay: 1500 },
+  { side: "pat", type: "lang-reply", time: "9:57 AM", text: "हिंदी", delay: 1000 },
+  { side: "bot", type: "text", time: "9:58 AM", text: "✅ *Queue Confirmed, Dipak Shah!*\n\n🏥 Clinic: CityClinic\n🎟 Your Token:  *T013*\n👥 People ahead: *12*\n⏳ Est. wait: ~22 mins\n\nWe'll alert you when you're close! 🔔\nSit back and relax 😊\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "9:58 AM", lang: "हिंदी", dur: "0:12", delay: 1500 },
+  { side: "bot", type: "text", time: "10:24 AM", text: "🔔 *Heads up, Dipak Shah!*\n\n📍 Now Serving: *T003*\n🎟 Your Token: *T013*\n🏥 CityClinic\n\nAbout *10 tokens* to go. Start making your way to the clinic! 🏃\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "10:24 AM", lang: "हिंदी", dur: "0:09", delay: 1500 },
+  { side: "bot", type: "text", time: "10:37 AM", text: "⚡ *Almost your turn, Dipak Shah!*\n\n📍 Now Serving: *T008*\n🎟 Your Token: *T013*\n🏥 CityClinic\n\nOnly *5 tokens* away — please be ready near the cabin! 🙏\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "10:37 AM", lang: "हिंदी", dur: "0:08", delay: 1500 },
+  { side: "bot", type: "text", time: "10:49 AM", text: "🚨 *It's YOUR turn, Dipak Shah!*\n\n🎟 Token *T013* — Please go now!\n🏥 CityClinic\n\nProceed to the doctor's cabin immediately! 🏥\nThank you for your patience 🙏\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "10:49 AM", lang: "हिंदी", dur: "0:08", delay: 1500 },
+  { side: "bot", type: "text", time: "11:04 AM", text: "✅ *Consultation Completed, Dipak Shah!*\n\nThank you for visiting *CityClinic*. We hope you feel better soon! 🌟\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "11:04 AM", lang: "हिंदी", dur: "0:11", delay: 1500 },
+  { side: "bot", type: "rating", time: "11:05 AM", delay: 2000 },
+  { side: "pat", type: "rating-reply", time: "11:05 AM", text: "⭐⭐⭐⭐⭐ Excellent", delay: 1500 },
+  { side: "bot", type: "text", time: "11:05 AM", text: "🙏 *Thank You, Dipak Shah!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!", delay: 3500 },
+];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const WAVE_HEIGHTS = [30, 55, 70, 45, 85, 50, 65, 35, 78, 60, 42, 72, 55, 82, 45, 68, 30, 76, 52, 62, 40, 58];
+
+function fmt(text) {
+  return text.split("\n").map((line, i, arr) => {
+    const parts = line.split(/(\*[^*]+\*|_[^_]+_)/g).map((p, j) => {
+      if (p.startsWith("*") && p.endsWith("*")) return <strong key={j}>{p.slice(1, -1)}</strong>;
+      if (p.startsWith("_") && p.endsWith("_")) return <em key={j} style={{ color: "#8696a0", fontSize: "10.5px" }}>{p.slice(1, -1)}</em>;
+      return p;
+    });
+    return <span key={i}>{parts}{i < arr.length - 1 && <br />}</span>;
+  });
+}
+
+// ── Small SVGs ───────────────────────────────────────────────────────────────
+
+const CheckSvg = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#008069" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const ListSvg = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008069" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+    <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+  </svg>
+);
+
+// ── Shared sub-components ────────────────────────────────────────────────────
+
+const TS = ({ time, pat }) => (
+  <div style={{ position: "absolute", bottom: "2px", right: "6px", fontSize: "9px", color: "#8696a0", whiteSpace: "nowrap" }}>
+    {time}{pat && <span style={{ color: "#53bdeb" }}> ✓✓</span>}
+  </div>
+);
+
+const LRQuote = ({ title, body }) => (
+  <div style={{ borderLeft: "3px solid #25D366", background: "rgba(0,0,0,0.05)", borderRadius: "3px", padding: "4px 7px", marginBottom: "5px" }}>
+    <div style={{ fontSize: "9px", color: "#008069", fontWeight: 700, marginBottom: "1px" }}>{title}</div>
+    {body && <div style={{ fontSize: "10px", color: "#555" }}>{body}</div>}
+  </div>
+);
+
+const CardDivider = () => <div style={{ height: "1px", background: "#e9edef" }} />;
+
+const CardAction = ({ children, small }) => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "7px", padding: "9px", color: "#008069", fontSize: small ? "11.5px" : "12px", fontWeight: 700, cursor: "pointer" }}>
+    {children}
+  </div>
+);
+
+const WaveBars = () => (
+  <div style={{ display: "flex", alignItems: "center", gap: "1.5px", height: "22px" }}>
+    {WAVE_HEIGHTS.map((h, i) => (
+      <div key={i} style={{ flex: 1, height: `${h}%`, minHeight: "2px", borderRadius: "1px", background: i < 6 ? "#31AEE7" : "#c8c8c8" }} />
+    ))}
+  </div>
+);
+
+// ── Bubble components ─────────────────────────────────────────────────────────
+
+const S = {
+  bubble: { maxWidth: "88%", padding: "5px 8px 17px", borderRadius: "8px", fontSize: "11.5px", color: "#111b21", position: "relative", boxShadow: "0 1px 2px rgba(0,0,0,0.10)", lineHeight: 1.5, wordBreak: "break-word", fontFamily: "sans-serif", marginTop: "2px", animation: "waPopIn 0.22s cubic-bezier(0.175,0.885,0.32,1.275) forwards" },
+  bot: { background: "#fff", alignSelf: "flex-start", borderTopLeftRadius: 0 },
+  green: { background: "#d9f5c8", alignSelf: "flex-start", borderTopLeftRadius: 0 },
+  pat: { background: "#dcf8c6", alignSelf: "flex-end", borderTopRightRadius: 0 },
+  card: { maxWidth: "225px", minWidth: "205px", background: "#fff", alignSelf: "flex-start", borderRadius: "10px", overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.12)", marginTop: "2px", fontFamily: "sans-serif", animation: "waPopIn 0.22s cubic-bezier(0.175,0.885,0.32,1.275) forwards" },
+};
+
+function JoinCard() {
+  return (
+    <div style={S.card}>
+      <div style={{ padding: "8px 10px 6px" }}>
+        <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#111b21", marginBottom: "4px" }}>🏥 Welcome to our Clinic!</div>
+        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>You are about to join today's OPD queue.<br /><br />Tap the button below to confirm your spot 👇</div>
+        <em style={{ fontSize: "9.5px", color: "#8696a0", fontStyle: "italic", marginTop: "4px", display: "block" }}>Powered by TokenPe</em>
+      </div>
+      <CardDivider /><CardAction><CheckSvg /> Join Queue</CardAction>
+    </div>
+  );
+}
+
+function JoinReply({ time }) {
+  return (
+    <div style={{ ...S.bubble, ...S.pat }} className="wa-pat-tail">
+      <LRQuote title="🏥 Welcome to our Clinic!" body="You are about to join today's OPD queue..." />
+      <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px" }}><CheckSvg /><span style={{ color: "#008069", fontWeight: 700 }}>Join Queue</span></div>
+      <TS time={time} pat />
+    </div>
+  );
+}
+
+function LangCard() {
+  return (
+    <div style={S.card}>
+      <div style={{ padding: "8px 10px 6px" }}>
+        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>🌐 Choose your preferred language for voice updates:</div>
+      </div>
+      <CardDivider /><CardAction small><ListSvg /> Select Language 🌐</CardAction>
+    </div>
+  );
+}
+
+function LangReply({ text, time }) {
+  return (
+    <div style={{ ...S.bubble, ...S.pat }} className="wa-pat-tail">
+      <LRQuote title="🌐 Choose your preferred language for voice updates:" />
+      <div style={{ fontSize: "12px", marginTop: "2px" }}>{text}</div>
+      <TS time={time} pat />
+    </div>
+  );
+}
+
+function VoiceNote({ green, lang, dur, time }) {
+  return (
+    <div style={{ ...S.bubble, ...(green ? S.green : S.bot), padding: "10px 12px", minWidth: "230px", maxWidth: "238px", borderRadius: "10px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#008069", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>
+        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "5px" }}>
+          <WaveBars />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "10px", color: "#8696a0" }}>{dur || "0:11"}</span>
+            <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+              {lang && <span style={{ fontSize: "8.5px", color: "white", background: "#008069", padding: "1.5px 5px", borderRadius: "4px", fontWeight: 700 }}>in {lang}</span>}
+              <span style={{ fontSize: "10px", color: "#8696a0" }}>{time}</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#E8951A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <path d="M12 3a9 9 0 0 0-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1a7 7 0 0 1 14 0v1h-4v8h4c1.1 0 2-.9 2-2v-7a9 9 0 0 0-9-9z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RatingCard() {
+  return (
+    <div style={S.card}>
+      <div style={{ padding: "8px 10px 6px" }}>
+        <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#111b21", marginBottom: "4px" }}>Rate Your Visit</div>
+        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>How was your consultation at CityClinic?<br />Your feedback helps us improve! 🙏</div>
+        <em style={{ fontSize: "9.5px", color: "#8696a0", fontStyle: "italic", marginTop: "4px", display: "block" }}>Powered by TokenPe</em>
+      </div>
+      <CardDivider /><CardAction><ListSvg /> Tap to Rate</CardAction>
+    </div>
+  );
+}
+
+function RatingReply({ text, time }) {
+  return (
+    <div style={{ ...S.bubble, ...S.pat }} className="wa-pat-tail">
+      <LRQuote title="Rate Your Visit" body="How was your consultation at CityClinic?..." />
+      <div style={{ fontSize: "12px", marginTop: "2px" }}>{text}</div>
+      <TS time={time} pat />
+    </div>
+  );
+}
+
+function TextBubble({ msg }) {
+  const style = msg.side === "pat" ? { ...S.bubble, ...S.pat } : msg.green ? { ...S.bubble, ...S.green } : { ...S.bubble, ...S.bot };
+  const cls = msg.side === "pat" ? "wa-pat-tail" : msg.green ? "wa-green-tail" : "wa-bot-tail";
+  return (
+    <div style={style} className={cls}>
+      <div style={{ lineHeight: 1.5, fontSize: "11.5px" }}>{fmt(msg.text)}</div>
+      <TS time={msg.time} pat={msg.side === "pat"} />
+    </div>
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <div style={{ ...S.bubble, ...S.bot, display: "flex", gap: "4px", padding: "9px 13px", alignItems: "center" }} className="wa-bot-tail">
+      {[0, 0.18, 0.36].map((d, i) => (
+        <div key={i} style={{ width: "6px", height: "6px", background: "#8696a0", borderRadius: "50%", animation: `waBounce 1.3s ${d}s infinite`, flexShrink: 0 }} />
+      ))}
+    </div>
+  );
+}
+
+function renderMsg(msg) {
+  switch (msg.type) {
+    case "join-card": return <JoinCard key={msg.id} />;
+    case "join-reply": return <JoinReply key={msg.id} time={msg.time} />;
+    case "lang-card": return <LangCard key={msg.id} />;
+    case "lang-reply": return <LangReply key={msg.id} text={msg.text} time={msg.time} />;
+    case "voice": return <VoiceNote key={msg.id} green={msg.green} lang={msg.lang} dur={msg.dur} time={msg.time} />;
+    case "rating": return <RatingCard key={msg.id} />;
+    case "rating-reply": return <RatingReply key={msg.id} text={msg.text} time={msg.time} />;
+    default: return <TextBubble key={msg.id} msg={msg} />;
+  }
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function WhatsAppDemo() {
-  const [step, setStep] = useState(0);
+  const [msgs, setMsgs] = useState([]);
+  const [typing, setTyping] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [headerStatus, setHeaderStatus] = useState("online");
   const scrollRef = useRef(null);
+  const bottomRef = useRef(null);
+  const aliveRef = useRef(true);
+
+  const scroll = () => {
+    setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({
+          top: 99999,
+          behavior: 'smooth'
+        });
+      }
+    }, 150);
+  };
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
   useEffect(() => {
-    // 0: Initial wait
-    // 1: Typing
-    // 2: Msg 1
-    // 3: Typing
-    // 4: Msg 2 (Warning)
-    // 5: Audio
-    // 6: Typing
-    // 7: Msg 3 (Your Turn)
-    const sequence = [
-      { step: 1, delay: 600 },
-      { step: 2, delay: 2000 },
-      { step: 3, delay: 4000 },
-      { step: 4, delay: 5500 },
-      { step: 5, delay: 7500 },
-      { step: 6, delay: 10000 },
-      { step: 7, delay: 11000 },
-      { step: 0, delay: 18000 }, // Loop
-    ];
+    scroll();
+  }, [msgs, typing]);
 
-    let currentTimeout;
-    const runSequence = (index) => {
-      if (index >= sequence.length) return;
-      currentTimeout = setTimeout(() => {
-        setStep(sequence[index].step);
-        if (scrollRef.current) {
-          // Smooth scroll to bottom
-          setTimeout(() => {
-            if(scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-          }, 50);
+  useEffect(() => {
+    aliveRef.current = true;
+    (async () => {
+      while (aliveRef.current) {
+        setMsgs([]); setProgress(0); setHeaderStatus("online"); setTyping(false);
+        await wait(1500);
+        for (let i = 0; i < FLOW.length; i++) {
+          if (!aliveRef.current) return;
+          const msg = FLOW[i];
+          if (msg.side === "bot") {
+            setHeaderStatus("typing..."); setTyping(true);
+            await wait(1200);
+            if (!aliveRef.current) return;
+            setTyping(false); setHeaderStatus("online");
+          }
+          setMsgs(prev => [...prev, { ...msg, id: i + "-" + Date.now() }]);
+          setProgress(((i + 1) / FLOW.length) * 100);
+          await wait(msg.delay || 2000);
         }
-        runSequence(index + 1);
-      }, sequence[index].delay - (index > 0 ? sequence[index - 1].delay : 0));
-    };
-
-    if (step === 0) runSequence(0);
-
-    return () => clearTimeout(currentTimeout);
-  }, [step]);
+        await wait(8000);
+      }
+    })();
+    return () => { aliveRef.current = false; };
+  }, []);
 
   return (
-    <div className="wa-phone">
-      <div className="wa-notch"></div>
-      
-      <div className="wa-screen">
-        {/* Header */}
-        <div className="wa-header">
-          <div className="wa-header-left">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            <div className="wa-avatar">
-              <img src="/logo.svg" alt="TokenPe" style={{ width: "24px", height: "24px" }} onError={(e) => e.target.style.display='none'} />
-            </div>
-            <div className="wa-title-wrap">
-              <div className="wa-name">TokenPe Alerts <span className="wa-verified">✓</span></div>
-              <div className="wa-status">Online</div>
-            </div>
-          </div>
-          <div className="wa-header-icons">
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </div>
-        </div>
+    <>
+      <style>{`
+        @keyframes waPopIn  { from { opacity:0; transform:scale(0.85) translateY(4px); } to { opacity:1; transform:scale(1) translateY(0); } }
+        @keyframes waBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-4px); } }
+        .wa-wrapper { zoom: 0.85; display: flex; justify-content: center; align-items: center; padding: 24px 16px 32px; }
+        @media (max-width: 768px) { .wa-wrapper { zoom: 0.75; } }
+        @media (max-width: 480px) { .wa-wrapper { zoom: 0.65; } }
+        .wa-phone { transition:transform 0.5s cubic-bezier(0.16,1,0.3,1); transform:perspective(900px) rotateY(-5deg) rotateX(2deg); }
+        .wa-phone:hover { transform:perspective(900px) rotateY(0deg) rotateX(0deg) translateY(-6px); }
+        .wa-bot-tail::before   { content:''; position:absolute; top:0; left:-6px;  border:6px solid transparent; border-top-color:#fff;    border-right-color:#fff;    }
+        .wa-green-tail::before { content:''; position:absolute; top:0; left:-6px;  border:6px solid transparent; border-top-color:#d9f5c8; border-right-color:#d9f5c8; }
+        .wa-pat-tail::after    { content:''; position:absolute; top:0; right:-6px; border:6px solid transparent; border-top-color:#dcf8c6; border-left-color:#dcf8c6;  }
+        .wa-chat::-webkit-scrollbar { display:none; }
+      `}</style>
 
-        {/* Chat Area */}
-        <div className="wa-chat" ref={scrollRef}>
-          <div className="wa-date">Today</div>
-          
-          {step >= 2 && (
-            <div className="wa-msg wa-bot">
-              🏥 Welcome to <strong>City Hospital</strong>!<br/>
-              You have successfully joined the digital queue.<br/><br/>
-              🎫 Your Token No: <strong>42</strong><br/>
-              ⏳ Current Token: <strong>38</strong><br/>
-              Wait time: ~15 mins
-              <div className="wa-time">10:42 AM</div>
-            </div>
-          )}
+      <div className="wa-wrapper">
+        <div className="wa-phone" style={{ width: "290px", height: "620px", background: "#1a1a1a", borderRadius: "40px", padding: "10px", flexShrink: 0, position: "relative", boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset,0 0 0 6px #1a1a1a,0 32px 80px rgba(0,0,0,0.55),0 8px 20px rgba(0,0,0,0.3)" }}>
+          {/* Notch */}
+          <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", width: "90px", height: "22px", background: "#1a1a1a", borderBottomLeftRadius: "12px", borderBottomRightRadius: "12px", zIndex: 10 }} />
 
-          {step >= 4 && (
-            <div className="wa-msg wa-bot">
-              🔔 <strong>Alert!</strong> Your turn is approaching. Please be ready in the waiting area.
-              <div className="wa-time">10:55 AM</div>
-            </div>
-          )}
+          <div style={{ width: "100%", height: "100%", borderRadius: "32px", overflow: "hidden", display: "flex", flexDirection: "column", background: "#efeae2", position: "relative" }}>
+            {/* Wallpaper */}
+            <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.13, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='2' fill='%23a09880'/%3E%3C/svg%3E")`, backgroundSize: "30px 30px" }} />
 
-          {step >= 5 && (
-            <div className="wa-msg wa-bot wa-audio">
-              <div className="wa-audio-ui">
-                <div className="wa-play-btn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                </div>
-                <div className="wa-waveform">
-                   <span style={{height:'30%'}}></span><span style={{height:'60%'}}></span><span style={{height:'100%'}}></span><span style={{height:'40%'}}></span><span style={{height:'70%'}}></span><span style={{height:'50%'}}></span><span style={{height:'80%'}}></span><span style={{height:'40%'}}></span><span style={{height:'20%'}}></span><span style={{height:'90%'}}></span><span style={{height:'50%'}}></span><span style={{height:'30%'}}></span>
-                </div>
-                <div className="wa-duration">0:08</div>
+            {/* Header */}
+            <div style={{ background: "#008069", padding: "34px 10px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 2, boxShadow: "0 1px 4px rgba(0,0,0,0.18)", flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "rgba(255,255,255,0.2)", zIndex: 20 }}>
+                <div style={{ height: "100%", background: "#25D366", width: `${progress}%`, transition: "width 0.5s ease", borderRadius: "0 1px 1px 0" }} />
               </div>
-              <div className="wa-time">10:55 AM</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "20px", lineHeight: 1 }}>‹</span>
+                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#fff", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: "4px" }}>
+                  <img src="/logo-light.png" alt="TokenPe Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "13.5px", fontWeight: 700, color: "white", display: "flex", alignItems: "center", gap: "4px" }}>
+                    TokenPe
+                    <span style={{ width: "13px", height: "13px", borderRadius: "50%", background: "#25D366", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "8px", color: "white", fontWeight: 900 }}>✓</span>
+                  </div>
+                  <div style={{ fontSize: "10.5px", color: "rgba(255,255,255,0.75)" }}>{headerStatus}</div>
+                </div>
+              </div>
+              <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "18px" }}>⋮</div>
             </div>
-          )}
 
-          {step >= 7 && (
-            <div className="wa-msg wa-bot wa-highlight">
-              ✅ <strong>It's your turn!</strong><br/>
-              Please proceed to Doctor's Cabin 2.
-              <div className="wa-time">10:58 AM</div>
+            {/* Chat */}
+            <div ref={scrollRef} className="wa-chat" style={{ flex: 1, padding: "10px 8px 30px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "3px", zIndex: 1, position: "relative" }}>
+              <div style={{ alignSelf: "center", background: "rgba(255,255,255,0.88)", color: "#54656f", fontSize: "10px", fontWeight: 500, padding: "3px 10px", borderRadius: "6px", marginBottom: "6px" }}>Today</div>
+              {msgs.map(renderMsg)}
+              {typing && <TypingIndicator />}
             </div>
-          )}
 
-          {(step === 1 || step === 3 || step === 6) && (
-            <div className="wa-msg wa-bot wa-typing">
-              <span></span><span></span><span></span>
+            {/* Input bar */}
+            <div style={{ background: "#f0f2f5", padding: "6px 8px", display: "flex", alignItems: "center", gap: "6px", zIndex: 2, position: "relative", flexShrink: 0 }}>
+              <div style={{ flex: 1, background: "#fff", borderRadius: "20px", padding: "8px 14px", fontSize: "12px", color: "#8696a0" }}>Message</div>
+              <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#008069", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+              </div>
             </div>
-          )}
-        </div>
-        
-        {/* Fake Input Area */}
-        <div className="wa-input-area">
-          <div className="wa-input-box">Message</div>
-          <div className="wa-mic">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .wa-phone {
-          width: 320px;
-          height: 620px;
-          background: #000;
-          border-radius: 40px;
-          padding: 12px;
-          box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1) inset;
-          position: relative;
-          transform: perspective(1000px) rotateY(-8deg) rotateX(4deg);
-          transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-          flex-shrink: 0;
-        }
-        .wa-phone:hover {
-          transform: perspective(1000px) rotateY(0deg) rotateX(0deg) translateY(-10px);
-        }
-        .wa-notch {
-          position: absolute;
-          top: 12px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 100px;
-          height: 26px;
-          background: #000;
-          border-bottom-left-radius: 14px;
-          border-bottom-right-radius: 14px;
-          z-index: 10;
-        }
-        .wa-screen {
-          width: 100%;
-          height: 100%;
-          background: #efeae2;
-          border-radius: 30px;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          position: relative;
-        }
-        .wa-screen::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
-          background-size: 16px 16px;
-          opacity: 0.6;
-          z-index: 0;
-        }
-        .wa-header {
-          background: #008069;
-          color: #fff;
-          padding: 42px 14px 12px; /* Pad top for notch */
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          z-index: 1;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .wa-header-left {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .wa-avatar {
-          width: 38px;
-          height: 38px;
-          background: #fff;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-        }
-        .wa-name {
-          font-size: 16px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .wa-verified {
-          background: #25D366;
-          color: #fff;
-          border-radius: 50%;
-          font-size: 8px;
-          width: 14px;
-          height: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .wa-status {
-          font-size: 12px;
-          color: rgba(255,255,255,0.8);
-        }
-        .wa-chat {
-          flex: 1;
-          padding: 16px;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          z-index: 1;
-          scrollbar-width: none;
-          scroll-behavior: smooth;
-        }
-        .wa-chat::-webkit-scrollbar { display: none; }
-        .wa-date {
-          text-align: center;
-          background: rgba(255,255,255,0.9);
-          color: #54656f;
-          font-size: 12px;
-          font-weight: 500;
-          padding: 6px 12px;
-          border-radius: 8px;
-          align-self: center;
-          margin-bottom: 8px;
-          box-shadow: 0 1px 1px rgba(0,0,0,0.05);
-        }
-        .wa-msg {
-          background: #fff;
-          padding: 8px 10px 22px 10px;
-          border-radius: 8px;
-          font-size: 14.5px;
-          color: #111b21;
-          max-width: 85%;
-          position: relative;
-          box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-          line-height: 1.45;
-          animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-          transform-origin: top left;
-        }
-        .wa-msg.wa-bot {
-          align-self: flex-start;
-          border-top-left-radius: 0;
-        }
-        .wa-msg.wa-bot::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -8px;
-          width: 0;
-          height: 0;
-          border: 8px solid transparent;
-          border-top-color: #fff;
-          border-right-color: #fff;
-        }
-        .wa-msg.wa-highlight {
-          background: #dcf8c6;
-        }
-        .wa-msg.wa-highlight::before {
-          border-top-color: #dcf8c6;
-          border-right-color: #dcf8c6;
-        }
-        .wa-time {
-          font-size: 10px;
-          color: #667781;
-          position: absolute;
-          bottom: 4px;
-          right: 8px;
-        }
-        .wa-typing {
-          display: flex;
-          gap: 4px;
-          padding: 12px 14px;
-          width: fit-content;
-        }
-        .wa-typing span {
-          width: 6px;
-          height: 6px;
-          background: #8696a0;
-          border-radius: 50%;
-          animation: typing 1.4s infinite;
-        }
-        .wa-typing span:nth-child(2) { animation-delay: 0.2s; }
-        .wa-typing span:nth-child(3) { animation-delay: 0.4s; }
-
-        .wa-audio-ui {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .wa-play-btn {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: #128c7e;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .wa-waveform {
-          display: flex;
-          align-items: center;
-          gap: 2px;
-          height: 24px;
-          flex: 1;
-        }
-        .wa-waveform span {
-          width: 3px;
-          background: #8696a0;
-          border-radius: 4px;
-        }
-        .wa-duration {
-          font-size: 12px;
-          color: #8696a0;
-        }
-
-        .wa-input-area {
-          background: #f0f2f5;
-          padding: 8px 12px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          z-index: 1;
-        }
-        .wa-input-box {
-          flex: 1;
-          background: #fff;
-          border-radius: 20px;
-          padding: 10px 16px;
-          color: #8696a0;
-          font-size: 15px;
-        }
-        .wa-mic {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: #008069;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        @keyframes popIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes typing {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-
-        @media(max-width: 768px){
-          .wa-phone {
-            width: 100%;
-            max-width: 320px;
-            height: 600px;
-            transform: none;
-            margin: 0 auto;
-          }
-          .wa-phone:hover {
-            transform: none;
-          }
-        }
-      `}</style>
-    </div>
+    </>
   );
 }

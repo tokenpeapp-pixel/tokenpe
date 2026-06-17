@@ -129,9 +129,9 @@ export async function POST(req) {
                 
                 if (rating >= 1 && rating <= 5) {
                     // Find most recent 'done' visit
-                    let { data: recent } = await supabase.from('patients').select('id, rating, phone').eq('phone', clean).eq('status', 'done').order('joined_at', { ascending: false }).limit(1)
+                    let { data: recent } = await supabaseAdmin.from('patients').select('id, rating, phone').eq('phone', clean).eq('status', 'done').order('joined_at', { ascending: false }).limit(1)
                     if (!recent || recent.length === 0) {
-                        const { data: recent2 } = await supabase.from('patients').select('id, rating, phone').eq('phone', tenDigit).eq('status', 'done').order('joined_at', { ascending: false }).limit(1)
+                        const { data: recent2 } = await supabaseAdmin.from('patients').select('id, rating, phone').eq('phone', tenDigit).eq('status', 'done').order('joined_at', { ascending: false }).limit(1)
                         recent = recent2
                     }
 

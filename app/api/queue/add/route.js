@@ -1,6 +1,8 @@
 import { supabase, supabaseAdmin, getISTDateString } from '../../../../lib/supabase'
 import { getSession } from '../../../../lib/auth'
 import { sanitizeName, validatePhone } from '../../../../lib/validate'
+import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
+import { after } from 'next/server'
 
 export async function POST(req) {
     try {
@@ -67,7 +69,60 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Failed to add walk-in patient' }, { status: 500 })
         }
 
-        return Response.json({ success: true, patient: data[0] }, { status: 200 })
+        const patient = data[0]
+
+        // Send WhatsApp confirmation text + voice note in background (non-blocking)
+        if (cleanPhone !== '0000000000') {
+            after(async () => {
+                try {
+                    // Fetch clinic info for messaging
+                    const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, subscription_status').eq('id', clinicId).single()
+                    const planId = clinic?.plan_id || 'starter'
+                    const clinicName = clinic?.name || 'the clinic'
+
+                    // Count people ahead
+                    const { count: aheadCount } = await supabaseAdmin
+                        .from('patients')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('clinic_id', clinicId)
+                        .eq('status', 'waiting')
+                        .eq('date', today)
+                        .lt('token', token)
+
+                    const peopleAhead = aheadCount || 0
+
+                    const confirmMsg = `✅ *Walk-in Confirmed, ${patient.name}!*
+
+🎟 Your Token: *${token}*
+🏥 ${clinicName}
+👥 People ahead: *${peopleAhead}*
+⏳ Est. wait: ~${peopleAhead * 7} mins
+
+We'll notify you when your turn is near!
+
+_Powered by TokenPe_`
+
+                    const alerts = [sendText(cleanPhone, confirmMsg)]
+
+                    if (planId !== 'starter') {
+                        alerts.push(sendVoice({
+                            phone: cleanPhone,
+                            language: language || 'hi',
+                            event: 'joined',
+                            token,
+                            position: peopleAhead,
+                            clinicName
+                        }))
+                    }
+
+                    await Promise.all(alerts)
+                } catch (err) {
+                    console.error('[queue/add] Messaging error:', err.message)
+                }
+            })
+        }
+
+        return Response.json({ success: true, patient }, { status: 200 })
 
     } catch (error) {
         console.error('[queue/add] Error:', error)

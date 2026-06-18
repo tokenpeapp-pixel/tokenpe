@@ -28,32 +28,42 @@ export async function POST(req) {
         const { searchParams } = new URL(req.url)
         const secret = searchParams.get('secret')
 
-        // 🛡️ Webhook Security
-        const expectedSecret = process.env.WEBHOOK_VERIFY_TOKEN || ''
-        const isValid = expectedSecret && secret && 
-            secret.length === expectedSecret.length &&
-            crypto.timingSafeEqual(
-                Buffer.from(secret),
-                Buffer.from(expectedSecret)
-            )
-
-        if (!isValid) {
-            console.error(`[whatsapp] ❌ Unauthorized — Invalid webhook secret. Received: ${maskSecret(secret)}`)
-            return Response.json({
-                success: false,
-                message: '❌ Unauthorized. Invalid webhook secret.'
-            }, { status: 401 })
-        }
-
         const body = await req.json()
+        const action = pick(body, 'action', 'Action', 'event', 'type')
+
+        // 🛡️ Webhook Security
+        // Interakt sends TWO types of webhooks to this endpoint:
+        //   1. Flow webhooks (join) — include ?secret= in URL
+        //   2. Message webhooks (ratings, replies) — come from Interakt's "Webhook URL" setting, no ?secret= param
+        // For message webhooks, we verify by checking for standard Interakt payload structure
+        const isInteraktMessage = (action === 'message_received' || action === 'message' || action === 'reply' || action === 'feedback') && 
+            (body.data?.customer || body.data?.message || body.customer || body.message)
+
+        if (!isInteraktMessage) {
+            // For non-message webhooks (join, callnext), require the secret
+            const expectedSecret = process.env.WEBHOOK_VERIFY_TOKEN || ''
+            const isValid = expectedSecret && secret && 
+                secret.length === expectedSecret.length &&
+                crypto.timingSafeEqual(
+                    Buffer.from(secret),
+                    Buffer.from(expectedSecret)
+                )
+
+            if (!isValid) {
+                console.error(`[whatsapp] ❌ Unauthorized — Invalid webhook secret. Received: ${maskSecret(secret)}`)
+                return Response.json({
+                    success: false,
+                    message: '❌ Unauthorized. Invalid webhook secret.'
+                }, { status: 401 })
+            }
+        }
 
 
 
         // ── 🔍 FULL PAYLOAD LOG — helps debug Interakt variable names ──────────
         // console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
-        console.log(`[whatsapp] ✅ Received action: ${pick(body, 'action', 'Action', 'event', 'type')}`)
+        console.log(`[whatsapp] ✅ Received action: ${action}`)
 
-        const action = pick(body, 'action', 'Action', 'event', 'type')
         const baseUrl = new URL(req.url).origin
 
         // ── MESSAGE / RATING RECEIVED ─────────────────────────────────────────────

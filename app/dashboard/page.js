@@ -816,8 +816,8 @@ export default function Dashboard() {
   const planId = clinic?.plan_id || 'starter'
   const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
   const isLimitReached = patients.length >= limit
-  const oldestClinic = userClinics?.length > 0 
-    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0]) 
+  const oldestClinic = userClinics?.length > 0
+    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0])
     : clinic
 
   const trialEnd = oldestClinic?.trial_ends_at ? new Date(oldestClinic.trial_ends_at) : null

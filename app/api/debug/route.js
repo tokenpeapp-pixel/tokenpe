@@ -13,6 +13,47 @@ export async function GET(req) {
         return Response.json({ error: 'Not Found' }, { status: 404 })
     }
 
+    // ── Test: simulate a visit rating webhook ────────────────────────────────
+    const testRating = searchParams.get('testRating') // ?testRating=5&phone=9999999999
+    if (testRating) {
+        const origin = new URL(req.url).origin
+        const webhookUrl = `${origin}/api/whatsapp`
+        const phone = searchParams.get('phone') || '9999999999'
+        const ratingId = testRating
+
+        try {
+            const res = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'message_received',
+                    data: {
+                        customer: { phone_number: phone },
+                        message: {
+                            type: 'InteractiveListReply',
+                            interactive: {
+                                list_reply: {
+                                    id: ratingId,
+                                    title: `${'⭐'.repeat(parseInt(ratingId) || 5)} Excellent`
+                                }
+                            }
+                        }
+                    }
+                })
+            })
+            const data = await res.json()
+            return Response.json({
+                testRating: ratingId,
+                phone,
+                webhookUrl,
+                status: res.status,
+                response: data
+            }, { status: 200 })
+        } catch (err) {
+            return Response.json({ error: err.message }, { status: 500 })
+        }
+    }
+
     // ── Test: simulate an Interakt join webhook ──────────────────────────────
     const testJoin = searchParams.get('testJoin') // ?testJoin=CLINIC_CODE
     if (testJoin) {
@@ -64,7 +105,7 @@ export async function GET(req) {
             SUPABASE_URL:          process.env.NEXT_PUBLIC_SUPABASE_URL || '❌ MISSING',
         },
         webhookUrl: `${new URL(req.url).origin}/api/whatsapp?secret=${process.env.WEBHOOK_VERIFY_TOKEN}`,
-        hint: 'Add ?testJoin=YOUR_CLINIC_CODE to simulate a real patient joining',
+        hint: 'Add ?testJoin=YOUR_CLINIC_CODE to simulate a patient joining, or ?testRating=5&phone=PHONE to simulate a rating reply',
         clinics: clinics || [],
         recentPatients: recentPatients || []
     }, { status: 200 })

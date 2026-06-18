@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
-import { supabase } from '../../../lib/supabase'
 
 export default function FeedbackPage() {
   const { clinicCode } = useParams()
@@ -25,18 +24,23 @@ export default function FeedbackPage() {
         return
       }
       
-      const { data: c } = await supabase.from('clinics').select('id, name, logo_url').eq('code', clinicCode.toUpperCase()).single()
-      if (c) {
-        setClinic(c)
-        const { data: p } = await supabase.from('patients').select('id, name, rating, feedback_text').eq('id', patientId).single()
-        if (p) {
-          setPatient(p)
-          if (p.rating) {
-            setRating(p.rating)
-            setFeedbackText(p.feedback_text || '')
-            setSubmitted(true)
-          }
+      try {
+        const params = new URLSearchParams({ patientId, clinicCode: clinicCode.toUpperCase() })
+        const res = await fetch(`/api/feedback/load?${params}`)
+        const result = await res.json()
+        if (!res.ok || !result.success) {
+          setLoading(false)
+          return
         }
+        setClinic(result.clinic)
+        setPatient(result.patient)
+        if (result.patient.rating) {
+          setRating(result.patient.rating)
+          setFeedbackText(result.patient.feedback_text || '')
+          setSubmitted(true)
+        }
+      } catch (err) {
+        console.error('[feedback] load failed', err)
       }
       setLoading(false)
     }
@@ -48,12 +52,18 @@ export default function FeedbackPage() {
     
     setSubmitting(true)
     try {
-      const { error } = await supabase
-        .from('patients')
-        .update({ rating, feedback_text: feedbackText })
-        .eq('id', patientId)
-        
-      if (error) throw error
+      const res = await fetch('/api/feedback/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId,
+          clinicCode: clinicCode.toUpperCase(),
+          rating,
+          feedbackText
+        })
+      })
+      const result = await res.json()
+      if (!res.ok || !result.success) throw new Error(result.message || 'Submit failed')
       setSubmitted(true)
     } catch (err) {
       alert('Failed to submit feedback. Please try again.')

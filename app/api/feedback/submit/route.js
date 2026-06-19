@@ -46,11 +46,10 @@ export async function POST(req) {
 
         if (patient.rating) {
             if (patient.phone) {
-                const stars = '⭐'.repeat(patient.rating)
                 const name = patient.name || 'Patient'
                 await sendText(
                     cleanPhone(patient.phone),
-                    `🙏 *Thank You, ${name}!*\n\nWe have recorded your ${stars} rating.\nWe appreciate your feedback!`
+                    `🙏 *Thank You, ${name}!*\n\nWe have recorded your ${patient.rating} ⭐ rating.\nWe appreciate your feedback!`
                 )
             }
             return Response.json({ success: true, message: 'Already submitted', alreadyRated: true })
@@ -71,11 +70,10 @@ export async function POST(req) {
         }
 
         if (patient.phone) {
-            const stars = '⭐'.repeat(validRating)
             const name = patient.name || 'Patient'
             await sendText(
                 cleanPhone(patient.phone),
-                `🙏 *Thank You, ${name}!*\n\nWe have recorded your ${stars} rating.\nWe appreciate your feedback!`
+                `🙏 *Thank You, ${name}!*\n\nWe have recorded your ${validRating} ⭐ rating.\nWe appreciate your feedback!`
             )
         }
 

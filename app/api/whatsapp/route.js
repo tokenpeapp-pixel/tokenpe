@@ -31,11 +31,10 @@ async function findRecentDonePatient(phone) {
 }
 
 async function sendRatingThankYou(phone, rating, patientName) {
-    const stars = '⭐'.repeat(rating)
     const name = patientName || 'Patient'
     await sendText(
         cleanPhone(phone),
-        `🙏 *Thank You, ${name}!*\n\nWe have recorded your ${stars} rating.\nWe appreciate your feedback!`
+        `🙏 *Thank You, ${name}!*\n\nWe have recorded your ${rating} ⭐ rating.\nWe appreciate your feedback!`
     )
 }
 

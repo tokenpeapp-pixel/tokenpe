@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
-import { 
-  MapPin, Search, MessageSquare, Mic, Zap, Gift, Crown, CreditCard, Lock, Check, Calendar, QrCode, Heart, Hospital, Globe, Camera, FileText, IndianFlag, Star, Clock, Link, Users, SPECIALTY_ICONS 
+import {
+  MapPin, Search, MessageSquare, Mic, Zap, Gift, Crown, CreditCard, Lock, Check, Calendar, QrCode, Heart, Hospital, Globe, Camera, FileText, IndianFlag, Star, Clock, Link, Users, SPECIALTY_ICONS
 } from '../../lib/icons'
 
 const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919892875513'
@@ -183,7 +183,7 @@ function ClinicCard({ clinic, isNearby }) {
           onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(124,58,237,0.3)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
           </svg>
           Join Queue
         </a>
@@ -252,10 +252,8 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   const [nearbyResults, setNearbyResults] = useState([])
   const [locationStatus, setLocationStatus] = useState('checking') // 'checking' | 'prompt' | 'detecting' | 'active' | 'denied'
   const [userLocation, setUserLocation] = useState(null)
-  const debounceRef = useRef(null)
-
-  // If user has location and no search filters, show nearby. Otherwise show normal search results.
-  const displayedClinics = (userLocation && !query && !selectedCity && !selectedSpecialty && nearbyResults.length > 0) 
+  const debounceRef = useRef(null)  // If user has location and no search filters, show nearby. Otherwise show normal search results.
+  const displayedClinics = (userLocation && !query && !selectedCity && !selectedSpecialty) 
     ? nearbyResults 
     : clinics
 
@@ -296,7 +294,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
 
   const fetchNearby = useCallback(async (lat, lng) => {
     try {
-      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=15000`)
+      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=50000`) // Increased to 50km
       const json = await res.json()
       setNearbyResults(json.clinics || [])
       localStorage.setItem('tokenpe_user_lat', lat.toString())
@@ -306,7 +304,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
     }
   }, [])
 
-  // Zepto/Blinkit style: On mount, check if we have cached location. If yes, use it. If no, show prompt.
+  // On mount, check if we have cached location.
   useEffect(() => {
     const storedLat = localStorage.getItem('tokenpe_user_lat')
     const storedLng = localStorage.getItem('tokenpe_user_lng')
@@ -338,9 +336,20 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
       },
       (err) => {
         console.log('Location error:', err)
-        setLocationStatus('denied')
+        if (err.code === 1) { // PERMISSION_DENIED
+          setLocationStatus('denied')
+        } else if (err.code === 2) { // POSITION_UNAVAILABLE
+          alert("Could not determine your device's location. Please ensure your device Location Services (GPS) are turned ON in your phone's quick settings.")
+          setLocationStatus('prompt')
+        } else if (err.code === 3) { // TIMEOUT
+          alert("Location request timed out. Please try again.")
+          setLocationStatus('prompt')
+        } else {
+          setLocationStatus('denied')
+        }
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      // Removed enableHighAccuracy because it causes timeouts indoors on many Android devices
+      { timeout: 15000, maximumAge: 60000 }
     )
   }
 
@@ -472,21 +481,21 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
 
         <div className="find-inner">
 
-          {/* LOCATION PROMPT — Zepto/Blinkit style */}
+          {/* LOCATION PROMPT —style */}
           {(locationStatus === 'prompt' || locationStatus === 'detecting' || locationStatus === 'denied') && (
             <div style={{ textAlign: 'center', padding: '60px 20px 40px', maxWidth: 440, margin: '0 auto' }}>
               <div style={{ width: 80, height: 80, background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.15))', borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
               </div>
               <h2 style={{ fontSize: 24, fontWeight: 900, color: '#f1f5f9', marginBottom: 12, letterSpacing: '-0.5px' }}>
                 {locationStatus === 'detecting' ? 'Detecting your location...' : 'Where are you?'}
               </h2>
               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-                {locationStatus === 'denied' 
+                {locationStatus === 'denied'
                   ? 'Location was blocked. You can search clinics manually below, or allow location in your browser settings and try again.'
                   : 'Share your location to instantly see the clinics nearest to you.'}
               </p>
-              
+
               {locationStatus === 'detecting' ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                   <div className="spinner" style={{ width: 24, height: 24 }} />
@@ -498,7 +507,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
                     onClick={handleDetectLocation}
                     style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 24px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
                     {locationStatus === 'denied' ? 'Try Again' : 'Detect My Location'}
                   </button>
                   <button
@@ -552,7 +561,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
               <div className="controls-row">
                 {userLocation && !query && !selectedCity && !selectedSpecialty && nearbyResults.length > 0 && (
                   <span style={{ fontSize: 12, color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
                     Sorted by distance from you
                   </span>
                 )}

@@ -48,6 +48,7 @@ export default function LoginPage() {
     const [regEmail, setRegEmail] = useState('')
     const [regPin, setRegPin] = useState('')
     const [regSpecialty, setRegSpecialty] = useState('General Physician')
+    const [customSpecialty, setCustomSpecialty] = useState('')
     const [regCity, setRegCity] = useState('')
     const [regLat, setRegLat] = useState(null)
     const [regLng, setRegLng] = useState(null)
@@ -61,12 +62,17 @@ export default function LoginPage() {
                 setRegLat(pos.coords.latitude)
                 setRegLng(pos.coords.longitude)
                 setGpsStatus('success')
+                setError('')
             },
             (err) => {
-                console.error(err)
-                setGpsStatus('error')
+                console.error('GPS Error:', err)
+                if (err.code === err.PERMISSION_DENIED) {
+                    setGpsStatus('denied')
+                } else {
+                    setGpsStatus('error')
+                }
             },
-            { timeout: 10000, maximumAge: 60000 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         )
     }
 
@@ -154,6 +160,12 @@ export default function LoginPage() {
             return
         }
 
+        if (!regLat || !regLng) {
+            setError('Clinic GPS location is mandatory. Please click "Detect GPS Location" and allow permissions.')
+            setLoading(false)
+            return
+        }
+
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -163,7 +175,7 @@ export default function LoginPage() {
                     phone: regPhone, 
                     email: regEmail, 
                     pin: regPin,
-                    specialty: regSpecialty,
+                    specialty: regSpecialty === 'Other' ? customSpecialty : regSpecialty,
                     city: regCity,
                     lat: regLat,
                     lng: regLng
@@ -351,12 +363,11 @@ export default function LoginPage() {
                     flex: 1;
                     background: #ffffff;
                     display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    flex-direction: column;
                     padding: 48px 40px;
                     overflow-y: auto;
                 }
-                .form-box { width: 100%; max-width: 400px; }
+                .form-box { width: 100%; max-width: 400px; margin: auto; }
 
                 .form-title { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
                 .form-subtitle { font-size: 14px; color: #64748b; margin-bottom: 28px; }
@@ -611,6 +622,7 @@ export default function LoginPage() {
                             <div className="field">
                                 <label>Specialty *</label>
                                 <select value={regSpecialty} onChange={e => setRegSpecialty(e.target.value)} required suppressHydrationWarning={true}>
+                                    <option value="Other">Other (Custom)</option>
                                     <option value="General Physician">General Physician</option>
                                     <option value="Pediatrician">Pediatrician</option>
                                     <option value="Dermatologist">Dermatologist</option>
@@ -628,6 +640,12 @@ export default function LoginPage() {
                                     <option value="Physiotherapist">Physiotherapist</option>
                                 </select>
                             </div>
+                            {regSpecialty === 'Other' && (
+                                <div className="field">
+                                    <label>Enter Custom Specialty *</label>
+                                    <input value={customSpecialty} onChange={e => setCustomSpecialty(e.target.value)} placeholder="e.g. Homeopath, Ayurveda, etc." required suppressHydrationWarning={true} />
+                                </div>
+                            )}
                             <div className="field">
                                 <label>City *</label>
                                 <input value={regCity} onChange={e => setRegCity(e.target.value)} placeholder="e.g. Mumbai, Bangalore" required suppressHydrationWarning={true} />
@@ -659,8 +677,11 @@ export default function LoginPage() {
                                     {gpsStatus === 'success' && (
                                         <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✅ GPS Active</span>
                                     )}
+                                    {gpsStatus === 'denied' && (
+                                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500, lineHeight: 1.3 }}>⚠️ Permission Denied.<br/>Please allow location access.</span>
+                                    )}
                                     {gpsStatus === 'error' && (
-                                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500 }}>⚠️ Skipped</span>
+                                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500 }}>⚠️ Failed to get location</span>
                                     )}
                                 </div>
                             </div>

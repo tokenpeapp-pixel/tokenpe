@@ -11,6 +11,17 @@ export default function LandingPage() {
 
   // Scroll-reveal: observe elements with .reveal class
   useEffect(() => {
+    // Proactively ask for location so patients can find nearby clinics easily
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          localStorage.setItem('tokenpe_user_lat', pos.coords.latitude);
+          localStorage.setItem('tokenpe_user_lng', pos.coords.longitude);
+        },
+        (err) => console.log('Proactive location request skipped or denied.')
+      );
+    }
+
     const observer = new IntersectionObserver(
       (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } }),
       { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }

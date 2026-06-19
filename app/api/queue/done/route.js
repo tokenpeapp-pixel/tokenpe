@@ -56,7 +56,9 @@ _Powered by TokenPe_`
         await Promise.all(alerts)
 
         // Send rating AFTER the consultation messages so it arrives last in WhatsApp
+        // We add a 2-second delay to guarantee Interakt has time to deliver the voice note first
         if (planId === 'elite' || planId === 'pro' || clinic?.subscription_status === 'trialing') {
+            await new Promise(resolve => setTimeout(resolve, 2000))
             await sendInteractiveRating(phone, clinicName, language || 'en')
         }
 

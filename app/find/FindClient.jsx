@@ -512,19 +512,9 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
             )}
           </div>
 
-          {/* GPS + count row */}
+          {/* Results count */}
           <div className="controls-row">
-            <button
-              id="gps-btn"
-              className={`gps-btn${isNearbyMode ? ' active' : ''}`}
-              onClick={handleGPS}
-              disabled={gpsLoading}
-            >
-              {gpsLoading ? <div className="spinner" /> : <MapPin size={14} />}
-              {gpsLoading ? 'Finding location...' : isNearbyMode ? 'Showing nearby' : 'Near Me'}
-            </button>
-            {gpsError && <span className="gps-error">{gpsError}</span>}
-            {!gpsError && !loading && (
+            {!loading && (
               <span className="results-count">
                 {displayedClinics.length} clinic{displayedClinics.length !== 1 ? 's' : ''} found
               </span>
@@ -567,20 +557,6 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
               </>
             )}
           </div>
-
-          {/* Nearby mode banner */}
-          {isNearbyMode && (
-            <div className="nearby-banner">
-              <span className="nearby-banner-text">
-                <MapPin size={14} style={{ color: '#34d399' }} />
-                Showing {nearbyResults.length} clinic{nearbyResults.length !== 1 ? 's' : ''} within 10 km of your location
-              </span>
-              <button className="nearby-clear" onClick={() => { setIsNearbyMode(false); setGpsError('') }}>
-                ✕ Clear location filter
-              </button>
-            </div>
-          )}
-
           {/* Results */}
           <div className="results-grid">
             {loading
@@ -588,39 +564,11 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
               : displayedClinics.length === 0
                 ? <EmptyState query={query || selectedSpecialty || selectedCity} />
                 : displayedClinics.map(clinic => (
-                  <ClinicCard key={clinic.id || clinic.code} clinic={clinic} isNearby={isNearbyMode} />
+                  <ClinicCard key={clinic.id || clinic.code} clinic={clinic} isNearby={false} />
                 ))}
           </div>
         </div>
       </div>
-      {/* GPS Permission Modal */}
-      {showGpsModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: '#0f172a', border: '1px solid rgba(16,185,129,0.3)', width: '100%', maxWidth: 400, borderRadius: 24, padding: '32px 28px', textAlign: 'center', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
-            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.15))', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            </div>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f1f5f9', marginBottom: 10 }}>Share Your Location</h2>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
-              We need your GPS location to show clinics near you. Click the button below — your browser will ask for permission.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button
-                onClick={triggerRealGPS}
-                style={{ width: '100%', padding: '15px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: '#fff', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
-              >
-                📍 Allow Location & Find Clinics
-              </button>
-              <button
-                onClick={() => setShowGpsModal(false)}
-                style={{ width: '100%', padding: '13px', background: 'transparent', color: 'rgba(255,255,255,0.35)', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }

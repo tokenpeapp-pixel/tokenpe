@@ -58,8 +58,19 @@ _Powered by TokenPe_`
         // Send rating AFTER the consultation messages so it arrives last in WhatsApp
         // We add a 2-second delay to guarantee Interakt has time to deliver the voice note first
         if (planId === 'elite' || planId === 'pro' || clinic?.subscription_status === 'trialing') {
+            // Wait 2 seconds to ensure the 'Consultation Done' voice note is delivered first
             await new Promise(resolve => setTimeout(resolve, 2000))
+            
+            // 3) Send "Rate Your Visit" text message (interactive buttons)
             await sendInteractiveRating(phone, clinicName, language || 'en')
+            
+            // 4) Send "Rate Your Visit" voice note 
+            // (sendVoice inherently takes ~1.5s to generate audio, naturally arriving after the text)
+            try {
+                await sendVoice({ phone, language: language || 'en', event: 'rating' })
+            } catch (err) {
+                console.error('[queue/done] Rating voice note failed:', err.message)
+            }
         }
 
         return Response.json({ success: true, done: token })

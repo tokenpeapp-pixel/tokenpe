@@ -79,27 +79,6 @@ export async function POST(req) {
             )
         }
 
-        // Recalculate clinic avg_rating
-        try {
-            const { data: ratedPatients, error: statsError } = await supabaseAdmin
-                .from('patients')
-                .select('rating')
-                .eq('clinic_id', clinic.id)
-                .gt('rating', 0)
-            
-            if (!statsError && ratedPatients) {
-                const totalRating = ratedPatients.reduce((sum, p) => sum + p.rating, 0)
-                const avgRating = ratedPatients.length > 0 ? parseFloat((totalRating / ratedPatients.length).toFixed(1)) : 0
-                
-                await supabaseAdmin
-                    .from('clinics')
-                    .update({ avg_rating: avgRating })
-                    .eq('id', clinic.id)
-            }
-        } catch (calcError) {
-            console.error('[feedback/submit] failed to update clinic avg_rating:', calcError)
-        }
-
         return Response.json({ success: true })
     } catch (error) {
         console.error('[feedback/submit] Error:', error)

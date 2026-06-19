@@ -197,27 +197,6 @@ export async function POST(req) {
                                 feedback_at: new Date().toISOString()
                             }).eq('id', recent.id)
                             console.log(`[whatsapp] ✅ Saved Normal rating=${rating} for patient ${recent.id}`)
-                            
-                            // Recalculate clinic avg_rating
-                            try {
-                                const { data: ratedPatients } = await supabaseAdmin
-                                    .from('patients')
-                                    .select('rating')
-                                    .eq('clinic_id', recent.clinic_id)
-                                    .gt('rating', 0)
-                                    
-                                if (ratedPatients) {
-                                    const totalRating = ratedPatients.reduce((sum, p) => sum + p.rating, 0)
-                                    const avgRating = ratedPatients.length > 0 ? parseFloat((totalRating / ratedPatients.length).toFixed(1)) : 0
-                                    await supabaseAdmin
-                                        .from('clinics')
-                                        .update({ avg_rating: avgRating })
-                                        .eq('id', recent.clinic_id)
-                                }
-                            } catch (calcErr) {
-                                console.error('[whatsapp] failed to update clinic avg_rating:', calcErr)
-                            }
-
                         } else {
                             console.log(`[whatsapp] ⏭️ Normal rating already exists for patient ${recent.id}`)
                         }

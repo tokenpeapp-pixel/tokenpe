@@ -128,104 +128,118 @@ export async function POST(req) {
                     const crmRating = parsedCrmRating
                     const feedbackText = parseCrmFeedbackText(textStr)
                     
-                    let { data: latestPatient } = await supabaseAdmin.from('patients').select('id, crm_rating, name, clinic_id').eq('phone', clean).order('joined_at', { ascending: false }).limit(1).single()
-                    if (!latestPatient) {
-                        const { data } = await supabaseAdmin.from('patients').select('id, crm_rating, name, clinic_id').eq('phone', tenDigit).order('joined_at', { ascending: false }).limit(1).single()
-                        latestPatient = data
-                    }
+                    after(async () => {
+                        try {
+                            let { data: latestPatient } = await supabaseAdmin.from('patients').select('id, crm_rating, name, clinic_id').eq('phone', clean).order('joined_at', { ascending: false }).limit(1).single()
+                            if (!latestPatient) {
+                                const { data } = await supabaseAdmin.from('patients').select('id, crm_rating, name, clinic_id').eq('phone', tenDigit).order('joined_at', { ascending: false }).limit(1).single()
+                                latestPatient = data
+                            }
 
-                    if (latestPatient?.id) {
-                        const { data: patientClinic, error: clinicError } = await supabaseAdmin
-                            .from('clinics')
-                            .select('plan_id, subscription_status')
-                            .eq('id', latestPatient.clinic_id)
-                            .single()
+                            if (latestPatient?.id) {
+                                const { data: patientClinic, error: clinicError } = await supabaseAdmin
+                                    .from('clinics')
+                                    .select('plan_id, subscription_status')
+                                    .eq('id', latestPatient.clinic_id)
+                                    .single()
 
-                        const crmAllowed = !clinicError && patientClinic &&
-                            (patientClinic.plan_id === 'elite' || patientClinic.subscription_status === 'trialing')
+                                const crmAllowed = !clinicError && patientClinic &&
+                                    (patientClinic.plan_id === 'elite' || patientClinic.subscription_status === 'trialing')
 
-                        if (!crmAllowed) {
-                            console.warn(`[whatsapp] ⚠️ CRM rating ignored for patient ${latestPatient.id} because clinic plan is not Elite/trialing.`)
-                            await sendText(clean, `🙏 Thank you! CRM feedback is available only for Elite and trial clinics.`)
-                            return Response.json({ success: true, message: 'CRM rating ignored for non-Elite/non-trial clinic' }, { status: 200 })
+                                if (!crmAllowed) {
+                                    console.warn(`[whatsapp] ⚠️ CRM rating ignored for patient ${latestPatient.id} because clinic plan is not Elite/trialing.`)
+                                    await sendText(clean, `🙏 Thank you! CRM feedback is available only for Elite and trial clinics.`)
+                                    return
+                                }
+
+                                if (!latestPatient.crm_rating) {
+                                    await supabaseAdmin
+                                        .from('patients')
+                                        .update({ 
+                                            crm_rating: crmRating, 
+                                            feedback_text: feedbackText || null,
+                                            feedback_at: new Date().toISOString()
+                                        })
+                                        .eq('id', latestPatient.id)
+                                    console.log(`[whatsapp] ✅ Saved CRM rating=${crmRating} for patient ${latestPatient.id}`)
+                                } else {
+                                    console.log(`[whatsapp] ⏭️ CRM rating already exists for patient ${latestPatient.id}`)
+                                }
+                            }
+
+                            await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your feedback for our recent update!`)
+                        } catch (err) {
+                            console.error('[whatsapp crm rating background err]', err)
                         }
-
-                        if (!latestPatient.crm_rating) {
-                            await supabaseAdmin
-                                .from('patients')
-                                .update({ 
-                                    crm_rating: crmRating, 
-                                    feedback_text: feedbackText || null,
-                                    feedback_at: new Date().toISOString()
-                                })
-                                .eq('id', latestPatient.id)
-                            console.log(`[whatsapp] ✅ Saved CRM rating=${crmRating} for patient ${latestPatient.id}`)
-                        } else {
-                            console.log(`[whatsapp] ⏭️ CRM rating already exists for patient ${latestPatient.id}`)
-                        }
-                    }
-
-                    await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your feedback for our recent update!`)
-                    return Response.json({ success: true, message: 'CRM Rating processed' }, { status: 200 })
+                    })
+                    
+                    return Response.json({ success: true, message: 'CRM Rating processing in background' }, { status: 200 })
                 }
                 
                 // 2. Normal visit rating (1–5 stars)
                 const rating = parsedVisitRating ?? validateRating(interactiveId)
                 
                 if (rating) {
-                    const recent = await findRecentDonePatient(phone)
+                    after(async () => {
+                        try {
+                            const recent = await findRecentDonePatient(phone)
 
-                    if (recent?.id) {
-                        const { data: clinicInfo, error: clinicError } = await supabaseAdmin
-                            .from('clinics')
-                            .select('plan_id, subscription_status')
-                            .eq('id', recent.clinic_id)
-                            .single()
+                            if (recent?.id) {
+                                const { data: clinicInfo, error: clinicError } = await supabaseAdmin
+                                    .from('clinics')
+                                    .select('plan_id, subscription_status')
+                                    .eq('id', recent.clinic_id)
+                                    .single()
 
-                        const normalAllowed = !clinicError && clinicInfo &&
-                            (clinicInfo.plan_id === 'pro' || clinicInfo.plan_id === 'elite' || clinicInfo.subscription_status === 'trialing')
+                                const normalAllowed = !clinicError && clinicInfo &&
+                                    (clinicInfo.plan_id === 'pro' || clinicInfo.plan_id === 'elite' || clinicInfo.subscription_status === 'trialing')
 
-                        if (!normalAllowed) {
-                            console.warn(`[whatsapp] ⚠️ Normal rating ignored for patient ${recent.id} because clinic plan is not Pro/Elite/Trial.`)
-                            await sendText(clean, `🙏 Thank you! Star ratings are available only for Pro, Elite, and trial clinics.`)
-                            return Response.json({ success: true, message: 'Normal rating ignored for ineligible plan' }, { status: 200 })
-                        }
-
-                        if (!recent.rating) {
-                            await supabaseAdmin.from('patients').update({
-                                rating,
-                                feedback_at: new Date().toISOString()
-                            }).eq('id', recent.id)
-                            console.log(`[whatsapp] ✅ Saved Normal rating=${rating} for patient ${recent.id}`)
-                            
-                            // Recalculate clinic avg_rating
-                            try {
-                                const { data: ratedPatients } = await supabaseAdmin
-                                    .from('patients')
-                                    .select('rating')
-                                    .eq('clinic_id', recent.clinic_id)
-                                    .gt('rating', 0)
-                                    
-                                if (ratedPatients) {
-                                    const totalRating = ratedPatients.reduce((sum, p) => sum + p.rating, 0)
-                                    const avgRating = ratedPatients.length > 0 ? parseFloat((totalRating / ratedPatients.length).toFixed(1)) : 0
-                                    await supabaseAdmin
-                                        .from('clinics')
-                                        .update({ avg_rating: avgRating })
-                                        .eq('id', recent.clinic_id)
+                                if (!normalAllowed) {
+                                    console.warn(`[whatsapp] ⚠️ Normal rating ignored for patient ${recent.id} because clinic plan is not Pro/Elite/Trial.`)
+                                    await sendText(clean, `🙏 Thank you! Star ratings are available only for Pro, Elite, and trial clinics.`)
+                                    return
                                 }
-                            } catch (calcErr) {
-                                console.error('[whatsapp] failed to update clinic avg_rating:', calcErr)
-                            }
-                        } else {
-                            console.log(`[whatsapp] ⏭️ Normal rating already exists for patient ${recent.id}`)
-                        }
-                    } else {
-                        console.warn(`[whatsapp] ⚠️ No recent done patient found for ${maskPhone(phone)} to save rating=${rating}`)
-                    }
 
-                    await sendRatingThankYou(clean, rating, recent?.name)
-                    return Response.json({ success: true, message: 'Normal Rating processed' }, { status: 200 })
+                                if (!recent.rating) {
+                                    await supabaseAdmin.from('patients').update({
+                                        rating,
+                                        feedback_at: new Date().toISOString()
+                                    }).eq('id', recent.id)
+                                    console.log(`[whatsapp] ✅ Saved Normal rating=${rating} for patient ${recent.id}`)
+                                    
+                                    // Recalculate clinic avg_rating
+                                    try {
+                                        const { data: ratedPatients } = await supabaseAdmin
+                                            .from('patients')
+                                            .select('rating')
+                                            .eq('clinic_id', recent.clinic_id)
+                                            .gt('rating', 0)
+                                            
+                                        if (ratedPatients) {
+                                            const totalRating = ratedPatients.reduce((sum, p) => sum + p.rating, 0)
+                                            const avgRating = ratedPatients.length > 0 ? parseFloat((totalRating / ratedPatients.length).toFixed(1)) : 0
+                                            await supabaseAdmin
+                                                .from('clinics')
+                                                .update({ avg_rating: avgRating })
+                                                .eq('id', recent.clinic_id)
+                                        }
+                                    } catch (calcErr) {
+                                        console.error('[whatsapp] failed to update clinic avg_rating:', calcErr)
+                                    }
+                                } else {
+                                    console.log(`[whatsapp] ⏭️ Normal rating already exists for patient ${recent.id}`)
+                                }
+                            } else {
+                                console.warn(`[whatsapp] ⚠️ No recent done patient found for ${maskPhone(phone)} to save rating=${rating}`)
+                            }
+
+                            await sendRatingThankYou(clean, rating, recent?.name)
+                        } catch (err) {
+                            console.error('[whatsapp rating background err]', err)
+                        }
+                    })
+                    
+                    return Response.json({ success: true, message: 'Normal Rating processing in background' }, { status: 200 })
                 }
             }
             

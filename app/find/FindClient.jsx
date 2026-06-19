@@ -484,7 +484,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
                 {locationStatus === 'denied' 
                   ? 'Location was blocked. You can search clinics manually below, or allow location in your browser settings and try again.'
-                  : 'Share your location to see nearby clinics first — just like Zepto finds stores near you.'}
+                  : 'Share your location to instantly see the clinics nearest to you.'}
               </p>
               
               {locationStatus === 'detecting' ? (

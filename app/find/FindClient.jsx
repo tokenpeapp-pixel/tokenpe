@@ -314,11 +314,19 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
     setGpsLoading(false)
   }, [])
 
+  const [showGpsModal, setShowGpsModal] = useState(false)
+
   async function handleGPS() {
     if (!navigator.geolocation) {
       setGpsError('GPS not supported by your browser.')
       return
     }
+    // Show our modal first to ensure it's user-initiated (bypasses browser blocks)
+    setShowGpsModal(true)
+  }
+
+  function triggerRealGPS() {
+    setShowGpsModal(false)
     setGpsLoading(true)
     setGpsError('')
     navigator.geolocation.getCurrentPosition(
@@ -328,10 +336,13 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
       },
       (err) => {
         setGpsLoading(false)
-        if (err.code === 1) setGpsError('Location access denied. Please allow GPS in your browser settings.')
-        else setGpsError('Could not get your location. Please try again.')
+        if (err.code === 1) {
+          setGpsError('Location blocked. To fix: click the 🔒 lock icon in your browser address bar → Site Settings → Allow Location.')
+        } else {
+          setGpsError('Could not get your location. Please try again.')
+        }
       },
-      { timeout: 10000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
   }
 
@@ -343,8 +354,6 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
       if (storedLat && storedLng) {
         fetchNearby(parseFloat(storedLat), parseFloat(storedLng))
       }
-      // We explicitly DO NOT call handleGPS() here because browsers block silent GPS requests on mount,
-      // which instantly triggers a "Permission Denied" error and ruins the UX.
     }
   }, [initialQ, initialCity, initialSpecialty, fetchNearby])
 
@@ -584,6 +593,34 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
           </div>
         </div>
       </div>
+      {/* GPS Permission Modal */}
+      {showGpsModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: '#0f172a', border: '1px solid rgba(16,185,129,0.3)', width: '100%', maxWidth: 400, borderRadius: 24, padding: '32px 28px', textAlign: 'center', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.15))', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f1f5f9', marginBottom: 10 }}>Share Your Location</h2>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
+              We need your GPS location to show clinics near you. Click the button below — your browser will ask for permission.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={triggerRealGPS}
+                style={{ width: '100%', padding: '15px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: '#fff', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+              >
+                📍 Allow Location & Find Clinics
+              </button>
+              <button
+                onClick={() => setShowGpsModal(false)}
+                style={{ width: '100%', padding: '13px', background: 'transparent', color: 'rgba(255,255,255,0.35)', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -249,18 +249,18 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   const [selectedSpecialty, setSelectedSpecialty] = useState(initialSpecialty)
   const [clinics, setClinics] = useState(initialClinics)
   const [loading, setLoading] = useState(false)
-  const [gpsLoading, setGpsLoading] = useState(false)
-  const [gpsError, setGpsError] = useState('')
-  const [isNearbyMode, setIsNearbyMode] = useState(false)
   const [nearbyResults, setNearbyResults] = useState([])
+  const [locationStatus, setLocationStatus] = useState('checking') // 'checking' | 'prompt' | 'detecting' | 'active' | 'denied'
+  const [userLocation, setUserLocation] = useState(null)
   const debounceRef = useRef(null)
 
-  // Combined list shown: nearby takes priority when active
-  const displayedClinics = isNearbyMode ? nearbyResults : clinics
+  // If user has location and no search filters, show nearby. Otherwise show normal search results.
+  const displayedClinics = (userLocation && !query && !selectedCity && !selectedSpecialty && nearbyResults.length > 0) 
+    ? nearbyResults 
+    : clinics
 
   const fetchClinics = useCallback(async (q, city, spec) => {
     setLoading(true)
-    setIsNearbyMode(false)
     try {
       let dbQuery = supabase
         .from('public_clinics')
@@ -284,7 +284,6 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       fetchClinics(query, selectedCity, selectedSpecialty)
-      // Update URL for shareability
       const params = new URLSearchParams()
       if (query) params.set('q', query)
       if (selectedCity) params.set('city', selectedCity)
@@ -296,66 +295,59 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   }, [query, selectedCity, selectedSpecialty, fetchClinics, router])
 
   const fetchNearby = useCallback(async (lat, lng) => {
-    setGpsLoading(true)
-    setGpsError('')
     try {
-      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=10000`)
+      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=15000`)
       const json = await res.json()
       setNearbyResults(json.clinics || [])
-      setIsNearbyMode(true)
-      if ((json.clinics || []).length === 0) {
-        setGpsError('No clinics found within 10 km of your location.')
-      }
       localStorage.setItem('tokenpe_user_lat', lat.toString())
       localStorage.setItem('tokenpe_user_lng', lng.toString())
     } catch {
-      setGpsError('Could not fetch nearby clinics. Please try again.')
+      setNearbyResults([])
     }
-    setGpsLoading(false)
   }, [])
 
-  const [showGpsModal, setShowGpsModal] = useState(false)
+  // Zepto/Blinkit style: On mount, check if we have cached location. If yes, use it. If no, show prompt.
+  useEffect(() => {
+    const storedLat = localStorage.getItem('tokenpe_user_lat')
+    const storedLng = localStorage.getItem('tokenpe_user_lng')
+    if (storedLat && storedLng) {
+      const lat = parseFloat(storedLat)
+      const lng = parseFloat(storedLng)
+      setUserLocation({ lat, lng })
+      setLocationStatus('active')
+      fetchNearby(lat, lng)
+    } else {
+      setLocationStatus('prompt')
+    }
+  }, [fetchNearby])
 
-  async function handleGPS() {
+  // User clicks "Detect my location" on the page
+  function handleDetectLocation() {
     if (!navigator.geolocation) {
-      setGpsError('GPS not supported by your browser.')
+      setLocationStatus('denied')
       return
     }
-    // Show our modal first to ensure it's user-initiated (bypasses browser blocks)
-    setShowGpsModal(true)
-  }
-
-  function triggerRealGPS() {
-    setShowGpsModal(false)
-    setGpsLoading(true)
-    setGpsError('')
+    setLocationStatus('detecting')
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        setUserLocation({ lat, lng })
+        setLocationStatus('active')
         fetchNearby(lat, lng)
       },
       (err) => {
-        setGpsLoading(false)
-        if (err.code === 1) {
-          setGpsError('Location blocked. To fix: click the 🔒 lock icon in your browser address bar → Site Settings → Allow Location.')
-        } else {
-          setGpsError('Could not get your location. Please try again.')
-        }
+        console.log('Location error:', err)
+        setLocationStatus('denied')
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
   }
 
-  // Auto-fetch nearby clinics on mount ONLY if coordinates exist in localStorage
-  useEffect(() => {
-    if (!initialQ && !initialCity && !initialSpecialty) {
-      const storedLat = localStorage.getItem('tokenpe_user_lat')
-      const storedLng = localStorage.getItem('tokenpe_user_lng')
-      if (storedLat && storedLng) {
-        fetchNearby(parseFloat(storedLat), parseFloat(storedLng))
-      }
-    }
-  }, [initialQ, initialCity, initialSpecialty, fetchNearby])
+  // Skip location — just show all clinics
+  function handleSkipLocation() {
+    setLocationStatus('active')
+  }
 
   const allSpecialties = specialties.length
     ? specialties
@@ -479,94 +471,145 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
         </nav>
 
         <div className="find-inner">
-          {/* Hero */}
-          <div className="find-hero">
-            <div className="find-badge">
-              <span className="find-badge-dot" />
-              Find clinics near you — no QR scan needed
+
+          {/* LOCATION PROMPT — Zepto/Blinkit style */}
+          {(locationStatus === 'prompt' || locationStatus === 'detecting' || locationStatus === 'denied') && (
+            <div style={{ textAlign: 'center', padding: '60px 20px 40px', maxWidth: 440, margin: '0 auto' }}>
+              <div style={{ width: 80, height: 80, background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.15))', borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <h2 style={{ fontSize: 24, fontWeight: 900, color: '#f1f5f9', marginBottom: 12, letterSpacing: '-0.5px' }}>
+                {locationStatus === 'detecting' ? 'Detecting your location...' : 'Where are you?'}
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
+                {locationStatus === 'denied' 
+                  ? 'Location was blocked. You can search clinics manually below, or allow location in your browser settings and try again.'
+                  : 'Share your location to see nearby clinics first — just like Zepto finds stores near you.'}
+              </p>
+              
+              {locationStatus === 'detecting' ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                  <div className="spinner" style={{ width: 24, height: 24 }} />
+                  <span style={{ color: '#34d399', fontSize: 14, fontWeight: 600 }}>Getting your GPS location...</span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320, margin: '0 auto' }}>
+                  <button
+                    onClick={handleDetectLocation}
+                    style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 24px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {locationStatus === 'denied' ? 'Try Again' : 'Detect My Location'}
+                  </button>
+                  <button
+                    onClick={handleSkipLocation}
+                    style={{ width: '100%', padding: '14px', background: 'transparent', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    Skip — I'll search manually
+                  </button>
+                </div>
+              )}
             </div>
-            <h1 className="find-h1">Find a <span>Clinic</span><br />Join from Home</h1>
-            <p className="find-sub">
-              Search by doctor, specialty, or city. Get your token instantly on WhatsApp — no waiting at reception.
-            </p>
-          </div>
+          )}
 
-          {/* Search input */}
-          <div className="search-box-wrap">
-            <span className="search-icon-left">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-            </span>
-            <input
-              id="find-search-input"
-              className="search-input"
-              type="text"
-              placeholder="Search by doctor, clinic, specialty or city..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              autoComplete="off"
-            />
-            {query && (
-              <button className="search-clear" onClick={() => setQuery('')} aria-label="Clear search">✕</button>
-            )}
-          </div>
+          {/* MAIN CONTENT — shown after location is resolved */}
+          {locationStatus === 'active' && (
+            <>
+              {/* Hero */}
+              <div className="find-hero">
+                <div className="find-badge">
+                  <span className="find-badge-dot" />
+                  {userLocation ? 'Showing clinics near you' : 'Find clinics near you — no QR scan needed'}
+                </div>
+                <h1 className="find-h1">Find a <span>Clinic</span><br />Join from Home</h1>
+                <p className="find-sub">
+                  Search by doctor, specialty, or city. Get your token instantly on WhatsApp — no waiting at reception.
+                </p>
+              </div>
 
-          {/* Results count */}
-          <div className="controls-row">
-            {!loading && (
-              <span className="results-count">
-                {displayedClinics.length} clinic{displayedClinics.length !== 1 ? 's' : ''} found
-              </span>
-            )}
-          </div>
+              {/* Search input */}
+              <div className="search-box-wrap">
+                <span className="search-icon-left">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                  </svg>
+                </span>
+                <input
+                  id="find-search-input"
+                  className="search-input"
+                  type="text"
+                  placeholder="Search by doctor, clinic, specialty or city..."
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  autoComplete="off"
+                />
+                {query && (
+                  <button className="search-clear" onClick={() => setQuery('')} aria-label="Clear search">✕</button>
+                )}
+              </div>
 
-          {/* Filter chips */}
-          <div className="chips-section">
-            {/* Specialty chips */}
-            <div className="chips-label">Specialty</div>
-            <div className="chips-row" style={{ marginBottom: 14 }}>
-              {allSpecialties.map(spec => (
-                <button
-                  key={spec}
-                  className={`chip${selectedSpecialty === spec ? ' active' : ''}`}
-                  onClick={() => setSelectedSpecialty(selectedSpecialty === spec ? '' : spec)}
-                >
-                  {typeof SPECIALTY_ICONS[spec] === 'function' ? SPECIALTY_ICONS[spec](14) : <Hospital size={14} />} {spec}
-                  {selectedSpecialty === spec && <span className="chip-clear">✕</span>}
-                </button>
-              ))}
-            </div>
+              {/* Results count + location indicator */}
+              <div className="controls-row">
+                {userLocation && !query && !selectedCity && !selectedSpecialty && nearbyResults.length > 0 && (
+                  <span style={{ fontSize: 12, color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Sorted by distance from you
+                  </span>
+                )}
+                {!loading && (
+                  <span className="results-count">
+                    {displayedClinics.length} clinic{displayedClinics.length !== 1 ? 's' : ''} found
+                  </span>
+                )}
+              </div>
 
-            {/* City chips (only if there are cities in DB) */}
-            {cities.length > 0 && (
-              <>
-                <div className="chips-label" style={{ marginTop: 6 }}>City</div>
-                <div className="chips-row">
-                  {cities.slice(0, 12).map(c => (
+              {/* Filter chips */}
+              <div className="chips-section">
+                <div className="chips-label">Specialty</div>
+                <div className="chips-row" style={{ marginBottom: 14 }}>
+                  {allSpecialties.map(spec => (
                     <button
-                      key={c}
-                      className={`chip${selectedCity === c ? ' active' : ''}`}
-                      onClick={() => setSelectedCity(selectedCity === c ? '' : c)}
+                      key={spec}
+                      className={`chip${selectedSpecialty === spec ? ' active' : ''}`}
+                      onClick={() => setSelectedSpecialty(selectedSpecialty === spec ? '' : spec)}
                     >
-                      {c}
-                      {selectedCity === c && <span className="chip-clear">✕</span>}
+                      {typeof SPECIALTY_ICONS[spec] === 'function' ? SPECIALTY_ICONS[spec](14) : <Hospital size={14} />} {spec}
+                      {selectedSpecialty === spec && <span className="chip-clear">✕</span>}
                     </button>
                   ))}
                 </div>
-              </>
-            )}
-          </div>
-          {/* Results */}
-          <div className="results-grid">
-            {loading
-              ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-              : displayedClinics.length === 0
-                ? <EmptyState query={query || selectedSpecialty || selectedCity} />
-                : displayedClinics.map(clinic => (
-                  <ClinicCard key={clinic.id || clinic.code} clinic={clinic} isNearby={false} />
-                ))}
-          </div>
+
+                {cities.length > 0 && (
+                  <>
+                    <div className="chips-label" style={{ marginTop: 6 }}>City</div>
+                    <div className="chips-row">
+                      {cities.slice(0, 12).map(c => (
+                        <button
+                          key={c}
+                          className={`chip${selectedCity === c ? ' active' : ''}`}
+                          onClick={() => setSelectedCity(selectedCity === c ? '' : c)}
+                        >
+                          {c}
+                          {selectedCity === c && <span className="chip-clear">✕</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Results */}
+              <div className="results-grid">
+                {loading
+                  ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+                  : displayedClinics.length === 0
+                    ? <EmptyState query={query || selectedSpecialty || selectedCity} />
+                    : displayedClinics.map(clinic => (
+                      <ClinicCard key={clinic.id || clinic.code} clinic={clinic} isNearby={!!clinic.distance_km} />
+                    ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>

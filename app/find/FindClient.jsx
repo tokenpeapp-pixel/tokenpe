@@ -335,16 +335,16 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
     )
   }
 
-  // Auto-trigger GPS location request on mount if no search queries are present
+  // Auto-fetch nearby clinics on mount ONLY if coordinates exist in localStorage
   useEffect(() => {
     if (!initialQ && !initialCity && !initialSpecialty) {
       const storedLat = localStorage.getItem('tokenpe_user_lat')
       const storedLng = localStorage.getItem('tokenpe_user_lng')
       if (storedLat && storedLng) {
         fetchNearby(parseFloat(storedLat), parseFloat(storedLng))
-      } else {
-        handleGPS()
       }
+      // We explicitly DO NOT call handleGPS() here because browsers block silent GPS requests on mount,
+      // which instantly triggers a "Permission Denied" error and ruins the UX.
     }
   }, [initialQ, initialCity, initialSpecialty, fetchNearby])
 

@@ -395,6 +395,113 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
   )
 }
 
+// ─── DISCOVERY PROFILE MODAL ─────────────────────────────────────────────────────────
+function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
+  const [saving, setSaving] = useState(false)
+  const [specialty, setSpecialty] = useState(clinic?.specialty || 'General Physician')
+  const [city, setCity] = useState(clinic?.city || '')
+  const [area, setArea] = useState(clinic?.area || '')
+  const [phone, setPhone] = useState(clinic?.phone === '0000000000' ? '' : clinic?.phone || '')
+  const [gpsStatus, setGpsStatus] = useState('')
+  const [lat, setLat] = useState(null)
+  const [lng, setLng] = useState(null)
+
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    setGpsStatus('loading')
+    navigator.geolocation.getCurrentPosition(
+      pos => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); setGpsStatus('success') },
+      err => { console.error(err); setGpsStatus('error') },
+      { timeout: 10000, maximumAge: 60000 }
+    )
+  }, [])
+
+  async function handleSave() {
+    if (!city || !specialty) return alert("City and Specialty are required to be visible to patients.")
+    if (!phone || phone.length < 10) return alert("A valid 10-digit WhatsApp number is required.")
+    
+    setSaving(true)
+    try {
+      const res = await fetch('/api/clinics/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, specialty, city, area, phone, lat, lng })
+      })
+      if (res.ok) {
+        onSuccess({ specialty, city, area, phone, lat, lng })
+        onClose()
+      } else {
+        alert("Failed to save profile.")
+      }
+    } catch (e) {
+      alert("Error: " + e.message)
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+      <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+        {clinic?.phone !== '0000000000' && clinic?.specialty && clinic?.city && (
+          <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 32, height: 32, borderRadius: 16, cursor: 'pointer' }}>✕</button>
+        )}
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🌟</div>
+          <h2 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 8px 0' }}>Complete Your Profile</h2>
+          <p style={{ color: '#94A3B8', fontSize: 14, margin: 0, lineHeight: 1.5 }}>Fill in your details so patients can find you easily on the TokenPe clinic finder.</p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Specialty *</label>
+            <select value={specialty} onChange={e => setSpecialty(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }}>
+              <option value="General Physician" style={{ color: 'black' }}>General Physician</option>
+              <option value="Pediatrician" style={{ color: 'black' }}>Pediatrician</option>
+              <option value="Gynecologist" style={{ color: 'black' }}>Gynecologist</option>
+              <option value="Dermatologist" style={{ color: 'black' }}>Dermatologist</option>
+              <option value="Dentist" style={{ color: 'black' }}>Dentist</option>
+              <option value="Orthopedic" style={{ color: 'black' }}>Orthopedic</option>
+              <option value="Eye Specialist" style={{ color: 'black' }}>Eye Specialist</option>
+              <option value="ENT Specialist" style={{ color: 'black' }}>ENT Specialist</option>
+              <option value="Cardiologist" style={{ color: 'black' }}>Cardiologist</option>
+              <option value="Physiotherapist" style={{ color: 'black' }}>Physiotherapist</option>
+              <option value="Other" style={{ color: 'black' }}>Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>City *</label>
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Local Area</label>
+            <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Andheri West" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }} />
+          </div>
+
+          {clinic?.phone === '0000000000' && (
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>WhatsApp Number * (required for Queue)</label>
+              <input type="tel" maxLength={10} value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="10-digit number" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }} />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: 20 }}>📍</span>
+            <div style={{ flex: 1, fontSize: 13, color: '#94A3B8' }}>
+              {gpsStatus === 'loading' ? 'Getting location...' : gpsStatus === 'success' ? 'Location secured ✅' : 'Location failed (Optional)'}
+            </div>
+          </div>
+
+          <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: 14, borderRadius: 12, background: 'linear-gradient(135deg, #10B981, #059669)', color: 'white', fontWeight: 800, fontSize: 16, border: 'none', cursor: saving ? 'wait' : 'pointer', marginTop: 8, boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)' }}>
+            {saving ? 'Saving Profile...' : 'Save & Continue'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── MAIN DASHBOARD ────────────────────────────────────────────────────────
 export default function Dashboard() {
   const router = useRouter()
@@ -416,6 +523,7 @@ export default function Dashboard() {
   const [newLang, setNewLang] = useState('hi')
   const [time, setTime] = useState(new Date())
   const [showQR, setShowQR] = useState(false)
+  const [showDiscovery, setShowDiscovery] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [userClinics, setUserClinics] = useState([])
   const [showAddBranch, setShowAddBranch] = useState(false)
@@ -488,6 +596,11 @@ export default function Dashboard() {
         // Update cache + state silently in background
         localStorage.setItem('tokenpe_clinic', JSON.stringify(freshClinic))
         setClinic(freshClinic)
+
+        // Show Discovery Profile if missing details (e.g. Google Login users)
+        if (!freshClinic.specialty || !freshClinic.city || freshClinic.phone === '0000000000') {
+          setShowDiscovery(true)
+        }
       }
     }
     loadClinic()
@@ -1319,6 +1432,21 @@ export default function Dashboard() {
 
       {/* ── QR Modal ── */}
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} onCodeUpdate={handleCodeUpdate} router={router} />}
+
+      {/* ── Discovery Profile Modal ── */}
+      {showDiscovery && (
+        <DiscoveryProfileModal 
+          clinic={clinic} 
+          onClose={() => setShowDiscovery(false)}
+          onSuccess={(updates) => {
+            const updatedClinic = { ...clinic, ...updates }
+            setClinic(updatedClinic)
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+            localStorage.setItem('clinicPhone', updatedClinic.phone)
+            addToast('Profile completed! You are now visible to patients.', 'done')
+          }}
+        />
+      )}
 
       {/* ── Trial Warning Banner ── */}
       {showTrialWarning && (

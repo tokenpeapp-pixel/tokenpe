@@ -308,19 +308,31 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   }, [])
 
   function handleFindNearMe() {
+    setGpsError('')
+    
     if (!navigator.geolocation) {
-      setGpsError('GPS is not supported by your browser.')
+      setGpsError('Your browser does not support location. Please use Chrome or Safari.')
       return
     }
+    
     setGpsLoading(true)
-    setGpsError('')
+    
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         fetchNearby(pos.coords.latitude, pos.coords.longitude)
       },
       (err) => {
         setGpsLoading(false)
-        setGpsError(err.code === 1 ? 'Please enable location in your browser/phone settings.' : 'Could not get location.')
+        console.log('Location error:', err)
+        if (err.code === 1) {
+          setGpsError("Location access was denied. Click the 🔒 icon in your browser's address bar and allow location, then try again.")
+        } else if (err.code === 2) {
+          setGpsError('Could not detect your location. Make sure GPS is on.')
+        } else if (err.code === 3) {
+          setGpsError('Location request timed out. Please try again.')
+        } else {
+          setGpsError('Could not get your location. Please try again.')
+        }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
@@ -356,7 +368,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
         .search-clear { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.5); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
         .controls-row { display: flex; align-items: center; gap: 16px; max-width: 680px; margin: 0 auto 32px; flex-wrap: wrap; }
         .gps-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #10b981, #06b6d4); border: none; color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
-        .gps-error { font-size: 13px; color: #f87171; font-weight: 500; background: rgba(248,113,113,0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(248,113,113,0.2); flex: 1; }
+        .gps-error { font-size: 13px; color: #f87171; font-weight: 500; background: rgba(248,113,113,0.1); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(248,113,113,0.2); width: 100%; margin-top: 4px; line-height: 1.4; }
         .results-count { font-size: 13px; color: rgba(255,255,255,0.35); font-weight: 500; margin-left: auto; }
         .chips-section { margin-bottom: 32px; }
         .chips-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; }
@@ -401,12 +413,16 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
             {query && <button className="search-clear" onClick={() => setQuery('')}>✕</button>}
           </div>
           <div className="controls-row">
-            <button className="gps-btn" onClick={handleFindNearMe} disabled={gpsLoading}>
-              {gpsLoading ? <div className="spinner" /> : <MapPin size={16} />}
-              {gpsLoading ? 'Finding Location...' : isNearbyMode ? 'Update Location' : '📍 Find Clinics Near Me'}
-            </button>
-            {gpsError && <div className="gps-error">{gpsError}</div>}
-            {!gpsLoading && !gpsError && <span className="results-count">{displayedClinics.length} clinic{displayedClinics.length !== 1 ? 's' : ''} found</span>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <button className="gps-btn" onClick={handleFindNearMe} disabled={gpsLoading}>
+                  {gpsLoading ? <div className="spinner" /> : <MapPin size={16} />}
+                  {gpsLoading ? 'Getting your location...' : isNearbyMode ? 'Update Location' : '📍 Find Clinics Near Me'}
+                </button>
+                {!gpsLoading && !gpsError && <span className="results-count">{displayedClinics.length} clinic{displayedClinics.length !== 1 ? 's' : ''} found</span>}
+              </div>
+              {gpsError && <div className="gps-error">{gpsError}</div>}
+            </div>
           </div>
           <div className="chips-section">
             <div className="chips-label">Specialty</div>

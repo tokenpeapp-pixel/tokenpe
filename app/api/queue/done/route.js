@@ -62,15 +62,8 @@ _Powered by TokenPe_`
             await new Promise(resolve => setTimeout(resolve, 2000))
             
             // 3) Send "Rate Your Visit" text message (interactive buttons)
+            // Note: sendInteractiveRating() also natively sends the "Rate Your Visit" voice note directly after the buttons!
             await sendInteractiveRating(phone, clinicName, language || 'en')
-            
-            // 4) Send "Rate Your Visit" voice note 
-            // (sendVoice inherently takes ~1.5s to generate audio, naturally arriving after the text)
-            try {
-                await sendVoice({ phone, language: language || 'en', event: 'rating' })
-            } catch (err) {
-                console.error('[queue/done] Rating voice note failed:', err.message)
-            }
         }
 
         return Response.json({ success: true, done: token })

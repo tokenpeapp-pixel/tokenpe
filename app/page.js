@@ -345,6 +345,7 @@ export default function LandingPage() {
           <span className="nl" onClick={() => go("features")}>Features</span>
           <span className="nl" onClick={() => go("how")}>How it works</span>
           <span className="nl" onClick={() => go("pricing")}>Pricing</span>
+          <span className="nl" onClick={() => router.push("/find")} style={{ color: '#a78bfa' }}>🔍 Find Clinic</span>
           <button className="nav-btn" onClick={() => router.push("/login")}>Get Started →</button>
         </div>
         <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? "✕" : "☰"}</button>
@@ -353,6 +354,7 @@ export default function LandingPage() {
         <span className="mlink" onClick={() => go("features")}>Features</span>
         <span className="mlink" onClick={() => go("how")}>How it works</span>
         <span className="mlink" onClick={() => go("pricing")}>Pricing</span>
+        <span className="mlink" onClick={() => router.push("/find")} style={{ color: '#a78bfa' }}>🔍 Find a Clinic</span>
         <span className="mbtn" onClick={() => router.push("/login")}>Get Started →</span>
       </div>
 

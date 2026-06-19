@@ -8,7 +8,7 @@ import { sendWelcomeEmail } from '../../../../lib/messaging'
 export async function POST(req) {
     try {
         const body = await req.json()
-        const { name, phone, email, pin } = body
+        const { name, phone, email, pin, specialty, city, lat, lng } = body
 
         if (!name || !phone || !email || !pin) {
             return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
@@ -33,18 +33,31 @@ export async function POST(req) {
         const trialEndsAt = new Date()
         trialEndsAt.setDate(trialEndsAt.getDate() + 7)
 
+        const insertData = {
+            name: cleanName,
+            phone: cleanPhone,
+            email,
+            code,
+            pin: cleanPin,
+            plan_id: 'elite',
+            subscription_status: 'trialing',
+            trial_ends_at: trialEndsAt.toISOString(),
+            specialty: specialty || null,
+            city: city ? city.trim() : null,
+            is_public: true,
+        }
+
+        if (lat !== undefined && lng !== undefined && lat !== null && lng !== null) {
+            const parsedLat = parseFloat(lat)
+            const parsedLng = parseFloat(lng)
+            if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+                insertData.location = `POINT(${parsedLng} ${parsedLat})`
+            }
+        }
+
         const { data, error } = await supabaseAdmin
             .from('clinics')
-            .insert({
-                name: cleanName,
-                phone: cleanPhone,
-                email,
-                code,
-                pin: cleanPin,
-                plan_id: 'elite',
-                subscription_status: 'trialing',
-                trial_ends_at: trialEndsAt.toISOString()
-            })
+            .insert(insertData)
             .select().single()
 
         if (error) {

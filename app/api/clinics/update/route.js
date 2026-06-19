@@ -9,7 +9,7 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { clinicId, welcomeMessage, address } = await req.json()
+    const { clinicId, welcomeMessage, address, specialty, city, area, isPublic, photoUrl, lat, lng } = await req.json()
     
     if (!clinicId) {
       return NextResponse.json({ success: false, error: 'Clinic ID required' }, { status: 400 })
@@ -27,6 +27,23 @@ export async function POST(req) {
     const updates = {}
     if (welcomeMessage !== undefined) updates.welcome_message = welcomeMessage
     if (address !== undefined) updates.address = address
+    if (specialty !== undefined) updates.specialty = specialty
+    if (city !== undefined) updates.city = city ? city.trim() : null
+    if (area !== undefined) updates.area = area ? area.trim() : null
+    if (isPublic !== undefined) updates.is_public = isPublic
+    if (photoUrl !== undefined) updates.photo_url = photoUrl
+
+    if (lat !== undefined && lng !== undefined) {
+      if (lat === null || lng === null) {
+        updates.location = null
+      } else {
+        const parsedLat = parseFloat(lat)
+        const parsedLng = parseFloat(lng)
+        if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+          updates.location = `POINT(${parsedLng} ${parsedLat})`
+        }
+      }
+    }
 
     const { error } = await supabaseAdmin
       .from('clinics')

@@ -249,16 +249,18 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   const [selectedSpecialty, setSelectedSpecialty] = useState(initialSpecialty)
   const [clinics, setClinics] = useState(initialClinics)
   const [loading, setLoading] = useState(false)
-  const [nearbyResults, setNearbyResults] = useState([])
-  const [locationStatus, setLocationStatus] = useState('checking') // 'checking' | 'prompt' | 'detecting' | 'active' | 'denied'
-  const [userLocation, setUserLocation] = useState(null)
-  const debounceRef = useRef(null)  // If user has location and no search filters, show nearby. Otherwise show normal search results.
-  const displayedClinics = (userLocation && !query && !selectedCity && !selectedSpecialty) 
-    ? nearbyResults 
-    : clinics
+  const [gpsLoading, setGpsLoading] = useState(false)
+  const [gpsError, setGpsError] = useState('')
+  const [nearbyClinics, setNearbyClinics] = useState([])
+  const [isNearbyMode, setIsNearbyMode] = useState(false)
+  const debounceRef = useRef(null)
+  
+  const displayedClinics = isNearbyMode ? nearbyClinics : clinics
 
   const fetchClinics = useCallback(async (q, city, spec) => {
     setLoading(true)
+    setIsNearbyMode(false)
+    setGpsError('')
     try {
       let dbQuery = supabase
         .from('public_clinics')
@@ -277,7 +279,6 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
     setLoading(false)
   }, [])
 
-  // Debounced search
   useEffect(() => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -294,73 +295,38 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
 
   const fetchNearby = useCallback(async (lat, lng) => {
     try {
-      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=50000`) // Increased to 50km
+      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=50000`)
       const json = await res.json()
-      setNearbyResults(json.clinics || [])
-      localStorage.setItem('tokenpe_user_lat', lat.toString())
-      localStorage.setItem('tokenpe_user_lng', lng.toString())
+      setNearbyClinics(json.clinics || [])
+      setIsNearbyMode(true)
     } catch {
-      setNearbyResults([])
+      setNearbyClinics([])
+      setGpsError('Could not fetch nearby clinics. Please try again.')
+    } finally {
+      setGpsLoading(false)
     }
   }, [])
 
-  // On mount, check if we have cached location.
-  useEffect(() => {
-    const storedLat = localStorage.getItem('tokenpe_user_lat')
-    const storedLng = localStorage.getItem('tokenpe_user_lng')
-    if (storedLat && storedLng) {
-      const lat = parseFloat(storedLat)
-      const lng = parseFloat(storedLng)
-      setUserLocation({ lat, lng })
-      setLocationStatus('active')
-      fetchNearby(lat, lng)
-    } else {
-      setLocationStatus('prompt')
-    }
-  }, [fetchNearby])
-
-  // User clicks "Detect my location" on the page
-  function handleDetectLocation() {
+  function handleFindNearMe() {
     if (!navigator.geolocation) {
-      setLocationStatus('denied')
+      setGpsError('GPS is not supported by your browser.')
       return
     }
-    setLocationStatus('detecting')
+    setGpsLoading(true)
+    setGpsError('')
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude
-        const lng = pos.coords.longitude
-        setUserLocation({ lat, lng })
-        setLocationStatus('active')
-        fetchNearby(lat, lng)
+        fetchNearby(pos.coords.latitude, pos.coords.longitude)
       },
       (err) => {
-        console.log('Location error:', err)
-        if (err.code === 1) { // PERMISSION_DENIED
-          setLocationStatus('denied')
-        } else if (err.code === 2) { // POSITION_UNAVAILABLE
-          alert("Could not determine your device's location. Please ensure your device Location Services (GPS) are turned ON in your phone's quick settings.")
-          setLocationStatus('prompt')
-        } else if (err.code === 3) { // TIMEOUT
-          alert("Location request timed out. Please try again.")
-          setLocationStatus('prompt')
-        } else {
-          setLocationStatus('denied')
-        }
+        setGpsLoading(false)
+        setGpsError(err.code === 1 ? 'Please enable location in your browser/phone settings.' : 'Could not get location.')
       },
-      // Removed enableHighAccuracy because it causes timeouts indoors on many Android devices
-      { timeout: 15000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
   }
 
-  // Skip location — just show all clinics
-  function handleSkipLocation() {
-    setLocationStatus('active')
-  }
-
-  const allSpecialties = specialties.length
-    ? specialties
-    : ['General Physician', 'Pediatrician', 'Dermatologist', 'Gynecologist', 'Orthopedic', 'Dentist', 'ENT', 'Ophthalmologist', 'Cardiologist', 'Neurologist']
+  const allSpecialties = specialties.length ? specialties : ['General Physician', 'Pediatrician', 'Dermatologist', 'Gynecologist', 'Orthopedic', 'Dentist', 'ENT', 'Ophthalmologist', 'Cardiologist', 'Neurologist']
 
   return (
     <>
@@ -369,256 +335,106 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
         body { font-family: 'Inter', sans-serif; background: #080818; color: #fff; overflow-x: hidden; }
-
         .find-page { min-height: 100vh; background: #080818; position: relative; overflow: hidden; }
-        
-        /* Grid background */
-        .find-page::before {
-          content: '';
-          position: fixed; inset: 0; z-index: 0; pointer-events: none;
-          background-image:
-            linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
-          background-size: 48px 48px;
-        }
-
-        /* Floating orbs */
-        .find-orb1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%); top: -150px; left: -150px; pointer-events: none; z-index: 0; animation: floatOrb1 10s ease-in-out infinite; }
-        .find-orb2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%); bottom: -100px; right: -100px; pointer-events: none; z-index: 0; animation: floatOrb2 13s ease-in-out infinite; }
-        @keyframes floatOrb1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-30px)} }
-        @keyframes floatOrb2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(24px)} }
-
+        .find-page::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px); background-size: 48px 48px; }
+        .find-orb1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%); top: -150px; left: -150px; pointer-events: none; z-index: 0; }
+        .find-orb2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%); bottom: -100px; right: -100px; pointer-events: none; z-index: 0; }
         .find-inner { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 100px 24px 80px; }
-
-        /* Nav */
         .find-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; background: rgba(8,8,24,0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
         .find-nav-logo { height: 36px; width: auto; cursor: pointer; }
         .find-nav-back { display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 600; cursor: pointer; background: none; border: none; text-decoration: none; transition: color 0.15s; }
-        .find-nav-back:hover { color: #fff; }
-
-        /* Hero area */
         .find-hero { text-align: center; margin-bottom: 52px; }
-        .find-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.35); border-radius: 100px; padding: 6px 18px; font-size: 12px; color: #c4b5fd; margin-bottom: 22px; font-weight: 600; letter-spacing: .5px; }
-        .find-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #7C3AED; box-shadow: 0 0 8px #7C3AED; }
+        .find-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.35); border-radius: 100px; padding: 6px 18px; font-size: 12px; color: #c4b5fd; margin-bottom: 22px; font-weight: 600; }
+        .find-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #7C3AED; }
         .find-h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 900; letter-spacing: -2px; color: #fff; margin-bottom: 14px; line-height: 1.05; }
-        .find-h1 span { background: linear-gradient(135deg, #7C3AED, #06B6D4, #10B981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .find-h1 span { background: linear-gradient(135deg, #7C3AED, #06B6D4, #10B981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .find-sub { color: rgba(255,255,255,0.45); font-size: 16px; line-height: 1.7; max-width: 480px; margin: 0 auto; }
-
-        /* Search box */
         .search-box-wrap { position: relative; max-width: 680px; margin: 0 auto 28px; }
-        .search-icon-left { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.4); pointer-events: none; }
-        .search-input { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; color: #fff; font-family: inherit; font-size: 16px; padding: 16px 60px 16px 52px; outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; backdrop-filter: blur(8px); }
-        .search-input::placeholder { color: rgba(255,255,255,0.3); }
-        .search-input:focus { border-color: rgba(124,58,237,0.6); background: rgba(255,255,255,0.08); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
-        .search-clear { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.5); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: background 0.15s, color 0.15s; }
-        .search-clear:hover { background: rgba(255,255,255,0.18); color: #fff; }
-
-        /* GPS + controls row */
-        .controls-row { display: flex; align-items: center; gap: 10px; max-width: 680px; margin: 0 auto 32px; flex-wrap: wrap; }
-        .gps-btn { display: flex; align-items: center; gap: 7px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 9px 18px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.2s; white-space: nowrap; font-family: inherit; }
-        .gps-btn:hover { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.5); transform: translateY(-1px); }
-        .gps-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .gps-btn.active { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.5); }
-        .gps-error { font-size: 12px; color: #f87171; font-weight: 500; }
+        .search-icon-left { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.4); }
+        .search-input { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; color: #fff; font-size: 16px; padding: 16px 60px 16px 52px; outline: none; }
+        .search-input:focus { border-color: rgba(124,58,237,0.6); background: rgba(255,255,255,0.08); }
+        .search-clear { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.5); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
+        .controls-row { display: flex; align-items: center; gap: 16px; max-width: 680px; margin: 0 auto 32px; flex-wrap: wrap; }
+        .gps-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #10b981, #06b6d4); border: none; color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
+        .gps-error { font-size: 13px; color: #f87171; font-weight: 500; background: rgba(248,113,113,0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(248,113,113,0.2); flex: 1; }
         .results-count { font-size: 13px; color: rgba(255,255,255,0.35); font-weight: 500; margin-left: auto; }
-
-        /* Filter chips */
         .chips-section { margin-bottom: 32px; }
         .chips-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; }
         .chips-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .chip { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.55); transition: all 0.2s; font-family: inherit; white-space: nowrap; }
-        .chip:hover { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.08); color: #c4b5fd; }
+        .chip { padding: 7px 14px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.55); }
         .chip.active { border-color: rgba(124,58,237,0.6); background: rgba(124,58,237,0.15); color: #a78bfa; }
-        .chip-clear { font-size: 14px; color: rgba(255,255,255,0.3); }
-
-        /* Results grid */
         .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
         .clinic-card:hover { transform: translateY(-5px); border-color: rgba(124,58,237,0.35) !important; background: rgba(124,58,237,0.06) !important; }
-
-        /* Nearby mode banner */
-        .nearby-banner { display: flex; align-items: center; justify-content: space-between; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 12px 18px; margin-bottom: 24px; flex-wrap: wrap; gap: 8px; }
-        .nearby-banner-text { font-size: 13px; color: #34d399; font-weight: 600; display: flex; align-items: center; gap: 7px; }
-        .nearby-clear { background: none; border: none; font-size: 12px; color: rgba(255,255,255,0.4); cursor: pointer; font-weight: 600; font-family: inherit; transition: color 0.15s; }
-        .nearby-clear:hover { color: #fff; }
-
-        /* Shimmer animation for skeletons */
-        @keyframes shimmer { 0%,100%{opacity:0.7} 50%{opacity:1} }
-
-        /* Spinner */
         @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { width: 16px; height: 16px; border: 2px solid rgba(52,211,153,0.3); border-top-color: #34d399; border-radius: 50%; animation: spin 0.8s linear infinite; }
-
-        /* Responsive */
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @media (max-width: 640px) {
           .find-inner { padding: 88px 16px 60px; }
-          .find-nav { padding: 0 16px; }
-          .search-input { font-size: 15px; padding: 14px 52px 14px 48px; }
-          .results-grid { grid-template-columns: 1fr; }
-          .chips-row { gap: 6px; }
-          .chip { padding: 6px 12px; font-size: 11px; }
-          .find-h1 { letter-spacing: -1px; }
-          .controls-row { gap: 8px; }
-          .results-count { width: 100%; margin-left: 0; }
+          .controls-row { flex-direction: column; align-items: stretch; gap: 12px; }
+          .results-count { text-align: center; margin: 0; }
         }
       `}</style>
 
       <div className="find-page">
         <div className="find-orb1" />
         <div className="find-orb2" />
-
-        {/* Nav */}
         <nav className="find-nav">
           <a href="/" style={{ display: 'flex', alignItems: 'center' }}>
             <img src="/logo.svg" alt="TokenPe" className="find-nav-logo" />
           </a>
           <a href="/" className="find-nav-back">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
             Back to Home
           </a>
         </nav>
-
         <div className="find-inner">
-
-          {/* LOCATION PROMPT —style */}
-          {(locationStatus === 'prompt' || locationStatus === 'detecting' || locationStatus === 'denied') && (
-            <div style={{ textAlign: 'center', padding: '60px 20px 40px', maxWidth: 440, margin: '0 auto' }}>
-              <div style={{ width: 80, height: 80, background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.15))', borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
-              </div>
-              <h2 style={{ fontSize: 24, fontWeight: 900, color: '#f1f5f9', marginBottom: 12, letterSpacing: '-0.5px' }}>
-                {locationStatus === 'detecting' ? 'Detecting your location...' : 'Where are you?'}
-              </h2>
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-                {locationStatus === 'denied'
-                  ? 'Location was blocked. You can search clinics manually below, or allow location in your browser settings and try again.'
-                  : 'Share your location to instantly see the clinics nearest to you.'}
-              </p>
-
-              {locationStatus === 'detecting' ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                  <div className="spinner" style={{ width: 24, height: 24 }} />
-                  <span style={{ color: '#34d399', fontSize: 14, fontWeight: 600 }}>Getting your GPS location...</span>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320, margin: '0 auto' }}>
-                  <button
-                    onClick={handleDetectLocation}
-                    style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 24px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                    {locationStatus === 'denied' ? 'Try Again' : 'Detect My Location'}
-                  </button>
-                  <button
-                    onClick={handleSkipLocation}
-                    style={{ width: '100%', padding: '14px', background: 'transparent', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-                  >
-                    Skip — I'll search manually
-                  </button>
-                </div>
-              )}
+          <div className="find-hero">
+            <div className="find-badge">
+              <span className="find-badge-dot" />
+              Find clinics near you — no QR scan needed
             </div>
-          )}
-
-          {/* MAIN CONTENT — shown after location is resolved */}
-          {locationStatus === 'active' && (
-            <>
-              {/* Hero */}
-              <div className="find-hero">
-                <div className="find-badge">
-                  <span className="find-badge-dot" />
-                  {userLocation ? 'Showing clinics near you' : 'Find clinics near you — no QR scan needed'}
-                </div>
-                <h1 className="find-h1">Find a <span>Clinic</span><br />Join from Home</h1>
-                <p className="find-sub">
-                  Search by doctor, specialty, or city. Get your token instantly on WhatsApp — no waiting at reception.
-                </p>
-              </div>
-
-              {/* Search input */}
-              <div className="search-box-wrap">
-                <span className="search-icon-left">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                  </svg>
-                </span>
-                <input
-                  id="find-search-input"
-                  className="search-input"
-                  type="text"
-                  placeholder="Search by doctor, clinic, specialty or city..."
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  autoComplete="off"
-                />
-                {query && (
-                  <button className="search-clear" onClick={() => setQuery('')} aria-label="Clear search">✕</button>
-                )}
-              </div>
-
-              {/* Results count + location indicator */}
-              <div className="controls-row">
-                {userLocation && !query && !selectedCity && !selectedSpecialty && nearbyResults.length > 0 && (
-                  <span style={{ fontSize: 12, color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                    Sorted by distance from you
-                  </span>
-                )}
-                {!loading && (
-                  <span className="results-count">
-                    {displayedClinics.length} clinic{displayedClinics.length !== 1 ? 's' : ''} found
-                  </span>
-                )}
-              </div>
-
-              {/* Filter chips */}
-              <div className="chips-section">
-                <div className="chips-label">Specialty</div>
-                <div className="chips-row" style={{ marginBottom: 14 }}>
-                  {allSpecialties.map(spec => (
-                    <button
-                      key={spec}
-                      className={`chip${selectedSpecialty === spec ? ' active' : ''}`}
-                      onClick={() => setSelectedSpecialty(selectedSpecialty === spec ? '' : spec)}
-                    >
-                      {typeof SPECIALTY_ICONS[spec] === 'function' ? SPECIALTY_ICONS[spec](14) : <Hospital size={14} />} {spec}
-                      {selectedSpecialty === spec && <span className="chip-clear">✕</span>}
-                    </button>
+            <h1 className="find-h1">Find a <span>Clinic</span><br />Join from Home</h1>
+            <p className="find-sub">Search by doctor, specialty, or city. Get your token instantly on WhatsApp — no waiting at reception.</p>
+          </div>
+          <div className="search-box-wrap">
+            <span className="search-icon-left"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg></span>
+            <input className="search-input" type="text" placeholder="Search by doctor, clinic, specialty or city..." value={query} onChange={e => setQuery(e.target.value)} />
+            {query && <button className="search-clear" onClick={() => setQuery('')}>✕</button>}
+          </div>
+          <div className="controls-row">
+            <button className="gps-btn" onClick={handleFindNearMe} disabled={gpsLoading}>
+              {gpsLoading ? <div className="spinner" /> : <MapPin size={16} />}
+              {gpsLoading ? 'Finding Location...' : isNearbyMode ? 'Update Location' : '📍 Find Clinics Near Me'}
+            </button>
+            {gpsError && <div className="gps-error">{gpsError}</div>}
+            {!gpsLoading && !gpsError && <span className="results-count">{displayedClinics.length} clinic{displayedClinics.length !== 1 ? 's' : ''} found</span>}
+          </div>
+          <div className="chips-section">
+            <div className="chips-label">Specialty</div>
+            <div className="chips-row" style={{ marginBottom: 14 }}>
+              {allSpecialties.map(spec => (
+                <button key={spec} className={`chip${selectedSpecialty === spec ? ' active' : ''}`} onClick={() => setSelectedSpecialty(selectedSpecialty === spec ? '' : spec)}>
+                  {typeof SPECIALTY_ICONS[spec] === 'function' ? SPECIALTY_ICONS[spec](14) : <Hospital size={14} />} {spec}
+                </button>
+              ))}
+            </div>
+            {cities.length > 0 && (
+              <>
+                <div className="chips-label" style={{ marginTop: 6 }}>City</div>
+                <div className="chips-row">
+                  {cities.slice(0, 12).map(c => (
+                    <button key={c} className={`chip${selectedCity === c ? ' active' : ''}`} onClick={() => setSelectedCity(selectedCity === c ? '' : c)}>{c}</button>
                   ))}
                 </div>
-
-                {cities.length > 0 && (
-                  <>
-                    <div className="chips-label" style={{ marginTop: 6 }}>City</div>
-                    <div className="chips-row">
-                      {cities.slice(0, 12).map(c => (
-                        <button
-                          key={c}
-                          className={`chip${selectedCity === c ? ' active' : ''}`}
-                          onClick={() => setSelectedCity(selectedCity === c ? '' : c)}
-                        >
-                          {c}
-                          {selectedCity === c && <span className="chip-clear">✕</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Results */}
-              <div className="results-grid">
-                {loading
-                  ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-                  : displayedClinics.length === 0
-                    ? <EmptyState query={query || selectedSpecialty || selectedCity} />
-                    : displayedClinics.map(clinic => (
-                      <ClinicCard key={clinic.id || clinic.code} clinic={clinic} isNearby={!!clinic.distance_km} />
-                    ))}
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
+          <div className="results-grid">
+            {(loading || gpsLoading)
+              ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+              : displayedClinics.length === 0
+                ? <EmptyState query={query || selectedSpecialty || selectedCity} />
+                : displayedClinics.map(clinic => <ClinicCard key={clinic.id || clinic.code} clinic={clinic} isNearby={isNearbyMode} />)}
+          </div>
         </div>
       </div>
     </>

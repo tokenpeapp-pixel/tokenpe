@@ -47,6 +47,34 @@ export default function LoginPage() {
     const [regPhone, setRegPhone] = useState('')
     const [regEmail, setRegEmail] = useState('')
     const [regPin, setRegPin] = useState('')
+    const [regSpecialty, setRegSpecialty] = useState('General Physician')
+    const [regCity, setRegCity] = useState('')
+    const [regLat, setRegLat] = useState(null)
+    const [regLng, setRegLng] = useState(null)
+    const [gpsStatus, setGpsStatus] = useState('')
+
+    function requestGps() {
+        if (!navigator.geolocation) return
+        setGpsStatus('loading')
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setRegLat(pos.coords.latitude)
+                setRegLng(pos.coords.longitude)
+                setGpsStatus('success')
+            },
+            (err) => {
+                console.error(err)
+                setGpsStatus('error')
+            },
+            { timeout: 10000, maximumAge: 60000 }
+        )
+    }
+
+    useEffect(() => {
+        if (mode === 'register') {
+            requestGps()
+        }
+    }, [mode])
 
     // OTP reset flow
     const [otpToken, setOtpToken] = useState('')
@@ -130,7 +158,16 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: regName, phone: regPhone, email: regEmail, pin: regPin })
+                body: JSON.stringify({ 
+                    name: regName, 
+                    phone: regPhone, 
+                    email: regEmail, 
+                    pin: regPin,
+                    specialty: regSpecialty,
+                    city: regCity,
+                    lat: regLat,
+                    lng: regLng
+                })
             })
             const result = await res.json()
 
@@ -364,15 +401,24 @@ export default function LoginPage() {
                 /* INPUTS */
                 .field { margin-bottom: 16px; }
                 .field label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
-                .field input {
+                .field input, .field select {
                     width: 100%; padding: 12px 14px;
                     border: 1.5px solid #e2e8f0; border-radius: 10px;
                     font-size: 14px; font-family: inherit; color: #0f172a;
                     background: #f9fafb; outline: none;
                     transition: border-color 0.2s, box-shadow 0.2s;
                 }
+                .field select {
+                    cursor: pointer;
+                    appearance: none;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right 14px center;
+                    background-size: 14px;
+                    padding-right: 40px;
+                }
                 .field input::placeholder { color: #94a3b8; }
-                .field input:focus { border-color: #7C3AED; background: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+                .field input:focus, .field select:focus { border-color: #7C3AED; background: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
 
                 .btn-submit {
                     width: 100%; padding: 13px;
@@ -561,6 +607,62 @@ export default function LoginPage() {
                             <div className="field">
                                 <label>Clinic Name *</label>
                                 <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="Dr. Sharma Clinic" required suppressHydrationWarning={true} />
+                            </div>
+                            <div className="field">
+                                <label>Specialty *</label>
+                                <select value={regSpecialty} onChange={e => setRegSpecialty(e.target.value)} required suppressHydrationWarning={true}>
+                                    <option value="General Physician">General Physician</option>
+                                    <option value="Pediatrician">Pediatrician</option>
+                                    <option value="Dermatologist">Dermatologist</option>
+                                    <option value="Gynecologist">Gynecologist</option>
+                                    <option value="Orthopedic">Orthopedic</option>
+                                    <option value="Dentist">Dentist</option>
+                                    <option value="ENT">ENT</option>
+                                    <option value="Ophthalmologist">Ophthalmologist</option>
+                                    <option value="Cardiologist">Cardiologist</option>
+                                    <option value="Neurologist">Neurologist</option>
+                                    <option value="Psychiatrist">Psychiatrist</option>
+                                    <option value="Urologist">Urologist</option>
+                                    <option value="Oncologist">Oncologist</option>
+                                    <option value="Diabetologist">Diabetologist</option>
+                                    <option value="Physiotherapist">Physiotherapist</option>
+                                </select>
+                            </div>
+                            <div className="field">
+                                <label>City *</label>
+                                <input value={regCity} onChange={e => setRegCity(e.target.value)} placeholder="e.g. Mumbai, Bangalore" required suppressHydrationWarning={true} />
+                            </div>
+                            <div className="field">
+                                <label>Clinic GPS Location</label>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                    <button 
+                                        type="button" 
+                                        onClick={requestGps}
+                                        style={{
+                                            padding: '10px 16px',
+                                            borderRadius: 10,
+                                            border: '1.5px solid #e2e8f0',
+                                            background: '#f8fafc',
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            color: '#334155',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            outline: 'none'
+                                        }}
+                                        suppressHydrationWarning={true}
+                                    >
+                                        📍 {gpsStatus === 'loading' ? 'Detecting GPS...' : gpsStatus === 'success' ? 'Location Linked' : 'Detect GPS Location'}
+                                    </button>
+                                    {gpsStatus === 'success' && (
+                                        <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✅ GPS Active</span>
+                                    )}
+                                    {gpsStatus === 'error' && (
+                                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500 }}>⚠️ Skipped</span>
+                                    )}
+                                </div>
                             </div>
                             <div className="field">
                                 <label>Phone Number *</label>

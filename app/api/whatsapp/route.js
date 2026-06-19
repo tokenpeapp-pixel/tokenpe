@@ -93,7 +93,7 @@ export async function POST(req) {
 
 
         // ── 🔍 FULL PAYLOAD LOG — helps debug Interakt variable names ──────────
-        // console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
+        console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
         console.log(`[whatsapp] ✅ Received action: ${action}`)
 
         const baseUrl = new URL(req.url).origin

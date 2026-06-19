@@ -529,6 +529,10 @@ export default function Dashboard() {
   const [showAddBranch, setShowAddBranch] = useState(false)
   const [newBranchName, setNewBranchName] = useState('')
   const [addingBranch, setAddingBranch] = useState(false)
+  const [showManageBranches, setShowManageBranches] = useState(false)
+  const [editingBranchId, setEditingBranchId] = useState(null)
+  const [editingBranchName, setEditingBranchName] = useState('')
+  const [managingBranch, setManagingBranch] = useState(false)
   const sounds = useSounds()
 
   // ── Load clinic from session (multi-clinic support) ─────────────────────
@@ -740,6 +744,61 @@ export default function Dashboard() {
     setPatients(patientsData || [])
     setLoading(false)
     addToast(`✅ Switched to ${targetClinic.name}`, 'done')
+  }
+
+  async function handleSaveBranchEdit(branchId) {
+    if (!editingBranchName.trim()) return
+    setManagingBranch(true)
+    try {
+      const res = await fetch('/api/clinics/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: branchId, name: editingBranchName })
+      })
+      const data = await res.json()
+      if (data.success) {
+        const updatedUserClinics = userClinics.map(c => c.id === branchId ? { ...c, name: editingBranchName } : c)
+        setUserClinics(updatedUserClinics)
+        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
+        if (clinic?.id === branchId) {
+          const updatedClinic = { ...clinic, name: editingBranchName }
+          setClinic(updatedClinic)
+          localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+        }
+        setEditingBranchId(null)
+      } else {
+        alert(data.error || 'Failed to update branch')
+      }
+    } catch (e) {
+      alert('Error updating branch')
+    }
+    setManagingBranch(false)
+  }
+
+  async function handleDeleteBranch(branchId) {
+    if (!confirm('Are you sure you want to delete this branch? This action cannot be undone.')) return
+    setManagingBranch(true)
+    try {
+      const res = await fetch('/api/clinics/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: branchId })
+      })
+      const data = await res.json()
+      if (data.success) {
+        const updatedUserClinics = userClinics.filter(c => c.id !== branchId)
+        setUserClinics(updatedUserClinics)
+        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
+        if (clinic?.id === branchId) {
+          await switchToBranch(updatedUserClinics[0])
+        }
+      } else {
+        alert(data.error || 'Failed to delete branch')
+      }
+    } catch (e) {
+      alert('Error deleting branch')
+    }
+    setManagingBranch(false)
   }
 
   // ── Logout ──────────────────────────────────────────────────────────────
@@ -1327,6 +1386,10 @@ export default function Dashboard() {
               </button>
             )}
 
+            <button className="dropdown-item" onClick={() => { setShowManageBranches(true); setMenuOpen(false); }} style={{ color: '#FCD34D', fontSize: '0.85rem' }}>
+              ⚙️ Manage Branches
+            </button>
+
             <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
               🕒 History
             </button>
@@ -1358,6 +1421,49 @@ export default function Dashboard() {
             </button>
           </div>
         </>
+      )}
+
+      {/* ── Manage Branches Modal ── */}
+      {showManageBranches && (
+        <div onClick={() => setShowManageBranches(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#0F172A', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 500, border: '1px solid rgba(255,255,255,0.1)', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800 }}>Manage Branches</h2>
+              <button onClick={() => setShowManageBranches(false)} style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '1.5rem' }}>×</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {userClinics.map(uc => (
+                <div key={uc.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {editingBranchId === uc.id ? (
+                    <>
+                      <input
+                        autoFocus
+                        value={editingBranchName}
+                        onChange={e => setEditingBranchName(e.target.value)}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }}
+                      />
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button disabled={managingBranch} onClick={() => handleSaveBranchEdit(uc.id)} style={{ background: '#10B981', color: '#000', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', opacity: managingBranch ? 0.7 : 1 }}>Save</button>
+                        <button disabled={managingBranch} onClick={() => setEditingBranchId(null)} style={{ background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'white', fontWeight: 600 }}>{uc.name} {clinic?.id === uc.id ? <span style={{ fontSize: '0.75rem', color: '#10B981', marginLeft: 8 }}>(Active)</span> : ''}</span>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => { setEditingBranchId(uc.id); setEditingBranchName(uc.name); }} style={{ background: 'transparent', border: 'none', color: '#3B82F6', cursor: 'pointer', fontSize: '0.9rem' }}>Edit</button>
+                        {userClinics.length > 1 && (
+                          <button onClick={() => handleDeleteBranch(uc.id)} disabled={managingBranch} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: managingBranch ? 'not-allowed' : 'pointer', fontSize: '0.9rem', opacity: managingBranch ? 0.5 : 1 }}>Delete</button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Add New Branch Modal ── */}

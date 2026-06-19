@@ -9,7 +9,7 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { clinicId, welcomeMessage, address, specialty, city, area, isPublic, photoUrl, lat, lng, phone } = await req.json()
+    const { clinicId, name, welcomeMessage, address, specialty, city, area, isPublic, photoUrl, lat, lng, phone } = await req.json()
     
     if (!clinicId) {
       return NextResponse.json({ success: false, error: 'Clinic ID required' }, { status: 400 })
@@ -25,6 +25,7 @@ export async function POST(req) {
     }
 
     const updates = {}
+    if (name !== undefined) updates.name = name
     if (welcomeMessage !== undefined) updates.welcome_message = welcomeMessage
     if (address !== undefined) updates.address = address
     if (specialty !== undefined) updates.specialty = specialty

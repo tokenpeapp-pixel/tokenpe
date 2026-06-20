@@ -1241,28 +1241,23 @@ export default function Dashboard() {
         }
 
         /* ── SMOOTH BUTTON PHYSICS (Dashboard-wide) ── */
-        .action-bar-responsive button,
-        .patient-card-actions button,
-        .hamburger-btn {
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                      box-shadow 0.2s ease,
-                      opacity 0.15s ease,
-                      background 0.15s ease !important;
-          will-change: transform;
+        button {
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                      box-shadow 0.3s ease,
+                      opacity 0.25s ease,
+                      background 0.25s ease,
+                      filter 0.25s ease !important;
+          will-change: transform, box-shadow, filter;
         }
-        .action-bar-responsive button:hover:not(:disabled) {
+        button:hover:not(:disabled) {
           transform: translateY(-2px);
-          filter: brightness(1.05);
+          filter: brightness(1.08);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
         }
-        .action-bar-responsive button:active:not(:disabled) {
-          transform: scale(0.94) translateY(0) !important;
-        }
-        .patient-card-actions button:hover:not(:disabled) {
-          transform: translateY(-1px);
-          filter: brightness(1.05);
-        }
-        .patient-card-actions button:active:not(:disabled) {
-          transform: scale(0.93) !important;
+        button:active:not(:disabled) {
+          transform: scale(0.92) translateY(0) !important;
+          filter: brightness(0.95);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .hamburger-btn:active {
           transform: scale(0.88) !important;

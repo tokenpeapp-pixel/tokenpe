@@ -1148,7 +1148,7 @@ export default function Dashboard() {
           .dash-header {
             height: auto !important;
             flex-direction: column;
-            padding: 16px !important;
+            padding: 16px 24px !important;
             align-items: stretch;
             gap: 14px;
           }
@@ -1167,9 +1167,10 @@ export default function Dashboard() {
           
           .header-mid-row {
             width: 100%;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 0 12px;
           }
           
           .header-bottom-row {
@@ -1180,6 +1181,8 @@ export default function Dashboard() {
           }
           
           .stat-chip {
+            flex: 1;
+            max-width: 140px;
             padding: 8px 4px !important;
             flex-direction: column !important;
             justify-content: center;
@@ -1222,12 +1225,15 @@ export default function Dashboard() {
             border-top: 1px solid #F1F5F9;
           }
           .action-bar-responsive {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px !important;
-            padding: 12px 14px !important;
+            display: flex !important;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px !important;
+            padding: 16px 24px !important;
           }
           .action-bar-responsive button {
+            flex: 1;
+            min-width: 130px;
             font-size: 0.78rem !important;
             padding: 10px 10px !important;
             white-space: nowrap;

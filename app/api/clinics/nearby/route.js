@@ -59,11 +59,10 @@ export async function GET(req) {
       console.log(`[Nearby API] RPC exception: ${rpcErr.message}`)
     }
 
-    // Strategy 2: Query clinics table directly, parse POINT location
+    // Strategy 2: Query public_clinics view directly, calculate distance using lat/lng
     const { data: allClinics, error: dbError } = await supabaseAdmin
-      .from('clinics')
-      .select('id, name, specialty, city, area, code, avg_rating, photo_url, queue_paused, waiting_count, location, is_public')
-      .eq('is_public', true)
+      .from('public_clinics')
+      .select('id, name, specialty, city, area, code, avg_rating, photo_url, queue_paused, waiting_count, lat, lng')
 
     if (dbError) {
       console.error('[Nearby API] DB error:', dbError)
@@ -74,40 +73,8 @@ export async function GET(req) {
 
     const clinics = (allClinics || [])
       .map(c => {
-        let cLat = null, cLng = null
-
-        if (c.location) {
-          if (typeof c.location === 'string') {
-            if (c.location.startsWith('01010000')) {
-              // Parse PostGIS EWKB Hex string
-              const isLittleEndian = c.location.substring(0, 2) === '01';
-              const xHex = c.location.slice(-32, -16);
-              const yHex = c.location.slice(-16);
-              const getFloat64 = (hex) => {
-                const bytes = new Uint8Array(8);
-                for (let i = 0; i < 8; i++) {
-                  bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-                }
-                const view = new DataView(bytes.buffer);
-                return view.getFloat64(0, isLittleEndian);
-              };
-              try {
-                cLng = getFloat64(xHex);
-                cLat = getFloat64(yHex);
-              } catch (e) {}
-            } else {
-              // Parse standard POINT string if somehow returned
-              const match = c.location.match(/POINT\(([^ ]+) ([^ ]+)\)/)
-              if (match) {
-                cLng = parseFloat(match[1])
-                cLat = parseFloat(match[2])
-              }
-            }
-          } else if (c.location.type === 'Point' && c.location.coordinates) {
-            cLng = c.location.coordinates[0]
-            cLat = c.location.coordinates[1]
-          }
-        }
+        let cLat = parseFloat(c.lat)
+        let cLng = parseFloat(c.lng)
 
         if (cLat === null || cLng === null || isNaN(cLat) || isNaN(cLng)) return null
 

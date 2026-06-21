@@ -33,18 +33,15 @@ export default async function FindPage({ searchParams }) {
   if (city) query = query.ilike('city', `%${city}%`)
   if (specialty) query = query.ilike('specialty', `%${specialty}%`)
 
-  const { data: initialClinics } = await query
-
-  // Fetch distinct cities and specialties for filter chips
-  const { data: citiesData } = await supabase
-    .from('public_clinics')
-    .select('city')
-    .not('city', 'is', null)
-
-  const { data: specialtiesData } = await supabase
-    .from('public_clinics')
-    .select('specialty')
-    .not('specialty', 'is', null)
+  const [
+    { data: initialClinics },
+    { data: citiesData },
+    { data: specialtiesData }
+  ] = await Promise.all([
+    query,
+    supabase.from('public_clinics').select('city').not('city', 'is', null),
+    supabase.from('public_clinics').select('specialty').not('specialty', 'is', null)
+  ])
 
   const cities = [...new Set((citiesData || []).map(r => r.city).filter(Boolean))].sort()
   const specialties = [...new Set((specialtiesData || []).map(r => r.specialty).filter(Boolean))].sort()

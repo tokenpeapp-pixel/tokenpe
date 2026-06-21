@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
 import WhatsAppDemo from "./components/WhatsAppDemo";
 
 export default function LandingPage() {
@@ -8,46 +9,6 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const go = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
-
-  const [showLocationPopup, setShowLocationPopup] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hasPrompted = localStorage.getItem('tokenpe_location_prompted');
-      if (!hasPrompted) {
-        const timer = setTimeout(() => {
-          setShowLocationPopup(true);
-        }, 1200);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, []);
-
-  const handleAllowLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          localStorage.setItem('tokenpe_user_lat', pos.coords.latitude);
-          localStorage.setItem('tokenpe_user_lng', pos.coords.longitude);
-          localStorage.setItem('tokenpe_location_prompted', 'true');
-          setShowLocationPopup(false);
-        },
-        (err) => {
-          console.log('Location denied.');
-          localStorage.setItem('tokenpe_location_prompted', 'true');
-          setShowLocationPopup(false);
-        }
-      );
-    } else {
-      localStorage.setItem('tokenpe_location_prompted', 'true');
-      setShowLocationPopup(false);
-    }
-  };
-
-  const handleSkipLocation = () => {
-    localStorage.setItem('tokenpe_location_prompted', 'true');
-    setShowLocationPopup(false);
-  };
 
   // Scroll-reveal: observe elements with .reveal class
   useEffect(() => {
@@ -397,7 +358,7 @@ export default function LandingPage() {
           <span className="nl" onClick={() => go("features")}>Features</span>
           <span className="nl" onClick={() => go("how")}>How it works</span>
           <span className="nl" onClick={() => go("pricing")}>Pricing</span>
-          <span className="nl" onClick={() => router.push("/find")} style={{ color: '#a78bfa' }}>🔍 Find Clinic</span>
+          <Link href="/find" className="nlink" style={{ color: '#a78bfa', textDecoration: 'none' }}>🔍 Find Clinic</Link>
           <button className="nav-btn" onClick={() => router.push("/login")}>Get Started →</button>
         </div>
         <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? "✕" : "☰"}</button>
@@ -406,7 +367,7 @@ export default function LandingPage() {
         <span className="mlink" onClick={() => go("features")}>Features</span>
         <span className="mlink" onClick={() => go("how")}>How it works</span>
         <span className="mlink" onClick={() => go("pricing")}>Pricing</span>
-        <span className="mlink" onClick={() => router.push("/find")} style={{ color: '#a78bfa' }}>🔍 Find Clinic</span>
+        <Link href="/find" className="mlink" style={{ color: '#a78bfa', textDecoration: 'none' }}>🔍 Find Clinic</Link>
         <span className="mbtn" onClick={() => router.push("/login")}>Get Started →</span>
       </div>
 
@@ -775,34 +736,6 @@ export default function LandingPage() {
             
             <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid #e2e8f0", fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
               <strong>Terms of Subscription:</strong> All plans automatically renew monthly. You can cancel your subscription at any time from the billing dashboard. The free trial is available for 7 days and provides full access to Elite features. After the trial, you must choose a plan to continue service, otherwise access to the platform will be temporarily locked to protect your data.
-            </div>
-          </div>
-        </div>
-      )}
-      {/* LOCATION POPUP */}
-      {showLocationPopup && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div className="animate-fade-up" style={{ background: "#fff", width: "100%", maxWidth: 420, borderRadius: 24, padding: "32px 28px", position: "relative", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
-            <div style={{ width: 64, height: 64, background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.1))", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", color: "#10b981" }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            </div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", marginBottom: 10, letterSpacing: "-0.5px" }}>Find Clinics Near You</h2>
-            <p style={{ color: "#64748b", fontSize: 15, lineHeight: 1.6, marginBottom: 28 }}>
-              TokenPe uses your location to instantly show you the best doctors and clinics in your area. 
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <button 
-                onClick={handleAllowLocation} 
-                style={{ width: "100%", padding: "16px", background: "linear-gradient(135deg, #10b981, #06b6d4)", color: "#fff", border: "none", borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(16,185,129,0.3)" }}
-              >
-                Allow Location Access
-              </button>
-              <button 
-                onClick={handleSkipLocation} 
-                style={{ width: "100%", padding: "14px", background: "transparent", color: "#94a3b8", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-              >
-                Maybe Later
-              </button>
             </div>
           </div>
         </div>

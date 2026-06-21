@@ -399,6 +399,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
 function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
   const [saving, setSaving] = useState(false)
   const [specialty, setSpecialty] = useState(clinic?.specialty || 'General Physician')
+  const [customSpecialty, setCustomSpecialty] = useState('')
   const [city, setCity] = useState(clinic?.city || '')
   const [area, setArea] = useState(clinic?.area || '')
   const [phone, setPhone] = useState(clinic?.phone === '0000000000' ? '' : clinic?.phone || '')
@@ -417,7 +418,8 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
   }, [])
 
   async function handleSave() {
-    if (!city || !specialty) return alert("City and Specialty are required to be visible to patients.")
+    const finalSpecialty = specialty === 'Other' ? (customSpecialty || 'Other') : specialty
+    if (!city || !finalSpecialty) return alert("City and Specialty are required to be visible to patients.")
     if (!phone || phone.length < 10) return alert("A valid 10-digit WhatsApp number is required.")
     
     setSaving(true)
@@ -425,10 +427,10 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
       const res = await fetch('/api/clinics/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, specialty, city, area, phone, lat, lng })
+        body: JSON.stringify({ clinicId: clinic.id, specialty: finalSpecialty, city, area, phone, lat, lng })
       })
       if (res.ok) {
-        onSuccess({ specialty, city, area, phone, lat, lng })
+        onSuccess({ specialty: finalSpecialty, city, area, phone, lat, lng })
         onClose()
       } else {
         alert("Failed to save profile.")
@@ -465,8 +467,17 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
               <option value="ENT Specialist" style={{ color: 'black' }}>ENT Specialist</option>
               <option value="Cardiologist" style={{ color: 'black' }}>Cardiologist</option>
               <option value="Physiotherapist" style={{ color: 'black' }}>Physiotherapist</option>
-              <option value="Other" style={{ color: 'black' }}>Other</option>
+              <option value="Other" style={{ color: 'black' }}>Other (Type your own)</option>
             </select>
+            {specialty === 'Other' && (
+              <input 
+                autoFocus
+                value={customSpecialty} 
+                onChange={e => setCustomSpecialty(e.target.value)} 
+                placeholder="Type your specialty..." 
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15, marginTop: 10 }} 
+              />
+            )}
           </div>
 
           <div>
@@ -744,6 +755,11 @@ export default function Dashboard() {
     setPatients(patientsData || [])
     setLoading(false)
     addToast(`✅ Switched to ${targetClinic.name}`, 'done')
+
+    // Show Discovery Profile if the new branch is missing details
+    if (!targetClinic.specialty || !targetClinic.city || targetClinic.phone === '0000000000') {
+      setShowDiscovery(true)
+    }
   }
 
   async function handleSaveBranchEdit(branchId) {

@@ -51,20 +51,7 @@ function ClinicCard({ clinic, isNearby }) {
   const waLink = `https://wa.me/${WA_NUMBER}?text=JOIN%20${encodeURIComponent(clinic.code)}`
 
   return (
-    <div className="clinic-card" style={{
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 20,
-      padding: '22px 20px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 14,
-      transition: 'transform 0.28s cubic-bezier(0.16,1,0.3,1), border-color 0.2s, background 0.2s',
-      backdropFilter: 'blur(8px)',
-      position: 'relative',
-      overflow: 'hidden',
-      cursor: 'default',
-    }}>
+    <div className="clinic-card">
       {/* Top row */}
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         {clinic.photo_url ? (
@@ -359,13 +346,17 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
         .find-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.35); border-radius: 100px; padding: 6px 18px; font-size: 12px; color: #c4b5fd; margin-bottom: 22px; font-weight: 600; }
         .find-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #7C3AED; }
         .find-h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 900; letter-spacing: -2px; color: #fff; margin-bottom: 14px; line-height: 1.05; }
-        .find-h1 span { background: linear-gradient(135deg, #7C3AED, #06B6D4, #10B981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        @keyframes textGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .find-h1 span { background: linear-gradient(270deg, #7C3AED, #06B6D4, #10B981, #7C3AED); background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: textGradient 6s ease infinite; }
         .find-sub { color: rgba(255,255,255,0.45); font-size: 16px; line-height: 1.7; max-width: 480px; margin: 0 auto; }
-        .search-box-wrap { position: relative; max-width: 680px; margin: 0 auto 28px; }
-        .search-icon-left { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.4); }
-        .search-input { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; color: #fff; font-size: 16px; padding: 16px 60px 16px 52px; outline: none; }
-        .search-input:focus { border-color: rgba(124,58,237,0.6); background: rgba(255,255,255,0.08); }
-        .search-clear { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.5); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
+        .sticky-search { position: sticky; top: 64px; z-index: 150; padding: 20px 0; background: linear-gradient(to bottom, rgba(8,8,24,0.95) 70%, rgba(8,8,24,0)); backdrop-filter: blur(12px); margin: -20px -24px 28px; padding-left: 24px; padding-right: 24px; }
+        .search-box-wrap { position: relative; max-width: 680px; margin: 0 auto; z-index: 100; transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .search-box-wrap:focus-within { transform: translateY(-2px); }
+        .search-icon-left { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.4); pointer-events: none; }
+        .search-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; color: #fff; font-size: 16px; padding: 20px 60px 20px 58px; outline: none; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2), 0 10px 30px rgba(0,0,0,0.2); backdrop-filter: blur(12px); transition: all 0.3s ease; }
+        .search-input:focus { border-color: rgba(124,58,237,0.5); background: rgba(255,255,255,0.06); box-shadow: inset 0 2px 10px rgba(0,0,0,0.2), 0 0 0 4px rgba(124,58,237,0.15), 0 20px 40px rgba(0,0,0,0.4); }
+        .search-clear { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.7); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; transition: background 0.2s; }
+        .search-clear:hover { background: rgba(255,255,255,0.2); }
         .controls-row { display: flex; align-items: center; gap: 16px; max-width: 680px; margin: 0 auto 32px; flex-wrap: wrap; }
         .gps-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #10b981, #06b6d4); border: none; color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
         .gps-error { font-size: 13px; color: #f87171; font-weight: 500; background: rgba(248,113,113,0.1); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(248,113,113,0.2); width: 100%; margin-top: 4px; line-height: 1.4; }
@@ -373,16 +364,20 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
         .chips-section { margin-bottom: 32px; }
         .chips-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; }
         .chips-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .chip { padding: 7px 14px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.55); }
-        .chip.active { border-color: rgba(124,58,237,0.6); background: rgba(124,58,237,0.15); color: #a78bfa; }
+        .chip { padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.6); transition: all 0.25s cubic-bezier(0.16,1,0.3,1); }
+        .chip:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.15); transform: translateY(-1px); }
+        .chip.active { border-color: transparent; background: linear-gradient(135deg, #7C3AED, #06B6D4); color: #fff; box-shadow: 0 4px 15px rgba(124,58,237,0.35); transform: translateY(-1px); }
         .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
-        .clinic-card:hover { transform: translateY(-5px); border-color: rgba(124,58,237,0.35) !important; background: rgba(124,58,237,0.06) !important; }
+        .clinic-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 16px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); cursor: default; position: relative; overflow: hidden; }
+        .clinic-card:hover { transform: translateY(-6px) scale(1.01); border-color: rgba(124,58,237,0.4) !important; background: rgba(124,58,237,0.05) !important; box-shadow: 0 20px 40px rgba(124,58,237,0.15); }
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @media (max-width: 640px) {
           .find-inner { padding: 88px 16px 60px; }
           .controls-row { flex-direction: column; align-items: stretch; gap: 12px; }
           .results-count { text-align: center; margin: 0; }
+          .sticky-search { margin: -20px -16px 28px; padding-left: 16px; padding-right: 16px; }
+          .find-h1 { font-size: 38px; }
         }
       `}</style>
 
@@ -407,10 +402,14 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
             <h1 className="find-h1">Find a <span>Clinic</span><br />Join from Home</h1>
             <p className="find-sub">Search by doctor, specialty, or city. Get your token instantly on WhatsApp — no waiting at reception.</p>
           </div>
-          <div className="search-box-wrap">
-            <span className="search-icon-left"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg></span>
-            <input className="search-input" type="text" placeholder="Search by doctor, clinic, specialty or city..." value={query} onChange={e => setQuery(e.target.value)} />
-            {query && <button className="search-clear" onClick={() => setQuery('')}>✕</button>}
+          <div className="sticky-search">
+            <div className="search-box-wrap">
+              <span className="search-icon-left">
+                {loading ? <div className="spinner" /> : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>}
+              </span>
+              <input className="search-input" type="text" placeholder="Search by doctor, clinic, specialty or city..." value={query} onChange={e => setQuery(e.target.value)} />
+              {query && <button className="search-clear" onClick={() => setQuery('')}>✕</button>}
+            </div>
           </div>
           <div className="controls-row">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>

@@ -58,6 +58,11 @@ const structuredData = {
     "@type": "Offer",
     "price": "499",
     "priceCurrency": "INR"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.9",
+    "ratingCount": "128"
   }
 };
 

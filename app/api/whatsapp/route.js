@@ -171,7 +171,7 @@ export async function POST(req) {
                     .from('patients')
                     .select('id, clinic_id')
                     .or(`phone.eq.${phone10},phone.eq.${phone12}`)
-                    .order('i_at', { ascending: false })
+                    .order('joined_at', { ascending: false })
                     .limit(1)
                     .single()
 

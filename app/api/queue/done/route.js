@@ -55,8 +55,8 @@ _Powered by TokenPe_`
 
         await Promise.all(alerts)
 
-        // Send interactive rating immediately after the voice note
-        await new Promise(r => setTimeout(r, 200)) // slight delay
+        // Send Interakt Interactive Rating list (beautiful 1-5 star buttons)
+        await new Promise(r => setTimeout(r, 500))
         await sendInteractiveRating(phone, clinicName, language || 'en')
 
         return Response.json({ success: true, done: token })

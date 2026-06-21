@@ -65,11 +65,131 @@ export async function POST(req) {
 
         const baseUrl = new URL(req.url).origin
 
-        // ── MESSAGE RECEIVED (Ratings / Feedback) ─────────────────────────────────
+        // ── RATING / INTERACTIVE REPLY — catch this FIRST before anything else ────
+        // Interakt sends action values like: "message_received", "RECEIVED", "incoming",
+        // or even no action at all for interactive list replies. So we check the payload
+        // shape directly rather than relying on the action string.
+        const listReply = extractInteraktListReply(body)
+        const textStr = (
+            body.data?.message?.text?.body ||
+            body.message?.text?.body ||
+            body.data?.text?.body ||
+            body.text?.body ||
+            body.data?.message?.text ||
+            ''
+        )
+        const customerPhone = cleanPhone(
+            pick(body,
+                'customer_phone', 'waPhone', 'phone', 'customer',
+                'data.customer.phone', 'data.waPhone'
+            ) ||
+            body.data?.customer?.phone ||
+            body.data?.customer?.whatsapp_number ||
+            body.data?.waPhone
+        )
+
+        // Also handle the direct Interakt Workflow webhook format:
+        // { action: "feedback", phone: "{{1}}", rating: "{{2}}" }
+        const directRating = body.rating ? parseInt(body.rating) : null
+        if (directRating && directRating >= 1 && directRating <= 5 && customerPhone) {
+            console.log(`[Rating] Direct Workflow rating ${directRating} from ${customerPhone}`)
+            const { data: recentPatient } = await supabaseAdmin
+                .from('patients')
+                .select('id, clinic_id')
+                .eq('phone', customerPhone)
+                .eq('status', 'done')
+                .gte('date', getISTDateString())
+                .order('completed_at', { ascending: false })
+                .limit(1)
+                .single()
+
+            if (recentPatient) {
+                await supabaseAdmin
+                    .from('patients')
+                    .update({ rating: directRating })
+                    .eq('id', recentPatient.id)
+
+                const { data: clinic } = await supabaseAdmin
+                    .from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
+
+                await sendText(customerPhone, `Thank you for your feedback! We're glad we could help. Wishing you a speedy recovery. 🙏\n\n— ${clinic?.name || 'Clinic'}, powered by TokenPe`)
+                console.log(`[Rating] ✅ Direct Workflow rating ${directRating} saved for patient ${recentPatient.id}`)
+            } else {
+                console.warn(`[Rating] ⚠️ No matching done patient found for ${customerPhone} today`)
+            }
+            return Response.json({ success: true, message: 'Rating saved via workflow' }, { status: 200 })
+        }
+
+        if (listReply || (textStr && customerPhone)) {
+            console.log('[Rating] Interactive reply or text received. listReply:', JSON.stringify(listReply), 'text:', textStr, 'phone:', customerPhone)
+
+            if (!customerPhone) {
+                return Response.json({ success: true, message: 'Rating acknowledged (no phone)' }, { status: 200 })
+            }
+
+            // Is it a normal visit rating? (1–5)
+            const visitRating = parseVisitRating(body, textStr)
+            if (visitRating) {
+                console.log(`[Rating] ${customerPhone} gave visit rating ${visitRating}`)
+                const { data: recentPatient } = await supabaseAdmin
+                    .from('patients')
+                    .select('id, clinic_id')
+                    .eq('phone', customerPhone)
+                    .eq('status', 'done')
+                    .gte('date', getISTDateString())
+                    .order('completed_at', { ascending: false })
+                    .limit(1)
+                    .single()
+
+                if (recentPatient) {
+                    await supabaseAdmin
+                        .from('patients')
+                        .update({ rating: visitRating })
+                        .eq('id', recentPatient.id)
+
+                    const { data: clinic } = await supabaseAdmin
+                        .from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
+
+                    await sendText(customerPhone, `Thank you for your feedback! We're glad we could help. Wishing you a speedy recovery. 🙏\n\n— ${clinic?.name || 'Clinic'}, powered by TokenPe`)
+                    console.log(`[Rating] ✅ Saved rating ${visitRating} for patient ${recentPatient.id}`)
+                } else {
+                    console.warn(`[Rating] ⚠️ No matching done patient found for ${customerPhone} today`)
+                }
+                return Response.json({ success: true, message: 'Visit rating saved' }, { status: 200 })
+            }
+
+            // Is it a CRM rating? (C1–C5)
+            const crmRating = parseCrmRating(body, textStr)
+            if (crmRating) {
+                console.log(`[CRM Rating] ${customerPhone} gave CRM rating ${crmRating}`)
+                const { data: recentPatient } = await supabaseAdmin
+                    .from('patients')
+                    .select('id, clinic_id')
+                    .eq('phone', customerPhone)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single()
+
+                if (recentPatient) {
+                    const feedbackText = parseCrmFeedbackText(textStr)
+                    await supabaseAdmin
+                        .from('patients')
+                        .update({
+                            crm_rating: crmRating,
+                            feedback_text: feedbackText || null,
+                            feedback_at: new Date().toISOString()
+                        })
+                        .eq('id', recentPatient.id)
+                    console.log(`[CRM Rating] ✅ Saved CRM rating ${crmRating} for patient ${recentPatient.id}`)
+                }
+                return Response.json({ success: true, message: 'CRM rating saved' }, { status: 200 })
+            }
+
+            // Has text but not a rating — fall through to other handlers below
+        }
+
+        // ── MESSAGE RECEIVED (Ratings / Feedback) — legacy block kept for safety ──
         if (action === 'message_received' || action === 'message' || action === 'rate' || action === 'reply' || action === 'feedback') {
-            const listReply = extractInteraktListReply(body)
-            const textStr = body.data?.message?.text?.body || body.message?.text?.body || ''
-            const customerPhone = cleanPhone(pick(body, 'customer_phone', 'waPhone', 'phone', 'customer'))
             
             if (!customerPhone) {
                 return Response.json({ success: true, message: 'Message acknowledged (no phone)' }, { status: 200 })

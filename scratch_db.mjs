@@ -10,6 +10,6 @@ async function test() {
   console.log("crm_ratings data/error:", row, err2)
   
   const { data: pRow, error: pErr } = await supabase.from('patients').select('*').limit(1)
-  console.log("patients rating field exists:", pRow && pRow.length > 0 ? Object.keys(pRow[0]).includes('rating') : "unknown")
+  console.log("patients columns:", pRow && pRow.length > 0 ? Object.keys(pRow[0]) : "no data", "err:", pErr)
 }
 test()

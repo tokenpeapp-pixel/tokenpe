@@ -1,9 +1,18 @@
 import { supabaseAdmin } from '../../../../lib/supabase'
 import { sendText, cleanPhone } from '../../../../lib/messaging'
 import { validateRating } from '../../../../lib/validate'
+import { rateLimit } from '../../../../lib/rateLimit'
+
+const feedbackLimiter = rateLimit({ maxAttempts: 10, windowMs: 15 * 60 * 1000 })
 
 export async function POST(req) {
     try {
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+        const limit = feedbackLimiter.check(ip)
+        if (limit.blocked) {
+            return Response.json({ success: false, message: 'Too many submissions. Try again later.' }, { status: 429 })
+        }
+
         const { patientId, clinicCode, rating, feedbackText } = await req.json()
 
         if (!patientId || !clinicCode) {

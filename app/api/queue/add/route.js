@@ -27,7 +27,27 @@ export async function POST(req) {
 
         const today = getISTDateString()
         
-        // Item 5: Rate limit joins (3 per phone per day, unique names)
+        // Fetch clinic plan limits
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id').eq('id', clinicId).single()
+        const planId = clinic?.plan_id || 'starter'
+        const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
+
+        // Count total patients today
+        const { count } = await supabaseAdmin
+            .from('patients')
+            .select('*', { count: 'exact', head: true })
+            .eq('clinic_id', clinicId)
+            .eq('date', today)
+
+        const currentTotal = count || 0
+        if (currentTotal >= limit) {
+            return Response.json({
+                success: false,
+                message: `Queue Full: The clinic has reached its daily limit of ${limit} patients.`
+            }, { status: 403 })
+        }
+
+        // Rate limit joins (3 per phone per day, unique names)
         if (cleanPhone !== '0000000000') {
             const { data: existingJoins } = await supabase
                 .from('patients')

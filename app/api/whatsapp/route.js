@@ -110,7 +110,8 @@ export async function POST(req) {
                 const { data: clinic } = await supabaseAdmin
                     .from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
 
-                await sendText(customerPhone, `Thank you for your feedback! We're glad we could help. Wishing you a speedy recovery. 🙏\n\n— ${clinic?.name || 'Clinic'}, powered by TokenPe`)
+                const stars = '⭐'.repeat(directRating)
+                await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!`)
                 console.log(`[Rating] ✅ Direct Workflow rating ${directRating} saved for patient ${recentPatient.id}`)
             } else {
                 console.warn(`[Rating] ⚠️ No matching done patient found for ${customerPhone} today`)
@@ -148,7 +149,8 @@ export async function POST(req) {
                     const { data: clinic } = await supabaseAdmin
                         .from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
 
-                    await sendText(customerPhone, `Thank you for your feedback! We're glad we could help. Wishing you a speedy recovery. 🙏\n\n— ${clinic?.name || 'Clinic'}, powered by TokenPe`)
+                    const stars = '⭐'.repeat(visitRating)
+                    await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!`)
                     console.log(`[Rating] ✅ Saved rating ${visitRating} for patient ${recentPatient.id}`)
                 } else {
                     console.warn(`[Rating] ⚠️ No matching done patient found for ${customerPhone} today`)
@@ -160,17 +162,24 @@ export async function POST(req) {
             const crmRating = parseCrmRating(body, textStr)
             if (crmRating) {
                 console.log(`[CRM Rating] ${customerPhone} gave CRM rating ${crmRating}`)
-                const { data: recentPatient } = await supabaseAdmin
+
+                // Query with both phone formats (10-digit and 12-digit) to handle any storage format
+                const phone10 = customerPhone.replace(/^91/, '')
+                const phone12 = customerPhone.startsWith('91') ? customerPhone : '91' + customerPhone
+
+                const { data: recentPatient, error: crmErr } = await supabaseAdmin
                     .from('patients')
                     .select('id, clinic_id')
-                    .eq('phone', customerPhone)
+                    .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                     .order('created_at', { ascending: false })
                     .limit(1)
                     .single()
 
+                console.log(`[CRM Rating] Patient lookup — phone10: ${phone10}, phone12: ${phone12}, found:`, recentPatient?.id, 'err:', crmErr?.message)
+
                 if (recentPatient) {
                     const feedbackText = parseCrmFeedbackText(textStr)
-                    await supabaseAdmin
+                    const { error: updateErr } = await supabaseAdmin
                         .from('patients')
                         .update({
                             crm_rating: crmRating,
@@ -178,7 +187,16 @@ export async function POST(req) {
                             feedback_at: new Date().toISOString()
                         })
                         .eq('id', recentPatient.id)
-                    console.log(`[CRM Rating] ✅ Saved CRM rating ${crmRating} for patient ${recentPatient.id}`)
+                    
+                    if (updateErr) {
+                        console.error(`[CRM Rating] ❌ DB update error:`, updateErr.message)
+                    } else {
+                        const crmStars = '⭐'.repeat(crmRating)
+                        await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${crmStars} rating. We appreciate your feedback!`)
+                        console.log(`[CRM Rating] ✅ Saved CRM rating ${crmRating} for patient ${recentPatient.id}`)
+                    }
+                } else {
+                    console.warn(`[CRM Rating] ⚠️ No patient found for phone ${phone10} / ${phone12}`)
                 }
                 return Response.json({ success: true, message: 'CRM rating saved' }, { status: 200 })
             }

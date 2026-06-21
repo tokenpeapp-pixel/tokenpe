@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '../../../../lib/supabase'
-import { sendTemplateMessage, sendCRMInteractiveRating } from '../../../../lib/messaging'
+import { sendTemplateMessage } from '../../../../lib/messaging'
 
 export async function GET(req) {
   try {
@@ -57,10 +57,7 @@ export async function GET(req) {
               templateName: 'tokenpe_meds_reminder',
               bodyValues: [patient.name || 'Patient', clinic.name]
             })
-            
-            // Send CRM Rating immediately after
-            await new Promise(r => setTimeout(r, 200)) // delay between template and text
-            await sendCRMInteractiveRating(patient.phone, clinic.name, patient.language || 'en')
+
             
             medsSent++
             await new Promise(r => setTimeout(r, 100))
@@ -91,9 +88,6 @@ export async function GET(req) {
               bodyValues: [patient.name || 'Patient', clinic.name]
             })
 
-            // Send CRM Rating immediately after
-            await new Promise(r => setTimeout(r, 200)) // delay between template and text
-            await sendCRMInteractiveRating(patient.phone, clinic.name, patient.language || 'en')
 
             recallSent++
             await new Promise(r => setTimeout(r, 100))

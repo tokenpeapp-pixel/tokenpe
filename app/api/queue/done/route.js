@@ -3,7 +3,7 @@
 
 
 import { supabase, supabaseAdmin } from '../../../../lib/supabase'
-import { sendText, sendVoice, cleanPhone, sendInteractiveRating } from '../../../../lib/messaging'
+import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
 
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
@@ -55,16 +55,7 @@ _Powered by TokenPe_`
 
         await Promise.all(alerts)
 
-        // Send rating AFTER the consultation messages so it arrives last in WhatsApp
-        // We add a 2-second delay to guarantee Interakt has time to deliver the voice note first
-        if (planId === 'elite' || planId === 'pro' || clinic?.subscription_status === 'trialing') {
-            // Wait 2 seconds to ensure the 'Consultation Done' voice note is delivered first
-            await new Promise(resolve => setTimeout(resolve, 2000))
-            
-            // 3) Send "Rate Your Visit" text message (interactive buttons)
-            // Note: sendInteractiveRating() also natively sends the "Rate Your Visit" voice note directly after the buttons!
-            await sendInteractiveRating(phone, clinicName, language || 'en')
-        }
+
 
         return Response.json({ success: true, done: token })
 

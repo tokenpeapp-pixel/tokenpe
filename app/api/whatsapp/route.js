@@ -7,36 +7,11 @@ import { supabase, supabaseAdmin, getISTDateString } from '../../../lib/supabase
 import { sendText, sendVoice, sendTextAndVoice, cleanPhone } from '../../../lib/messaging'
 import crypto from 'crypto'
 import { maskPhone, maskName, maskSecret } from '../../../lib/mask'
-import { sanitizeName, validatePhone, validateClinicCode, validateRating, extractInteraktListReply, parseVisitRating, parseCrmRating, parseCrmFeedbackText } from '../../../lib/validate'
+import { sanitizeName, validatePhone, validateClinicCode } from '../../../lib/validate'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-async function findRecentDonePatient(phone) {
-    const clean = cleanPhone(phone)
-    const tenDigit = clean.startsWith('91') ? clean.slice(2) : clean
-    const variants = [...new Set([clean, tenDigit, `91${tenDigit}`])]
 
-    for (const variant of variants) {
-        const { data } = await supabaseAdmin
-            .from('patients')
-            .select('id, rating, phone, name, clinic_id')
-            .eq('phone', variant)
-            .eq('status', 'done')
-            .order('completed_at', { ascending: false, nullsFirst: false })
-            .limit(1)
-
-        if (data?.length) return data[0]
-    }
-    return null
-}
-
-async function sendRatingThankYou(phone, rating, patientName) {
-    const name = patientName || 'Patient'
-    await sendText(
-        cleanPhone(phone),
-        `🙏 *Thank You, ${name}!*\n\nWe have recorded your ${rating} ⭐ rating.\nWe appreciate your feedback!`
-    )
-}
 
 // ── Resolve field with multiple possible Interakt variable names ─────────────
 // Interakt Flow variables might come as: customer_phone, phone, Phone, PHONE, etc.
@@ -57,18 +32,10 @@ export async function POST(req) {
 
         const body = await req.json()
         const action = pick(body, 'action', 'Action', 'event', 'type')
-        const listReply = extractInteraktListReply(body)
-
-        // 🛡️ Webhook Security
-        // Interakt sends TWO types of webhooks to this endpoint:
-        //   1. Flow webhooks (join) — include ?secret= in URL
-        //   2. Message webhooks (ratings, replies) — come from Interakt's "Webhook URL" setting, no ?secret= param
-        // For message webhooks, we verify by checking for standard Interakt payload structure
         const isInteraktMessage = (
-            action === 'message_received' || action === 'message' || action === 'reply' || action === 'feedback' || action === 'rate' ||
-            !!listReply
+            action === 'message_received' || action === 'message' || action === 'reply' || action === 'feedback' || action === 'rate'
         ) && (
-            body.data?.customer || body.data?.message || body.customer || body.message || !!listReply
+            body.data?.customer || body.data?.message || body.customer || body.message
         )
 
         if (!isInteraktMessage) {
@@ -98,154 +65,9 @@ export async function POST(req) {
 
         const baseUrl = new URL(req.url).origin
 
-        // ── MESSAGE / RATING RECEIVED ─────────────────────────────────────────────
-        const interactiveTitle = listReply?.title || body.data?.message?.interactive?.list_reply?.title || body.message?.interactive?.list_reply?.title || ''
-        const interactiveId = listReply?.id || body.data?.message?.interactive?.list_reply?.id || body.message?.interactive?.list_reply?.id || ''
-        const rawText = interactiveTitle || interactiveId || pick(body, 'text', 'rating', 'Rating', 'score', 'message', 'body') || (body.data?.message?.text) || (body.message?.text) || (body.message?.message) || ''
-        const textStr = String(rawText).trim()
-        const textStrLower = textStr.toLowerCase()
-        const parsedCrmRating = parseCrmRating(body, textStr)
-        const parsedVisitRating = parsedCrmRating ? null : parseVisitRating(body, textStr)
-        const isRatingReply = !!listReply ||
-                              parsedVisitRating !== null ||
-                              parsedCrmRating !== null ||
-                              textStrLower.startsWith('rate_')
-
-        if (action === 'message_received' || action === 'message' || action === 'rate' || action === 'reply' || action === 'feedback' || isRatingReply) {
-            const customerData = body.data?.customer || body.customer || body
-            const phoneStr = customerData?.phone_number || customerData?.phoneNumber || pick(body, 'phone', 'Phone', 'mobile', 'waPhone', 'whatsapp', 'customer_phone')
-            const phone = validatePhone(phoneStr)
-
-            if (phone && (textStr || listReply || parsedVisitRating !== null || parsedCrmRating !== null)) {
-                console.log(`[whatsapp] Incoming message from ${maskPhone(phone)}: "${textStr.slice(0, 50)}"${listReply ? ` [list id=${listReply.id}]` : ''}`)
-                
-                const clean = cleanPhone(phone)
-                const tenDigit = clean.startsWith('91') ? clean.slice(2) : clean
-
-                // 1. CRM rating (C1–C5 from list reply or text)
-                if (parsedCrmRating) {
-                    const crmRating = parsedCrmRating
-                    const feedbackText = parseCrmFeedbackText(textStr)
-                    
-                    after(async () => {
-                        try {
-                            let { data: latestPatient } = await supabaseAdmin.from('patients').select('id, crm_rating, name, clinic_id').eq('phone', clean).order('joined_at', { ascending: false }).limit(1).single()
-                            if (!latestPatient) {
-                                const { data } = await supabaseAdmin.from('patients').select('id, crm_rating, name, clinic_id').eq('phone', tenDigit).order('joined_at', { ascending: false }).limit(1).single()
-                                latestPatient = data
-                            }
-
-                            if (latestPatient?.id) {
-                                const { data: patientClinic, error: clinicError } = await supabaseAdmin
-                                    .from('clinics')
-                                    .select('plan_id, subscription_status')
-                                    .eq('id', latestPatient.clinic_id)
-                                    .single()
-
-                                const crmAllowed = !clinicError && patientClinic &&
-                                    (patientClinic.plan_id === 'elite' || patientClinic.subscription_status === 'trialing')
-
-                                if (!crmAllowed) {
-                                    console.warn(`[whatsapp] ⚠️ CRM rating ignored for patient ${latestPatient.id} because clinic plan is not Elite/trialing.`)
-                                    await sendText(clean, `🙏 Thank you! CRM feedback is available only for Elite and trial clinics.`)
-                                    return
-                                }
-
-                                if (!latestPatient.crm_rating) {
-                                    await supabaseAdmin
-                                        .from('patients')
-                                        .update({ 
-                                            crm_rating: crmRating, 
-                                            feedback_text: feedbackText || null,
-                                            feedback_at: new Date().toISOString()
-                                        })
-                                        .eq('id', latestPatient.id)
-                                    console.log(`[whatsapp] ✅ Saved CRM rating=${crmRating} for patient ${latestPatient.id}`)
-                                } else {
-                                    console.log(`[whatsapp] ⏭️ CRM rating already exists for patient ${latestPatient.id}`)
-                                }
-                            }
-
-                            await sendText(clean, `🙏 *Thank You!*\n\nWe have recorded your feedback for our recent update!`)
-                        } catch (err) {
-                            console.error('[whatsapp crm rating background err]', err)
-                        }
-                    })
-                    
-                    return Response.json({ success: true, message: 'CRM Rating processing in background' }, { status: 200 })
-                }
-                
-                // 2. Normal visit rating (1–5 stars)
-                const rating = parsedVisitRating ?? validateRating(interactiveId)
-                
-                if (rating) {
-                    after(async () => {
-                        try {
-                            const recent = await findRecentDonePatient(phone)
-
-                            if (recent?.id) {
-                                const { data: clinicInfo, error: clinicError } = await supabaseAdmin
-                                    .from('clinics')
-                                    .select('plan_id, subscription_status')
-                                    .eq('id', recent.clinic_id)
-                                    .single()
-
-                                const normalAllowed = !clinicError && clinicInfo &&
-                                    (clinicInfo.plan_id === 'pro' || clinicInfo.plan_id === 'elite' || clinicInfo.subscription_status === 'trialing')
-
-                                if (!normalAllowed) {
-                                    console.warn(`[whatsapp] ⚠️ Normal rating ignored for patient ${recent.id} because clinic plan is not Pro/Elite/Trial.`)
-                                    await sendText(clean, `🙏 Thank you! Star ratings are available only for Pro, Elite, and trial clinics.`)
-                                    return
-                                }
-
-                                if (!recent.rating) {
-                                    await supabaseAdmin.from('patients').update({
-                                        rating,
-                                        feedback_at: new Date().toISOString()
-                                    }).eq('id', recent.id)
-                                    console.log(`[whatsapp] ✅ Saved Normal rating=${rating} for patient ${recent.id}`)
-                                    
-                                    // Recalculate clinic avg_rating
-                                    try {
-                                        const { data: ratedPatients } = await supabaseAdmin
-                                            .from('patients')
-                                            .select('rating')
-                                            .eq('clinic_id', recent.clinic_id)
-                                            .gt('rating', 0)
-                                            
-                                        if (ratedPatients) {
-                                            const totalRating = ratedPatients.reduce((sum, p) => sum + p.rating, 0)
-                                            const avgRating = ratedPatients.length > 0 ? parseFloat((totalRating / ratedPatients.length).toFixed(1)) : 0
-                                            await supabaseAdmin
-                                                .from('clinics')
-                                                .update({ avg_rating: avgRating })
-                                                .eq('id', recent.clinic_id)
-                                        }
-                                    } catch (calcErr) {
-                                        console.error('[whatsapp] failed to update clinic avg_rating:', calcErr)
-                                    }
-                                } else {
-                                    console.log(`[whatsapp] ⏭️ Normal rating already exists for patient ${recent.id}`)
-                                }
-                            } else {
-                                console.warn(`[whatsapp] ⚠️ No recent done patient found for ${maskPhone(phone)} to save rating=${rating}`)
-                            }
-
-                            await sendRatingThankYou(clean, rating, recent?.name)
-                        } catch (err) {
-                            console.error('[whatsapp rating background err]', err)
-                        }
-                    })
-                    
-                    return Response.json({ success: true, message: 'Normal Rating processing in background' }, { status: 200 })
-                }
-            }
-            
-            // If it's just a regular message, return 200 to acknowledge
-            if (action === 'message_received' || action === 'message' || action === 'reply') {
-                return Response.json({ success: true, message: 'Message acknowledged' }, { status: 200 })
-            }
+        // ── MESSAGE RECEIVED ─────────────────────────────────────────────
+        if (action === 'message_received' || action === 'message' || action === 'rate' || action === 'reply' || action === 'feedback') {
+            return Response.json({ success: true, message: 'Message acknowledged' }, { status: 200 })
         }
 
         // ── JOIN action ──────────────────────────────────────────────────────────

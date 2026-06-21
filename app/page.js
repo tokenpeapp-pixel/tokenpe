@@ -165,6 +165,17 @@ export default function LandingPage() {
         .plan-btn:active{transform:scale(0.96)}
         .plan-btn.ghost{background:#F8FAFC;color:#7C3AED;box-shadow:none;border:1.5px solid #E2E8F0}
 
+        /* FAQ */
+        .faq-sec{padding:100px 24px;background:#fff}
+        .faq-inner{max-width:800px;margin:0 auto}
+        .faq-item{border-bottom:1px solid #e2e8f0;padding:24px 0}
+        .faq-item:last-child{border-bottom:none}
+        .faq-q{font-size:16px;font-weight:700;color:#0f172a;cursor:pointer;display:flex;justify-content:space-between;align-items:center;list-style:none;padding:8px 0;outline:none}
+        .faq-q::-webkit-details-marker{display:none}
+        .faq-q::after{content:'+';font-size:24px;font-weight:400;color:#7c3aed;transition:transform 0.2s}
+        details[open] .faq-q::after{transform:rotate(45deg);color:#0f172a}
+        .faq-a{padding-top:12px;color:#64748b;font-size:15px;line-height:1.7}
+
         /* CTA */
         .cta-sec{padding:100px 24px;text-align:center;background:linear-gradient(135deg,#080818 0%,#1a0b3b 50%,#080818 100%);position:relative;overflow:hidden}
         .cta-orb{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,0.3) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:pulse-glow 3s ease-in-out infinite}
@@ -395,7 +406,7 @@ export default function LandingPage() {
         <span className="mlink" onClick={() => go("features")}>Features</span>
         <span className="mlink" onClick={() => go("how")}>How it works</span>
         <span className="mlink" onClick={() => go("pricing")}>Pricing</span>
-        <span className="mlink" onClick={() => router.push("/find")} style={{ color: '#a78bfa' }}>🔍 Find a Clinic</span>
+        <span className="mlink" onClick={() => router.push("/find")} style={{ color: '#a78bfa' }}>🔍 Find Clinic</span>
         <span className="mbtn" onClick={() => router.push("/login")}>Get Started →</span>
       </div>
 
@@ -587,10 +598,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Wave Divider: Pricing (Light) to CTA (Dark) */}
+      {/* FAQ */}
+      <section id="faq" className="faq-sec">
+        <div className="faq-inner">
+          <div className="sec-eye reveal" style={{ margin: "0 auto 14px", display: "table" }}>FAQ</div>
+          <h2 className="sec-h2 reveal reveal-delay-1" style={{ textAlign: "center", marginBottom: "40px" }}>Common Questions</h2>
+          <div className="reveal reveal-delay-2">
+            {[
+              { q: "What if my patients don't have WhatsApp?", a: "TokenPe works on any smartphone with WhatsApp. For the rare patient without a smartphone, your receptionist can easily add them manually to the queue from your dashboard. They will still appear in sequence for the doctor!" },
+              { q: "What if the internet goes down in my clinic?", a: "TokenPe is lightweight and works seamlessly on mobile data. If your clinic's Wi-Fi drops, your staff can continue managing the queue using their phone's 4G/5G connection." },
+              { q: "How is this different from just giving out paper tokens?", a: "Paper tokens require patients to sit in a crowded waiting room for hours, leading to frustration and infections. TokenPe allows them to wait comfortably at home or nearby, only arriving when it's their turn. It elevates the patient experience and makes your clinic look modern." },
+              { q: "Do patients need to download an app?", a: "Not at all! This is the magic of TokenPe. Patients simply scan a QR code or send a WhatsApp message. No app downloads, no logins, and no friction." },
+            ].map((item, idx) => (
+              <details key={idx} className="faq-item">
+                <summary className="faq-q">{item.q}</summary>
+                <div className="faq-a">{item.a}</div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Wave Divider: FAQ (Light) to CTA (Dark) */}
       <div className="wave-div" style={{ background: "#080818" }}>
         <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#fafbff"></path>
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#fff"></path>
         </svg>
       </div>
 

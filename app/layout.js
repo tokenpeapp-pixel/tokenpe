@@ -14,8 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://tokenpe.online"),
   title: "TokenPe - Smart WhatsApp Queues for Indian Clinics & Hospitals",
   description: "TokenPe replaces paper queues with secure, real-time WhatsApp-based digital queues. Help your patients wait comfortably at home and save hours daily.",
+  keywords: ["clinic queue management", "WhatsApp queue system", "OPD management software", "doctor token system India", "digital queue for doctors"],
   icons: {
     icon: "/logo-icon.svg",
     shortcut: "/logo-icon.svg",
@@ -44,12 +46,33 @@ export const metadata = {
   }
 };
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "TokenPe",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "url": "https://tokenpe.online",
+  "description": "WhatsApp-based digital queue management system for clinics and hospitals in India.",
+  "offers": {
+    "@type": "Offer",
+    "price": "499",
+    "priceCurrency": "INR"
+  }
+};
+
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         {children}
         <CookieConsent />

@@ -21,6 +21,12 @@ export default function sitemap() {
       priority: 0.5,
     },
     {
+      url: `${baseUrl}/find`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/terms`,
       lastModified: new Date(),
       changeFrequency: 'monthly',

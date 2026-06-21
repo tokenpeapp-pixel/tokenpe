@@ -79,12 +79,10 @@ export async function POST(req) {
             ''
         )
         const customerPhone = cleanPhone(
-            pick(body,
-                'customer_phone', 'waPhone', 'phone', 'customer',
-                'data.customer.phone', 'data.waPhone'
-            ) ||
+            body.data?.customer?.channel_phone_number ||
+            body.data?.customer?.phone_number ||
+            pick(body, 'customer_phone', 'waPhone', 'phone', 'customer') ||
             body.data?.customer?.phone ||
-            body.data?.customer?.whatsapp_number ||
             body.data?.waPhone
         )
 

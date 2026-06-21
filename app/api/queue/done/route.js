@@ -55,7 +55,7 @@ _Powered by TokenPe_`
 
         await Promise.all(alerts)
 
-        // Send Interakt Interactive Rating list (beautiful 1-5 star buttons)
+        // Send Interactive List via Interakt — patient taps a star → Interakt fires incoming webhook → we save rating
         await new Promise(r => setTimeout(r, 500))
         await sendInteractiveRating(phone, clinicName, language || 'en')
 

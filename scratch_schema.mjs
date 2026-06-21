@@ -1,14 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
 
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabaseAdmin = createClient('https://tjqynkjwpmhyxhrqamjh.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqcXlua2p3cG1oeXhocnFhbWpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzMjIyMywiZXhwIjoyMDk0NTA4MjIzfQ.HvWsG-bj0EDF4MPAdU0MzXDhGalORQRYCW5tn6f_N6s');
 
 async function run() {
-    // Get a single row to check columns
-    const { data, error } = await supabaseAdmin.from('patients').select('*').limit(1);
+    const { data, error } = await supabaseAdmin.from('clinics').select('id').limit(1);
     if (error) console.error(error);
-    else if (data && data.length > 0) console.log("Columns:", Object.keys(data[0]));
-    else console.log("Table is empty, can't infer schema this way.");
+    else console.log("Clinic ID example:", data[0]?.id);
 }
 run();

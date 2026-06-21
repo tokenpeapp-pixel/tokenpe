@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { after } from 'next/server'
 import { supabaseAdmin } from '../../../../lib/supabase'
-import { sendTemplateMessage } from '../../../../lib/messaging'
+import { sendTemplateMessage, sendCRMInteractiveRating } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
@@ -82,7 +82,9 @@ export async function POST(req) {
             })
           }
 
-
+          // Send CRM Interactive Rating immediately after broadcast
+          await new Promise(r => setTimeout(r, 200)) // delay between template and list message
+          await sendCRMInteractiveRating(phone, clinic.name, 'en')
           
           sent++
           // Small delay to avoid rate limits

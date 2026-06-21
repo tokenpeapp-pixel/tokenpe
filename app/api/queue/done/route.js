@@ -3,7 +3,7 @@
 
 
 import { supabase, supabaseAdmin } from '../../../../lib/supabase'
-import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
+import { sendText, sendVoice, cleanPhone, sendInteractiveRating } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
 
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
@@ -55,7 +55,9 @@ _Powered by TokenPe_`
 
         await Promise.all(alerts)
 
-
+        // Send interactive rating immediately after the voice note
+        await new Promise(r => setTimeout(r, 200)) // slight delay
+        await sendInteractiveRating(phone, clinicName, language || 'en')
 
         return Response.json({ success: true, done: token })
 

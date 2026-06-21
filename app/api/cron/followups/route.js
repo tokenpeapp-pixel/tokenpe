@@ -58,7 +58,7 @@ export async function GET(req) {
               bodyValues: [patient.name || 'Patient', clinic.name]
             })
 
-            
+
             medsSent++
             await new Promise(r => setTimeout(r, 100))
           }
@@ -87,7 +87,6 @@ export async function GET(req) {
               templateName: 'tokenpe_recall_reminder',
               bodyValues: [patient.name || 'Patient', clinic.name]
             })
-
 
             recallSent++
             await new Promise(r => setTimeout(r, 100))

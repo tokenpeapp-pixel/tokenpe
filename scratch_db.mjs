@@ -6,8 +6,10 @@ const supabase = createClient(
 )
 
 async function test() {
-  const { data, error } = await supabase.from('clinics').select('id, name, location::text, is_public').not('location', 'is', null)
-  console.log("Clinics:", data)
-  console.log("Error:", error)
+  const { data: row, error: err2 } = await supabase.from('crm_ratings').select('*').limit(1)
+  console.log("crm_ratings data/error:", row, err2)
+  
+  const { data: pRow, error: pErr } = await supabase.from('patients').select('*').limit(1)
+  console.log("patients rating field exists:", pRow && pRow.length > 0 ? Object.keys(pRow[0]).includes('rating') : "unknown")
 }
 test()

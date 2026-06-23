@@ -27,10 +27,18 @@ export async function POST(req) {
 
         const today = getISTDateString()
         
-        // Fetch clinic plan limits
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id').eq('id', clinicId).single()
+        // Fetch clinic plan limits AND closed status
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, closed_today_date').eq('id', clinicId).single()
         const planId = clinic?.plan_id || 'starter'
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
+
+        // ── Block walk-ins if the clinic is closed for today ──────────────
+        if (clinic?.closed_today_date === today) {
+            return Response.json({
+                success: false,
+                message: 'Clinic is closed for today. No new patients can be added.'
+            }, { status: 403 })
+        }
 
         // Count total patients today
         const { count } = await supabaseAdmin

@@ -544,6 +544,7 @@ export default function Dashboard() {
   const [editingBranchId, setEditingBranchId] = useState(null)
   const [editingBranchName, setEditingBranchName] = useState('')
   const [managingBranch, setManagingBranch] = useState(false)
+  const [closingClinic, setClosingClinic] = useState(false)
   const sounds = useSounds()
 
   // ── Load clinic from session (multi-clinic support) ─────────────────────
@@ -858,6 +859,40 @@ export default function Dashboard() {
     }
   }
 
+  // ── Close Clinic for Today ─────────────────────────────────────────────
+  async function closeClinicForToday() {
+    const confirmed = window.confirm(
+      '🔴 Close Clinic for Today?\n\nThis will:\n• End today\'s token session\n• Prevent new patients from joining (WhatsApp & Walk-in)\n• Show your clinic as "Closed Today" on the Find Clinic page\n\nIt will automatically reset tomorrow. Proceed?'
+    )
+    if (!confirmed) return
+
+    setClosingClinic(true)
+    setMenuOpen(false)
+    try {
+      const res = await fetch('/api/clinic/close', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        const today = getISTDateString()
+        setClinic(prev => ({ ...prev, closed_today_date: today }))
+        // Persist to localStorage so on refresh the state is visible
+        const stored = localStorage.getItem('tokenpe_clinic')
+        if (stored) {
+          try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: today })) } catch (_) {}
+        }
+        addToast('🔴 Clinic closed for today. No new patients will be accepted.', 'notify')
+      } else {
+        addToast(data.message || 'Failed to close clinic.', 'error')
+      }
+    } catch (err) {
+      addToast('Error closing clinic. Please try again.', 'error')
+    }
+    setClosingClinic(false)
+  }
+
   // ── Actions ─────────────────────────────────────────────────────────────
   async function callNext() {
     const next = patients.find(p => p.status === STATUS.WAITING)
@@ -958,6 +993,11 @@ export default function Dashboard() {
   async function addWalkIn() {
     if (!newPhone.trim()) return
 
+    if (isClosedToday) {
+      addToast('Clinic is closed for today. No new patients can be added.', 'error')
+      return
+    }
+
     if (clinic?.queue_paused) {
       addToast('Queue is currently paused. Please unpause to add patients.', 'error')
       return
@@ -994,6 +1034,7 @@ export default function Dashboard() {
   }
 
   // ── Computed ────────────────────────────────────────────────────────────
+  const isClosedToday = clinic?.closed_today_date === getISTDateString()
   const waiting = patients.filter(p => p.status === STATUS.WAITING)
   const called = patients.filter(p => p.status === STATUS.CALLED)
   const done = patients.filter(p => p.status === STATUS.DONE)
@@ -1433,6 +1474,22 @@ export default function Dashboard() {
               💳 Billing & Plan
             </button>
             <div className="dropdown-divider" />
+            {/* ── Close Clinic for Today — ALL plans ── */}
+            {isClosedToday ? (
+              <div style={{ padding: '10px 16px', fontSize: '0.85rem', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(239,68,68,0.08)', borderRadius: 9, margin: '0 2px' }}>
+                🔴 Closed for Today
+              </div>
+            ) : (
+              <button
+                className="dropdown-item"
+                onClick={closeClinicForToday}
+                disabled={closingClinic}
+                style={{ color: '#ef4444', opacity: closingClinic ? 0.7 : 1 }}
+              >
+                {closingClinic ? '⏳ Closing...' : '🔴 Close Clinic for Today'}
+              </button>
+            )}
+            <div className="dropdown-divider" />
             <button className="dropdown-item" onClick={() => { logout(); setMenuOpen(false); }} style={{ color: '#FDA4AF' }}>
               🚪 Logout
             </button>
@@ -1575,6 +1632,13 @@ export default function Dashboard() {
       {showTrialWarning && (
         <div style={{ background: daysLeft <= 3 ? '#DC2626' : 'rgba(124,58,237,0.15)', color: daysLeft <= 3 ? 'white' : '#C4B5FD', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative', borderBottom: daysLeft <= 3 ? 'none' : '1px solid rgba(124,58,237,0.3)' }}>
           {daysLeft <= 3 ? '⚠️ Your' : '✨ You are on the'} Elite Free Trial. Ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'} on {trialEnd?.toLocaleDateString('en-IN')}. <button onClick={() => router.push('/dashboard/billing')} style={{ background: daysLeft <= 3 ? 'white' : 'rgba(124,58,237,0.2)', color: daysLeft <= 3 ? '#DC2626' : '#fff', border: daysLeft <= 3 ? 'none' : '1px solid rgba(124,58,237,0.4)', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Choose a Plan</button>
+        </div>
+      )}
+
+      {/* ── Closed Today Banner ── */}
+      {isClosedToday && (
+        <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 700, zIndex: 60, position: 'relative', borderBottom: '1px solid rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, letterSpacing: '0.2px' }}>
+          🔴 Clinic is Closed for Today — No new patients will be accepted. Resets automatically at midnight.
         </div>
       )}
 

@@ -379,6 +379,25 @@ export async function POST(req) {
                 }, { status: 200 })
             }
 
+            // 1.6 Check if clinic is closed for today
+            const todayDate = getISTDateString()
+            if (clinic.closed_today_date === todayDate) {
+                console.log(`[Join] ❌ Clinic "${clinic.name}" is closed for today`)
+                const closedMsg = `🔴 *Clinic Closed for Today*\n\n${clinic.name} has ended today's session.\n\nPlease visit again tomorrow. We look forward to seeing you! 🙏\n\n_Powered by TokenPe_`
+                await sendTextAndVoice({
+                    phone: cleanPhone(phone),
+                    language: language,
+                    event: 'paused',  // reuse paused voice event as it conveys "unavailable"
+                    clinicName: clinic.name,
+                    textMessage: closedMsg
+                })
+                return Response.json({
+                    success: false,
+                    message: 'Clinic is closed for today.',
+                    token: 'CLOSED', position: 0, wait: 'N/A', clinicName: clinic.name, name: name || 'Guest'
+                }, { status: 200 })
+            }
+
             // 2. Count patients & calculate waits in PARALLEL
             const today = getISTDateString()
             const planId = clinic.plan_id || 'starter' // default to starter

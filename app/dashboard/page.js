@@ -866,8 +866,13 @@ export default function Dashboard() {
     )
     if (!confirmed) return
 
-    setClosingClinic(true)
     setMenuOpen(false)
+    const previousDate = clinic.closed_today_date
+    const today = getISTDateString()
+    
+    // OPTIMISTIC UI: Instantly switch state so there is no loading blink
+    setClinic(prev => ({ ...prev, closed_today_date: today }))
+    
     try {
       const res = await fetch('/api/clinic/close', {
         method: 'POST',
@@ -876,26 +881,30 @@ export default function Dashboard() {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        const today = getISTDateString()
-        setClinic(prev => ({ ...prev, closed_today_date: today }))
-        // Persist to localStorage so on refresh the state is visible
         const stored = localStorage.getItem('tokenpe_clinic')
         if (stored) {
           try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: today })) } catch (_) {}
         }
-        addToast('🔴 Clinic closed for today. No new patients will be accepted.', 'notify')
+        addToast('🔴 Clinic closed for today.', 'notify')
       } else {
+        // REVERT ON FAILURE
+        setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
         addToast(data.message || 'Failed to close clinic.', 'error')
       }
     } catch (err) {
+      setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
       addToast('Error closing clinic. Please try again.', 'error')
     }
-    setClosingClinic(false)
   }
 
   // ── Re-open Clinic ────────────────────────────────────────────────────────
   async function reopenClinic() {
     setMenuOpen(false)
+    const previousDate = clinic.closed_today_date
+    
+    // OPTIMISTIC UI: Instantly switch state so there is no delay
+    setClinic(prev => ({ ...prev, closed_today_date: null }))
+    
     try {
       const res = await fetch('/api/clinic/open', {
         method: 'POST',
@@ -904,16 +913,18 @@ export default function Dashboard() {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        setClinic(prev => ({ ...prev, closed_today_date: null }))
         const stored = localStorage.getItem('tokenpe_clinic')
         if (stored) {
           try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: null })) } catch (_) {}
         }
-        addToast('✅ Clinic is now Open again! Patients can join.', 'done')
+        addToast('✅ Clinic is now Open again!', 'done')
       } else {
+        // REVERT ON FAILURE
+        setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
         addToast(data.message || 'Failed to re-open clinic.', 'error')
       }
     } catch (err) {
+      setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
       addToast('Error re-opening clinic. Please try again.', 'error')
     }
   }
@@ -1455,6 +1466,32 @@ export default function Dashboard() {
             right: 12px;
           }
         }
+
+        .reopen-banner-btn {
+          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+          color: #fff;
+          border: 1px solid rgba(16,185,129,0.5);
+          padding: 6px 18px;
+          border-radius: 20px;
+          font-size: 13.5px;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
+          box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+          text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .reopen-banner-btn:hover {
+          transform: scale(1.03);
+          box-shadow: 0 6px 16px rgba(16,185,129,0.5);
+          border-color: rgba(255,255,255,0.4);
+        }
+        .reopen-banner-btn:active {
+          transform: scale(0.97);
+        }
       `}</style>
 
       {/* ── Menu Overlay + Dropdown (fixed portal, outside header) ── */}
@@ -1528,10 +1565,9 @@ export default function Dashboard() {
               <button
                 className="dropdown-item"
                 onClick={closeClinicForToday}
-                disabled={closingClinic}
-                style={{ color: '#ef4444', opacity: closingClinic ? 0.7 : 1 }}
+                style={{ color: '#ef4444' }}
               >
-                {closingClinic ? '⏳ Closing...' : '🔴 Close Clinic for Today'}
+                🔴 Close Clinic for Today
               </button>
             )}
             <div className="dropdown-divider" />
@@ -1686,9 +1722,9 @@ export default function Dashboard() {
           <span>🔴 Clinic is Closed for Today — No new patients will be accepted.</span>
           <button
             onClick={reopenClinic}
-            style={{ background: '#10B981', color: '#fff', border: 'none', padding: '4px 14px', borderRadius: 6, fontSize: '12px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+            className="reopen-banner-btn"
           >
-            🟢 Re-open Now
+            <span style={{ fontSize: '15px' }}>✨</span> Re-open Now
           </button>
         </div>
       )}

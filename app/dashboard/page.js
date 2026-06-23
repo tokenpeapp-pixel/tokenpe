@@ -1368,7 +1368,9 @@ export default function Dashboard() {
           border: 1px solid rgba(124, 58, 237, 0.35);
           border-radius: 14px;
           padding: 8px;
-          width: 210px;
+          width: 220px;
+          max-height: calc(100vh - 90px);
+          overflow-y: auto;
           box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.07) inset;
           z-index: 9999;
           display: flex;
@@ -1376,6 +1378,20 @@ export default function Dashboard() {
           gap: 4px;
           animation: slideDown 0.18s ease-out forwards;
           transform-origin: top right;
+        }
+
+        .dropdown-menu::-webkit-scrollbar {
+          width: 6px;
+        }
+        .dropdown-menu::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .dropdown-menu::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 10px;
+        }
+        .dropdown-menu::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.25);
         }
 
         @keyframes slideDown {

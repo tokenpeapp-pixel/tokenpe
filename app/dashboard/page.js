@@ -893,6 +893,31 @@ export default function Dashboard() {
     setClosingClinic(false)
   }
 
+  // ── Re-open Clinic ────────────────────────────────────────────────────────
+  async function reopenClinic() {
+    setMenuOpen(false)
+    try {
+      const res = await fetch('/api/clinic/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setClinic(prev => ({ ...prev, closed_today_date: null }))
+        const stored = localStorage.getItem('tokenpe_clinic')
+        if (stored) {
+          try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: null })) } catch (_) {}
+        }
+        addToast('✅ Clinic is now Open again! Patients can join.', 'done')
+      } else {
+        addToast(data.message || 'Failed to re-open clinic.', 'error')
+      }
+    } catch (err) {
+      addToast('Error re-opening clinic. Please try again.', 'error')
+    }
+  }
+
   // ── Actions ─────────────────────────────────────────────────────────────
   async function callNext() {
     const next = patients.find(p => p.status === STATUS.WAITING)
@@ -1474,11 +1499,15 @@ export default function Dashboard() {
               💳 Billing & Plan
             </button>
             <div className="dropdown-divider" />
-            {/* ── Close Clinic for Today — ALL plans ── */}
+            {/* ── Close / Re-open Clinic — ALL plans ── */}
             {isClosedToday ? (
-              <div style={{ padding: '10px 16px', fontSize: '0.85rem', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(239,68,68,0.08)', borderRadius: 9, margin: '0 2px' }}>
-                🔴 Closed for Today
-              </div>
+              <button
+                className="dropdown-item"
+                onClick={reopenClinic}
+                style={{ color: '#10B981', fontWeight: 700 }}
+              >
+                🟢 Re-open Clinic Today
+              </button>
             ) : (
               <button
                 className="dropdown-item"
@@ -1637,8 +1666,14 @@ export default function Dashboard() {
 
       {/* ── Closed Today Banner ── */}
       {isClosedToday && (
-        <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 700, zIndex: 60, position: 'relative', borderBottom: '1px solid rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, letterSpacing: '0.2px' }}>
-          🔴 Clinic is Closed for Today — No new patients will be accepted. Resets automatically at midnight.
+        <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 700, zIndex: 60, position: 'relative', borderBottom: '1px solid rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', letterSpacing: '0.2px' }}>
+          <span>🔴 Clinic is Closed for Today — No new patients will be accepted.</span>
+          <button
+            onClick={reopenClinic}
+            style={{ background: '#10B981', color: '#fff', border: 'none', padding: '4px 14px', borderRadius: 6, fontSize: '12px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            🟢 Re-open Now
+          </button>
         </div>
       )}
 

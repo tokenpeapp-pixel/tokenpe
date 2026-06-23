@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, getISTDateString } from '../../../lib/supabase'
+import confetti from 'canvas-confetti'
 
 export default function BillingPage() {
   const router = useRouter()
@@ -13,6 +14,7 @@ export default function BillingPage() {
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [isCanceling, setIsCanceling] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(null)
 
   useEffect(() => {
     // Inject Razorpay eagerly so it's ready before user clicks Upgrade
@@ -93,7 +95,14 @@ export default function BillingPage() {
               if (fresh.current_period_end || attempts >= maxAttempts) {
                 setUpgrading(null)
                 if (fresh.current_period_end && fresh.plan_id !== 'starter' && fresh.plan_id !== 'canceled') {
-                  alert(`🎉 Payment Successful! Your clinic has been upgraded to the ${fresh.plan_id.toUpperCase()} Plan. All features are now unlocked!`)
+                  setShowSuccessModal(fresh.plan_id.toUpperCase())
+                  confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 },
+                    colors: ['#7c3aed', '#10b981', '#f59e0b', '#3b82f6'],
+                    zIndex: 10000
+                  })
                 }
                 return
               }
@@ -535,6 +544,24 @@ export default function BillingPage() {
                 Keep My Plan
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && (
+        <div onClick={() => setShowSuccessModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "linear-gradient(135deg, #0f172a, #1e1b4b)", width: "100%", maxWidth: 440, borderRadius: 24, padding: "40px 32px", position: "relative", border: "1px solid rgba(124,58,237,0.3)", color: "#fff", textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(124,58,237,0.3)' }}>
+            <div style={{ fontSize: 64, marginBottom: 16, animation: 'bounce 1s ease infinite' }}>🎉</div>
+            <style>{`@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`}</style>
+            <h2 style={{ fontSize: 28, fontWeight: 900, color: "#fff", marginBottom: 12, background: "linear-gradient(to right, #10b981, #34d399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Payment Successful!</h2>
+            <p style={{ color: "#cbd5e1", marginBottom: 24, fontSize: 16, lineHeight: 1.6 }}>Welcome to the <strong>{showSuccessModal} Plan</strong>! Your clinic has been upgraded and all premium features are now unlocked.</p>
+            <button
+              onClick={() => setShowSuccessModal(null)}
+              style={{ width: '100%', padding: '14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}
+            >
+              Continue to Dashboard
+            </button>
           </div>
         </div>
       )}

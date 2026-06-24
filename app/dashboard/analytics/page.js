@@ -81,7 +81,7 @@ export default function AnalyticsPage() {
     }
 
     // Fetch this period
-    let url = `/api/analytics/get?startDate=${cutoffDate}`
+    let url = `/api/analytics/get?clinicId=${c.id}&startDate=${cutoffDate}`
     if (range !== 'today') {
       url += `&endDate=${endDate}`
     }
@@ -105,7 +105,7 @@ export default function AnalyticsPage() {
       const lastEnd = getISTDateString(prevEnd)
 
       try {
-        const res2 = await fetch(`/api/analytics/get?startDate=${lastCutoff}&endDate=${lastEnd}`)
+        const res2 = await fetch(`/api/analytics/get?clinicId=${c.id}&startDate=${lastCutoff}&endDate=${lastEnd}`)
         if (res2.ok) {
           const data2 = await res2.json()
           if (data2.success) lastPeriodData = data2.data || []
@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
     
     // Fetch overall feedback
     try {
-      const resFeedback = await fetch('/api/analytics/feedback')
+      const resFeedback = await fetch(`/api/analytics/feedback?clinicId=${c.id}`)
       if (resFeedback.ok) {
         const fbData = await resFeedback.json()
         if (fbData.success) setOverallFeedback(fbData.feedback)

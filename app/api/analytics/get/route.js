@@ -8,11 +8,22 @@ export async function GET(req) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
-        const clinicId = session.clinicId
-
         const { searchParams } = new URL(req.url)
         const startDate = searchParams.get('startDate')
         const endDate = searchParams.get('endDate')
+        const requestedClinicId = searchParams.get('clinicId')
+
+        let clinicId = session.clinicId
+
+        if (requestedClinicId && requestedClinicId !== session.clinicId) {
+            // Verify ownership: both clinics must share the same email
+            const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
+            const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', requestedClinicId).single()
+            if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
+                return Response.json({ success: false, message: 'Unauthorized branch access' }, { status: 403 })
+            }
+            clinicId = requestedClinicId
+        }
 
         let query = supabaseAdmin
             .from('patients')

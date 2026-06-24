@@ -19,11 +19,11 @@ const FLOW = [
   { side: "bot", type: "voice", time: "10:37 AM", lang: "हिंदी", dur: "0:08", delay: 1500 },
   { side: "bot", type: "text", time: "10:49 AM", text: "🚨 *It's YOUR turn, Dipak Shah!*\n\n🎟 Token *T013* — Please go now!\n🏥 CityClinic\n\nProceed to the doctor's cabin immediately! 🏥\nThank you for your patience 🙏\n\n_Powered by TokenPe_", delay: 2500 },
   { side: "bot", type: "voice", time: "10:49 AM", lang: "हिंदी", dur: "0:08", delay: 1500 },
-  { side: "bot", type: "text", time: "11:04 AM", text: "✅ *Consultation Completed, Dipak Shah!*\n\nThank you for visiting *CityClinic*. We hope you feel better soon! 🌟\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "text", time: "11:04 AM", text: "✅ *Consultation Completed, Dipak Shah!*\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_", delay: 2500 },
   { side: "bot", type: "voice", time: "11:04 AM", lang: "हिंदी", dur: "0:11", delay: 1500 },
   { side: "bot", type: "rating", time: "11:05 AM", delay: 2000 },
   { side: "pat", type: "rating-reply", time: "11:05 AM", text: "⭐⭐⭐⭐⭐ Excellent", delay: 1500 },
-  { side: "bot", type: "text", time: "11:05 AM", text: "🙏 *Thank You, Dipak Shah!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!", delay: 3500 },
+  { side: "bot", type: "text", time: "11:05 AM", text: "🙏 *Thank You, Dipak Shah!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!\n\nThank you for visiting *CityClinic*. We hope you feel better soon! 🌟", delay: 3500 },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

@@ -37,8 +37,6 @@ export async function POST(req) {
 
         const doneMsg = `✅ *Consultation Completed, ${patientName || 'Patient'}!*
 
-Thank you for visiting *${clinicName}*. We hope you feel better soon! 🌟
-
 Please don't hesitate to reach out if you have any questions.
 
 _Powered by TokenPe_`

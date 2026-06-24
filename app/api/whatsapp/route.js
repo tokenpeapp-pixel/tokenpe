@@ -111,7 +111,7 @@ export async function POST(req) {
                     .from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
 
                 const stars = '⭐'.repeat(directRating)
-                await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!`)
+                await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!\n\nThank you for visiting *${clinic?.name || 'our clinic'}*. We hope you feel better soon! 🌟`)
                 console.log(`[Rating] ✅ Direct Workflow rating ${directRating} saved for patient ${recentPatient.id}`)
             } else {
                 console.warn(`[Rating] ⚠️ No matching done patient found for ${customerPhone} today`)
@@ -150,7 +150,7 @@ export async function POST(req) {
                         .from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
 
                     const stars = '⭐'.repeat(visitRating)
-                    await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!`)
+                    await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!\n\nThank you for visiting *${clinic?.name || 'our clinic'}*. We hope you feel better soon! 🌟`)
                     console.log(`[Rating] ✅ Saved rating ${visitRating} for patient ${recentPatient.id}`)
                 } else {
                     console.warn(`[Rating] ⚠️ No matching done patient found for ${customerPhone} today`)

@@ -18,115 +18,44 @@ function AuthCallbackContent() {
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession()
                 if (sessionError || !session) { router.replace('/login'); return }
                 
-                const user = session.user
-                if (!user) { router.replace('/login'); return }
-
                 const intent = searchParams.get('intent') || 'login'
-                const { data: clinics, error: clinicError } = await supabase
-                    .from('clinics').select('*').eq('email', user.email).order('created_at', { ascending: true })
-
-                if (clinics && clinics.length > 0 && !clinicError) {
-                    setStatus('Generating your daily code...')
-                    const clinicData = clinics[0] // Default to the first clinic
-                    const baseName = clinicData.name || user.user_metadata?.full_name || user.email.split('@')[0]
-                    const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
-                    const todayStr = getISTDateString()
-                    const strToHash = clinicData.id + todayStr
-                    let hash = 0
-                    for (let i = 0; i < strToHash.length; i++) { hash = (hash << 5) - hash + strToHash.charCodeAt(i); hash |= 0 }
-                    const dailyNum = (Math.abs(hash) % 900) + 100
-                    const newCode = `${clean}${dailyNum}`
-                    let finalClinicData = clinicData
-                    if (clinicData.code !== newCode) {
-                        const { data: updated, error: updateError } = await supabase
-                            .from('clinics').update({ code: newCode }).eq('id', clinicData.id).select().single()
-                        if (updated && !updateError) finalClinicData = updated
-                    }
-                    setStatus('Logging you in securely...')
-                    
-                    // Secure JWT Session for Google Login
-                    await fetch('/api/auth/googleSession', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                        },
-                        body: JSON.stringify({ 
-                            clinicId: finalClinicData.id, 
-                            clinicCode: finalClinicData.code, 
-                            phone: finalClinicData.phone 
-                        })
-                    })
-
-                    localStorage.setItem('clinicCode', finalClinicData.code)
-                    localStorage.setItem('clinicPhone', finalClinicData.phone)
-                    localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinicData))
-                    localStorage.setItem('tokenpe_user_clinics', JSON.stringify(clinics))
-                    router.replace('/dashboard')
-                    return
-                }
-
-                if (intent === 'login') {
-                    await supabase.auth.signOut()
-                    router.replace('/login?error=no_clinic')
-                    return
-                }
-
+                
                 if (intent === 'register') {
                     setStatus('Creating your clinic workspace...')
-                    const baseName = user.user_metadata?.full_name || user.email.split('@')[0]
-                    const clean = baseName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
-                    const todayStr = getISTDateString()
-                    const strToHash = user.email + todayStr
-                    let hash = 0
-                    for (let i = 0; i < strToHash.length; i++) { hash = (hash << 5) - hash + strToHash.charCodeAt(i); hash |= 0 }
-                    const num = (Math.abs(hash) % 900) + 100
-                    const newCode = `${clean}${num}`
-                    const trialEndsAt = new Date()
-                    trialEndsAt.setDate(trialEndsAt.getDate() + 7)
+                } else {
+                    setStatus('Logging you in securely...')
+                }
 
-                    const newClinicData = {
-                        name: user.user_metadata?.full_name || 'My Clinic',
-                        email: user.email,
-                        code: newCode,
-                        phone: '0000000000',
-                        plan_id: 'elite',
-                        subscription_status: 'trialing',
-                        trial_ends_at: trialEndsAt.toISOString()
-                    }
+                // Call our secure backend API to handle all clinic checks, creation, and JWT logic
+                const res = await fetch('/api/auth/googleCallback', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ intent })
+                })
+                
+                const data = await res.json()
+                
+                if (!res.ok || !data.success) {
+                    await supabase.auth.signOut()
+                    router.replace('/login?error=' + (data.message || 'auth_failed'))
+                    return
+                }
 
-                    const { data: insertedClinic, error: insertError } = await supabase
-                        .from('clinics').insert(newClinicData).select().single()
+                const finalClinicData = data.clinic
+                localStorage.setItem('clinicCode', finalClinicData.code)
+                localStorage.setItem('clinicPhone', finalClinicData.phone || '0000000000')
+                localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinicData))
+                if (data.userClinics) {
+                    localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
+                }
 
-                    if (insertError) {
-                        console.error('Failed to auto-create clinic:', insertError)
-                        await supabase.auth.signOut()
-                        router.replace('/login?error=create_failed')
-                        return
-                    }
-
-                    // Secure JWT Session for Google Registration
-                    await fetch('/api/auth/googleSession', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                        },
-                        body: JSON.stringify({ 
-                            clinicId: insertedClinic.id, 
-                            clinicCode: insertedClinic.code, 
-                            phone: insertedClinic.phone,
-                            name: insertedClinic.name,
-                            isNewRegistration: true
-                        })
-                    })
-
-                    localStorage.setItem('clinicCode', insertedClinic.code)
-                    localStorage.setItem('clinicPhone', insertedClinic.phone)
-                    localStorage.setItem('tokenpe_clinic', JSON.stringify(insertedClinic))
-
-                    // 🎉 Show party before redirecting!
-                    setCelebration({ clinicName: insertedClinic.name, trialEnd: insertedClinic.trial_ends_at })
+                if (data.isNewRegistration) {
+                    setCelebration({ clinicName: finalClinicData.name, trialEnd: finalClinicData.trial_ends_at })
+                } else {
+                    router.replace('/dashboard')
                 }
 
             } catch (err) {

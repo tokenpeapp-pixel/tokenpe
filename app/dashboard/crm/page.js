@@ -56,7 +56,15 @@ export default function CRMPage() {
       const c = JSON.parse(stored)
       
       // Fetch fresh clinic to get welcome_message
-      const { data: freshClinic } = await supabase.from('clinics').select('*').eq('id', c.id).single()
+      let freshClinic = null
+      try {
+        const res = await fetch(`/api/clinics/get?id=${c.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success) freshClinic = data.clinic
+        }
+      } catch (e) {}
+      
       const finalClinic = freshClinic || c
       
       setClinic(finalClinic)
@@ -84,7 +92,15 @@ export default function CRMPage() {
     setLoading(true)
     
     // Fetch fresh clinic data for the selected branch
-    const { data: freshClinic } = await supabase.from('clinics').select('*').eq('id', selected.id).single()
+    let freshClinic = null
+    try {
+      const res = await fetch(`/api/clinics/get?id=${selected.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) freshClinic = data.clinic
+      }
+    } catch (e) {}
+    
     const finalClinic = freshClinic || selected
     
     setClinic(finalClinic)

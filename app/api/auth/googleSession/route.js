@@ -1,6 +1,6 @@
 import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
-import { supabase } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { sendWelcomeEmail } from '../../../../lib/messaging'
 
 
@@ -22,7 +22,7 @@ export async function POST(req) {
         }
 
         // Verify that the clinic belongs to this authenticated user
-        const { data: clinic, error: clinicError } = await supabase
+        const { data: clinic, error: clinicError } = await supabaseAdmin
             .from('clinics')
             .select('email')
             .eq('id', clinicId)

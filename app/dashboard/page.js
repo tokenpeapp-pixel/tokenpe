@@ -121,8 +121,12 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
     }
 
     if (addressChanged) {
-      // Save address directly via supabase
-      await supabase.from('clinics').update({ address: addressInput }).eq('id', clinic.id)
+      // Save address via API
+      await fetch('/api/clinics/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, address: addressInput })
+      })
       clinic.address = addressInput
     }
 
@@ -149,7 +153,11 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
       if (error) throw error
 
       const { data: { publicUrl } } = supabase.storage.from('voice-notes').getPublicUrl(fileName)
-      await supabase.from('clinics').update({ logo_url: publicUrl }).eq('id', clinic.id)
+      await fetch('/api/clinics/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, logo_url: publicUrl })
+      })
 
       clinic.logo_url = publicUrl // mutate locally for immediate render
       const stored = localStorage.getItem('tokenpe_clinic')
@@ -567,55 +575,33 @@ export default function Dashboard() {
         } catch (e) { }
       }
 
-      if (!clinicCode) {
-        // Fallback: Check if user is logged in via Supabase (e.g., Google OAuth redirect)
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user?.email) {
-          const { data: clinics, error: clinicError } = await supabase
-            .from('clinics').select('*').eq('email', user.email).order('created_at', { ascending: true })
-
-          if (clinics && clinics.length > 0 && !clinicError) {
-            const clinicData = clinics[0]
-            setUserClinics(clinics)
-            localStorage.setItem('tokenpe_user_clinics', JSON.stringify(clinics))
-            const finalClinic = clinicData
-            localStorage.setItem('clinicCode', finalClinic.code)
-            localStorage.setItem('clinicPhone', finalClinic.phone)
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinic))
-            clinicCode = finalClinic.code
-          } else {
-            await supabase.auth.signOut()
-            router.push('/login?error=no_clinic')
-            return
-          }
-        } else {
-          if (!cachedClinic) { router.push('/login'); return }
-        }
+      if (!clinicCode && !cachedClinic) {
+        // If there is no cache, let's just proceed to step 2 which will call the API.
+        // If the API fails due to missing cookie, it will redirect to /login.
       }
 
       // ── Step 2: Refresh clinic from Supabase in background ──────────────
       if (clinicCode) {
-        const { data: freshClinic, error } = await supabase
-          .from('clinics').select('*').eq('code', clinicCode).single()
-
-        if (error || !freshClinic) {
-          // Only redirect if we also have no cached clinic to show
+        try {
+          const res = await fetch('/api/dashboard/init')
+          if (!res.ok) throw new Error('Init failed')
+          const data = await res.json()
+          if (data.success && data.clinic) {
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
+            setClinic(data.clinic)
+            if (data.userClinics) setUserClinics(data.userClinics)
+            
+            if (!data.clinic.specialty || !data.clinic.city || data.clinic.phone === '0000000000') {
+              setShowDiscovery(true)
+            }
+          }
+        } catch (e) {
           if (!cachedClinic) {
             localStorage.removeItem('clinicCode')
             localStorage.removeItem('clinicPhone')
             localStorage.removeItem('tokenpe_clinic')
             router.push('/login')
           }
-          return
-        }
-
-        // Update cache + state silently in background
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(freshClinic))
-        setClinic(freshClinic)
-
-        // Show Discovery Profile if missing details (e.g. Google Login users)
-        if (!freshClinic.specialty || !freshClinic.city || freshClinic.phone === '0000000000') {
-          setShowDiscovery(true)
         }
       }
     }
@@ -628,51 +614,46 @@ export default function Dashboard() {
     if (!clinic) return
     async function loadPatients() {
       setLoading(true)
-      const { data: patientsData } = await supabase
-        .from('patients').select('*')
-        .eq('clinic_id', clinic.id)
-        .eq('date', currentDate)
-        .order('joined_at', { ascending: true })
-
-      setPatients(patientsData || [])
+      try {
+        const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success) setPatients(data.patients || [])
+        }
+      } catch (e) {
+        console.error('Failed to fetch patients', e)
+      }
       setLoading(false)
     }
     loadPatients()
   }, [clinic, currentDate])
 
-  // ── Real-time ───────────────────────────────────────────────────────────
+  // ── Polling ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (!clinic) return
-    const channel = supabase
-      .channel('patients-realtime')
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'patients',
-        filter: `clinic_id=eq.${clinic.id}`
-      }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          if (payload.new.date === currentDate) {
-            setPatients(prev => [...prev, payload.new])
-            sounds.newPatient()
-            setNewPatientAlert(payload.new)
-            setTimeout(() => setNewPatientAlert(null), 5000)
-            addToast(`New patient joined: ${payload.new.name || maskPhone(payload.new.phone)} — ${payload.new.token}`, 'new')
-          }
-        }
-        if (payload.eventType === 'UPDATE') {
-          if (payload.new.date === currentDate) {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success) {
             setPatients(prev => {
-              const exists = prev.some(p => p.id === payload.new.id)
-              if (exists) {
-                return prev.map(p => p.id === payload.new.id ? payload.new : p)
-              } else {
-                return [...prev, payload.new]
+              const newPatients = data.patients || []
+              // Find newly inserted patients for the notification
+              const newAdds = newPatients.filter(np => !prev.some(p => p.id === np.id))
+              if (newAdds.length > 0) {
+                 sounds.newPatient()
+                 setNewPatientAlert(newAdds[0])
+                 setTimeout(() => setNewPatientAlert(null), 5000)
+                 addToast(`New patient joined: ${newAdds[0].name || maskPhone(newAdds[0].phone)} — ${newAdds[0].token}`, 'new')
               }
+              return newPatients
             })
           }
         }
-      })
-      .subscribe()
-    return () => supabase.removeChannel(channel)
+      } catch (e) { }
+    }, 5000)
+    return () => clearInterval(interval)
   }, [clinic, currentDate])
 
   // ── Clock & Date Check ──────────────────────────────────────────────────
@@ -693,12 +674,13 @@ export default function Dashboard() {
     if (activeTab === 'history' && clinic) {
       async function fetchHistory() {
         setLoadingHistory(true)
-        const { data } = await supabase
-          .from('patients').select('*')
-          .eq('clinic_id', clinic.id)
-          .eq('date', historyDate)
-          .order('joined_at', { ascending: true })
-        setHistoryPatients(data || [])
+        try {
+          const res = await fetch(`/api/dashboard/get?date=${historyDate}`)
+          if (res.ok) {
+            const data = await res.json()
+            if (data.success) setHistoryPatients(data.patients || [])
+          }
+        } catch (e) { }
         setLoadingHistory(false)
       }
       fetchHistory()
@@ -740,20 +722,21 @@ export default function Dashboard() {
     localStorage.setItem('clinicPhone', targetClinic.phone)
     localStorage.setItem('tokenpe_clinic', JSON.stringify(targetClinic))
 
-    // Update session cookie in background (don't await — keep UI fast)
-    fetch('/api/auth/switch', {
+    // Update session cookie and wait for it
+    await fetch('/api/auth/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetClinicId: targetClinic.id })
     })
 
-    // Fetch fresh patients for the new branch
-    const { data: patientsData } = await supabase
-      .from('patients').select('*')
-      .eq('clinic_id', targetClinic.id)
-      .eq('date', currentDate)
-      .order('joined_at', { ascending: true })
-    setPatients(patientsData || [])
+    // Fetch fresh patients for the new branch securely
+    try {
+      const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) setPatients(data.patients || [])
+      }
+    } catch (e) { }
     setLoading(false)
     addToast(`✅ Switched to ${targetClinic.name}`, 'done')
 

@@ -37,17 +37,20 @@ export default function BillingPage() {
 
       const today = getISTDateString()
 
-      // Fetch fresh clinic + today count in parallel
-      const [freshResult, countResult] = await Promise.all([
-        supabase.from('clinics').select('*').eq('id', clinicData.id).single(),
-        supabase.from('patients').select('*', { count: 'exact', head: true }).eq('clinic_id', clinicData.id).eq('date', today)
+      // Fetch fresh clinic + today count in parallel via secure APIs
+      const [freshRes, countRes] = await Promise.all([
+        fetch(`/api/clinics/get?id=${clinicData.id}`),
+        fetch(`/api/analytics/count?clinicId=${clinicData.id}&date=${today}`)
       ])
+      
+      const freshData = freshRes.ok ? await freshRes.json() : null
+      const countData = countRes.ok ? await countRes.json() : null
 
-      if (freshResult.data) {
-        setClinic(freshResult.data)
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(freshResult.data))
+      if (freshData && freshData.success && freshData.clinic) {
+        setClinic(freshData.clinic)
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
       }
-      setTodayCount(countResult.count || 0)
+      setTodayCount((countData && countData.success ? countData.count : 0))
     }
     load()
   }, [router])
@@ -86,8 +89,12 @@ export default function BillingPage() {
           let attempts = 0
           const poll = async () => {
             attempts++
-            const { data: fresh } = await supabase
-              .from('clinics').select('*').eq('id', clinic.id).single()
+            const res = await fetch(`/api/clinics/get?id=${clinic.id}`)
+            let fresh = null
+            if (res.ok) {
+              const data = await res.json()
+              if (data.success) fresh = data.clinic
+            }
             if (fresh) {
               setClinic(fresh)
               localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
@@ -141,7 +148,12 @@ export default function BillingPage() {
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to cancel')
 
       alert(`Subscription canceled. You will retain access to your ${planName} plan features until the end of your current billing period.`)
-      const { data: fresh } = await supabase.from('clinics').select('*').eq('id', clinic.id).single()
+      const res2 = await fetch(`/api/clinics/get?id=${clinic.id}`)
+      let fresh = null
+      if (res2.ok) {
+        const data2 = await res2.json()
+        if (data2.success) fresh = data2.clinic
+      }
       if (fresh) {
         setClinic(fresh)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))

@@ -1,7 +1,7 @@
 // FILE: /app/api/queue/notify/route.js
 // Manual notify from dashboard ‚Äî sends "coming soon" text + voice note in parallel
 
-import { supabase } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
 
@@ -37,13 +37,13 @@ The clinic has sent a manual alert for you. Please make sure you are nearby! üè
 
 _Powered by TokenPe_`
 
-        // Fetch clinic to check plan
-        const { data: clinic } = await supabase.from('clinics').select('plan_id').eq('id', clinicId).single()
-        const planId = clinic?.plan_id || 'starter'
+        // Check clinic plan features
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id').eq('id', clinicId).single()
+        const canUseVoice = clinic?.plan_id === 'pro' || clinic?.plan_id === 'elite'
 
         // Send text + voice (if pro/elite) in parallel
         const alerts = [sendText(phone, notifyMsg)]
-        if (planId !== 'starter') {
+        if (canUseVoice) {
             alerts.push(sendVoice({ phone, language: language || 'en', event: 'soon', token, clinicName }))
         }
         await Promise.all(alerts)

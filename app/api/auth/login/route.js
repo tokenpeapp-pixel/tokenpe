@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase'
+import { supabaseAdmin as supabase } from '../../../../lib/supabase'
 import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
 import { rateLimit } from '../../../../lib/rateLimit'

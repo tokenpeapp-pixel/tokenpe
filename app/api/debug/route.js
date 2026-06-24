@@ -2,7 +2,7 @@
 // Quick diagnostic endpoint — visit in browser to check env + test webhook
 // REMOVE THIS FILE IN PRODUCTION if you want to keep env vars private
 
-import { supabase } from '../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../lib/supabase'
 
 export async function GET(req) {
     const { searchParams } = new URL(req.url)
@@ -88,8 +88,8 @@ export async function GET(req) {
     }
 
     // ── Default: show env check + list clinics ───────────────────────────────
-    const { data: clinics } = await supabase.from('clinics').select('id, name, code, email')
-    const { data: recentPatients } = await supabase
+    const { data: clinics } = await supabaseAdmin.from('clinics').select('id, name, code, email')
+    const { data: recentPatients } = await supabaseAdmin
         .from('patients')
         .select('id, name, phone, token, status, clinic_id, date')
         .order('joined_at', { ascending: false })

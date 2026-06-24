@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase'
+import { supabaseAdmin as supabase } from '../../../../lib/supabase'
 import { SignJWT } from 'jose'
 import { Resend } from 'resend'
 import { rateLimit } from '../../../../lib/rateLimit'

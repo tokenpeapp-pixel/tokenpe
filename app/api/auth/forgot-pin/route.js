@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase'
+import { supabaseAdmin as supabase } from '../../../../lib/supabase'
 import { rateLimit } from '../../../../lib/rateLimit'
 import { Resend } from 'resend'
 

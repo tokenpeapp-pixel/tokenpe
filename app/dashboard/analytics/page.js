@@ -80,14 +80,18 @@ export default function AnalyticsPage() {
     }
 
     // Fetch this period
-    let query = supabase.from('patients').select('*').eq('clinic_id', c.id).limit(100000)
-    if (range === 'today') {
-      query = query.eq('date', cutoffDate)
-    } else {
-      query = query.gte('date', cutoffDate).lte('date', endDate)
+    let url = `/api/analytics/get?startDate=${cutoffDate}`
+    if (range !== 'today') {
+      url += `&endDate=${endDate}`
     }
-
-    const { data: thisPeriodData } = await query
+    let thisPeriodData = []
+    try {
+      const res = await fetch(url)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) thisPeriodData = data.data || []
+      }
+    } catch(e) {}
 
     // Fetch last period (for comparison)
     let lastPeriodData = []
@@ -99,13 +103,13 @@ export default function AnalyticsPage() {
       const lastCutoff = getISTDateString(prevStart)
       const lastEnd = getISTDateString(prevEnd)
 
-      const { data } = await supabase.from('patients')
-        .select('*')
-        .eq('clinic_id', c.id)
-        .gte('date', lastCutoff)
-        .lte('date', lastEnd)
-        .limit(100000)
-      lastPeriodData = data || []
+      try {
+        const res2 = await fetch(`/api/analytics/get?startDate=${lastCutoff}&endDate=${lastEnd}`)
+        if (res2.ok) {
+          const data2 = await res2.json()
+          if (data2.success) lastPeriodData = data2.data || []
+        }
+      } catch(e) {}
     }
 
     setPatients(thisPeriodData || [])

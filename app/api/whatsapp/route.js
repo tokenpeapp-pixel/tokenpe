@@ -376,14 +376,14 @@ export async function POST(req) {
                 { data: recentDone }
             ] = await Promise.all([
                 // Total patients today
-                supabase.from('patients').select('*', { count: 'exact', head: true })
+                supabaseAdmin.from('patients').select('*', { count: 'exact', head: true })
                     .eq('clinic_id', clinic.id).eq('date', today),
                 // People waiting ahead
-                supabase.from('patients').select('*', { count: 'exact', head: true })
+                supabaseAdmin.from('patients').select('*', { count: 'exact', head: true })
                     .eq('clinic_id', clinic.id).eq('date', today).in('status', ['waiting', 'called']),
                 // Recent done for dynamic wait time
                 planId !== 'starter' 
-                    ? supabase.from('patients').select('completed_at')
+                    ? supabaseAdmin.from('patients').select('completed_at')
                         .eq('clinic_id', clinic.id).eq('date', today).eq('status', 'done')
                         .not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(10)
                     : Promise.resolve({ data: null })

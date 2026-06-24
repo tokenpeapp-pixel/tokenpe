@@ -31,7 +31,7 @@ export async function POST(req) {
         const phone = cleanPhone(patientPhone)
 
         // 1. Fetch clinic to check plan
-        const { data: clinic } = await supabase.from('clinics').select('plan_id, code, subscription_status').eq('id', clinicId).single()
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, code, subscription_status').eq('id', clinicId).single()
         const planId = clinic?.plan_id || 'starter'
         const clinicCode = clinic?.code || ''
 

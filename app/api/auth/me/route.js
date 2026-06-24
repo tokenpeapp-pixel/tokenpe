@@ -1,5 +1,5 @@
 import { getSession } from '../../../../lib/auth'
-import { supabase } from '../../../../lib/supabase'
+import { supabaseAdmin } from '../../../../lib/supabase'
 
 export async function GET(req) {
     try {
@@ -9,7 +9,7 @@ export async function GET(req) {
         }
 
         // Fetch fresh clinic data
-        const { data: clinic, error } = await supabase
+        const { data: clinic, error } = await supabaseAdmin
             .from('clinics')
             .select('*')
             .eq('id', session.clinicId)

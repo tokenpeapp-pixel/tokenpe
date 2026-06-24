@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase'
+import { supabase, supabaseAdmin } from '../../../../lib/supabase'
 import { getSession, signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
 
@@ -15,13 +15,13 @@ export async function POST(req) {
         }
 
         // Fetch current clinic to get the email
-        const { data: currentClinic, error: err1 } = await supabase.from('clinics').select('email').eq('id', session.clinicId).single()
-        if (err1 || !currentClinic || !currentClinic.email) {
-            return Response.json({ success: false, message: 'Current clinic has no email associated.' }, { status: 403 })
+        const { data: currentClinic, error: err1 } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
+        if (err1 || !currentClinic) {
+            return Response.json({ success: false, message: 'Invalid session' }, { status: 401 })
         }
 
-        // Fetch target clinic to verify email matches
-        const { data: targetClinic, error: err2 } = await supabase.from('clinics').select('*').eq('id', targetClinicId).single()
+        // Fetch target clinic to verify ownership and get details
+        const { data: targetClinic, error: err2 } = await supabaseAdmin.from('clinics').select('*').eq('id', targetClinicId).single()
         if (err2 || !targetClinic || targetClinic.email !== currentClinic.email) {
             return Response.json({ success: false, message: 'Unauthorized branch switch' }, { status: 403 })
         }

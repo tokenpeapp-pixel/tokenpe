@@ -2,7 +2,7 @@
 // Called by dashboard "Call Next" button
 // Sends your-turn + 10-away + 5-away alerts via Interakt text + Sarvam voice — all in parallel
 
-import { supabase, supabaseAdmin, getISTDateString } from '../../../../lib/supabase'
+import { supabaseAdmin, getISTDateString } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
 
@@ -74,9 +74,9 @@ export async function POST(req) {
 
         // 1. Fetch clinic to check plan, Mark patient as CALLED, fetch waiting list — in parallel
         const [ { data: clinic }, , { data: waitingPatients }] = await Promise.all([
-            supabase.from('clinics').select('plan_id').eq('id', clinicId).single(),
+            supabaseAdmin.from('clinics').select('plan_id').eq('id', clinicId).single(),
             supabaseAdmin.from('patients').update({ status: 'called' }).eq('id', patientId),
-            supabase.from('patients').select('*')
+            supabaseAdmin.from('patients').select('*')
                 .eq('clinic_id', clinicId)
                 .eq('status', 'waiting')
                 .eq('date', today)

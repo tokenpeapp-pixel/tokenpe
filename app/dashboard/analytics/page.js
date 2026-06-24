@@ -24,6 +24,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [patients, setPatients] = useState([])
   const [lastPeriodPatients, setLastPeriodPatients] = useState([])
+  const [overallFeedback, setOverallFeedback] = useState(null)
   const [dateRange, setDateRange] = useState('today') // today, 7, 30, 90, 180, 365, custom
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -114,6 +115,15 @@ export default function AnalyticsPage() {
 
     setPatients(thisPeriodData || [])
     setLastPeriodPatients(lastPeriodData)
+    
+    // Fetch overall feedback
+    try {
+      const resFeedback = await fetch('/api/analytics/feedback')
+      if (resFeedback.ok) {
+        const fbData = await resFeedback.json()
+        if (fbData.success) setOverallFeedback(fbData.feedback)
+      }
+    } catch(e) {}
     
     // Fetch AI insights for Elite
     if (c.plan_id === 'elite') {
@@ -326,17 +336,9 @@ export default function AnalyticsPage() {
   const totalChange = lastTotal ? Math.round(((rangeTotal - lastTotal)/lastTotal)*100) : 0
 
   // Section 7: Feedback
-  const ratings = {5:0, 4:0, 3:0, 2:0, 1:0}
-  let totalRating = 0
-  let ratingCount = 0
-  patients.forEach(p => {
-    if(p.rating > 0) {
-      ratings[p.rating] = (ratings[p.rating]||0)+1
-      totalRating += p.rating
-      ratingCount++
-    }
-  })
-  const avgRating = ratingCount ? (totalRating/ratingCount).toFixed(1) : 0
+  const ratings = overallFeedback?.ratings || {5:0, 4:0, 3:0, 2:0, 1:0}
+  const avgRating = overallFeedback?.avgRating || "0.0"
+  const ratingCount = overallFeedback?.ratingCount || 0
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-[#0F172A]">

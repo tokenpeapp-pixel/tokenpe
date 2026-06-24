@@ -171,18 +171,32 @@ export default function CRMPage() {
   async function saveFollowupConfig(field, value) {
     setSavingFollowups(true)
     try {
-      const updates = field === 'recall' ? { smart_recall_enabled: value } : { smart_meds_enabled: value }
-      await supabase.from('clinics').update(updates).eq('id', clinic.id)
+      const payload = { clinicId: clinic.id }
+      if (field === 'recall') payload.smartRecallEnabled = value
+      if (field === 'meds') payload.smartMedsEnabled = value
       
-      if (field === 'recall') setFollowupRecall(value)
-      if (field === 'meds') setFollowupMeds(value)
+      const res = await fetch('/api/clinics/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      const data = await res.json()
       
-      const stored = localStorage.getItem('tokenpe_clinic')
-      if (stored) {
-        localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), ...updates }))
+      if (res.ok && data.success) {
+        if (field === 'recall') setFollowupRecall(value)
+        if (field === 'meds') setFollowupMeds(value)
+        
+        const updates = field === 'recall' ? { smart_recall_enabled: value } : { smart_meds_enabled: value }
+        const stored = localStorage.getItem('tokenpe_clinic')
+        if (stored) {
+          localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), ...updates }))
+        }
+      } else {
+        alert(data.error || 'Failed to save follow-up configuration')
       }
     } catch (err) {
       console.error(err)
+      alert('Error saving configuration')
     }
     setSavingFollowups(false)
   }

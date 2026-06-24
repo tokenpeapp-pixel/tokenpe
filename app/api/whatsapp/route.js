@@ -204,69 +204,8 @@ export async function POST(req) {
             // Has text but not a rating — fall through to other handlers below
         }
 
-        // ── MESSAGE RECEIVED (Ratings / Feedback) — legacy block kept for safety ──
+        // ── MESSAGE RECEIVED (Acknowledge non-rating messages) ──
         if (action === 'message_received' || action === 'message' || action === 'rate' || action === 'reply' || action === 'feedback') {
-            
-            if (!customerPhone) {
-                return Response.json({ success: true, message: 'Message acknowledged (no phone)' }, { status: 200 })
-            }
-
-            // Is it a normal visit rating? (tokenpe_rating)
-            const visitRating = parseVisitRating(body, textStr)
-            if (visitRating) {
-                console.log(`[Rating] ${customerPhone} gave visit rating ${visitRating}`)
-                // Find most recent done patient today
-                const { data: recentPatient } = await supabaseAdmin
-                    .from('patients')
-                    .select('id, clinic_id')
-                    .eq('phone', customerPhone)
-                    .eq('status', 'done')
-                    .gte('date', getISTDateString())
-                    .order('completed_at', { ascending: false })
-                    .limit(1)
-                    .single()
-
-                if (recentPatient) {
-                    await supabaseAdmin
-                        .from('patients')
-                        .update({ rating: visitRating })
-                        .eq('id', recentPatient.id)
-                    
-                    const { data: clinic } = await supabaseAdmin.from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
-                    
-                    // Send simple thank you text
-                    await sendText(customerPhone, `Thank you for your feedback! We're glad we could help. Wishing you a speedy recovery. 🙏\n\n— ${clinic?.name || 'Clinic'}, powered by TokenPe`)
-                }
-                return Response.json({ success: true, message: 'Rating saved' }, { status: 200 })
-            }
-
-            // Is it a CRM broadcast rating? (tokenpe_crm_rating)
-            const crmRating = parseCrmRating(body, textStr)
-            if (crmRating) {
-                console.log(`[CRM Rating] ${customerPhone} gave CRM rating ${crmRating}`)
-                // Update the most recent patient for this phone to store CRM rating
-                const { data: recentPatient } = await supabaseAdmin
-                    .from('patients')
-                    .select('id, clinic_id')
-                    .eq('phone', customerPhone)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single()
-
-                if (recentPatient) {
-                    const feedbackText = parseCrmFeedbackText(textStr)
-                    await supabaseAdmin
-                        .from('patients')
-                        .update({ 
-                            crm_rating: crmRating,
-                            feedback_text: feedbackText || null,
-                            feedback_at: new Date().toISOString()
-                        })
-                        .eq('id', recentPatient.id)
-                }
-                return Response.json({ success: true, message: 'CRM Rating saved' }, { status: 200 })
-            }
-
             return Response.json({ success: true, message: 'Message acknowledged' }, { status: 200 })
         }
 

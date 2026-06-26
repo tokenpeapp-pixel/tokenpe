@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import { GoogleAnalytics } from '@next/third-parties/google';
 import CookieConsent from "./components/CookieConsent";
 import "./globals.css";
 
@@ -82,6 +83,7 @@ export default function RootLayout({ children }) {
         {children}
         <CookieConsent />
         <Analytics />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-XXXXXXXXXX"} />
       </body>
     </html>
   );

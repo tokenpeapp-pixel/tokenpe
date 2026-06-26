@@ -1,7 +1,29 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
+
+// ─── UPGRADE BANNER (Suspense wrapped to prevent Next.js build errors) ────────
+function UpgradeBanner() {
+  const searchParams = useSearchParams()
+  const [show, setShow] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('upgraded') === 'true') {
+      setShow(true)
+      setTimeout(() => setShow(false), 6000)
+    }
+  }, [searchParams])
+
+  if (!show) return null
+
+  return (
+    <div style={{ background: '#052e16', borderBottom: '1px solid #16a34a', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 14 }}>✅ Plan activated! Your clinic is now upgraded. All features are unlocked.</span>
+      <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
+    </div>
+  )
+}
 
 // ─── PHONE MASKING (Privacy) ────────────────────────────────────────────────
 function maskPhone(phone) {
@@ -554,15 +576,6 @@ export default function Dashboard() {
   const [managingBranch, setManagingBranch] = useState(false)
   const [closingClinic, setClosingClinic] = useState(false)
   const sounds = useSounds()
-  const searchParams = useSearchParams()
-  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false)
-
-  useEffect(() => {
-    if (searchParams.get('upgraded') === 'true') {
-      setShowUpgradeBanner(true)
-      setTimeout(() => setShowUpgradeBanner(false), 6000)
-    }
-  }, [])
 
   // ── Load clinic from session (multi-clinic support) ─────────────────────
   useEffect(() => {
@@ -1146,12 +1159,9 @@ export default function Dashboard() {
   return (
     <div style={s.root}>
       {/* ── Upgrade Success Banner ── */}
-      {showUpgradeBanner && (
-        <div style={{ background: '#052e16', borderBottom: '1px solid #16a34a', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 14 }}>✅ Plan activated! Your clinic is now upgraded. All features are unlocked.</span>
-          <button onClick={() => setShowUpgradeBanner(false)} style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <UpgradeBanner />
+      </Suspense>
       <style>{`
         .dash-header {
           background: linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%);

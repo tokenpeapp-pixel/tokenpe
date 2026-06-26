@@ -3,7 +3,7 @@
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
-import { sendText, cleanPhone } from '../../../../lib/messaging'
+import { sendTemplateMessage, cleanPhone } from '../../../../lib/messaging'
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 
@@ -91,22 +91,15 @@ export async function POST(req) {
             } catch (e) { console.error('Failed to send confirmation email', e) }
           }
 
-          // 2. WhatsApp Confirmation
+          // 2. WhatsApp Template Confirmation
           if (currentClinic.phone) {
-            const waMsg = `🎉 *Payment Successful!*
-
-Hi *${currentClinic.name}*,
-
-Welcome to the *TokenPe ${planName} Plan*! 🚀
-Your clinic's features have been unlocked instantly.
-
-Next renewal date: *${new Date(sub.current_end * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}*
-
-Access your dashboard now:
-👉 https://tokenpe.online/dashboard
-
-_Powered by TokenPe_`
-            await sendText(cleanPhone(currentClinic.phone), waMsg)
+            const renewalDate = new Date(sub.current_end * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+            await sendTemplateMessage({
+              phone: cleanPhone(currentClinic.phone),
+              templateName: 'tokenpe_payment_success',
+              languageCode: 'en',
+              bodyValues: [currentClinic.name, planName, renewalDate]
+            })
           }
         }
       }

@@ -3,7 +3,7 @@ import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
 import { sanitizeName, validatePhone, validatePin } from '../../../../lib/validate'
 import { sendWelcomeEmail } from '../../../../lib/messaging'
-
+import { after } from 'next/server'
 
 export async function POST(req) {
     try {
@@ -26,8 +26,6 @@ export async function POST(req) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
         let code = ''
         for (let j = 0; j < 6; j++) code += chars[Math.floor(Math.random() * chars.length)]
-
-        // Retry loop for unique code could be added, but 6 chars base32 is highly likely unique.
 
         // 7 day trial
         const trialEndsAt = new Date()
@@ -64,8 +62,10 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Failed to create clinic. Phone may already be registered.' }, { status: 500 })
         }
 
-        // Send welcome email
-        await sendWelcomeEmail(email, cleanName)
+        // Send welcome email in background so registration UI is instant
+        after(async () => {
+            await sendWelcomeEmail(email, cleanName)
+        })
 
         // Create JWT session
         const sessionPayload = {

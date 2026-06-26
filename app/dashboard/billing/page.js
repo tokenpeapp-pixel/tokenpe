@@ -569,7 +569,7 @@ export default function BillingPage() {
             <h2 style={{ fontSize: 28, fontWeight: 900, color: "#fff", marginBottom: 12, background: "linear-gradient(to right, #10b981, #34d399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Payment Successful!</h2>
             <p style={{ color: "#cbd5e1", marginBottom: 24, fontSize: 16, lineHeight: 1.6 }}>Welcome to the <strong>{showSuccessModal} Plan</strong>! Your clinic has been upgraded and all premium features are now unlocked.</p>
             <button
-              onClick={() => setShowSuccessModal(null)}
+              onClick={() => router.push('/dashboard?upgraded=true')}
               style={{ width: '100%', padding: '14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}
             >
               Continue to Dashboard

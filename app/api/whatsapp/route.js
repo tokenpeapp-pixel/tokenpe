@@ -4,7 +4,7 @@
 
 import { after } from 'next/server'
 import { supabase, supabaseAdmin, getISTDateString } from '../../../lib/supabase'
-import { sendText, sendVoice, sendTextAndVoice, cleanPhone } from '../../../lib/messaging'
+import { sendText, sendVoice, sendTextAndVoice, cleanPhone, buildVoiceText } from '../../../lib/messaging'
 import crypto from 'crypto'
 import { maskPhone, maskName, maskSecret } from '../../../lib/mask'
 import { sanitizeName, validatePhone, validateClinicCode, extractInteraktListReply, parseVisitRating, parseCrmRating, parseCrmFeedbackText } from '../../../lib/validate'
@@ -475,7 +475,6 @@ export async function POST(req) {
                     } catch (err) {
                         console.error('[Voice Background Error]', err)
                         // Fallback: send text if Sarvam AI fails
-                        const { buildVoiceText } = require('../../../lib/messaging')
                         const fallbackText = buildVoiceText({
                             language: language || 'en',
                             event: 'joined',

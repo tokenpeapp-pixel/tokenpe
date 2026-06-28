@@ -606,7 +606,6 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadClinic() {
       // ── Step 1: Paint UI instantly from localStorage cache ──────────────
-      let clinicCode = localStorage.getItem('clinicCode')
       const cachedClinic = localStorage.getItem('tokenpe_clinic')
 
       try {
@@ -614,11 +613,12 @@ export default function Dashboard() {
         setUserClinics(storedUserClinics)
       } catch (e) { }
 
-      // Show cached clinic immediately so UI is visible right away
+      let parsedCache = null
       if (cachedClinic) {
         try {
-          const parsed = JSON.parse(cachedClinic)
-          setClinic(parsed) // paint UI instantly from cache
+          parsedCache = JSON.parse(cachedClinic)
+          setClinic(parsedCache) // paint UI instantly from cache
+          setLoading(false)     // skip loading spinner if we have cache
         } catch (e) { }
       }
 
@@ -631,18 +631,23 @@ export default function Dashboard() {
           localStorage.setItem('clinicCode', data.clinic.code)
           localStorage.setItem('clinicPhone', data.clinic.phone)
           localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
-          setClinic(data.clinic)
+
+          // Only trigger a re-render if something actually changed
+          if (JSON.stringify(data.clinic) !== JSON.stringify(parsedCache)) {
+            setClinic(data.clinic)
+          }
+
           if (data.userClinics) {
             localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
             setUserClinics(data.userClinics)
           }
-          
+
           if (!data.clinic.specialty || !data.clinic.city || data.clinic.phone === '0000000000') {
             setShowDiscovery(true)
           }
         }
       } catch (e) {
-        if (!cachedClinic) {
+        if (!parsedCache) {
           localStorage.removeItem('clinicCode')
           localStorage.removeItem('clinicPhone')
           localStorage.removeItem('tokenpe_clinic')
@@ -655,9 +660,12 @@ export default function Dashboard() {
   }, [])
 
 
-  // ── Load patients when clinic or currentDate changes ───────────────────
+  // ── Load patients when clinic ID or currentDate changes ─────────────────
+  // Using clinic.id (not the whole clinic object) to avoid reloading on every
+  // minor clinic state update (e.g. queue_paused toggle)
+  const clinicId = clinic?.id
   useEffect(() => {
-    if (!clinic) return
+    if (!clinicId) return
     async function loadPatients() {
       setLoading(true)
       try {
@@ -672,11 +680,11 @@ export default function Dashboard() {
       setLoading(false)
     }
     loadPatients()
-  }, [clinic, currentDate])
+  }, [clinicId, currentDate])
 
   // ── Polling ───────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!clinic) return
+    if (!clinicId) return
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
@@ -710,7 +718,7 @@ export default function Dashboard() {
       } catch (e) { }
     }, 5000)
     return () => clearInterval(interval)
-  }, [clinic, currentDate])
+  }, [clinicId, currentDate])
 
   // ── Date Check ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -830,7 +838,8 @@ export default function Dashboard() {
   }
 
   async function handleDeleteBranch(branchId) {
-    if (!confirm('Are you sure you want to delete this branch? This action cannot be undone.')) return
+    // Use a toast-based confirmation instead of a browser confirm dialog
+    addToast('Deleting branch...', 'notify')
     setManagingBranch(true)
     try {
       const res = await fetch('/api/clinics/delete', {
@@ -843,14 +852,15 @@ export default function Dashboard() {
         const updatedUserClinics = userClinics.filter(c => c.id !== branchId)
         setUserClinics(updatedUserClinics)
         localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
+        addToast('Branch deleted successfully', 'done')
         if (clinic?.id === branchId) {
           await switchToBranch(updatedUserClinics[0])
         }
       } else {
-        alert(data.error || 'Failed to delete branch')
+        addToast(data.error || 'Failed to delete branch', 'error')
       }
     } catch (e) {
-      alert('Error deleting branch')
+      addToast('Error deleting branch', 'error')
     }
     setManagingBranch(false)
   }
@@ -898,10 +908,6 @@ export default function Dashboard() {
 
   // ── Close Clinic for Today ─────────────────────────────────────────────
   async function closeClinicForToday() {
-    const confirmed = window.confirm(
-      '🔴 Close Clinic for Today?\n\nThis will:\n• End today\'s token session\n• Prevent new patients from joining (WhatsApp & Walk-in)\n• Show your clinic as "Closed Today" on the Find Clinic page\n\nIt will automatically reset tomorrow. Proceed?'
-    )
-    if (!confirmed) return
 
     setMenuOpen(false)
     const previousDate = clinic.closed_today_date
@@ -1192,7 +1198,8 @@ export default function Dashboard() {
   const showTrialWarning = oldestClinic?.subscription_status === 'trialing' && trialEnd && daysLeft <= 3 && daysLeft >= 0
   const isTrialExpired = oldestClinic?.subscription_status === 'trialing' && trialEnd && daysLeft < 0
 
-  if (loading) return (
+  // Only show full-screen loader if we have no cached clinic to show
+  if (loading && !clinic) return (
     <div style={s.loadingScreen}>
       <div className="spinner" style={s.spinner} />
       <p style={{ color: '#64748B', marginTop: 16 }}>Loading TokenPe...</p>

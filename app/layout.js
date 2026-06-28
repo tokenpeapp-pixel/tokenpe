@@ -19,10 +19,11 @@ export const metadata = {
   title: "TokenPe - Smart WhatsApp Queues for Indian Clinics & Hospitals",
   description: "TokenPe replaces paper queues with secure, real-time WhatsApp-based digital queues. Help your patients wait comfortably at home and save hours daily.",
   keywords: ["clinic queue management", "WhatsApp queue system", "OPD management software", "doctor token system India", "digital queue for doctors"],
-  icons: {
-    icon: "/logo-icon.svg",
-    shortcut: "/logo-icon.svg",
-    apple: "/logo-icon.svg",
+  alternates: {
+    canonical: "https://tokenpe.online",
+  },
+  verification: {
+    google: "YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_STRING", 
   },
   openGraph: {
     title: "TokenPe - Smart WhatsApp Queues",

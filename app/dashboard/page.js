@@ -549,6 +549,16 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
   )
 }
 
+// ─── HEADER CLOCK (Isolated to prevent root re-renders) ────────────────────
+function HeaderClock() {
+  const [time, setTime] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  return <div className="header-clock">{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+}
+
 // ─── MAIN DASHBOARD ────────────────────────────────────────────────────────
 export default function Dashboard() {
   const router = useRouter()
@@ -578,7 +588,6 @@ export default function Dashboard() {
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newLang, setNewLang] = useState('hi')
-  const [time, setTime] = useState(new Date())
   const [showQR, setShowQR] = useState(false)
   const [showDiscovery, setShowDiscovery] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -703,16 +712,14 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [clinic, currentDate])
 
-  // ── Clock & Date Check ──────────────────────────────────────────────────
+  // ── Date Check ──────────────────────────────────────────────────────────
   useEffect(() => {
     const t = setInterval(() => {
-      const now = new Date()
-      setTime(now)
       const todayStr = getISTDateString()
       if (todayStr !== currentDate) {
         setCurrentDate(todayStr)
       }
-    }, 1000)
+    }, 60000) // Check once a minute
     return () => clearInterval(t)
   }, [currentDate])
 
@@ -1959,7 +1966,7 @@ export default function Dashboard() {
 
         <div className="header-bottom-row">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="header-clock">{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+            <HeaderClock />
             <div className="mobile-only-live"><div style={s.liveBadge}><span style={s.liveDot} />LIVE</div></div>
           </div>
           <div className="desktop-only-logout">

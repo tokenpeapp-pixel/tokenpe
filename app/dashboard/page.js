@@ -42,21 +42,27 @@ function useSounds() {
     return audioCtx.current
   }
   function playTone(frequencies, type = 'sine', volume = 0.4) {
-    const ctx = getCtx()
-    frequencies.forEach((freq, i) => {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.frequency.value = freq
-      osc.type = type
-      const t = ctx.currentTime + i * 0.18
-      gain.gain.setValueAtTime(0, t)
-      gain.gain.linearRampToValueAtTime(volume, t + 0.02)
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4)
-      osc.start(t)
-      osc.stop(t + 0.4)
-    })
+    try {
+      if (typeof window === 'undefined') return
+      const ctx = getCtx()
+      if (!ctx) return
+      frequencies.forEach((freq, i) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.frequency.value = freq
+        osc.type = type
+        const t = ctx.currentTime + i * 0.18
+        gain.gain.setValueAtTime(0, t)
+        gain.gain.linearRampToValueAtTime(volume, t + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4)
+        osc.start(t)
+        osc.stop(t + 0.4)
+      })
+    } catch (e) {
+      console.warn("AudioContext tone playback failed:", e)
+    }
   }
   return {
     newPatient: () => playTone([523.25, 659.25]),
@@ -551,6 +557,16 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [toasts, setToasts] = useState([])
   const [newPatientAlert, setNewPatientAlert] = useState(null)
+  const newPatientAlertTimeoutRef = useRef(null)
+  const localAddedPatientIdsRef = useRef(new Set())
+
+  useEffect(() => {
+    return () => {
+      if (newPatientAlertTimeoutRef.current) {
+        clearTimeout(newPatientAlertTimeoutRef.current)
+      }
+    }
+  }, [])
   const [activeTab, setActiveTab] = useState('active')
   const [currentDate, setCurrentDate] = useState(() => getISTDateString())
   const [historyDate, setHistoryDate] = useState(() => getISTYesterdayDateString())
@@ -597,33 +613,32 @@ export default function Dashboard() {
         } catch (e) { }
       }
 
-      if (!clinicCode && !cachedClinic) {
-        // If there is no cache, let's just proceed to step 2 which will call the API.
-        // If the API fails due to missing cookie, it will redirect to /login.
-      }
-
       // ── Step 2: Refresh clinic from Supabase in background ──────────────
-      if (clinicCode) {
-        try {
-          const res = await fetch('/api/dashboard/init')
-          if (!res.ok) throw new Error('Init failed')
-          const data = await res.json()
-          if (data.success && data.clinic) {
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
-            setClinic(data.clinic)
-            if (data.userClinics) setUserClinics(data.userClinics)
-            
-            if (!data.clinic.specialty || !data.clinic.city || data.clinic.phone === '0000000000') {
-              setShowDiscovery(true)
-            }
+      try {
+        const res = await fetch('/api/dashboard/init')
+        if (!res.ok) throw new Error('Init failed')
+        const data = await res.json()
+        if (data.success && data.clinic) {
+          localStorage.setItem('clinicCode', data.clinic.code)
+          localStorage.setItem('clinicPhone', data.clinic.phone)
+          localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
+          setClinic(data.clinic)
+          if (data.userClinics) {
+            localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
+            setUserClinics(data.userClinics)
           }
-        } catch (e) {
-          if (!cachedClinic) {
-            localStorage.removeItem('clinicCode')
-            localStorage.removeItem('clinicPhone')
-            localStorage.removeItem('tokenpe_clinic')
-            router.push('/login')
+          
+          if (!data.clinic.specialty || !data.clinic.city || data.clinic.phone === '0000000000') {
+            setShowDiscovery(true)
           }
+        }
+      } catch (e) {
+        if (!cachedClinic) {
+          localStorage.removeItem('clinicCode')
+          localStorage.removeItem('clinicPhone')
+          localStorage.removeItem('tokenpe_clinic')
+          localStorage.removeItem('tokenpe_user_clinics')
+          router.push('/login')
         }
       }
     }
@@ -662,11 +677,21 @@ export default function Dashboard() {
             setPatients(prev => {
               const newPatients = data.patients || []
               // Find newly inserted patients for the notification
-              const newAdds = newPatients.filter(np => !prev.some(p => p.id === np.id))
+              const newAdds = newPatients.filter(np => {
+                const isNew = !prev.some(p => p.id === np.id)
+                const isLocal = localAddedPatientIdsRef.current.has(np.id)
+                return isNew && !isLocal
+              })
               if (newAdds.length > 0) {
                  sounds.newPatient()
                  setNewPatientAlert(newAdds[0])
-                 setTimeout(() => setNewPatientAlert(null), 5000)
+                 if (newPatientAlertTimeoutRef.current) {
+                   clearTimeout(newPatientAlertTimeoutRef.current)
+                 }
+                 newPatientAlertTimeoutRef.current = setTimeout(() => {
+                   setNewPatientAlert(null)
+                   newPatientAlertTimeoutRef.current = null
+                 }, 5000)
                  addToast(`New patient joined: ${newAdds[0].name || maskPhone(newAdds[0].phone)} — ${newAdds[0].token}`, 'new')
               }
               return newPatients
@@ -711,7 +736,7 @@ export default function Dashboard() {
 
   // ── Toast system ────────────────────────────────────────────────────────
   function addToast(msg, type = 'done') {
-    const id = Date.now()
+    const id = `${Date.now()}-${Math.random()}`
     setToasts(prev => [...prev, { id, msg, type }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
   }
@@ -935,6 +960,33 @@ export default function Dashboard() {
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────
+  async function onUpdatePayment(patientId, updates) {
+    // 1. Optimistic UI update: Find the patient in local state and apply updates
+    setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p))
+    
+    // 2. Persist update in database via API
+    try {
+      const res = await fetch('/api/queue/update-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId, updates })
+      })
+      if (!res.ok) {
+        throw new Error('API request failed')
+      }
+    } catch (e) {
+      console.error('[onUpdatePayment Error]', e)
+      addToast('Failed to save payment changes. Reverting...', 'error')
+      
+      // Revert local state by refetching patients
+      const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) setPatients(data.patients || [])
+      }
+    }
+  }
+
   async function callNext() {
     const next = patients.find(p => p.status === STATUS.WAITING)
     if (!next) return
@@ -1008,6 +1060,40 @@ export default function Dashboard() {
     }
   }
 
+  async function priorityCall(patient) {
+    if (!patient) return
+
+    // Optimistic UI Update
+    setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.CALLED } : p))
+    sounds.callNext()
+    addToast(`🚨 Emergency Call: ${patient.name || patient.token} called next!`, 'call')
+
+    try {
+      const res = await fetch('/api/queue/next', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clinicId: clinic.id,
+          clinicName: clinic.name,
+          patientId: patient.id,
+          patientPhone: patient.phone,
+          patientName: patient.name || 'Patient',
+          token: patient.token,
+          language: patient.language || 'en'
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error('API failed')
+      }
+    } catch (e) {
+      console.error(e)
+      addToast('Error calling priority patient', 'error')
+      // Revert optimistic update
+      setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.WAITING } : p))
+    }
+  }
+
   async function notifyPatient(patient) {
     // Optimistic UI Update
     sounds.notify()
@@ -1062,6 +1148,10 @@ export default function Dashboard() {
       const result = await res.json()
       if (!res.ok) throw new Error(result.message || 'Failed to add walk-in')
 
+      if (result.patient?.id) {
+        localAddedPatientIdsRef.current.add(result.patient.id)
+      }
+
       setNewName(''); setNewPhone(''); setNewLang('hi')
       setShowAddForm(false)
       addToast(`${newName || newPhone} added as ${token}`, 'new')
@@ -1097,7 +1187,7 @@ export default function Dashboard() {
 
   if (loading) return (
     <div style={s.loadingScreen}>
-      <div style={s.spinner} />
+      <div className="spinner" style={s.spinner} />
       <p style={{ color: '#64748B', marginTop: 16 }}>Loading TokenPe...</p>
     </div>
   )
@@ -1501,6 +1591,36 @@ export default function Dashboard() {
         .reopen-banner-btn:active {
           transform: scale(0.97);
         }
+
+        /* SPIN ANIMATION */
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .spinner {
+          animation: spin 0.8s linear infinite;
+        }
+
+        /* PAYMENTS VIEW TWEAKS */
+        .payment-card {
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+        }
+        .payment-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.06) !important;
+        }
+        @media (max-width: 600px) {
+          .payment-card {
+            padding: 14px 16px !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .payment-card > div {
+            width: 100% !important;
+            align-items: flex-start !important;
+            text-align: left !important;
+          }
+        }
       `}</style>
 
       {/* ── Menu Overlay + Dropdown (fixed portal, outside header) ── */}
@@ -1685,18 +1805,70 @@ export default function Dashboard() {
       {/* ── Toasts ── */}
       <div style={s.toastContainer}>
         {toasts.map(t => (
-          <div key={t.id} style={{ ...s.toast, background: TOAST_TYPES[t.type]?.bg || '#1E293B' }}>
-            {TOAST_TYPES[t.type]?.icon} {t.msg}
+          <div 
+            key={t.id} 
+            style={{ 
+              ...s.toast, 
+              background: TOAST_TYPES[t.type]?.bg || '#1E293B',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>{TOAST_TYPES[t.type]?.icon}</span>
+              <span>{t.msg}</span>
+            </div>
+            <button 
+              onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'rgba(255,255,255,0.7)', 
+                cursor: 'pointer', 
+                fontSize: 18,
+                fontWeight: 'bold',
+                padding: '0 4px',
+                lineHeight: 1
+              }}
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>
 
       {/* ── New Patient Banner ── */}
       {newPatientAlert && (
-        <div style={s.banner}>
-          <div style={s.bannerDot} />
-          🆕 New patient joined!&nbsp;
-          <strong>{newPatientAlert.name || maskPhone(newPatientAlert.phone)} — {newPatientAlert.token}</strong>
+        <div style={{ ...s.banner, justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={s.bannerDot} />
+            <span>🆕 New patient joined!&nbsp;</span>
+            <strong>{newPatientAlert.name || maskPhone(newPatientAlert.phone)} — {newPatientAlert.token}</strong>
+          </div>
+          <button 
+            onClick={() => {
+              setNewPatientAlert(null)
+              if (newPatientAlertTimeoutRef.current) {
+                clearTimeout(newPatientAlertTimeoutRef.current)
+                newPatientAlertTimeoutRef.current = null
+              }
+            }}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: '#4F46E5', 
+              cursor: 'pointer', 
+              fontSize: 18, 
+              fontWeight: 'bold',
+              lineHeight: 1,
+              padding: '0 4px',
+              marginLeft: '12px'
+            }}
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -1865,11 +2037,14 @@ export default function Dashboard() {
         <button style={{ ...s.tab, ...(activeTab === 'done' ? s.tabActive : {}) }} onClick={() => setActiveTab('done')}>
           Completed ({done.length})
         </button>
+        <button style={{ ...s.tab, ...(activeTab === 'payments' ? s.tabActive : {}) }} onClick={() => setActiveTab('payments')}>
+          Payments
+        </button>
       </div>
 
       {/* ── Patient List ── */}
       <div style={s.list}>
-        {activeTab !== 'history' && displayPatients.length === 0 && (
+        {activeTab !== 'history' && activeTab !== 'payments' && displayPatients.length === 0 && (
           <div style={s.empty}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>{activeTab === 'active' ? '🎉' : '📋'}</div>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>
@@ -1975,19 +2150,28 @@ export default function Dashboard() {
         {activeTab === 'active' && waiting.map((p, idx) => (
           <PatientCard key={p.id} patient={p} position={idx + 1}
             onDone={() => markDone(p)} onSkip={() => skipPatient(p)} onNotify={() => notifyPatient(p)}
+            onPriorityCall={() => priorityCall(p)}
           />
         ))}
 
         {activeTab === 'done' && done.map(p => (
           <PatientCard key={p.id} patient={p} position={null} />
         ))}
+
+        {activeTab === 'payments' && (
+          <PaymentsView
+            patients={patients}
+            onUpdatePayment={onUpdatePayment}
+            addToast={addToast}
+          />
+        )}
       </div>
     </div>
   )
 }
 
 // ─── PATIENT CARD ──────────────────────────────────────────────────────────
-function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
+function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCall }) {
   const isWaiting = patient.status === STATUS.WAITING
   const isCalled = patient.status === STATUS.CALLED
   const isDone = patient.status === STATUS.DONE
@@ -2019,6 +2203,9 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
         )}
         {isWaiting && (
           <>
+            {onPriorityCall && (
+              <button style={s.btnPriority} onClick={onPriorityCall}>🚨 Priority Call</button>
+            )}
             <button style={s.btnNotify} onClick={onNotify}>🔔 Notify</button>
             <button style={s.btnSkip} onClick={onSkip}>⏭ Skip</button>
           </>
@@ -2028,6 +2215,592 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify }) {
       </div>
     </div>
   )
+}
+
+// ─── PAYMENTS VIEW ──────────────────────────────────────────────────────────
+function PaymentsView({ patients, onUpdatePayment, addToast }) {
+  const [paymentSubTab, setPaymentSubTab] = useState('pending')
+  const [paymentSearch, setPaymentSearch] = useState('')
+  const [editingFeeId, setEditingFeeId] = useState(null)
+  const [tempFeeTotal, setTempFeeTotal] = useState('')
+  const [tempFeePaid, setTempFeePaid] = useState('')
+  const [remindingId, setRemindingId] = useState(null)
+
+  async function handleSendReminder(patient) {
+    const billTotal = parseFloat(patient.fee_total) || 0
+    if (billTotal <= 0) {
+      addToast('Please set a Total Bill greater than 0 first', 'error')
+      setEditingFeeId(patient.id)
+      setTempFeeTotal('500')
+      setTempFeePaid('0')
+      return
+    }
+
+    if (!patient.phone || patient.phone === '0000000000') {
+      addToast('Cannot send reminder: invalid phone number', 'error')
+      return
+    }
+
+    setRemindingId(patient.id)
+    try {
+      const res = await fetch('/api/queue/remind-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: patient.id })
+      })
+
+      const data = await res.json()
+      if (res.ok && data.success) {
+        addToast(`Reminder sent to ${patient.name || patient.token}`, 'done')
+      } else {
+        throw new Error(data.message || 'Failed to send reminder')
+      }
+    } catch (err) {
+      console.error(err)
+      addToast(err.message || 'Error sending reminder', 'error')
+    } finally {
+      setRemindingId(null)
+    }
+  }
+
+  // Sub-tab counters
+  const pendingCount = patients.filter(p => p.payment_status !== 'completed').length
+  const completedCount = patients.filter(p => p.payment_status === 'completed').length
+
+  // Metrics (calculated dynamically from all records)
+  const pendingAmountCompleted = patients
+    .filter(p => p.payment_status !== 'completed')
+    .reduce((sum, p) => sum + (parseFloat(p.fee_paid) || 0), 0)
+
+  const pendingRemainingBalance = patients
+    .filter(p => p.payment_status !== 'completed')
+    .reduce((sum, p) => sum + ((parseFloat(p.fee_total) || 0) - (parseFloat(p.fee_paid) || 0)), 0)
+
+  const completedTransactionsDone = patients
+    .filter(p => p.payment_status === 'completed')
+    .reduce((sum, p) => sum + (parseFloat(p.fee_paid) || 0), 0)
+
+  // Real-time Search & Filter
+  const filtered = patients.filter(p => {
+    const matchesSubTab = paymentSubTab === 'pending'
+      ? p.payment_status !== 'completed'
+      : p.payment_status === 'completed'
+
+    const q = paymentSearch.toLowerCase().trim()
+    const matchesSearch = !q ||
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.phone || '').includes(q) ||
+      (p.token || '').toLowerCase().includes(q)
+
+    return matchesSubTab && matchesSearch
+  })
+
+  return (
+    <div style={ps.container}>
+      {/* ── Search Bar ── */}
+      <div style={ps.searchContainer}>
+        <span style={ps.searchIcon}>🔍</span>
+        <input
+          type="text"
+          placeholder="Search patient by name, phone, or token..."
+          value={paymentSearch}
+          onChange={e => setPaymentSearch(e.target.value)}
+          style={ps.searchInput}
+        />
+      </div>
+
+      {/* ── Sub-Tabs Navigation ── */}
+      <div style={ps.subTabs}>
+        <button
+          onClick={() => { setPaymentSubTab('pending'); setEditingFeeId(null); }}
+          style={{
+            ...ps.subTab,
+            ...(paymentSubTab === 'pending' ? ps.subTabActivePending : {})
+          }}
+        >
+          ⚠️ Pending Payments ({pendingCount})
+        </button>
+        <button
+          onClick={() => { setPaymentSubTab('completed'); setEditingFeeId(null); }}
+          style={{
+            ...ps.subTab,
+            ...(paymentSubTab === 'completed' ? ps.subTabActiveCompleted : {})
+          }}
+        >
+          ✅ Completed Receipts ({completedCount})
+        </button>
+      </div>
+
+      {/* ── Metric Cards ── */}
+      <div style={ps.metricsRow}>
+        {paymentSubTab === 'pending' ? (
+          <>
+            <div style={ps.metricCard}>
+              <div style={ps.metricTitle}>Pending: Amount Completed</div>
+              <div style={{ ...ps.metricValue, color: '#10B981' }}>₹{pendingAmountCompleted.toFixed(2)}</div>
+            </div>
+            <div style={ps.metricCard}>
+              <div style={ps.metricTitle}>Pending: Remaining Balance</div>
+              <div style={{ ...ps.metricValue, color: '#F43F5E' }}>₹{pendingRemainingBalance.toFixed(2)}</div>
+            </div>
+          </>
+        ) : (
+          <div style={{ ...ps.metricCard, flex: 1 }}>
+            <div style={ps.metricTitle}>Total Transactions Done</div>
+            <div style={{ ...ps.metricValue, color: '#10B981' }}>₹{completedTransactionsDone.toFixed(2)}</div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Payments List ── */}
+      <div style={ps.list}>
+        {filtered.length === 0 ? (
+          <div style={ps.emptyState}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>
+              {paymentSubTab === 'pending' ? '🎉' : '🧾'}
+            </div>
+            <div style={{ fontWeight: 700, color: '#1E293B' }}>
+              {paymentSubTab === 'pending' ? 'No pending payments!' : 'No completed receipts yet.'}
+            </div>
+            {paymentSearch && <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: 4 }}>Try clearing your search query.</div>}
+          </div>
+        ) : (
+          filtered.map(p => {
+            const isEditing = editingFeeId === p.id
+            const feeTotal = parseFloat(p.fee_total) || 0
+            const feePaid = parseFloat(p.fee_paid) || 0
+            const remaining = feeTotal - feePaid
+
+            return (
+              <div key={p.id} className="payment-card" style={ps.card}>
+                <div style={{ ...ps.token, color: paymentSubTab === 'pending' ? '#F43F5E' : '#10B981' }}>
+                  {p.token}
+                </div>
+                
+                <div style={ps.cardInfo}>
+                  <div style={ps.patientName}>
+                    {p.name || 'Walk-in Patient'}
+                    <span style={ps.langBadge}>{LANG_NAMES[p.language] || 'हिंदी'}</span>
+                  </div>
+                  <div style={ps.patientMeta}>
+                    📱 +91 {maskPhone(p.phone)} &nbsp;·&nbsp; 📅 {p.date}
+                  </div>
+
+                  {/* Fee Details Area */}
+                  {isEditing ? (
+                    <div style={ps.editRow} onClick={e => e.stopPropagation()}>
+                      <div style={ps.inputGroup}>
+                        <label style={ps.inputLabel}>Total Bill (₹)</label>
+                        <input
+                          type="number"
+                          value={tempFeeTotal}
+                          onChange={e => setTempFeeTotal(e.target.value)}
+                          style={ps.editInput}
+                          placeholder="e.g. 500"
+                        />
+                      </div>
+                      <div style={ps.inputGroup}>
+                        <label style={ps.inputLabel}>Paid So Far (₹)</label>
+                        <input
+                          type="number"
+                          value={tempFeePaid}
+                          onChange={e => setTempFeePaid(e.target.value)}
+                          style={ps.editInput}
+                          placeholder="e.g. 200"
+                        />
+                      </div>
+                      <div style={ps.editActions}>
+                        <button
+                          onClick={() => {
+                            const newTotal = parseFloat(tempFeeTotal) || 0
+                            const newPaid = parseFloat(tempFeePaid) || 0
+                            if (newPaid > newTotal) {
+                              addToast('Amount paid cannot exceed total bill', 'error')
+                              return
+                            }
+                            
+                            const newStatus = (newTotal > 0 && newPaid >= newTotal) ? 'completed' : 'pending'
+                            
+                            onUpdatePayment(p.id, {
+                              fee_total: newTotal,
+                              fee_paid: newPaid,
+                              payment_status: newStatus
+                            })
+                            setEditingFeeId(null)
+                          }}
+                          style={ps.btnSave}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingFeeId(null)}
+                          style={ps.btnCancel}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={ps.feeStatusRow}>
+                      <span style={ps.feeLabel}>
+                        Bill: <strong>₹{feeTotal}</strong>
+                      </span>
+                      <span style={ps.feeLabel}>
+                        Paid: <strong style={{ color: '#10B981' }}>₹{feePaid}</strong>
+                      </span>
+                      {paymentSubTab === 'pending' && (
+                        <button
+                          onClick={() => {
+                            setEditingFeeId(p.id)
+                            setTempFeeTotal(p.fee_total || '0')
+                            setTempFeePaid(p.fee_paid || '0')
+                          }}
+                          style={ps.btnEdit}
+                          title="Edit Fee"
+                        >
+                          ✏️ Edit Fee
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions / Status Right Side */}
+                <div style={ps.cardActions}>
+                  {paymentSubTab === 'pending' ? (
+                    <>
+                      <div style={ps.remainingBadge}>
+                        Due: ₹{remaining.toFixed(2)}
+                      </div>
+                      <button
+                        onClick={() => {
+                          const billTotal = parseFloat(p.fee_total) || 0
+                          if (billTotal <= 0) {
+                            addToast('Please set a Total Bill greater than 0 first', 'error')
+                            setEditingFeeId(p.id)
+                            setTempFeeTotal('500')
+                            setTempFeePaid('0')
+                            return
+                          }
+                          onUpdatePayment(p.id, {
+                            fee_paid: billTotal,
+                            payment_status: 'completed'
+                          })
+                        }}
+                        style={ps.btnClearBalance}
+                      >
+                        Clear Balance
+                      </button>
+                      <button
+                        onClick={() => handleSendReminder(p)}
+                        disabled={remindingId === p.id}
+                        style={{
+                          ...ps.btnRemind,
+                          opacity: remindingId === p.id ? 0.6 : 1,
+                          cursor: remindingId === p.id ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {remindingId === p.id ? 'Sending...' : '🔔 Remind Patient'}
+                      </button>
+                    </>
+                  ) : (
+                    <div style={ps.completedTag}>
+                      ✅ Paid / Completed
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── PAYMENTS STYLES ────────────────────────────────────────────────────────
+const ps = {
+  container: {
+    padding: '8px 0 40px',
+  },
+  searchContainer: {
+    position: 'relative',
+    marginBottom: 20,
+    background: 'white',
+    borderRadius: 14,
+    padding: '2px 4px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+    border: '1px solid #E2E8F0',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 16,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    fontSize: '1rem',
+    color: '#94A3B8',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '14px 14px 14px 44px',
+    borderRadius: 12,
+    border: 'none',
+    fontSize: '0.9rem',
+    fontWeight: 500,
+    outline: 'none',
+    color: '#1E293B',
+    boxSizing: 'border-box',
+  },
+  subTabs: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 16,
+    borderBottom: '1px solid #E2E8F0',
+    paddingBottom: 8,
+  },
+  subTab: {
+    padding: '10px 18px',
+    border: 'none',
+    background: 'transparent',
+    color: '#64748B',
+    fontWeight: 700,
+    fontSize: '0.85rem',
+    cursor: 'pointer',
+    borderRadius: 10,
+    transition: 'all 0.2s',
+  },
+  subTabActivePending: {
+    background: '#FFF1F2',
+    color: '#E11D48',
+  },
+  subTabActiveCompleted: {
+    background: '#ECFDF5',
+    color: '#059669',
+  },
+  metricsRow: {
+    display: 'flex',
+    gap: 12,
+    marginBottom: 20,
+    flexWrap: 'wrap',
+  },
+  metricCard: {
+    flex: 1,
+    minWidth: 160,
+    background: 'white',
+    borderRadius: 16,
+    padding: '16px 20px',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+    border: '1px solid #F1F5F9',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  metricTitle: {
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  metricValue: {
+    fontSize: '1.4rem',
+    fontWeight: 900,
+  },
+  list: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  emptyState: {
+    textAlign: 'center',
+    padding: '60px 24px',
+    background: 'white',
+    borderRadius: 20,
+    boxShadow: '0 4px 16px rgba(0,0,0,0.02)',
+    border: '1px solid #F1F5F9',
+  },
+  card: {
+    background: 'white',
+    borderRadius: 16,
+    padding: '16px 20px',
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 16,
+    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+    border: '1px solid #F1F5F9',
+    transition: 'transform 0.15s, box-shadow 0.2s',
+  },
+  token: {
+    fontWeight: 900,
+    fontSize: '1.15rem',
+    minWidth: 50,
+    textAlign: 'center',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  cardInfo: {
+    flex: 2,
+    minWidth: 200,
+  },
+  patientName: {
+    fontWeight: 700,
+    color: '#0F172A',
+    fontSize: '0.95rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  langBadge: {
+    background: '#F5F3FF',
+    color: '#7C3AED',
+    padding: '2px 8px',
+    borderRadius: 20,
+    fontSize: '0.68rem',
+    fontWeight: 700,
+    border: '1px solid #DDD6FE',
+  },
+  patientMeta: {
+    fontSize: '0.75rem',
+    color: '#94A3B8',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  feeStatusRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 6,
+    flexWrap: 'wrap',
+  },
+  feeLabel: {
+    fontSize: '0.8rem',
+    color: '#475569',
+  },
+  btnEdit: {
+    background: '#F1F5F9',
+    color: '#475569',
+    border: 'none',
+    borderRadius: 6,
+    padding: '4px 8px',
+    fontSize: '0.72rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  editRow: {
+    display: 'flex',
+    gap: 8,
+    alignItems: 'flex-end',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    background: '#F8FAFC',
+    padding: 10,
+    borderRadius: 10,
+    border: '1px solid #E2E8F0',
+  },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    flex: 1,
+    minWidth: 80,
+  },
+  inputLabel: {
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  editInput: {
+    padding: '6px 8px',
+    borderRadius: 6,
+    border: '1.5px solid #CBD5E1',
+    fontSize: '0.8rem',
+    width: '100%',
+    outline: 'none',
+    boxSizing: 'border-box',
+    color: '#0F172A',
+  },
+  editActions: {
+    display: 'flex',
+    gap: 6,
+  },
+  btnSave: {
+    background: '#10B981',
+    color: 'white',
+    border: 'none',
+    borderRadius: 6,
+    padding: '6px 12px',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  btnCancel: {
+    background: '#64748B',
+    color: 'white',
+    border: 'none',
+    borderRadius: 6,
+    padding: '6px 12px',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  cardActions: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 8,
+    minWidth: 140,
+  },
+  remainingBadge: {
+    background: '#FFE4E6',
+    color: '#E11D48',
+    padding: '4px 10px',
+    borderRadius: 20,
+    fontSize: '0.75rem',
+    fontWeight: 800,
+    border: '1px solid #FECDD3',
+  },
+  btnClearBalance: {
+    background: 'linear-gradient(135deg, #10B981, #059669)',
+    color: 'white',
+    border: 'none',
+    borderRadius: 10,
+    padding: '8px 16px',
+    fontSize: '0.8rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    width: '100%',
+    textAlign: 'center',
+    boxShadow: '0 4px 10px rgba(16, 185, 129, 0.2)',
+  },
+  btnRemind: {
+    background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
+    color: 'white',
+    border: 'none',
+    borderRadius: 10,
+    padding: '8px 16px',
+    fontSize: '0.8rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    width: '100%',
+    textAlign: 'center',
+    boxShadow: '0 4px 10px rgba(124, 58, 237, 0.2)',
+  },
+  completedTag: {
+    color: '#047857',
+    fontWeight: 700,
+    fontSize: '0.78rem',
+    background: '#D1FAE5',
+    padding: '6px 14px',
+    borderRadius: 20,
+    border: '1px solid #A7F3D0',
+    textAlign: 'center',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
 }
 
 // ─── STYLES ──────────────────────────────────────────────────────────────────
@@ -2061,6 +2834,7 @@ const s = {
   btnDone: { background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)', color: '#065F46', border: '1px solid #A7F3D0', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   btnNotify: { background: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)', color: '#92400E', border: '1px solid #FDE68A', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   btnSkip: { background: 'linear-gradient(135deg,#FFF1F2,#FFE4E6)', color: '#9F1239', border: '1px solid #FECDD3', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
+  btnPriority: { background: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)', color: '#DC2626', border: '1px solid #FCA5A5', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   qrHint: { marginLeft: 'auto', color: '#CBD5E1', fontSize: '0.75rem', fontStyle: 'italic' },
   addForm: { background: 'linear-gradient(135deg,#F5F3FF,#EFF6FF)', borderBottom: '1px solid #DDD6FE', padding: '16px 24px' },
   addFormTitle: { fontWeight: 700, color: '#6D28D9', marginBottom: 12, fontSize: '0.88rem' },

@@ -324,11 +324,17 @@ export default function BillingPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 24 }}>
           {plans.map(plan => {
+            const tierLevels = { starter: 1, pro: 2, elite: 3 }
+            const currentLevel = tierLevels[planId] || 1
+            const planLevel = tierLevels[plan.tier]
+            
             const isCurrent = planId === plan.tier && !isTrial
+            const isDowngrade = planLevel < currentLevel && !isTrial && !isCanceled
             const canReactivate = isCurrent && (isCancelPending || isCanceled)
 
             const isLoading = upgrading === plan.tier
-            const isDisabled = (isCurrent && !canReactivate) || !!upgrading
+            // Disable button if it's the current active plan, OR if it's a downgrade (require cancellation first), OR if currently upgrading
+            const isDisabled = (isCurrent && !canReactivate) || isDowngrade || !!upgrading
             return (
               <div key={plan.tier} className="hover-card" style={{ background: plan.popular ? 'linear-gradient(180deg,rgba(124,58,237,0.12) 0%,rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.02)', border: plan.popular ? '2px solid #7c3aed' : '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', position: 'relative' }}>
                 {plan.popular && <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: '#7c3aed', color: '#fff', padding: '4px 16px', borderRadius: 20, fontSize: 12, fontWeight: 800, letterSpacing: 1, whiteSpace: 'nowrap' }}>MOST POPULAR</div>}
@@ -349,11 +355,11 @@ export default function BillingPage() {
                   </div>
                 )}
                 <button
-                  onClick={() => (!isCurrent || canReactivate) && handleUpgrade(plan.tier)}
+                  onClick={() => (!isCurrent || canReactivate) && !isDowngrade && handleUpgrade(plan.tier)}
                   disabled={isDisabled}
-                  style={{ width: '100%', padding: '15px 24px', background: (isCurrent && !canReactivate) ? 'rgba(255,255,255,0.05)' : plan.btnColor, color: (isCurrent && !canReactivate) ? '#64748b' : plan.textColor, border: (isCurrent && !canReactivate) ? '1px solid rgba(255,255,255,0.1)' : 'none', borderRadius: 14, fontWeight: 800, fontSize: 15, cursor: (isCurrent && !canReactivate) ? 'default' : 'pointer', boxShadow: (isCurrent && !canReactivate) ? 'none' : plan.glow, opacity: upgrading && upgrading !== plan.tier ? 0.5 : 1 }}
+                  style={{ width: '100%', padding: '15px 24px', background: isDisabled ? 'rgba(255,255,255,0.05)' : plan.btnColor, color: isDisabled ? '#64748b' : plan.textColor, border: isDisabled ? '1px solid rgba(255,255,255,0.1)' : 'none', borderRadius: 14, fontWeight: 800, fontSize: 15, cursor: isDisabled ? 'default' : 'pointer', boxShadow: isDisabled ? 'none' : plan.glow, opacity: upgrading && upgrading !== plan.tier ? 0.5 : 1 }}
                 >
-                  {isLoading ? '⏳ Opening checkout...' : canReactivate ? '🔄 Reactivate Plan' : isCurrent ? '✓ Current Plan' : `Upgrade to ${plan.name}`}
+                  {isLoading ? '⏳ Opening checkout...' : canReactivate ? '🔄 Reactivate Plan' : isCurrent ? '✓ Current Plan' : isDowngrade ? 'Cancel current plan to downgrade' : `Upgrade to ${plan.name}`}
                 </button>
                 {isCurrent && plan.tier !== 'starter' && !isTrial && !isCancelPending && (
                   <button

@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState, useRef, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
+import confetti from 'canvas-confetti'
 
 // ─── UPGRADE BANNER (Suspense wrapped to prevent Next.js build errors) ────────
 function UpgradeBanner() {
@@ -569,8 +570,18 @@ export default function Dashboard() {
   const [newPatientAlert, setNewPatientAlert] = useState(null)
   const newPatientAlertTimeoutRef = useRef(null)
   const localAddedPatientIdsRef = useRef(new Set())
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgrading, setUpgrading] = useState(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(null)
 
   useEffect(() => {
+    if (!document.getElementById('razorpay-checkout-js')) {
+      const script = document.createElement('script')
+      script.id = 'razorpay-checkout-js'
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.async = true
+      document.head.appendChild(script)
+    }
     return () => {
       if (newPatientAlertTimeoutRef.current) {
         clearTimeout(newPatientAlertTimeoutRef.current)
@@ -1130,6 +1141,85 @@ export default function Dashboard() {
     }
   }
 
+  const handleUpgrade = useCallback(async (tier) => {
+    if (!clinic || upgrading) return
+    setUpgrading(tier)
+
+    try {
+      const res = await fetch('/api/razorpay/create-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, planTier: tier })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.subscriptionId) throw new Error(data.error || 'Failed to create subscription')
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        subscription_id: data.subscriptionId,
+        name: 'TokenPe',
+        description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan Subscription`,
+        image: `${window.location.origin}/logo-light.svg`,
+        prefill: {
+          name: data.clinicName,
+          email: data.clinicEmail,
+          contact: data.clinicPhone,
+        },
+        theme: { color: '#7C3AED' },
+        handler: async function (response) {
+          const maxAttempts = 5
+          let attempts = 0
+          const poll = async () => {
+            attempts++
+            const res = await fetch(`/api/clinics/get?id=${clinic.id}`)
+            let fresh = null
+            if (res.ok) {
+              const data = await res.json()
+              if (data.success) fresh = data.clinic
+            }
+            if (fresh) {
+              setClinic(fresh)
+              localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
+              if (fresh.current_period_end || attempts >= maxAttempts) {
+                setUpgrading(null)
+                setShowUpgradeModal(false)
+                if (fresh.current_period_end && fresh.plan_id !== 'starter' && fresh.plan_id !== 'canceled') {
+                  setShowSuccessModal(fresh.plan_id.toUpperCase())
+                  confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 },
+                    colors: ['#7c3aed', '#10b981', '#f59e0b', '#3b82f6'],
+                    zIndex: 10000
+                  })
+                }
+                return
+              }
+            }
+            if (attempts < maxAttempts) setTimeout(poll, 2000)
+            else {
+              setUpgrading(null)
+              setShowUpgradeModal(false)
+            }
+          }
+          setTimeout(poll, 2000)
+        },
+        modal: { ondismiss: () => setUpgrading(null) }
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', (resp) => {
+        addToast(`Payment failed: ${resp.error.description}`, 'error')
+        setUpgrading(null)
+      })
+      rzp.open()
+
+    } catch (err) {
+      addToast(`Error: ${err.message}`, 'error')
+      setUpgrading(null)
+    }
+  }, [clinic, upgrading])
+
   async function addWalkIn() {
     if (!newPhone.trim()) return
 
@@ -1140,6 +1230,13 @@ export default function Dashboard() {
 
     if (clinic?.queue_paused) {
       addToast('Queue is currently paused. Please unpause to add patients.', 'error')
+      return
+    }
+
+    const planId = clinic?.plan_id || 'starter'
+    const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
+    if (patients.length >= limit) {
+      setShowUpgradeModal(true)
       return
     }
 
@@ -2153,14 +2250,24 @@ export default function Dashboard() {
           ))
         })()}
 
-        {activeTab === 'active' && called.length > 0 && <div style={s.sectionLabel}>🟢 With Doctor Now</div>}
+        {activeTab === 'active' && called.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 20px 2px', margin: '8px 0 0' }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 0 3px rgba(16,185,129,0.2)', animation: 'pulse 1.5s infinite' }} />
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10B981', letterSpacing: '1.5px', textTransform: 'uppercase' }}>With Doctor Now</span>
+          </div>
+        )}
         {activeTab === 'active' && called.map(p => (
           <PatientCard key={p.id} patient={p} position={null}
             onDone={() => markDone(p)} onSkip={() => skipPatient(p)} onNotify={() => notifyPatient(p)}
           />
         ))}
 
-        {activeTab === 'active' && waiting.length > 0 && <div style={s.sectionLabel}>🟡 Waiting</div>}
+        {activeTab === 'active' && waiting.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 20px 2px', margin: '16px 0 0' }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#F97316', boxShadow: '0 0 0 3px rgba(249,115,22,0.2)' }} />
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#F97316', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Waiting — {waiting.length} patient{waiting.length !== 1 ? 's' : ''}</span>
+          </div>
+        )}
         {activeTab === 'active' && waiting.map((p, idx) => (
           <PatientCard key={p.id} patient={p} position={idx + 1}
             onDone={() => markDone(p)} onSkip={() => skipPatient(p)} onNotify={() => notifyPatient(p)}
@@ -2180,6 +2287,80 @@ export default function Dashboard() {
           />
         )}
       </div>
+
+      {/* ── UPGRADE MODAL ── */}
+      {showUpgradeModal && (
+        <div onClick={() => setShowUpgradeModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#0a0514', width: '100%', maxWidth: 700, borderRadius: 24, padding: '32px 24px', position: 'relative', border: '1px solid rgba(124,58,237,0.3)', color: '#fff' }}>
+            <button onClick={() => setShowUpgradeModal(false)} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', width: 32, height: 32, borderRadius: '50%', color: '#94a3b8', cursor: 'pointer', fontSize: 18 }}>×</button>
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🛑</div>
+              <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8, color: '#f87171' }}>Daily Limit Reached!</h2>
+              <p style={{ color: '#94a3b8', fontSize: 15 }}>You have reached the maximum number of patients allowed for your current plan today. Upgrade to instantly add more patients.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
+              {clinic?.plan_id === 'starter' && (
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '2px solid #7c3aed', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 20 }}>🥈</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#a78bfa' }}>Pro Plan</span>
+                  </div>
+                  <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 16 }}>₹999 <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>/mo</span></div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, flex: 1 }}>
+                    <li>✔️ Up to 150 patients/day</li>
+                    <li>✔️ AI Voice Alerts</li>
+                    <li>✔️ Queue Pause feature</li>
+                  </ul>
+                  <button 
+                    onClick={() => handleUpgrade('pro')}
+                    disabled={!!upgrading}
+                    style={{ width: '100%', padding: '12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 800, cursor: !!upgrading ? 'default' : 'pointer', opacity: upgrading ? 0.5 : 1 }}
+                  >
+                    {upgrading === 'pro' ? '⏳ Opening...' : 'Upgrade to Pro'}
+                  </button>
+                </div>
+              )}
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 20 }}>🥇</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#fbbf24' }}>Elite Plan</span>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 16 }}>₹1999 <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>/mo</span></div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, flex: 1 }}>
+                  <li>✔️ Unlimited patients</li>
+                  <li>✔️ WhatsApp CRM Broadcasts</li>
+                  <li>✔️ VIP Support</li>
+                </ul>
+                <button 
+                  onClick={() => handleUpgrade('elite')}
+                  disabled={!!upgrading}
+                  style={{ width: '100%', padding: '12px', background: '#f59e0b', color: '#000', border: 'none', borderRadius: 12, fontWeight: 800, cursor: !!upgrading ? 'default' : 'pointer', opacity: upgrading ? 0.5 : 1 }}
+                >
+                  {upgrading === 'elite' ? '⏳ Opening...' : 'Upgrade to Elite'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUCCESS MODAL ── */}
+      {showSuccessModal && (
+        <div onClick={() => setShowSuccessModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', width: '100%', maxWidth: 440, borderRadius: 24, padding: '40px 32px', position: 'relative', border: '1px solid rgba(124,58,237,0.3)', color: '#fff', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(124,58,237,0.3)' }}>
+            <div style={{ fontSize: 64, marginBottom: 16, animation: 'bounce 1s ease infinite' }}>🎉</div>
+            <style>{`@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`}</style>
+            <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12, background: 'linear-gradient(to right, #10b981, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Payment Successful!</h2>
+            <p style={{ color: '#cbd5e1', marginBottom: 24, fontSize: 16, lineHeight: 1.6 }}>Your clinic has been upgraded to the <strong>{showSuccessModal} Plan</strong>! You can now resume adding patients to your queue.</p>
+            <button
+              onClick={() => setShowSuccessModal(null)}
+              style={{ width: '100%', padding: '14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}
+            >
+              Continue to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -2193,40 +2374,89 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
   const waitMins = Math.floor((new Date() - new Date(patient.joined_at)) / 60000)
   const joinedTime = new Date(patient.joined_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
   const completedTime = patient.completed_at ? new Date(patient.completed_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : null
-  const statusColor = { waiting: '#F97316', called: '#10B981', done: '#38BDF8', skipped: '#FB7185' }[patient.status]
+  
+  const statusConfig = {
+    waiting: { color: '#F97316', bg: '#FFF7ED', border: '#FDBA74', label: 'Waiting' },
+    called:  { color: '#10B981', bg: '#F0FDF4', border: '#6EE7B7', label: 'With Doctor' },
+    done:    { color: '#6366F1', bg: '#EEF2FF', border: '#A5B4FC', label: 'Done' },
+    skipped: { color: '#FB7185', bg: '#FFF1F2', border: '#FECDD3', label: 'Skipped' },
+  }[patient.status] || { color: '#64748b', bg: '#F8FAFC', border: '#CBD5E1', label: patient.status }
 
   return (
-    <div className="patient-card" style={{ ...s.card, borderLeft: `4px solid ${statusColor}`, opacity: isDone || isSkipped ? 0.75 : 1 }}>
-      <div style={{ ...s.token, color: statusColor }}>{patient.token}</div>
-      <div style={s.cardInfo}>
-        <div style={s.patientName}>
-          {patient.name || 'Walk-in Patient'}
-          <span style={s.langBadge}>{LANG_NAMES[patient.language] || 'हिंदी'}</span>
+    <div style={{
+      background: 'white',
+      borderRadius: 16,
+      marginBottom: 10,
+      border: `1px solid ${statusConfig.border}`,
+      boxShadow: isCalled ? '0 4px 20px rgba(16,185,129,0.12)' : '0 2px 8px rgba(0,0,0,0.04)',
+      overflow: 'hidden',
+      opacity: isDone || isSkipped ? 0.72 : 1,
+    }}>
+      {/* Main info row */}
+      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+        {/* Left: Token + Status */}
+        <div style={{
+          background: statusConfig.bg,
+          borderRight: `1px solid ${statusConfig.border}`,
+          minWidth: 68,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '14px 6px',
+          gap: 3,
+          flexShrink: 0,
+        }}>
+          <div style={{ fontSize: '1.05rem', fontWeight: 900, color: statusConfig.color, letterSpacing: '-0.5px' }}>{patient.token}</div>
+          {position && <div style={{ fontSize: '0.6rem', fontWeight: 700, color: statusConfig.color, opacity: 0.75, textTransform: 'uppercase' }}>#{position}</div>}
+          <div style={{
+            fontSize: '0.58rem', fontWeight: 700, color: statusConfig.color,
+            background: `${statusConfig.color}18`, border: `1px solid ${statusConfig.border}`,
+            borderRadius: 20, padding: '2px 6px', marginTop: 3, textAlign: 'center', letterSpacing: 0.2,
+          }}>{statusConfig.label}</div>
         </div>
-        <div style={s.patientMeta}>
-          📱 +91 {maskPhone(patient.phone)} &nbsp;·&nbsp;
-          🕒 {joinedTime} {isWaiting && `(⏳ ${waitMins}m)`}
-          {completedTime && ` → ✅ ${completedTime}`} &nbsp;·&nbsp;
-          {position ? `#${position} in line` : patient.status.toUpperCase()}
+
+        {/* Right: Info */}
+        <div style={{ flex: 1, padding: '12px 14px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+              {patient.name || 'Walk-in Patient'}
+            </span>
+            <span style={{ fontSize: '0.63rem', fontWeight: 700, color: '#7C3AED', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: 20, padding: '1px 7px', flexShrink: 0 }}>
+              {LANG_NAMES[patient.language] || 'हिंदी'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 10px', fontSize: '0.75rem', color: '#64748B' }}>
+            <span>📱 +91 {maskPhone(patient.phone)}</span>
+            <span>🕒 {joinedTime}</span>
+            {isWaiting && waitMins > 0 && <span style={{ color: waitMins > 20 ? '#EF4444' : '#F97316', fontWeight: 700 }}>⏳ {waitMins}m</span>}
+            {completedTime && <span>✅ {completedTime}</span>}
+            {position && <span style={{ color: '#7C3AED', fontWeight: 600 }}>~{position * 7}min est.</span>}
+          </div>
         </div>
-        {position && <div style={s.estWait}>Est. wait: ~{position * 7} mins</div>}
       </div>
-      <div className="patient-card-actions" style={s.cardActions}>
-        {isCalled && (
-          <button style={s.btnDone} onClick={onDone}>✓ Done</button>
-        )}
-        {isWaiting && (
-          <>
-            {onPriorityCall && (
-              <button style={s.btnPriority} onClick={onPriorityCall}>🚨 Priority Call</button>
-            )}
-            <button style={s.btnNotify} onClick={onNotify}>🔔 Notify</button>
-            <button style={s.btnSkip} onClick={onSkip}>⏭ Skip</button>
-          </>
-        )}
-        {isDone && <span style={s.doneTag}>✅ Done</span>}
-        {isSkipped && <span style={s.skipTag}>⏭ Skipped</span>}
-      </div>
+
+      {/* Action buttons */}
+      {(isWaiting || isCalled) && (
+        <div style={{
+          borderTop: `1px solid ${statusConfig.border}`,
+          background: statusConfig.bg,
+          display: 'flex', gap: 8, padding: '10px 12px', flexWrap: 'wrap',
+        }}>
+          {isCalled && (
+            <button onClick={onDone} style={{ flex: 1, minWidth: 90, padding: '9px 12px', background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>✓ Done</button>
+          )}
+          {isWaiting && onPriorityCall && (
+            <button onClick={onPriorityCall} style={{ flex: 1, minWidth: 100, padding: '9px 12px', background: 'linear-gradient(135deg,#EF4444,#DC2626)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>🚨 Call Now</button>
+          )}
+          {isWaiting && (
+            <button onClick={onNotify} style={{ flex: 1, minWidth: 80, padding: '9px 12px', background: 'white', color: '#1D4ED8', border: '1.5px solid #BFDBFE', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>🔔 Notify</button>
+          )}
+          {isWaiting && (
+            <button onClick={onSkip} style={{ padding: '9px 14px', background: 'white', color: '#94A3B8', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>⏭ Skip</button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

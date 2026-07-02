@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#083E82" />
+      <stop offset="100%" stop-color="#00183A" />
+    </linearGradient>
+    <linearGradient id="peopleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE" />
+      <stop offset="100%" stop-color="#00D05A" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Icon (scaled to fit ~200px height) -->
+  <g transform="translate(10, 5) scale(0.37)">
+    <rect x="40" y="60" width="412" height="412" rx="100" fill="url(#bgGrad)" filter="url(#shadow)" />
+    <g>
+      <rect x="224" y="165" width="64" height="150" rx="32" fill="#FFFFFF" />
+      <rect x="116" y="145" width="280" height="60" rx="30" fill="#FFFFFF" />
+    </g>
+    <g>
+      <path d="M 142 450 C 142 385, 242 385, 242 450 Z" fill="url(#peopleGrad)" />
+      <circle cx="192" cy="335" r="20" fill="url(#peopleGrad)" />
+    </g>
+    <g>
+      <path d="M 270 450 C 270 385, 370 385, 370 450 Z" fill="url(#peopleGrad)" />
+      <circle cx="320" cy="335" r="20" fill="url(#peopleGrad)" />
+    </g>
+    <g>
+      <path d="M 200 455 C 200 375, 312 375, 312 455 Z" fill="url(#peopleGrad)" />
+      <circle cx="256" cy="320" r="23" fill="url(#peopleGrad)" />
+    </g>
+    <g filter="url(#shadow)">
+      <circle cx="380" cy="110" r="48" fill="#00D05A" />
+      <circle cx="380" cy="110" r="44" fill="url(#peopleGrad)" />
+      <text x="380" y="127" fill="#FFFFFF" font-family="'Plus Jakarta Sans', 'Inter', sans-serif" font-size="50" font-weight="900" text-anchor="middle">1</text>
+    </g>
+  </g>
+
+  <!-- Wordmark — dark text for light backgrounds -->
+  <text x="215" y="115" font-family="'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-size="100" font-weight="900" letter-spacing="-3">
+    <tspan fill="#111827">Token</tspan><tspan fill="#16a34a">Pe</tspan>
+  </text>
+
+  <!-- Pulse Line -->
+  <path d="M 215 148 L 470 148 L 476 148 L 482 133 L 489 166 L 496 148 L 502 148 L 700 148" 
+        fill="none" stroke="#16a34a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.7" />
+
+  <!-- Tagline -->
+  <text x="220" y="185" font-family="'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-size="34" font-weight="600" fill="#9ca3af" letter-spacing="-0.3">
+    Smart Queue. Better Care.
+  </text>
+</svg>

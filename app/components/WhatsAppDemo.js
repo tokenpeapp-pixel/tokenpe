@@ -252,6 +252,8 @@ export default function WhatsAppDemo() {
     scroll();
   }, [msgs, typing]);
 
+  const msgCounter = useRef(0);
+
   useEffect(() => {
     aliveRef.current = true;
     (async () => {
@@ -267,7 +269,8 @@ export default function WhatsAppDemo() {
             if (!aliveRef.current) return;
             setTyping(false); setHeaderStatus("online");
           }
-          setMsgs(prev => [...prev, { ...msg, id: i + "-" + Date.now() }]);
+          msgCounter.current += 1;
+          setMsgs(prev => [...prev, { ...msg, id: `msg-${msgCounter.current}` }]);
           setProgress(((i + 1) / FLOW.length) * 100);
           await wait(msg.delay || 2000);
         }
@@ -282,7 +285,19 @@ export default function WhatsAppDemo() {
       <style>{`
         @keyframes waPopIn  { from { opacity:0; transform:scale(0.85) translateY(4px); } to { opacity:1; transform:scale(1) translateY(0); } }
         @keyframes waBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-4px); } }
-        .wa-wrapper { zoom: 0.85; display: flex; justify-content: center; align-items: center; padding: 24px 16px 32px; }
+        .wa-wrapper { zoom: 0.85; display: flex; justify-content: center; align-items: center; padding: 12px 8px 24px; position: relative; }
+        .wa-wrapper::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 180px;
+          height: 20px;
+          background: radial-gradient(ellipse, rgba(0,0,0,0.12) 0%, transparent 70%);
+          border-radius: 50%;
+          pointer-events: none;
+        }
         @media (max-width: 768px) { .wa-wrapper { zoom: 0.75; } }
         @media (max-width: 480px) { .wa-wrapper { zoom: 0.65; } }
         .wa-phone { transition:transform 0.5s cubic-bezier(0.16,1,0.3,1); transform:perspective(900px) rotateY(-5deg) rotateX(2deg); }
@@ -294,7 +309,7 @@ export default function WhatsAppDemo() {
       `}</style>
 
       <div className="wa-wrapper">
-        <div className="wa-phone" style={{ width: "290px", height: "620px", background: "#1a1a1a", borderRadius: "40px", padding: "10px", flexShrink: 0, position: "relative", boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset,0 0 0 6px #1a1a1a,0 32px 80px rgba(0,0,0,0.55),0 8px 20px rgba(0,0,0,0.3)" }}>
+        <div className="wa-phone" style={{ width: "290px", height: "620px", background: "#1a1a1a", borderRadius: "40px", padding: "10px", flexShrink: 0, position: "relative", boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 0 6px #1a1a1a, 0 40px 100px rgba(0,0,0,0.35), 0 15px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)" }}>
           {/* Notch */}
           <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", width: "90px", height: "22px", background: "#1a1a1a", borderBottomLeftRadius: "12px", borderBottomRightRadius: "12px", zIndex: 10 }} />
 

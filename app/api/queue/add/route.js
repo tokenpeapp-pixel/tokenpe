@@ -33,7 +33,7 @@ export async function POST(req) {
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
 
         // ── Block walk-ins if the clinic is closed for today ──────────────
-        if (clinic?.closed_today_date === today) {
+        if (clinic?.closed_today_date) {
             return Response.json({
                 success: false,
                 message: 'Clinic is closed for today. No new patients can be added.'

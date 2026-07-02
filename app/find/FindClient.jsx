@@ -1,273 +1,136 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import {
-  MapPin, Search, MessageSquare, Mic, Zap, Gift, Crown, CreditCard, Lock, Check, Calendar, QrCode, Heart, Hospital, Globe, Camera, FileText, IndianFlag, Star, Clock, Link, Users, SPECIALTY_ICONS
+  MapPin, Search, Check, Clock, Users, Link as LinkIcon, Hospital
 } from '../../lib/icons'
 
 const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919892875513'
 
+// Dynamically import the Leaflet map component with ssr: false
+// This prevents "window is not defined" errors during server-side rendering
+const MapComponent = dynamic(() => import('./MapComponent'), {
+  ssr: false,
+  loading: () => <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e5e7eb' }}>Loading Map...</div>
+})
 
-
-function StarRating({ rating }) {
-  if (!rating) return null
-  const stars = Math.round(rating)
-  return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      {[1, 2, 3, 4, 5].map(i => (
-        <Star key={i} size={13} fill={i <= stars ? '#f59e0b' : 'none'} stroke={i <= stars ? '#f59e0b' : 'rgba(255,255,255,0.15)'} />
-      ))}
-      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 4 }}>{parseFloat(rating).toFixed(1)}</span>
-    </span>
-  )
-}
-
-function SkeletonCard() {
-  return (
-    <div style={{
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 20,
-      padding: '24px 22px',
-      animation: 'shimmer 1.5s ease-in-out infinite',
-    }}>
-      <div style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.07)' }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ height: 16, borderRadius: 8, background: 'rgba(255,255,255,0.07)', marginBottom: 8, width: '70%' }} />
-          <div style={{ height: 12, borderRadius: 8, background: 'rgba(255,255,255,0.05)', width: '45%' }} />
-        </div>
-      </div>
-      <div style={{ height: 12, borderRadius: 8, background: 'rgba(255,255,255,0.05)', marginBottom: 8, width: '80%' }} />
-      <div style={{ height: 12, borderRadius: 8, background: 'rgba(255,255,255,0.05)', width: '55%', marginBottom: 20 }} />
-      <div style={{ height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.07)' }} />
-    </div>
-  )
-}
-
-function ClinicCard({ clinic, isNearby }) {
-  const icon = typeof SPECIALTY_ICONS[clinic.specialty] === 'function' ? SPECIALTY_ICONS[clinic.specialty](26) : <Hospital size={26} />
+function ClinicCard({ clinic, isNearby, onClick, isSelected }) {
   const waLink = `https://wa.me/${WA_NUMBER}?text=JOIN%20${encodeURIComponent(clinic.code)}`
 
   return (
-    <div className="clinic-card">
-      {/* Top row */}
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-        {clinic.photo_url ? (
-          <img
-            src={clinic.photo_url}
-            alt={clinic.name}
-            style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}
-          />
-        ) : (
-          <div style={{
-            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-            background: 'linear-gradient(135deg, rgba(124,58,237,0.25), rgba(6,182,212,0.2))',
-            border: '1px solid rgba(124,58,237,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd'
-          }}>
-            {icon}
-          </div>
-        )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#f1f5f9', marginBottom: 4, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {clinic.name}
-          </div>
-          {clinic.specialty && (
-            <div style={{ fontSize: 12, color: '#a78bfa', fontWeight: 600 }}>{clinic.specialty}</div>
-          )}
+    <div 
+      className={`clinic-card ${isSelected ? 'selected' : ''}`} 
+      onClick={onClick} 
+      style={{ 
+        cursor: 'pointer', 
+        borderColor: isSelected ? '#0d9488' : '#e5e7eb',
+        borderWidth: isSelected ? '2px' : '1px'
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
+          {clinic.name}
         </div>
         {isNearby && clinic.distance_km && (
-          <div style={{
-            background: 'rgba(16,185,129,0.15)',
-            border: '1px solid rgba(16,185,129,0.3)',
-            borderRadius: 100,
-            padding: '3px 10px',
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#34d399',
-            flexShrink: 0,
-            whiteSpace: 'nowrap',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4
-          }}>
-            <MapPin size={11} /> {clinic.distance_km} km
+          <div style={{ background: '#ecfdf5', color: '#10b981', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+            <MapPin size={10} /> {clinic.distance_km} km
           </div>
         )}
       </div>
-
-      {/* Location */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <MapPin size={14} style={{ color: 'rgba(255,255,255,0.5)' }} />
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
-          {[clinic.area, clinic.city].filter(Boolean).join(', ') || 'Location not set'}
-        </span>
+      <div style={{ fontSize: 13, color: '#4b5563', marginBottom: 12 }}>
+        Specialty: {clinic.specialty || 'General Physician'}
       </div>
-
-      {/* Rating */}
-      {clinic.avg_rating && (
-        <StarRating rating={clinic.avg_rating} />
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <span className="badge-teal">Voice Alerts</span>
+        <span className="badge-teal">No App Required</span>
+      </div>
+      
+      {clinic.is_closed_today ? (
+        <div style={{ fontSize: 13, color: '#ef4444', fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+          🔴 Closed for Today
+        </div>
+      ) : clinic.queue_paused ? (
+        <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Clock size={14} /> Queue Paused
+        </div>
+      ) : (
+        <>
+          <div style={{ fontSize: 13, color: '#374151', marginBottom: 4 }}>
+            Live Queue Status: <strong>{clinic.waiting_count || 0} people waiting</strong>
+          </div>
+          <div style={{ fontSize: 13, color: '#374151', marginBottom: 16 }}>
+            Estimated Wait Time: <strong>{Math.max((clinic.waiting_count || 0) * 5, 10)} min</strong>
+          </div>
+        </>
       )}
 
-      {/* Live queue status row */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 2 }}>
-        {/* Status Pill */}
-        <div style={{
-          background: clinic.is_closed_today
-            ? 'rgba(239,68,68,0.15)'
-            : clinic.queue_paused ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
-          border: clinic.is_closed_today
-            ? '1px solid rgba(239,68,68,0.4)'
-            : clinic.queue_paused ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(16,185,129,0.25)',
-          borderRadius: 100,
-          padding: '4px 10px',
-          fontSize: 11,
-          fontWeight: 700,
-          color: clinic.is_closed_today ? '#ef4444' : clinic.queue_paused ? '#ef4444' : '#34d399',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6
-        }}>
-          {clinic.is_closed_today ? '🔴' : clinic.queue_paused ? <Clock size={11} /> : <Check size={11} />}
-          {clinic.is_closed_today ? 'Closed Today' : clinic.queue_paused ? 'Paused' : 'Open'}
+      {clinic.is_closed_today ? (
+        <div className="btn-join" style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fee2e2', cursor: 'not-allowed' }}>
+          Closed Today
         </div>
-
-        {/* Patients Waiting Pill — hide if closed */}
-        {!clinic.is_closed_today && (
-          <div style={{
-            background: 'rgba(124,58,237,0.15)',
-            border: '1px solid rgba(124,58,237,0.3)',
-            borderRadius: 100,
-            padding: '4px 10px',
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#c4b5fd',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6
-          }}>
-            <Users size={11} /> {clinic.waiting_count || 0} waiting
-          </div>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-        {clinic.is_closed_today ? (
-          <div style={{
-            flex: 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.25)',
-            color: '#ef4444',
-            padding: '11px 16px',
-            borderRadius: 12,
-            fontSize: 13,
-            fontWeight: 700,
-          }}>
-            🔴 Closed for Today — Come Back Tomorrow
-          </div>
-        ) : (
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              flex: 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
-              color: '#fff',
-              padding: '11px 16px',
-              borderRadius: 12,
-              fontSize: 13,
-              fontWeight: 700,
-              textDecoration: 'none',
-              boxShadow: '0 4px 20px rgba(124,58,237,0.3)',
-              transition: 'transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease',
-            }}
-            onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 32px rgba(124,58,237,0.5)' }}
-            onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(124,58,237,0.3)' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-            Join Queue
-          </a>
-        )}
-        {!clinic.is_closed_today && (
-          <a
-            href={`/j/${clinic.code}`}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.6)',
-              padding: '11px 13px',
-              borderRadius: 12,
-              fontSize: 12,
-              fontWeight: 600,
-              textDecoration: 'none',
-              transition: 'background 0.2s, color 0.2s',
-            }}
-            title="Share join link"
-            onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
-            onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
-          >
-            <Link size={14} />
-          </a>
-        )}
-      </div>
+      ) : (
+        <a
+          href={waLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-join"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Join Queue via WhatsApp
+        </a>
+      )}
     </div>
   )
 }
 
-function EmptyState({ query }) {
+function EmptyState() {
   return (
-    <div style={{ textAlign: 'center', padding: '80px 20px', gridColumn: '1 / -1' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, color: 'rgba(255,255,255,0.2)' }}>
-        <Hospital size={64} />
+    <div className="empty-state-overlay">
+      <div className="empty-icon-wrap">
+        <Search size={32} color="#0d9488" />
       </div>
-      <h3 style={{ color: '#f1f5f9', fontSize: 22, fontWeight: 800, marginBottom: 10, letterSpacing: '-0.5px' }}>
-        No clinics found
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 8 }}>
+        No clinics found in this area.
       </h3>
-      <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15, lineHeight: 1.7, maxWidth: 380, margin: '0 auto 28px' }}>
-        {query
-          ? `No results for "${query}". Try a different name, specialty, or city.`
-          : 'No public clinics are listed yet. Check back soon or ask your clinic to register on TokenPe.'}
+      <p style={{ fontSize: 13, color: '#4b5563', textAlign: 'center', marginBottom: 16, maxWidth: 280, lineHeight: 1.5 }}>
+        Try searching for a different location or invite your doctor to join TokenPe to get started!
       </p>
-      <a
-        href="/login"
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
-          color: '#fff', padding: '12px 28px', borderRadius: 12,
-          fontSize: 14, fontWeight: 700, textDecoration: 'none',
-          boxShadow: '0 4px 20px rgba(124,58,237,0.35)',
-        }}
-      >
-        Register your clinic →
-      </a>
+      <button className="btn-invite">Invite Doctor</button>
     </div>
   )
 }
 
 export default function FindClient({ initialClinics, initialQ, initialCity, initialSpecialty, cities, specialties }) {
   const router = useRouter()
-  const [query, setQuery] = useState(initialQ)
-  const [selectedCity, setSelectedCity] = useState(initialCity)
-  const [selectedSpecialty, setSelectedSpecialty] = useState(initialSpecialty)
-  const [clinics, setClinics] = useState(initialClinics)
+  const [query, setQuery] = useState(initialQ || '')
+  const [selectedCity, setSelectedCity] = useState(initialCity || '')
+  const [selectedSpecialty, setSelectedSpecialty] = useState(initialSpecialty || '')
+  const [clinics, setClinics] = useState(initialClinics || [])
   const [loading, setLoading] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('all') // 'all', 'open', 'paused', 'closed'
+  const [activeView, setActiveView] = useState('list') // 'list' or 'map'
+  const [selectedClinic, setSelectedClinic] = useState(null)
+
   const [gpsLoading, setGpsLoading] = useState(false)
   const [gpsError, setGpsError] = useState('')
   const [nearbyClinics, setNearbyClinics] = useState([])
   const [isNearbyMode, setIsNearbyMode] = useState(false)
-  const debounceRef = useRef(null)
-  
-  const displayedClinics = isNearbyMode ? nearbyClinics : clinics
 
-  const fetchClinics = useCallback(async (q, city, spec) => {
+  const debounceRef = useRef(null)
+
+  // Client-side filtering is only used for Nearby mode now.
+  // Standard searches fetch perfectly from the database based on the statusFilter.
+  const displayedClinics = isNearbyMode 
+    ? nearbyClinics.filter(c => {
+        if (statusFilter === 'open') return !c.is_closed_today && !c.queue_paused;
+        if (statusFilter === 'paused') return c.queue_paused;
+        if (statusFilter === 'closed') return c.is_closed_today;
+        return true;
+      })
+    : clinics
+
+  const fetchClinics = useCallback(async (q, city, spec, status) => {
     setLoading(true)
     setIsNearbyMode(false)
     setGpsError('')
@@ -276,6 +139,8 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
       if (q) params.set('q', q)
       if (city) params.set('city', city)
       if (spec) params.set('specialty', spec)
+      if (status && status !== 'all') params.set('status', status)
+      
       const res = await fetch(`/api/clinics/search${params.toString() ? '?' + params.toString() : ''}`)
       const json = await res.json()
       setClinics(json.clinics || [])
@@ -288,16 +153,16 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   useEffect(() => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      fetchClinics(query, selectedCity, selectedSpecialty)
+      fetchClinics(query, selectedCity, selectedSpecialty, statusFilter)
       const params = new URLSearchParams()
       if (query) params.set('q', query)
       if (selectedCity) params.set('city', selectedCity)
       if (selectedSpecialty) params.set('specialty', selectedSpecialty)
-      const qs = params.toString()
-      router.replace(`/find${qs ? '?' + qs : ''}`, { scroll: false })
+      // We don't necessarily need to push status into the URL, but we can
+      router.replace(`/find${params.toString() ? '?' + params.toString() : ''}`, { scroll: false })
     }, 300)
     return () => clearTimeout(debounceRef.current)
-  }, [query, selectedCity, selectedSpecialty, fetchClinics, router])
+  }, [query, selectedCity, selectedSpecialty, statusFilter, fetchClinics, router])
 
   const fetchNearby = useCallback(async (lat, lng) => {
     try {
@@ -315,160 +180,228 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
 
   function handleFindNearMe() {
     setGpsError('')
-    
     if (!navigator.geolocation) {
-      setGpsError('Your browser does not support location. Please use Chrome or Safari.')
+      setGpsError('Your browser does not support location.')
       return
     }
-    
     setGpsLoading(true)
-    
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        fetchNearby(pos.coords.latitude, pos.coords.longitude)
-      },
+      (pos) => fetchNearby(pos.coords.latitude, pos.coords.longitude),
       (err) => {
         setGpsLoading(false)
-        console.log('Location error:', err)
-        if (err.code === 1) {
-          setGpsError("Location access was denied. Click the 🔒 icon in your browser's address bar and allow location, then try again.")
-        } else if (err.code === 2) {
-          setGpsError('Could not detect your location. Make sure GPS is on.')
-        } else if (err.code === 3) {
-          setGpsError('Location request timed out. Please try again.')
-        } else {
-          setGpsError('Could not get your location. Please try again.')
-        }
+        setGpsError('Could not get your location. Please allow access.')
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
   }
 
-  const allSpecialties = specialties.length ? specialties : ['General Physician', 'Pediatrician', 'Dermatologist', 'Gynecologist', 'Orthopedic', 'Dentist', 'ENT', 'Ophthalmologist', 'Cardiologist', 'Neurologist']
+  const allSpecialties = specialties && specialties.length ? specialties : ['General Physician', 'Pediatrician', 'Dentist', 'Gynecologist', 'Orthopedic', 'Cardiologist']
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; background: #080818; color: #fff; overflow-x: hidden; }
-        .find-page { min-height: 100vh; background: #080818; position: relative; overflow: hidden; }
-        .find-page::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px); background-size: 48px 48px; }
-        .find-orb1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%); top: -150px; left: -150px; pointer-events: none; z-index: 0; }
-        .find-orb2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%); bottom: -100px; right: -100px; pointer-events: none; z-index: 0; }
-        .find-inner { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 100px 24px 80px; }
-        .find-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; background: rgba(8,8,24,0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .find-nav-logo { height: 36px; width: auto; cursor: pointer; }
-        .find-nav-back { display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 600; cursor: pointer; background: none; border: none; text-decoration: none; transition: color 0.15s; }
-        .find-hero { text-align: center; margin-bottom: 52px; }
-        .find-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.35); border-radius: 100px; padding: 6px 18px; font-size: 12px; color: #c4b5fd; margin-bottom: 22px; font-weight: 600; }
-        .find-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #7C3AED; }
-        .find-h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 900; letter-spacing: -2px; color: #fff; margin-bottom: 14px; line-height: 1.05; }
-        @keyframes textGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .find-h1 span { background: linear-gradient(270deg, #7C3AED, #06B6D4, #10B981, #7C3AED); background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: textGradient 6s ease infinite; }
-        .find-sub { color: rgba(255,255,255,0.45); font-size: 16px; line-height: 1.7; max-width: 480px; margin: 0 auto; }
-        .sticky-search { position: sticky; top: 64px; z-index: 150; padding: 20px 0; background: linear-gradient(to bottom, rgba(8,8,24,0.95) 70%, rgba(8,8,24,0)); backdrop-filter: blur(12px); margin: -20px -24px 28px; padding-left: 24px; padding-right: 24px; }
-        .search-box-wrap { position: relative; max-width: 680px; margin: 0 auto; z-index: 100; transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); }
-        .search-box-wrap:focus-within { transform: translateY(-2px); }
-        .search-icon-left { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.4); pointer-events: none; }
-        .search-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; color: #fff; font-size: 16px; padding: 20px 60px 20px 58px; outline: none; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2), 0 10px 30px rgba(0,0,0,0.2); backdrop-filter: blur(12px); transition: all 0.3s ease; }
-        .search-input:focus { border-color: rgba(124,58,237,0.5); background: rgba(255,255,255,0.06); box-shadow: inset 0 2px 10px rgba(0,0,0,0.2), 0 0 0 4px rgba(124,58,237,0.15), 0 20px 40px rgba(0,0,0,0.4); }
-        .search-clear { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.7); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; transition: background 0.2s; }
-        .search-clear:hover { background: rgba(255,255,255,0.2); }
-        .controls-row { display: flex; align-items: center; gap: 16px; max-width: 680px; margin: 0 auto 32px; flex-wrap: wrap; }
-        .gps-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #10b981, #06b6d4); border: none; color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
-        .gps-error { font-size: 13px; color: #f87171; font-weight: 500; background: rgba(248,113,113,0.1); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(248,113,113,0.2); width: 100%; margin-top: 4px; line-height: 1.4; }
-        .results-count { font-size: 13px; color: rgba(255,255,255,0.35); font-weight: 500; margin-left: auto; }
-        .chips-section { margin-bottom: 32px; }
-        .chips-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; }
-        .chips-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .chip { padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.6); transition: all 0.25s cubic-bezier(0.16,1,0.3,1); }
-        .chip:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.15); transform: translateY(-1px); }
-        .chip.active { border-color: transparent; background: linear-gradient(135deg, #7C3AED, #06B6D4); color: #fff; box-shadow: 0 4px 15px rgba(124,58,237,0.35); transform: translateY(-1px); }
-        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
-        .clinic-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 16px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); cursor: default; position: relative; overflow: hidden; }
-        .clinic-card:hover { transform: translateY(-6px) scale(1.01); border-color: rgba(124,58,237,0.4) !important; background: rgba(124,58,237,0.05) !important; box-shadow: 0 20px 40px rgba(124,58,237,0.15); }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @media (max-width: 640px) {
-          .find-inner { padding: 88px 16px 60px; }
-          .controls-row { flex-direction: column; align-items: stretch; gap: 12px; }
-          .results-count { text-align: center; margin: 0; }
-          .sticky-search { margin: -20px -16px 28px; padding-left: 16px; padding-right: 16px; }
-          .find-h1 { font-size: 38px; }
+        body { font-family: 'Inter', sans-serif; background: #f9fafb; color: #111827; }
+        
+        .find-nav { padding: 0 32px; height: 72px; display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 100; }
+        .find-nav-logo { height: 32px; cursor: pointer; }
+        .find-nav-back { color: #0d9488; font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .find-nav-back:hover { text-decoration: underline; }
+        
+        .layout-container { max-width: 1440px; margin: 0 auto; padding: 32px; display: grid; grid-template-columns: minmax(400px, 1fr) 1.2fr; gap: 32px; min-height: calc(100vh - 72px); }
+        .left-col { display: flex; flex-direction: column; }
+        .right-col { position: sticky; top: 104px; height: calc(100vh - 136px); border-radius: 20px; overflow: hidden; background: #f3f4f6; }
+        
+        .page-title { font-size: 26px; font-weight: 800; color: #111827; margin-bottom: 24px; }
+        
+        .search-row { display: flex; align-items: center; background: #fff; border: 2px solid #0d9488; border-radius: 100px; padding: 4px 4px 4px 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.08); transition: box-shadow 0.2s; }
+        .search-row:focus-within { box-shadow: 0 6px 20px rgba(13, 148, 136, 0.15); }
+        .search-input { border: none; outline: none; flex: 1; font-size: 15px; padding: 8px 0; color: #111827; }
+        .btn-search { background: #0d9488; color: #fff; border: none; padding: 10px 28px; border-radius: 100px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
+        .btn-search:hover { background: #0f766e; }
+        
+        .filters-row { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; flex-wrap: wrap; }
+        
+        .btn-near-me { padding: 8px 14px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; height: 36px; background: #fff; border: 1px solid #d1d5db; color: #374151; }
+        .btn-near-me:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-near-me.active { background: #ecfdf5; border: 1px solid #10b981; color: #10b981; }
+        
+        .status-filters { display: flex; background: #e5e7eb; padding: 4px; border-radius: 100px; align-items: center; height: 36px; }
+        .status-filter-btn { padding: 4px 14px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .status-filter-btn.active { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); color: #111827; }
+        .status-filter-btn.inactive { background: transparent; color: #6b7280; }
+        .status-filter-btn.active.open { color: #0d9488; }
+        .status-filter-btn.active.paused { color: #f59e0b; }
+        .status-filter-btn.active.closed { color: #ef4444; }
+
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-select { padding: 8px 32px 8px 14px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 13px; font-weight: 600; color: #374151; background: #fff url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; appearance: none; outline: none; cursor: pointer; min-width: 160px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        
+        .clinic-list { display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+        .clinic-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; }
+        .clinic-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.06); border-color: #d1d5db; }
+        
+        .badge-teal { background: #ccfbf1; color: #0f766e; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 100px; display: inline-block; }
+        
+        .btn-join { display: inline-block; background: #0d9488; color: #fff; text-align: center; padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; width: 100%; transition: background 0.2s, transform 0.1s; }
+        .btn-join:hover { background: #0f766e; }
+        .btn-join:active { transform: scale(0.98); }
+
+        .empty-state-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.95); padding: 32px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; width: 340px; text-align: center; z-index: 10; }
+        .empty-icon-wrap { width: 64px; height: 64px; background: #e0f2fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .btn-invite { background: #0d9488; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+        .btn-invite:hover { background: #0f766e; }
+        
+        .mobile-view-toggle { display: none; }
+
+        @media (max-width: 1024px) {
+          .layout-container { grid-template-columns: 1fr; padding: 20px; }
+          .right-col { display: none; }
+          .search-row { padding: 4px 4px 4px 16px; }
+          .btn-search { padding: 10px 20px; }
+        }
+
+        @media (max-width: 768px) {
+          .find-nav { padding: 0 16px; height: 64px; }
+          .layout-container { padding: 16px; min-height: auto; gap: 16px; margin-bottom: 24px; }
+          .page-title { font-size: 22px; margin-bottom: 16px; }
+          .search-row { border-radius: 16px; padding: 10px; flex-direction: column; gap: 10px; align-items: stretch; border-width: 1.5px; }
+          .search-input { padding: 8px; font-size: 16px; }
+          .btn-search { width: 100%; justify-content: center; padding: 12px; border-radius: 10px; font-size: 15px; }
+          
+          .filters-row { gap: 12px; }
+          .filter-group { width: 100%; justify-content: space-between; }
+          .filter-select { flex: 1; max-width: none; min-width: 0; }
+          .btn-near-me { width: 100%; justify-content: center; height: 44px; font-size: 14px; }
+          
+          .status-filters { width: 100%; justify-content: space-between; height: auto; padding: 4px; }
+          .status-filter-btn { flex: 1; text-align: center; padding: 8px 4px; }
+          
+          .clinic-card { padding: 20px; }
+          
+          /* Map view toggle on mobile */
+          .mobile-view-toggle { display: flex; background: #e5e7eb; padding: 4px; border-radius: 100px; margin-bottom: 16px; }
+          .mobile-view-btn { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 100px; color: #6b7280; transition: all 0.2s; }
+          .mobile-view-btn.active { background: #fff; color: #111827; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+          .layout-container.map-active .clinic-list { display: none; }
+          .layout-container.map-active .right-col { display: block; position: relative; height: calc(100vh - 300px); min-height: 400px; top: 0; margin-top: 0; }
         }
       `}</style>
 
-      <div className="find-page">
-        <div className="find-orb1" />
-        <div className="find-orb2" />
-        <nav className="find-nav">
-          <a href="/" style={{ display: 'flex', alignItems: 'center' }}>
-            <img src="/logo.svg" alt="TokenPe" className="find-nav-logo" />
-          </a>
-          <a href="/" className="find-nav-back">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-            Back to Home
-          </a>
-        </nav>
-        <div className="find-inner">
-          <div className="find-hero">
-            <div className="find-badge">
-              <span className="find-badge-dot" />
-              Find clinics near you — no QR scan needed
-            </div>
-            <h1 className="find-h1">Find a <span>Clinic</span><br />Join from Home</h1>
-            <p className="find-sub">Search by doctor, specialty, or city. Get your token instantly on WhatsApp — no waiting at reception.</p>
+      <nav className="find-nav">
+        <a href="/">
+          <img src="/logo-nav.svg" alt="TokenPe" className="find-nav-logo" />
+        </a>
+        <a href="/" className="find-nav-back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Back to Home
+        </a>
+      </nav>
+
+      <div className={`layout-container ${activeView === 'map' ? 'map-active' : ''}`}>
+        <div className="left-col">
+          <h1 className="page-title">Find a Clinic Search Results</h1>
+          
+          <div className="search-row">
+            <input 
+              className="search-input" 
+              type="text" 
+              placeholder="Search by clinic name, doctor, or locality" 
+              value={query} 
+              onChange={e => setQuery(e.target.value)} 
+            />
+            <button className="btn-search">
+              <Search size={16} />
+              Search
+            </button>
           </div>
-          <div className="sticky-search">
-            <div className="search-box-wrap">
-              <span className="search-icon-left">
-                {loading ? <div className="spinner" /> : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>}
-              </span>
-              <input className="search-input" type="text" placeholder="Search by doctor, clinic, specialty or city..." value={query} onChange={e => setQuery(e.target.value)} />
-              {query && <button className="search-clear" onClick={() => setQuery('')}>✕</button>}
+
+          {gpsError && <div style={{ fontSize: 13, color: '#ef4444', marginBottom: 16, background: '#fef2f2', padding: '10px 14px', borderRadius: '8px', border: '1px solid #fee2e2' }}>{gpsError}</div>}
+
+          <div className="mobile-view-toggle">
+            <div 
+              className={`mobile-view-btn ${activeView === 'list' ? 'active' : ''}`}
+              onClick={() => setActiveView('list')}
+            >
+              List View
+            </div>
+            <div 
+              className={`mobile-view-btn ${activeView === 'map' ? 'active' : ''}`}
+              onClick={() => setActiveView('map')}
+            >
+              Map View
             </div>
           </div>
-          <div className="controls-row">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <button className="gps-btn" onClick={handleFindNearMe} disabled={gpsLoading}>
-                  {gpsLoading ? <div className="spinner" /> : <MapPin size={16} />}
-                  {gpsLoading ? 'Getting your location...' : isNearbyMode ? 'Update Location' : '📍 Find Clinics Near Me'}
-                </button>
-                {!gpsLoading && !gpsError && <span className="results-count">{displayedClinics.length} clinic{displayedClinics.length !== 1 ? 's' : ''} found</span>}
-              </div>
-              {gpsError && <div className="gps-error">{gpsError}</div>}
+
+          <div className="filters-row">
+            <button 
+              onClick={handleFindNearMe} 
+              disabled={gpsLoading}
+              className={`btn-near-me ${isNearbyMode ? 'active' : ''}`}
+            >
+              <MapPin size={14} color={isNearbyMode ? "#10b981" : "#0d9488"} /> 
+              {gpsLoading ? 'Locating...' : 'Near Me'}
+            </button>
+            <div className="status-filters">
+              <div onClick={() => setStatusFilter('all')} className={`status-filter-btn ${statusFilter === 'all' ? 'active' : 'inactive'}`}>All</div>
+              <div onClick={() => setStatusFilter('open')} className={`status-filter-btn open ${statusFilter === 'open' ? 'active' : 'inactive'}`}>Open</div>
+              <div onClick={() => setStatusFilter('paused')} className={`status-filter-btn paused ${statusFilter === 'paused' ? 'active' : 'inactive'}`}>Paused</div>
+              <div onClick={() => setStatusFilter('closed')} className={`status-filter-btn closed ${statusFilter === 'closed' ? 'active' : 'inactive'}`}>Closed</div>
+            </div>
+            
+            <div className="filter-group">
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#4b5563', whiteSpace: 'nowrap' }}>Specialty</span>
+              <select 
+                className="filter-select"
+                value={selectedSpecialty}
+                onChange={(e) => setSelectedSpecialty(e.target.value)}
+              >
+                <option value="">Any Specialty</option>
+                {allSpecialties.map(spec => (
+                  <option key={spec} value={spec}>{spec}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#4b5563', whiteSpace: 'nowrap' }}>Distance</span>
+              <select className="filter-select">
+                <option value="">Any Distance</option>
+                <option value="5">Within 5 km</option>
+                <option value="10">Within 10 km</option>
+                <option value="20">Within 20 km</option>
+              </select>
             </div>
           </div>
-          <div className="chips-section">
-            <div className="chips-label">Specialty</div>
-            <div className="chips-row" style={{ marginBottom: 14 }}>
-              {allSpecialties.map(spec => (
-                <button key={spec} className={`chip${selectedSpecialty === spec ? ' active' : ''}`} onClick={() => setSelectedSpecialty(selectedSpecialty === spec ? '' : spec)}>
-                  {typeof SPECIALTY_ICONS[spec] === 'function' ? SPECIALTY_ICONS[spec](14) : <Hospital size={14} />} {spec}
-                </button>
-              ))}
-            </div>
-            {cities.length > 0 && (
-              <>
-                <div className="chips-label" style={{ marginTop: 6 }}>City</div>
-                <div className="chips-row">
-                  {cities.slice(0, 12).map(c => (
-                    <button key={c} className={`chip${selectedCity === c ? ' active' : ''}`} onClick={() => setSelectedCity(selectedCity === c ? '' : c)}>{c}</button>
-                  ))}
-                </div>
-              </>
+
+          <div className="clinic-list">
+            {(loading || gpsLoading) ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>Loading...</div>
+            ) : displayedClinics.length > 0 ? (
+              displayedClinics.map(clinic => (
+                <ClinicCard 
+                  key={clinic.id || clinic.code} 
+                  clinic={clinic} 
+                  isNearby={isNearbyMode} 
+                  isSelected={selectedClinic && (selectedClinic.id === clinic.id || selectedClinic.code === clinic.code)}
+                  onClick={() => {
+                    setSelectedClinic(clinic)
+                    if (window.innerWidth <= 1024) setActiveView('map')
+                  }}
+                />
+              ))
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>No clinics found.</div>
             )}
           </div>
-          <div className="results-grid">
-            {(loading || gpsLoading)
-              ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-              : displayedClinics.length === 0
-                ? <EmptyState query={query || selectedSpecialty || selectedCity} />
-                : displayedClinics.map(clinic => <ClinicCard key={clinic.id || clinic.code} clinic={clinic} isNearby={isNearbyMode} />)}
-          </div>
+        </div>
+
+        <div className="right-col">
+          <MapComponent clinics={displayedClinics} selectedClinic={selectedClinic}>
+            {displayedClinics.length === 0 && !loading && !gpsLoading && <EmptyState />}
+          </MapComponent>
         </div>
       </div>
     </>

@@ -320,7 +320,7 @@ export async function POST(req) {
 
             // 1.6 Check if clinic is closed for today
             const todayDate = getISTDateString()
-            if (clinic.closed_today_date === todayDate) {
+            if (clinic.closed_today_date) {
                 console.log(`[Join] ❌ Clinic "${clinic.name}" is closed for today`)
                 const closedMsg = `🔴 *Clinic Closed for Today*\n\n${clinic.name} has ended today's session.\n\nPlease visit again tomorrow. We look forward to seeing you! 🙏\n\n_Powered by TokenPe_`
                 await sendTextAndVoice({

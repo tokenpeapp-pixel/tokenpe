@@ -1275,7 +1275,7 @@ export default function Dashboard() {
   }
 
   // ── Computed ────────────────────────────────────────────────────────────
-  const isClosedToday = clinic?.closed_today_date === getISTDateString()
+  const isClosedToday = !!clinic?.closed_today_date
   const waiting = patients.filter(p => p.status === STATUS.WAITING)
   const called = patients.filter(p => p.status === STATUS.CALLED)
   const done = patients.filter(p => p.status === STATUS.DONE)

@@ -13,15 +13,42 @@ export async function GET(req) {
     const q = searchParams.get('q') || ''
     const city = searchParams.get('city') || ''
     const specialty = searchParams.get('specialty') || ''
+    const status = searchParams.get('status') || 'all'
+
+    // Get closed clinics for today
+    const today = getISTDateString()
+    let closedMap = {}
+    let closedIds = []
+    const { data: closedData } = await supabaseAdmin
+      .from('clinics')
+      .select('id, closed_today_date')
+      .not('closed_today_date', 'is', null)
+    
+    for (const c of (closedData || [])) {
+      closedMap[c.id] = c.closed_today_date
+      closedIds.push(c.id)
+    }
 
     let dbQuery = supabaseAdmin
       .from('public_clinics')
-      .select('id, name, specialty, city, area, code, avg_rating, photo_url, queue_paused, waiting_count')
+      .select('id, name, specialty, city, area, code, avg_rating, photo_url, queue_paused, waiting_count, lat, lng')
       .limit(60)
 
     if (q) dbQuery = dbQuery.or(`name.ilike.%${q}%,specialty.ilike.%${q}%,city.ilike.%${q}%,area.ilike.%${q}%`)
     if (city) dbQuery = dbQuery.ilike('city', `%${city}%`)
     if (specialty) dbQuery = dbQuery.ilike('specialty', `%${specialty}%`)
+
+    if (status === 'paused') {
+      dbQuery = dbQuery.eq('queue_paused', true)
+    } else if (status === 'closed') {
+      if (closedIds.length === 0) return Response.json({ clinics: [] }, { status: 200 })
+      dbQuery = dbQuery.in('id', closedIds)
+    } else if (status === 'open') {
+      dbQuery = dbQuery.eq('queue_paused', false)
+      if (closedIds.length > 0) {
+        dbQuery = dbQuery.not('id', 'in', `(${closedIds.join(',')})`)
+      }
+    }
 
     const { data: clinicsList, error } = await dbQuery
 
@@ -32,23 +59,9 @@ export async function GET(req) {
 
     const list = clinicsList || []
 
-    // Enrich with closed status from the actual clinics table (not the view)
-    const today = getISTDateString()
-    let closedMap = {}
-    if (list.length > 0) {
-      const ids = list.map(c => c.id)
-      const { data: closedData } = await supabaseAdmin
-        .from('clinics')
-        .select('id, closed_today_date')
-        .in('id', ids)
-      for (const c of (closedData || [])) {
-        closedMap[c.id] = c.closed_today_date
-      }
-    }
-
     const clinics = list.map(c => ({
       ...c,
-      is_closed_today: closedMap[c.id] === today,
+      is_closed_today: !!closedMap[c.id],
     }))
 
     return Response.json({ clinics }, { status: 200 })

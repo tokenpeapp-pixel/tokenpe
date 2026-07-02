@@ -45,7 +45,7 @@ export async function GET(req) {
       }
       return clinics.map(c => ({
         ...c,
-        is_closed_today: closedMap[c.id] === today,
+        is_closed_today: !!closedMap[c.id],
       }))
     }
 

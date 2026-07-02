@@ -20,6 +20,20 @@ const customIcon = new L.Icon({
   popupAnchor: [0, -36]
 });
 
+// Invalidate the map size after mount so tiles load correctly when the
+// container was hidden (display:none) during Leaflet's initialisation.
+function InvalidateOnMount() {
+  const map = useMap();
+  useEffect(() => {
+    // Give the browser one frame to paint the container, then remeasure
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+}
+
 function MapUpdater({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
@@ -51,7 +65,7 @@ function MarkerWithPopup({ clinic, isSelected }) {
   )
 }
 
-export default function LeafletMapComponent({ clinics, selectedClinic, children }) {
+export default function LeafletMapComponent({ clinics, selectedClinic, mapKey, children }) {
   const mapCenter = selectedClinic?.lat && selectedClinic?.lng 
     ? [parseFloat(selectedClinic.lat), parseFloat(selectedClinic.lng)]
     : clinics.length > 0 && clinics[0].lat && clinics[0].lng
@@ -62,17 +76,21 @@ export default function LeafletMapComponent({ clinics, selectedClinic, children 
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+      {/* key forces a full remount when mapKey changes, fixing blank-tile issues */}
       <MapContainer 
+        key={mapKey}
         center={mapCenter} 
         zoom={mapZoom} 
         style={{ width: '100%', height: '100%' }}
+        // Prevent scroll-zoom hijacking the page on mobile
+        scrollWheelZoom={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
         />
+        <InvalidateOnMount />
         <MapUpdater center={mapCenter} zoom={mapZoom} />
         
         {clinics.map(clinic => {
@@ -99,3 +117,4 @@ export default function LeafletMapComponent({ clinics, selectedClinic, children 
     </div>
   )
 }
+

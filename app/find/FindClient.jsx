@@ -111,6 +111,9 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'open', 'paused', 'closed'
   const [activeView, setActiveView] = useState('list') // 'list' or 'map'
   const [selectedClinic, setSelectedClinic] = useState(null)
+  // Incrementing this key forces a full Leaflet remount when map view activates,
+  // preventing the "grey tiles / 0x0 container" bug on mobile.
+  const [mapMountKey, setMapMountKey] = useState(0)
 
   const [gpsLoading, setGpsLoading] = useState(false)
   const [gpsError, setGpsError] = useState('')
@@ -285,8 +288,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
           .mobile-view-btn { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 100px; color: #6b7280; transition: all 0.2s; }
           .mobile-view-btn.active { background: #fff; color: #111827; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-          .layout-container.map-active .clinic-list { display: none; }
-          .layout-container.map-active .right-col { display: block; position: relative; height: calc(100vh - 300px); min-height: 400px; top: 0; margin-top: 0; }
+          .mobile-map-container { height: calc(100vh - 300px); min-height: 400px; border-radius: 16px; overflow: hidden; background: #f3f4f6; position: relative; }
         }
       `}</style>
 
@@ -325,14 +327,26 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
               className={`mobile-view-btn ${activeView === 'list' ? 'active' : ''}`}
               onClick={() => setActiveView('list')}
             >
-              List View
+              📋 List
             </div>
             <div 
               className={`mobile-view-btn ${activeView === 'map' ? 'active' : ''}`}
-              onClick={() => setActiveView('map')}
+              onClick={() => {
+                setActiveView('map')
+                setMapMountKey(k => k + 1)
+              }}
             >
-              Map View
+              🗺️ Map
             </div>
+          </div>
+
+          {/* Mobile map rendered inline — never in a display:none container */}
+          <div className="mobile-map-container" style={{ display: activeView === 'map' ? 'block' : 'none' }}>
+            {activeView === 'map' && (
+              <MapComponent clinics={displayedClinics} selectedClinic={selectedClinic} mapKey={mapMountKey}>
+                {displayedClinics.length === 0 && !loading && !gpsLoading && <EmptyState />}
+              </MapComponent>
+            )}
           </div>
 
           <div className="filters-row">
@@ -388,7 +402,10 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
                   isSelected={selectedClinic && (selectedClinic.id === clinic.id || selectedClinic.code === clinic.code)}
                   onClick={() => {
                     setSelectedClinic(clinic)
-                    if (window.innerWidth <= 1024) setActiveView('map')
+                    if (window.innerWidth <= 1024) {
+                      setActiveView('map')
+                      setMapMountKey(k => k + 1)
+                    }
                   }}
                 />
               ))
@@ -398,8 +415,9 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
           </div>
         </div>
 
+        {/* Desktop-only sticky map sidebar */}
         <div className="right-col">
-          <MapComponent clinics={displayedClinics} selectedClinic={selectedClinic}>
+          <MapComponent clinics={displayedClinics} selectedClinic={selectedClinic} mapKey={0}>
             {displayedClinics.length === 0 && !loading && !gpsLoading && <EmptyState />}
           </MapComponent>
         </div>

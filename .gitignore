@@ -42,3 +42,14 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# Favicon / icon files (served by Vercel, not needed in git)
+app/icon.png
+app/icon.svg
+app/apple-icon.png
+public/app-icon.png
+public/app-icon1.png
+public/logo-icon-1024.png
+
+# Temp scripts
+resize.ps1

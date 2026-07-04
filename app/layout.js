@@ -23,8 +23,8 @@ export const metadata = {
     canonical: "https://tokenpe.online",
   },
   icons: {
-    icon: '/logo-icon.svg',
-    apple: '/app-icon.png',
+    icon: '/app-icon1.png',
+    apple: '/app-icon1.png',
   },
   verification: {
     google: "YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_STRING", 

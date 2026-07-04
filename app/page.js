@@ -56,7 +56,7 @@ export default function LandingPage() {
     { ico: "⚡", color: "#f3e5f5", title: "Live Dashboard", desc: "See who's waiting, with doctor, and done — updating in real-time." },
     { ico: "🔔", color: "#fff3e0", title: "Smart Auto Alerts", desc: "10-away, 5-away, and your-turn notifications sent automatically." },
     { ico: "📅", color: "#e0f7fa", title: "Date-wise History", desc: "Complete patient records for any past date. Daily volumes at a glance." },
-    { ico: "🔲", color: "#fce4ec", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card." },
+    { ico: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01"/><path d="M11 11h2v2h-2z"/><path d="M14 11h.01M11 14h.01"/></svg>, color: "#fce4ec", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card." },
   ];
 
   return (
@@ -1069,7 +1069,7 @@ export default function LandingPage() {
           <div className="lp-how-steps">
             {[
               { n: "1", ico: "📝", title: "Register your clinic", desc: "Sign up in 2 minutes with Google. Get your unique WhatsApp clinic QR code instantly." },
-              { n: "2", ico: "📲", title: "Display the QR code", desc: "Print and display the QR card at reception. Patients scan once — they're in the queue." },
+              { n: "2", ico: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01"/><path d="M11 11h2v2h-2z"/><path d="M14 11h.01M11 14h.01"/></svg>, title: "Display the QR code", desc: "Print and display the QR card at reception. Patients scan once — they're in the queue." },
               { n: "3", ico: "📣", title: "Call with one tap", desc: "Press 'Call Next' on your dashboard. The patient gets a WhatsApp alert in their language." },
             ].map((s, i) => (
               <div key={s.n} className={`lp-how-step lp-reveal lp-reveal-d${i + 1}`}>
@@ -1222,7 +1222,7 @@ function FAQList() {
     { q: "How is this different from just giving out paper tokens?", a: "Paper tokens require patients to sit in a crowded waiting room for hours. TokenPe allows them to wait comfortably at home or nearby, only arriving when it's their turn. It elevates the patient experience and makes your clinic look modern." },
     { q: "Do patients need to download an app?", a: "Not at all! Patients simply scan a QR code or send a WhatsApp message. No app downloads, no logins, and no friction whatsoever." },
     { q: "How long does setup take?", a: "Less than 2 minutes. Sign up with Google, verify your clinic details, and you'll have your QR code ready to display. No IT team, no hardware required." },
-    { q: "Can I cancel my subscription anytime?", a: "Yes, absolutely. There are no lock-in contracts. You can cancel or downgrade your plan at any time from your dashboard settings." },
+    { q: "Can I cancel my subscription anytime?", a: "Yes, absolutely. There are no lock-in contracts. You can cancel your plan at any time from your dashboard settings. Your access will continue until the end of your current billing cycle, after which you won't be charged again." },
   ];
   return (
     <div className="lp-faq-list">

@@ -46,15 +46,6 @@ export const metadata = {
     description: "Replace paper queues with real-time WhatsApp updates. Built for Indian Clinics.",
     images: ["https://tokenpe.online/og-image.png"],
   },
-  icons: {
-    icon: [
-      { url: "/logo-icon.svg", type: "image/svg+xml" },
-      { url: "/logo-icon-1024.png", sizes: "1024x1024", type: "image/png" },
-    ],
-    apple: [
-      { url: "/logo-icon-1024.png", sizes: "1024x1024", type: "image/png" },
-    ],
-  },
 };
 
 const structuredData = {

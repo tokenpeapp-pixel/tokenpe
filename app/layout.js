@@ -23,11 +23,12 @@ export const metadata = {
     canonical: "https://tokenpe.online",
   },
   icons: {
-    icon: '/app-icon1.png',
-    apple: '/app-icon1.png',
+    icon: '/icon.png',
+    apple: '/apple-icon.png',
+    shortcut: '/icon.png',
   },
   verification: {
-    google: "YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_STRING", 
+    google: "YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_STRING",
   },
   openGraph: {
     title: "TokenPe - Smart WhatsApp Queues",

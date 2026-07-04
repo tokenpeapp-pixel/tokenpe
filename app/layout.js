@@ -22,6 +22,10 @@ export const metadata = {
   alternates: {
     canonical: "https://tokenpe.online",
   },
+  icons: {
+    icon: '/logo-icon.svg',
+    apple: '/app-icon.png',
+  },
   verification: {
     google: "YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_STRING", 
   },

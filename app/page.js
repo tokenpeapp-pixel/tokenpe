@@ -638,7 +638,7 @@ export default function LandingPage() {
           margin: 0 auto 20px;
           box-shadow: 0 8px 24px rgba(22,163,74,0.35);
         }
-        .lp-step-ico { font-size: 28px; margin-bottom: 14px; display: block; }
+        .lp-step-ico { font-size: 28px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; height: 36px; }
         .lp-step-title { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 8px; }
         .lp-step-desc { font-size: 13.5px; color: #6b7280; line-height: 1.7; }
 
@@ -1069,7 +1069,7 @@ export default function LandingPage() {
           <div className="lp-how-steps">
             {[
               { n: "1", ico: "📝", title: "Register your clinic", desc: "Sign up in 2 minutes with Google. Get your unique WhatsApp clinic QR code instantly." },
-              { n: "2", ico: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01"/><path d="M11 11h2v2h-2z"/><path d="M14 11h.01M11 14h.01"/></svg>, title: "Display the QR code", desc: "Print and display the QR card at reception. Patients scan once — they're in the queue." },
+              { n: "2", ico: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'block'}}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01"/><path d="M11 11h2v2h-2z"/><path d="M14 11h.01M11 14h.01"/></svg>, title: "Display the QR code", desc: "Print and display the QR card at reception. Patients scan once — they're in the queue." },
               { n: "3", ico: "📣", title: "Call with one tap", desc: "Press 'Call Next' on your dashboard. The patient gets a WhatsApp alert in their language." },
             ].map((s, i) => (
               <div key={s.n} className={`lp-how-step lp-reveal lp-reveal-d${i + 1}`}>

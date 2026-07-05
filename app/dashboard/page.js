@@ -794,6 +794,7 @@ export default function Dashboard() {
     localStorage.setItem('clinicCode', targetClinic.code)
     localStorage.setItem('clinicPhone', targetClinic.phone)
     localStorage.setItem('tokenpe_clinic', JSON.stringify(targetClinic))
+    addToast(`✅ Switched to ${targetClinic.name}`, 'done')
 
     // Update session cookie and wait for it
     await fetch('/api/auth/switch', {
@@ -811,7 +812,6 @@ export default function Dashboard() {
       }
     } catch (e) { }
     setLoading(false)
-    addToast(`✅ Switched to ${targetClinic.name}`, 'done')
 
     // Show Discovery Profile if the new branch is missing details
     if (!targetClinic.specialty || !targetClinic.city || targetClinic.phone === '0000000000') {

@@ -111,11 +111,14 @@ export default function LandingPage() {
           font-size: 13px;
           font-weight: 600;
           letter-spacing: 0.2px;
+          line-height: 1.5;
         }
         .lp-topbar a {
           color: #6ee7b7;
           text-decoration: underline;
           margin-left: 6px;
+          white-space: nowrap;
+          display: inline-block;
         }
 
         /* ── NAV ── */

@@ -42,8 +42,6 @@ export default function BillingPage() {
       const stored = localStorage.getItem('tokenpe_clinic')
       if (!stored) { router.push('/login'); return }
       const clinicData = JSON.parse(stored)
-      setClinic(clinicData)
-      setLoading(false)
 
       const today = getISTDateString()
 
@@ -65,8 +63,12 @@ export default function BillingPage() {
         setIsPrimaryBranch(freshData.isPrimaryBranch !== false)
         setPrimaryBranchName(freshData.primaryBranchName)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
+      } else {
+        // fallback to cached data if API fails
+        setClinic(clinicData)
       }
       setTodayCount(countData?.success ? countData.count : 0)
+      setLoading(false)
     }
     load()
   }, [router])

@@ -111,7 +111,7 @@ export async function POST(req) {
             clinicId: finalClinicData.id,
             clinicCode: finalClinicData.code,
             phone: finalClinicData.phone || '0000000000'
-        }
+        }   
         const token = await signToken(sessionPayload)
 
         // Set secure cookie

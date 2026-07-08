@@ -9,53 +9,53 @@ const otpLimiter = rateLimit({ maxAttempts: 3, windowMs: 15 * 60 * 1000 })
 const getSecret = () => new TextEncoder().encode(process.env.JWT_SECRET || 'tokenpe_super_secret_fallback_2026')
 
 export async function POST(req) {
-    try {
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-        const limit = otpLimiter.check(ip)
-        if (limit.blocked) {
-            const retryMins = Math.ceil(limit.retryAfterMs / 60000)
-            return Response.json({ success: false, message: `Too many requests. Try again in ${retryMins} minutes.` }, { status: 429 })
-        }
+  try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const limit = otpLimiter.check(ip)
+    if (limit.blocked) {
+      const retryMins = Math.ceil(limit.retryAfterMs / 60000)
+      return Response.json({ success: false, message: `Too many requests. Try again in ${retryMins} minutes.` }, { status: 429 })
+    }
 
-        const body = await req.json()
-        const { email, phone } = body
+    const body = await req.json()
+    const { email, phone } = body
 
-        if (!email || !phone) {
-            return Response.json({ success: false, message: 'Email and phone are required.' }, { status: 400 })
-        }
+    if (!email || !phone) {
+      return Response.json({ success: false, message: 'Email and phone are required.' }, { status: 400 })
+    }
 
-        const cleanEmail = String(email).trim().toLowerCase()
-        const cleanPhone = String(phone).replace(/\D/g, '')
+    const cleanEmail = String(email).trim().toLowerCase()
+    const cleanPhone = String(phone).replace(/\D/g, '')
 
-        // Verify clinic exists with this email + phone
-        const { data: clinic, error } = await supabase
-            .from('clinics')
-            .select('id, name, email')
-            .eq('email', cleanEmail)
-            .eq('phone', cleanPhone)
-            .single()
+    // Verify clinic exists with this email + phone
+    const { data: clinic, error } = await supabase
+      .from('clinics')
+      .select('id, name, email')
+      .eq('email', cleanEmail)
+      .eq('phone', cleanPhone)
+      .single()
 
-        if (error || !clinic) {
-            otpLimiter.recordFailure(ip)
-            return Response.json({ success: false, message: 'No clinic found with this email and phone number.' }, { status: 404 })
-        }
+    if (error || !clinic) {
+      otpLimiter.recordFailure(ip)
+      return Response.json({ success: false, message: 'No clinic found with this email and phone number.' }, { status: 404 })
+    }
 
-        // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
-        // Sign a short-lived token embedding the OTP (10 minutes)
-        const otpToken = await new SignJWT({ email: cleanEmail, phone: cleanPhone, otp })
-            .setProtectedHeader({ alg: 'HS256' })
-            .setIssuedAt()
-            .setExpirationTime('10m')
-            .sign(getSecret())
+    // Sign a short-lived token embedding the OTP (10 minutes)
+    const otpToken = await new SignJWT({ email: cleanEmail, phone: cleanPhone, otp })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('10m')
+      .sign(getSecret())
 
-        // Send OTP email via Resend
-        await resend.emails.send({
-            from: 'TokenPe <support@tokenpe.online>',
-            to: clinic.email,
-            subject: '\ud83d\udd10 Your TokenPe PIN Reset Code',
-            html: `
+    // Send OTP email via Resend
+    await resend.emails.send({
+      from: 'TokenPe <support@tokenpe.online>',
+      to: clinic.email,
+      subject: '\ud83d\udd10 Your TokenPe PIN Reset Code',
+      html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -139,13 +139,13 @@ export async function POST(req) {
 </body>
 </html>
             `
-        })
+    })
 
-        otpLimiter.reset(ip)
-        return Response.json({ success: true, otpToken, message: 'OTP sent to your email.' }, { status: 200 })
+    otpLimiter.reset(ip)
+    return Response.json({ success: true, otpToken, message: 'OTP sent to your email.' }, { status: 200 })
 
-    } catch (err) {
-        console.error('[Send OTP Error]', err)
-        return Response.json({ success: false, message: 'Internal Server Error' }, { status: 500 })
-    }
+  } catch (err) {
+    console.error('[Send OTP Error]', err)
+    return Response.json({ success: false, message: 'Internal Server Error' }, { status: 500 })
+  }
 }

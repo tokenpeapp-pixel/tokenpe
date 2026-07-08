@@ -540,7 +540,7 @@ export default function BillingPage() {
                   </div>
                 ))}
               </div>
-              <a href="mailto:support@tokenpe.online" className="mt-4 flex items-center gap-2 p-4 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#0D9488] hover:bg-teal-50 transition-colors">
+              <a href="mailto:tokenpe.online@gmail.com" className="mt-4 flex items-center gap-2 p-4 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#0D9488] hover:bg-teal-50 transition-colors">
                 <span className="material-symbols-outlined text-base">headset_mic</span>
                 Contact Support
               </a>
@@ -599,7 +599,7 @@ export default function BillingPage() {
               </div>
 
               {/* Contact Support */}
-              <a href="mailto:support@tokenpe.online" className="mt-6 flex items-center gap-2 p-3 border border-[#E5E7EB] rounded-xl text-[11px] font-bold text-[#0D9488] hover:bg-teal-50 transition-colors">
+              <a href="mailto:tokenpe.online@gmail.com" className="mt-6 flex items-center gap-2 p-3 border border-[#E5E7EB] rounded-xl text-[11px] font-bold text-[#0D9488] hover:bg-teal-50 transition-colors">
                 <span className="material-symbols-outlined text-base">headset_mic</span>
                 Contact Support
               </a>

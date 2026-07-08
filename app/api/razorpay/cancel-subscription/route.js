@@ -67,10 +67,17 @@ export async function POST(req) {
     }
 
     // Mark as pending cancellation — keep plan + access until period end
-    const { error: updateErr } = await supabaseAdmin
+    let updateQuery = supabaseAdmin
       .from('clinics')
       .update({ subscription_status: 'cancel_at_period_end' })
-      .eq('id', clinicId)
+      
+    if (clinic.email) {
+      updateQuery = updateQuery.eq('email', clinic.email)
+    } else {
+      updateQuery = updateQuery.eq('id', clinicId)
+    }
+
+    const { error: updateErr } = await updateQuery
 
     if (updateErr) throw updateErr
 

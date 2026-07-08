@@ -272,18 +272,41 @@ export default function BillingPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <h2 className="text-xl sm:text-2xl font-black text-[#111827]">{planName}</h2>
-                    {isTrial && !isTrialExpired && <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] rounded-full text-[10px] font-bold uppercase tracking-wider">Trial</span>}
-                    {isTrialExpired  && <span className="px-2 py-0.5 bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded-full text-[10px] font-bold uppercase tracking-wider">Expired</span>}
-                    {isActive        && <span className="px-2 py-0.5 bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] rounded-full text-[10px] font-bold uppercase tracking-wider">Active</span>}
-                    {isCancelPending && <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] rounded-full text-[10px] font-bold uppercase tracking-wider">Cancellation Scheduled</span>}
-                    {isCanceled      && <span className="px-2 py-0.5 bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded-full text-[10px] font-bold uppercase tracking-wider">Canceled</span>}
+                    {isTrial && !isTrialExpired && (
+                      <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full text-[11px] font-extrabold tracking-wide shadow-sm">
+                        🎁 FREE TRIAL — {daysLeft} days left
+                      </span>
+                    )}
+                    {isTrialExpired && (
+                      <span className="px-3 py-1 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full text-[11px] font-extrabold tracking-wide shadow-sm">
+                        ⚠️ TRIAL EXPIRED
+                      </span>
+                    )}
+                    {!isTrial && !isCanceled && (
+                      <span className="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-[11px] font-bold tracking-wide">
+                        ACTIVE
+                      </span>
+                    )}
+                    {isCanceled && (
+                      <span className="px-3 py-1 bg-red-50 text-red-500 border border-red-200 rounded-full text-[11px] font-bold tracking-wide">
+                        CANCELED
+                      </span>
+                    )}
                   </div>
-                  {(isActive || isCancelPending) && (
-                    <p className="text-lg font-black text-[#111827] mb-1">{planPrice}<span className="text-sm font-medium text-[#6B7280]">/month</span></p>
-                  )}
-                  <p className="text-sm text-[#6B7280]">
-                    {isTrial ? `You are on a free trial period${daysLeft !== null ? ` — ${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : ''}.` : isCancelPending ? 'Your subscription will end at period end.' : isCanceled ? 'Your subscription has ended.' : `You have access to all ${planName} features.`}
-                  </p>
+                  
+                  <div className="text-sm text-[#6B7280] mt-3 leading-relaxed">
+                    {isTrialExpired
+                      ? <span className="text-red-500 font-bold">Your free trial expired on {trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Please choose a paid plan below to restore access to your dashboard.</span>
+                      : isTrial
+                        ? `Trial ends on ${trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Upgrade now to keep your features!`
+                        : isCanceled
+                          ? <span className="text-red-500 font-bold">Subscription ended. Please reactivate a plan to restore service.</span>
+                          : isCancelPending && clinic?.current_period_end
+                            ? <span className="text-red-500 font-medium">⚠️ Cancellation scheduled — full access until <strong>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. No further charges.</span>
+                            : clinic?.current_period_end
+                              ? <>Next billing date: <strong className="text-indigo-600">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
+                              : <span className="text-gray-500 text-xs">⏳ Confirming billing date... (may take a few seconds)</span>}
+                  </div>
                 </div>
 
                 {/* Middle — Next billing date + auto-renewal toggle */}

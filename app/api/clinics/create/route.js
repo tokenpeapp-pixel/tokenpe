@@ -38,18 +38,20 @@ export async function POST(req) {
     const num = Math.floor(Math.random() * 900) + 100
     const newCode = `${clean}${num}`
     
-    // Inherit subscription data from the parent clinic
-    const parentClinic = existingClinics.find(c => c.plan_id === 'elite' || c.plan_id === 'trialing' || c.subscription_status === 'trialing') || existingClinics[0]
+    // Always use the OLDEST clinic (primary branch) as the billing source of truth
+    const sortedClinics = [...existingClinics].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    const parentClinic = sortedClinics[0]
     
     const newClinic = {
       name: clinicName,
       email: email,
       phone: phone || parentClinic?.phone || '0000000000',
       code: newCode,
-      plan_id: parentClinic.plan_id || 'elite',
-      subscription_status: parentClinic.subscription_status || 'active',
+      plan_id: parentClinic.plan_id || 'starter',
+      subscription_status: parentClinic.subscription_status || 'trialing',
       trial_ends_at: parentClinic.trial_ends_at || null,
-      current_period_end: parentClinic.current_period_end || null
+      current_period_end: parentClinic.current_period_end || null,
+      razorpay_subscription_id: parentClinic.razorpay_subscription_id || null
     }
 
     const { data, error } = await supabaseAdmin

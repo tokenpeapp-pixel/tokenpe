@@ -328,7 +328,7 @@ export default function BillingPage() {
                 )}
 
                 {/* Right — Action buttons */}
-                <div className="flex flex-col gap-2 sm:min-w-[180px]">
+                <div className="flex flex-col gap-2 w-full sm:w-auto sm:min-w-[180px]">
                   {upgrading ? (
                     <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-500 rounded-xl text-sm font-bold">
                       <span className="material-symbols-outlined animate-spin">refresh</span>

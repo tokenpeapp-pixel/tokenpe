@@ -18,21 +18,33 @@ export async function GET(req) {
         if (error || !clinic) {
             return Response.json({ success: false, message: 'Clinic not found' }, { status: 404 })
         }
+
         let isPrimaryBranch = true
         let primaryBranchName = null
 
         if (clinic.email) {
+            // Fetch the primary branch (oldest clinic with same email) — get full billing fields
             const { data: siblingClinics } = await supabaseAdmin
                 .from('clinics')
-                .select('id, name')
+                .select('id, name, plan_id, subscription_status, current_period_end, razorpay_subscription_id, trial_ends_at')
                 .eq('email', clinic.email)
                 .order('created_at', { ascending: true })
                 .limit(1)
-            
+
             if (siblingClinics && siblingClinics.length > 0) {
-                if (siblingClinics[0].id !== clinic.id) {
+                const primaryClinic = siblingClinics[0]
+
+                if (primaryClinic.id !== clinic.id) {
+                    // This is a child branch — overlay primary branch billing data
                     isPrimaryBranch = false
-                    primaryBranchName = siblingClinics[0].name
+                    primaryBranchName = primaryClinic.name
+
+                    // Sync child clinic's billing fields with primary branch
+                    clinic.plan_id = primaryClinic.plan_id
+                    clinic.subscription_status = primaryClinic.subscription_status
+                    clinic.current_period_end = primaryClinic.current_period_end
+                    clinic.razorpay_subscription_id = primaryClinic.razorpay_subscription_id
+                    clinic.trial_ends_at = primaryClinic.trial_ends_at
                 }
             }
         }

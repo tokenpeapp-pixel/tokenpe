@@ -16,6 +16,12 @@ export default function BillingPage() {
   const [isCanceling, setIsCanceling] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(null)
 
+  const [currentDate, setCurrentDate] = useState(null)
+
+  useEffect(() => {
+    setCurrentDate(new Date())
+  }, [])
+
   useEffect(() => {
     if (!document.getElementById('razorpay-checkout-js')) {
       const script = document.createElement('script')
@@ -177,12 +183,7 @@ export default function BillingPage() {
     ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0])
     : clinic
 
-  // Calculate trial end and days left
-  const [currentDate, setCurrentDate] = useState(null)
-  
-  useEffect(() => {
-    setCurrentDate(new Date())
-  }, [])
+
 
   const trialEnd = oldestClinic?.trial_ends_at
     ? new Date(oldestClinic.trial_ends_at)

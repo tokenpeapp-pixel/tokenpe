@@ -5,10 +5,10 @@ import { supabase, getISTDateString } from '../../../lib/supabase'
 import confetti from 'canvas-confetti'
 
 const PLAN_META = {
-  starter:      { name: 'Starter',      price: '₹499',    priceNum: 499,  limit: 50,       color: '#6B7280' },
-  pro:          { name: 'Professional', price: '₹999',    priceNum: 999,  limit: 150,      color: '#0D9488' },
-  professional: { name: 'Professional', price: '₹999',    priceNum: 999,  limit: 150,      color: '#0D9488' },
-  elite:        { name: 'Elite',        price: '₹1,999',  priceNum: 1999, limit: Infinity, color: '#F59E0B' },
+  starter:      { name: 'Starter', price: '₹499',   priceNum: 499,  limit: 50,       color: '#6B7280' },
+  pro:          { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#0D9488' },
+  professional: { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#0D9488' },
+  elite:        { name: 'Elite',   price: '₹1,999', priceNum: 1999, limit: Infinity, color: '#F59E0B' },
 }
 
 export default function BillingPage() {
@@ -16,6 +16,7 @@ export default function BillingPage() {
   const [clinic, setClinic]               = useState(null)
   const [loading, setLoading]             = useState(true)
   const [todayCount, setTodayCount]       = useState(0)
+  const [monthCount, setMonthCount]       = useState(0)
   const [upgrading, setUpgrading]         = useState(null)
   const [showDetails, setShowDetails]     = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
@@ -44,17 +45,24 @@ export default function BillingPage() {
       setLoading(false)
 
       const today = getISTDateString()
-      const [freshRes, countRes] = await Promise.all([
+      // Compute first day of current month (IST)
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+      const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+      const [freshRes, countRes, monthRes] = await Promise.all([
         fetch(`/api/clinics/get?id=${clinicData.id}`),
-        fetch(`/api/analytics/count?clinicId=${clinicData.id}&date=${today}`)
+        fetch(`/api/analytics/count?clinicId=${clinicData.id}&date=${today}`),
+        fetch(`/api/analytics/get?clinicId=${clinicData.id}&startDate=${firstOfMonth}&endDate=${today}`)
       ])
       const freshData = freshRes.ok ? await freshRes.json() : null
       const countData = countRes.ok ? await countRes.json() : null
+      const monthData = monthRes.ok ? await monthRes.json() : null
       if (freshData?.success && freshData.clinic) {
         setClinic(freshData.clinic)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
       }
       setTodayCount(countData?.success ? countData.count : 0)
+      setMonthCount(monthData?.success ? (monthData.data?.length ?? 0) : 0)
     }
     load()
   }, [router])
@@ -201,7 +209,7 @@ export default function BillingPage() {
       checkColor: '#6B7280', accent: '#6B7280'
     },
     {
-      tier: 'pro', label: 'Professional', price: '₹999',
+      tier: 'pro', label: 'Pro', price: '₹999',
       features: ['Up to 150 patients/day', 'Branded WhatsApp Identity', 'Multilingual AI Voice Alerts', 'Queue Pause & Smart Wait Time', '30-Day History & Heatmap'],
       checkColor: '#0D9488', accent: '#0D9488', featured: true
     },
@@ -214,7 +222,7 @@ export default function BillingPage() {
 
   const faqs = [
     { q: 'Can I change plans?', a: 'Yes! You can upgrade anytime. Upgrades are immediate. To downgrade, cancel your current subscription first and then subscribe to the new plan.' },
-    { q: "What's included in Professional?", a: 'Professional includes up to 150 patients/day, branded WhatsApp alerts, AI voice notes in 10 languages, queue pause functionality, and 30-day analytics heatmap.' },
+    { q: "What's included in Pro?", a: 'Pro includes up to 150 patients/day, branded WhatsApp alerts, AI voice notes in 10 languages, queue pause functionality, and 30-day analytics heatmap.' },
     { q: 'Can I cancel anytime?', a: 'Yes. You can cancel at any time from the billing page. You retain full access until the end of your current billing period. No refunds are provided for partial periods.' },
     { q: 'Do you offer refunds?', a: 'We do not offer refunds for partial billing periods. However, you can use the service until your billing period ends after cancellation.' },
   ]
@@ -250,67 +258,77 @@ export default function BillingPage() {
             </div>
 
             {/* ── Current Plan Card ── */}
-            <section className="bg-white border border-[#E5E7EB] rounded-2xl p-6 md:p-8 mb-8 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center border-l-4 border-[#0D9488] pl-4 md:pl-6">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-2xl font-black text-[#111827]">{planName} Plan</h2>
-                    {isTrial && !isTrialExpired && <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] rounded text-[10px] font-bold uppercase tracking-wider">Free Trial ({daysLeft}d left)</span>}
-                    {isTrialExpired                && <span className="px-2 py-0.5 bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded text-[10px] font-bold uppercase tracking-wider">Trial Expired</span>}
-                    {isActive                      && <span className="px-2 py-0.5 bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] rounded text-[10px] font-bold uppercase tracking-wider">Active</span>}
-                    {isCancelPending               && <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] rounded text-[10px] font-bold uppercase tracking-wider">Cancellation Scheduled</span>}
-                    {isCanceled                    && <span className="px-2 py-0.5 bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded text-[10px] font-bold uppercase tracking-wider">Canceled</span>}
+            <section className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 mb-8 shadow-sm">
+              {/* Label */}
+              <p className="text-[11px] font-black text-[#9CA3AF] uppercase tracking-widest mb-3">Current Plan</p>
+
+              <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+
+                {/* Left — Plan name + status + price */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h2 className="text-xl sm:text-2xl font-black text-[#111827]">{planName}</h2>
+                    {isTrial && !isTrialExpired && <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] rounded-full text-[10px] font-bold uppercase tracking-wider">Trial</span>}
+                    {isTrialExpired  && <span className="px-2 py-0.5 bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded-full text-[10px] font-bold uppercase tracking-wider">Expired</span>}
+                    {isActive        && <span className="px-2 py-0.5 bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] rounded-full text-[10px] font-bold uppercase tracking-wider">Active</span>}
+                    {isCancelPending && <span className="px-2 py-0.5 bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] rounded-full text-[10px] font-bold uppercase tracking-wider">Cancellation Scheduled</span>}
+                    {isCanceled      && <span className="px-2 py-0.5 bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded-full text-[10px] font-bold uppercase tracking-wider">Canceled</span>}
                   </div>
+                  {(isActive || isCancelPending) && (
+                    <p className="text-lg font-black text-[#111827] mb-1">{planPrice}<span className="text-sm font-medium text-[#6B7280]">/month</span></p>
+                  )}
                   <p className="text-sm text-[#6B7280]">
-                    {isTrial ? 'You are on a free trial period.' : isCancelPending ? 'Your subscription will end at period end.' : isCanceled ? 'Your subscription has ended.' : `You have access to all ${planName} features.`}
+                    {isTrial ? `You are on a free trial period${daysLeft !== null ? ` — ${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : ''}.` : isCancelPending ? 'Your subscription will end at period end.' : isCanceled ? 'Your subscription has ended.' : `You have access to all ${planName} features.`}
                   </p>
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-[11px] text-[#9CA3AF] font-bold uppercase">{isCanceled ? 'Subscription Ended' : isCancelPending ? 'Access Until' : 'Next Billing Date'}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-black text-[#111827]">
+                {/* Middle — Next billing date + auto-renewal toggle */}
+                {!isCanceled && !isTrialExpired && (
+                  <div className="sm:text-center sm:min-w-[170px]">
+                    <p className="text-[11px] text-[#9CA3AF] font-bold uppercase mb-1">{isCancelPending ? 'Access Until' : 'Next Billing Date'}</p>
+                    <p className="text-base sm:text-lg font-black text-[#111827] mb-2">
                       {clinic?.current_period_end
                         ? new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
                         : (isTrial ? (trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '---') : '---')}
-                    </span>
-                    {isActive && <span className="text-[#0D9488] font-bold text-sm">{planPrice}/mo</span>}
-                  </div>
-                  {!isCanceled && !isTrialExpired && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className={`relative inline-flex h-4 w-8 items-center rounded-full ${!isCancelPending ? 'bg-[#0D9488]' : 'bg-[#E5E7EB]'}`}>
-                        <span className={`inline-block h-3 w-3 rounded-full bg-white transition-transform ${!isCancelPending ? 'translate-x-4' : 'translate-x-1'}`}></span>
+                    </p>
+                    <div className="flex items-center sm:justify-center gap-2">
+                      <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!isCancelPending ? 'bg-[#0D9488]' : 'bg-[#E5E7EB]'}`}>
+                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${!isCancelPending ? 'translate-x-[18px]' : 'translate-x-1'}`}></span>
                       </div>
-                      <span className="text-xs text-[#6B7280]">{isCancelPending ? 'Auto-renewal OFF' : 'Auto-renewal ON'}</span>
+                      <span className="text-xs font-semibold text-[#6B7280]">Auto renewal {!isCancelPending ? 'ON' : 'OFF'}</span>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                <div className="flex flex-col gap-3">
+                {/* Right — Action buttons */}
+                <div className="flex flex-col gap-2 sm:min-w-[180px]">
                   {isActive && !isCancelPending && (
                     <button
                       onClick={() => setShowCancelModal(true)}
                       disabled={!!upgrading}
-                      className="flex items-center justify-center gap-2 px-4 py-2 border border-[#FECACA] bg-[#FEF2F2] rounded-lg text-sm font-bold text-[#DC2626] hover:bg-[#FEE2E2] transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors disabled:opacity-50"
                     >
-                      {upgrading === 'cancel' ? 'Canceling...' : 'Cancel Subscription'}
+                      <span className="material-symbols-outlined text-base">manage_accounts</span>
+                      Manage Subscription
                     </button>
                   )}
                   {isCancelPending && (
                     <button
                       onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-[#0D9488] text-white rounded-lg text-sm font-bold hover:opacity-90 transition-colors"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
                     >
                       🔄 Reactivate Subscription
                     </button>
                   )}
                   <button
                     onClick={() => setShowDetails(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 border border-[#E5E7EB] bg-white rounded-lg text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-lg">description</span> View Plan Details
+                    <span className="material-symbols-outlined text-base">description</span>
+                    View Plan Details
                   </button>
                 </div>
+
               </div>
             </section>
 
@@ -319,7 +337,9 @@ export default function BillingPage() {
               <h3 className="flex items-center gap-2 text-[15px] font-bold text-[#111827] mb-4">
                 <span className="material-symbols-outlined text-[#0D9488]">bar_chart</span> Usage this month
               </h3>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+                {/* Patients Today */}
                 <div className="bg-white p-4 border border-[#E5E7EB] rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center">
@@ -336,27 +356,41 @@ export default function BillingPage() {
                   </div>
                 </div>
 
-                {[
-                  { icon: 'event',       color: 'blue',   label: 'Appointments' },
-                  { icon: 'chat_bubble', color: 'green',  label: 'WhatsApp' },
-                  { icon: 'campaign',    color: 'amber',  label: 'Voice Alerts' },
-                ].map(({ icon, color, label }) => (
-                  <div key={label} className="bg-white p-4 border border-[#E5E7EB] rounded-xl opacity-70">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-8 h-8 rounded-full bg-${color}-50 flex items-center justify-center`}>
-                        <span className={`material-symbols-outlined text-${color}-600 text-lg`}>{icon}</span>
-                      </div>
-                      <span className="text-xs font-bold text-[#6B7280]">{label}</span>
+                {/* Patients This Month */}
+                <div className="bg-white p-4 border border-[#E5E7EB] rounded-xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-indigo-600 text-lg">calendar_month</span>
                     </div>
-                    <div className="flex items-baseline justify-between mb-2">
-                      <span className="text-xl font-black text-[#111827]">–</span>
-                      <span className="text-[10px] text-[#9CA3AF]">Unlimited</span>
-                    </div>
-                    <div className="w-full bg-[#F3F4F6] h-1.5 rounded-full overflow-hidden">
-                      <div className={`bg-${color}-500 h-full w-full`}></div>
-                    </div>
+                    <span className="text-xs font-bold text-[#6B7280]">Patients This Month</span>
                   </div>
-                ))}
+                  <div className="flex items-baseline justify-between mb-2">
+                    <span className="text-xl font-black text-[#111827]">{monthCount}</span>
+                    <span className="text-[10px] text-[#9CA3AF]">this month</span>
+                  </div>
+                  <div className="w-full bg-[#F3F4F6] h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-indigo-500 h-full" style={{ width: `${planLimit === Infinity ? 40 : Math.min((monthCount / (planLimit * 30)) * 100, 100)}%` }}></div>
+                  </div>
+                </div>
+
+                {/* Voice Alerts — plan feature */}
+                <div className="bg-white p-4 border border-[#E5E7EB] rounded-xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-amber-600 text-lg">campaign</span>
+                    </div>
+                    <span className="text-xs font-bold text-[#6B7280]">AI Voice Alerts</span>
+                  </div>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <span className={`text-sm font-black ${planId === 'pro' || planId === 'professional' || planId === 'elite' ? 'text-[#059669]' : 'text-[#9CA3AF]'}`}>
+                      {planId === 'pro' || planId === 'professional' || planId === 'elite' ? 'Included' : 'Not on your plan'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#F3F4F6] h-1.5 rounded-full overflow-hidden">
+                    <div className={`h-full w-full ${planId === 'pro' || planId === 'professional' || planId === 'elite' ? 'bg-amber-400' : 'bg-[#E5E7EB]'}`}></div>
+                  </div>
+                </div>
+
               </div>
             </section>
 

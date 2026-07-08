@@ -25,6 +25,8 @@ export default function BillingPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(null)
   const [currentDate, setCurrentDate]     = useState(null)
   const [openFaq, setOpenFaq]             = useState(null)
+  const [isPrimaryBranch, setIsPrimaryBranch] = useState(true)
+  const [primaryBranchName, setPrimaryBranchName] = useState(null)
 
   useEffect(() => { setCurrentDate(new Date()) }, [])
 
@@ -59,6 +61,8 @@ export default function BillingPage() {
       const monthData = monthRes.ok ? await monthRes.json() : null
       if (freshData?.success && freshData.clinic) {
         setClinic(freshData.clinic)
+        setIsPrimaryBranch(freshData.isPrimaryBranch !== false)
+        setPrimaryBranchName(freshData.primaryBranchName)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
       }
       setTodayCount(countData?.success ? countData.count : 0)
@@ -246,7 +250,7 @@ export default function BillingPage() {
                 <p className="text-sm text-[#6B7280]">Manage your subscription, invoices and payment methods.</p>
               </div>
               {/* Only show Upgrade Plan if user is not already on elite or is cancelled */}
-              {(planId !== 'elite' || isCanceled || isTrial) && (
+              {(planId !== 'elite' || isCanceled || isTrial) && isPrimaryBranch && (
                 <button
                   onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
                   className="bg-[#0D9488] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-teal-900/10 hover:opacity-90 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
@@ -301,33 +305,42 @@ export default function BillingPage() {
                 )}
 
                 {/* Right — Action buttons */}
-                <div className="flex flex-col gap-2 sm:min-w-[180px]">
-                  {isActive && !isCancelPending && (
+                {!isPrimaryBranch ? (
+                  <div className="flex flex-col sm:items-end justify-center pt-4 sm:pt-0 sm:pl-4">
+                    <div className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+                      <span className="material-symbols-outlined text-base">link</span>
+                      Billing managed by {primaryBranchName || 'Primary Branch'}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 sm:min-w-[180px]">
+                    {isActive && !isCancelPending && (
+                      <button
+                        onClick={() => setShowCancelModal(true)}
+                        disabled={!!upgrading}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-base">manage_accounts</span>
+                        Manage Subscription
+                      </button>
+                    )}
+                    {isCancelPending && (
+                      <button
+                        onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
+                      >
+                        🔄 Reactivate Subscription
+                      </button>
+                    )}
                     <button
-                      onClick={() => setShowCancelModal(true)}
-                      disabled={!!upgrading}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      onClick={() => setShowDetails(true)}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
                     >
-                      <span className="material-symbols-outlined text-base">manage_accounts</span>
-                      Manage Subscription
+                      <span className="material-symbols-outlined text-base">description</span>
+                      View Plan Details
                     </button>
-                  )}
-                  {isCancelPending && (
-                    <button
-                      onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
-                    >
-                      🔄 Reactivate Subscription
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowDetails(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-base">description</span>
-                    View Plan Details
-                  </button>
-                </div>
+                  </div>
+                )}
 
               </div>
             </section>
@@ -395,8 +408,9 @@ export default function BillingPage() {
             </section>
 
             {/* ── Plans Section ── */}
-            <section className="mb-12" id="plans-section">
-              <h3 className="flex items-center gap-2 text-[16px] font-bold text-[#111827] mb-6">
+            {isPrimaryBranch && (
+              <section className="mb-12" id="plans-section">
+                <h3 className="flex items-center gap-2 text-[16px] font-bold text-[#111827] mb-6">
                 <span className="material-symbols-outlined text-[#0D9488]">inventory_2</span> Available plans
               </h3>
 
@@ -482,6 +496,7 @@ export default function BillingPage() {
                 })}
               </div>
             </section>
+            )}
 
             {/* ── Billing History ── */}
             <section className="mb-12">

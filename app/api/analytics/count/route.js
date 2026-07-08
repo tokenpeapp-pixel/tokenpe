@@ -4,17 +4,26 @@ export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url)
         const clinicId = searchParams.get('clinicId')
+        const clinicIds = searchParams.get('clinicIds')
         const date = searchParams.get('date')
 
-        if (!clinicId || !date) {
-            return Response.json({ success: false, message: 'Missing clinicId or date' }, { status: 400 })
+        if ((!clinicId && !clinicIds) || !date) {
+            return Response.json({ success: false, message: 'Missing clinicId(s) or date' }, { status: 400 })
         }
 
-        const { count, error } = await supabaseAdmin
+        let query = supabaseAdmin
             .from('patients')
             .select('*', { count: 'exact', head: true })
-            .eq('clinic_id', clinicId)
             .eq('date', date)
+
+        if (clinicIds) {
+            const ids = clinicIds.split(',')
+            query = query.in('clinic_id', ids)
+        } else {
+            query = query.eq('clinic_id', clinicId)
+        }
+
+        const { count, error } = await query
 
         if (error) {
             return Response.json({ success: false, message: 'Failed to count patients' }, { status: 500 })

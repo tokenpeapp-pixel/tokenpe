@@ -16,7 +16,6 @@ export default function BillingPage() {
   const [clinic, setClinic]               = useState(null)
   const [loading, setLoading]             = useState(true)
   const [todayCount, setTodayCount]       = useState(0)
-  const [monthCount, setMonthCount]       = useState(0)
   const [upgrading, setUpgrading]         = useState(null)
   const [showDetails, setShowDetails]     = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
@@ -47,18 +46,20 @@ export default function BillingPage() {
       setLoading(false)
 
       const today = getISTDateString()
-      // Compute first day of current month (IST)
-      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
-      const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
-      const [freshRes, countRes, monthRes] = await Promise.all([
+      const userClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]')
+      let queryParam = `clinicId=${clinicData.id}`
+      if (userClinics.length > 0) {
+        queryParam = `clinicIds=${userClinics.map(c => c.id).join(',')}`
+      }
+
+      const [freshRes, countRes] = await Promise.all([
         fetch(`/api/clinics/get?id=${clinicData.id}`),
-        fetch(`/api/analytics/count?clinicId=${clinicData.id}&date=${today}`),
-        fetch(`/api/analytics/get?clinicId=${clinicData.id}&startDate=${firstOfMonth}&endDate=${today}`)
+        fetch(`/api/analytics/count?${queryParam}&date=${today}`)
       ])
       const freshData = freshRes.ok ? await freshRes.json() : null
       const countData = countRes.ok ? await countRes.json() : null
-      const monthData = monthRes.ok ? await monthRes.json() : null
+
       if (freshData?.success && freshData.clinic) {
         setClinic(freshData.clinic)
         setIsPrimaryBranch(freshData.isPrimaryBranch !== false)
@@ -66,7 +67,6 @@ export default function BillingPage() {
         localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
       }
       setTodayCount(countData?.success ? countData.count : 0)
-      setMonthCount(monthData?.success ? (monthData.data?.length ?? 0) : 0)
     }
     load()
   }, [router])
@@ -250,7 +250,7 @@ export default function BillingPage() {
                 <p className="text-sm text-[#6B7280]">Manage your subscription, invoices and payment methods.</p>
               </div>
               {/* Only show Upgrade Plan if user is not already on elite or is cancelled */}
-              {(planId !== 'elite' || isCanceled || isTrial) && isPrimaryBranch && (
+              {(planId !== 'elite' || isCanceled || isTrial) && (
                 <button
                   onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
                   className="bg-[#0D9488] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-teal-900/10 hover:opacity-90 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
@@ -328,42 +328,42 @@ export default function BillingPage() {
                 )}
 
                 {/* Right — Action buttons */}
-                {!isPrimaryBranch ? (
-                  <div className="flex flex-col sm:items-end justify-center pt-4 sm:pt-0 sm:pl-4">
-                    <div className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
-                      <span className="material-symbols-outlined text-base">link</span>
-                      Billing managed by {primaryBranchName || 'Primary Branch'}
+                <div className="flex flex-col gap-2 sm:min-w-[180px]">
+                  {upgrading ? (
+                    <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-500 rounded-xl text-sm font-bold">
+                      <span className="material-symbols-outlined animate-spin">refresh</span>
+                      Processing...
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 sm:min-w-[180px]">
-                    {isActive && !isCancelPending && (
+                  ) : (
+                    <>
+                      {isActive && !isCancelPending && (
+                        <button
+                          onClick={() => setShowCancelModal(true)}
+                          disabled={!!upgrading}
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#EF4444] hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-base">cancel</span>
+                          Cancel Plan
+                        </button>
+                      )}
+                      {isCancelPending && (
+                        <button
+                          onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
+                        >
+                          🔄 Reactivate Subscription
+                        </button>
+                      )}
                       <button
-                        onClick={() => setShowCancelModal(true)}
-                        disabled={!!upgrading}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        onClick={() => setShowDetails(true)}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
                       >
-                        <span className="material-symbols-outlined text-base">manage_accounts</span>
-                        Manage Subscription
+                        <span className="material-symbols-outlined text-base">description</span>
+                        View Plan Details
                       </button>
-                    )}
-                    {isCancelPending && (
-                      <button
-                        onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
-                      >
-                        🔄 Reactivate Subscription
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setShowDetails(true)}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-base">description</span>
-                      View Plan Details
-                    </button>
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
 
               </div>
             </section>
@@ -371,9 +371,9 @@ export default function BillingPage() {
             {/* ── Usage Section ── */}
             <section className="mb-10">
               <h3 className="flex items-center gap-2 text-[15px] font-bold text-[#111827] mb-4">
-                <span className="material-symbols-outlined text-[#0D9488]">bar_chart</span> Usage this month
+                <span className="material-symbols-outlined text-[#0D9488]">bar_chart</span> Daily Usage
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 {/* Patients Today */}
                 <div className="bg-white p-4 border border-[#E5E7EB] rounded-xl">
@@ -392,47 +392,11 @@ export default function BillingPage() {
                   </div>
                 </div>
 
-                {/* Patients This Month */}
-                <div className="bg-white p-4 border border-[#E5E7EB] rounded-xl">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-indigo-600 text-lg">calendar_month</span>
-                    </div>
-                    <span className="text-xs font-bold text-[#6B7280]">Patients This Month</span>
-                  </div>
-                  <div className="flex items-baseline justify-between mb-2">
-                    <span className="text-xl font-black text-[#111827]">{monthCount}</span>
-                    <span className="text-[10px] text-[#9CA3AF]">this month</span>
-                  </div>
-                  <div className="w-full bg-[#F3F4F6] h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-indigo-500 h-full" style={{ width: `${planLimit === Infinity ? 40 : Math.min((monthCount / (planLimit * 30)) * 100, 100)}%` }}></div>
-                  </div>
-                </div>
-
-                {/* Voice Alerts — plan feature */}
-                <div className="bg-white p-4 border border-[#E5E7EB] rounded-xl">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-amber-600 text-lg">campaign</span>
-                    </div>
-                    <span className="text-xs font-bold text-[#6B7280]">AI Voice Alerts</span>
-                  </div>
-                  <div className="flex items-baseline justify-between mb-2">
-                    <span className={`text-sm font-black ${planId === 'pro' || planId === 'professional' || planId === 'elite' ? 'text-[#059669]' : 'text-[#9CA3AF]'}`}>
-                      {planId === 'pro' || planId === 'professional' || planId === 'elite' ? 'Included' : 'Not on your plan'}
-                    </span>
-                  </div>
-                  <div className="w-full bg-[#F3F4F6] h-1.5 rounded-full overflow-hidden">
-                    <div className={`h-full w-full ${planId === 'pro' || planId === 'professional' || planId === 'elite' ? 'bg-amber-400' : 'bg-[#E5E7EB]'}`}></div>
-                  </div>
-                </div>
-
               </div>
             </section>
 
             {/* ── Plans Section ── */}
-            {isPrimaryBranch && (
-              <section className="mb-12" id="plans-section">
+            <section className="mb-12" id="plans-section">
                 <h3 className="flex items-center gap-2 text-[16px] font-bold text-[#111827] mb-6">
                 <span className="material-symbols-outlined text-[#0D9488]">inventory_2</span> Available plans
               </h3>
@@ -519,7 +483,6 @@ export default function BillingPage() {
                 })}
               </div>
             </section>
-            )}
 
             {/* ── Billing History ── */}
             <section className="mb-12">

@@ -360,7 +360,6 @@ export default function LoginPage() {
                 {/* Mobile Premium Header */}
                 <div className="md:hidden flex flex-col items-center justify-center w-full pt-16 pb-12 text-white z-20">
                     <img src="/logo.svg" alt="TokenPe" className="h-14 w-auto drop-shadow-md mb-6" />
-                    <h1 className="text-3xl font-bold mb-2">TokenPe</h1>
                     <p className="text-emerald-100/80 text-sm font-medium tracking-wide uppercase">Smart Clinic Queue</p>
                 </div>
 

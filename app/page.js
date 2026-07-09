@@ -56,7 +56,7 @@ export default function LandingPage() {
     { ico: "⚡", color: "#f3e5f5", title: "Live Dashboard", desc: "See who's waiting, with doctor, and done — updating in real-time." },
     { ico: "🔔", color: "#fff3e0", title: "Smart Auto Alerts", desc: "10-away, 5-away, and your-turn notifications sent automatically." },
     { ico: "📅", color: "#e0f7fa", title: "Date-wise History", desc: "Complete patient records for any past date. Daily volumes at a glance." },
-    { ico: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01"/><path d="M11 11h2v2h-2z"/><path d="M14 11h.01M11 14h.01"/></svg>, color: "#fce4ec", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card." },
+    { ico: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01" /><path d="M11 11h2v2h-2z" /><path d="M14 11h.01M11 14h.01" /></svg>, color: "#fce4ec", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card." },
   ];
 
   return (
@@ -895,7 +895,7 @@ export default function LandingPage() {
             <span className="lp-nl" onClick={() => go("how")}>How it works</span>
             <span className="lp-nl" onClick={() => go("pricing")}>Pricing</span>
             <Link href="/find" className="lp-nl" style={{ color: "#16a34a" }}>🔍 Find Clinic</Link>
-            <button className="lp-nav-cta" onClick={() => router.push("/login")}>Start Free Trial →</button>
+            <button className="lp-nav-cta" onClick={() => router.push("/login")}>Get Started →</button>
           </div>
           <button className="lp-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
             {menuOpen ? "✕" : "☰"}
@@ -1072,7 +1072,7 @@ export default function LandingPage() {
           <div className="lp-how-steps">
             {[
               { n: "1", ico: "📝", title: "Register your clinic", desc: "Sign up in 2 minutes with Google. Get your unique WhatsApp clinic QR code instantly." },
-              { n: "2", ico: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'block'}}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01"/><path d="M11 11h2v2h-2z"/><path d="M14 11h.01M11 14h.01"/></svg>, title: "Display the QR code", desc: "Print and display the QR card at reception. Patients scan once — they're in the queue." },
+              { n: "2", ico: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01" /><path d="M11 11h2v2h-2z" /><path d="M14 11h.01M11 14h.01" /></svg>, title: "Display the QR code", desc: "Print and display the QR card at reception. Patients scan once — they're in the queue." },
               { n: "3", ico: "📣", title: "Call with one tap", desc: "Press 'Call Next' on your dashboard. The patient gets a WhatsApp alert in their language." },
             ].map((s, i) => (
               <div key={s.n} className={`lp-how-step lp-reveal lp-reveal-d${i + 1}`}>

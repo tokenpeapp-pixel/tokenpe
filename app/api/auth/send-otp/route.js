@@ -33,7 +33,7 @@ export async function POST(req) {
       .select('id, name, email')
       .ilike('email', cleanEmail)
       .eq('phone', cleanPhone)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
       .limit(1)
 
     const clinic = rows?.[0] ?? null

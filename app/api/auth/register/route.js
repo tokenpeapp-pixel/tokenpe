@@ -17,8 +17,9 @@ export async function POST(req) {
         const cleanName = sanitizeName(name)
         const cleanPhone = validatePhone(phone)
         const cleanPin = validatePin(pin)
+        const cleanEmail = String(email).trim().toLowerCase()
 
-        if (!cleanName || !cleanPhone || !email || !cleanPin) {
+        if (!cleanName || !cleanPhone || !cleanEmail || !cleanPin) {
             return Response.json({ success: false, message: 'Invalid input format.' }, { status: 400 })
         }
 
@@ -34,7 +35,7 @@ export async function POST(req) {
         const insertData = {
             name: cleanName,
             phone: cleanPhone,
-            email,
+            email: cleanEmail,
             code,
             pin: cleanPin,
             plan_id: 'elite',

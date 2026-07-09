@@ -28,12 +28,15 @@ export async function POST(req) {
     const cleanPhone = String(phone).replace(/\D/g, '')
 
     // Verify clinic exists with this email + phone
-    const { data: clinic, error } = await supabase
+    const { data: rows, error } = await supabase
       .from('clinics')
       .select('id, name, email')
       .ilike('email', cleanEmail)
       .eq('phone', cleanPhone)
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    const clinic = rows?.[0] ?? null
 
     if (error || !clinic) {
       otpLimiter.recordFailure(ip)

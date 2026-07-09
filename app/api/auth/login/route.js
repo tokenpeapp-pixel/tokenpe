@@ -32,12 +32,15 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Invalid input format.' }, { status: 400 })
         }
 
-        const { data, error } = await supabase
+        const { data: rows, error } = await supabase
             .from('clinics')
             .select('*')
             .ilike('email', cleanEmail)
             .eq('phone', cleanPhone)
-            .single()
+            .order('created_at', { ascending: false })
+            .limit(1)
+
+        const data = rows?.[0] ?? null
 
         if (error || !data) {
             loginLimiter.recordFailure(ip)

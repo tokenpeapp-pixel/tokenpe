@@ -23,6 +23,17 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Invalid input format.' }, { status: 400 })
         }
 
+        // Check for existing clinic with same phone number
+        const { data: existingClinic } = await supabaseAdmin
+            .from('clinics')
+            .select('id')
+            .eq('phone', cleanPhone)
+            .limit(1)
+
+        if (existingClinic?.length > 0) {
+            return Response.json({ success: false, message: 'This phone number is already registered. Please log in instead.' }, { status: 409 })
+        }
+
         // Always generate a random, unbranded code
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
         let code = ''

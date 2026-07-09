@@ -91,10 +91,13 @@ export async function POST(req) {
         const directRating = body.rating ? parseInt(body.rating) : null
         if (directRating && directRating >= 1 && directRating <= 5 && customerPhone) {
             console.log(`[Rating] Direct Workflow rating ${directRating} from ${customerPhone}`)
+            const phone10 = customerPhone.replace(/^91/, '')
+            const phone12 = customerPhone.startsWith('91') ? customerPhone : '91' + customerPhone
+
             const { data: recentPatient } = await supabaseAdmin
                 .from('patients')
                 .select('id, clinic_id')
-                .eq('phone', customerPhone)
+                .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                 .eq('status', 'done')
                 .gte('date', getISTDateString())
                 .order('completed_at', { ascending: false })
@@ -130,10 +133,13 @@ export async function POST(req) {
             const visitRating = parseVisitRating(body, textStr)
             if (visitRating) {
                 console.log(`[Rating] ${customerPhone} gave visit rating ${visitRating}`)
+                const phone10 = customerPhone.replace(/^91/, '')
+                const phone12 = customerPhone.startsWith('91') ? customerPhone : '91' + customerPhone
+
                 const { data: recentPatient } = await supabaseAdmin
                     .from('patients')
                     .select('id, clinic_id')
-                    .eq('phone', customerPhone)
+                    .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                     .eq('status', 'done')
                     .gte('date', getISTDateString())
                     .order('completed_at', { ascending: false })

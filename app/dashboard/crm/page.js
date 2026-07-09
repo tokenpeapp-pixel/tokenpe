@@ -219,7 +219,7 @@ export default function CRMPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0D9488]">
+    <div className="min-h-screen flex items-center justify-center bg-[#065F46]">
       <div className="w-10 h-10 border-4 border-white/10 border-t-[#F59E0B] rounded-full animate-spin" />
     </div>
   )
@@ -228,7 +228,7 @@ export default function CRMPage() {
 
   if (clinic?.plan_id !== 'elite' && clinic?.plan_id !== 'pro' && clinic?.subscription_status !== 'trialing') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0D9488] text-white p-4 font-sans">
+      <div className="min-h-screen flex items-center justify-center bg-[#065F46] text-white p-4 font-sans">
         <div className="bg-white/5 border border-white/10 p-8 rounded-3xl text-center max-w-sm w-full">
           <div className="text-5xl mb-4 flex justify-center"><Trophy size={48} className="text-amber-500" /></div>
           <h2 className="text-2xl font-black mb-3">Premium Feature</h2>
@@ -247,8 +247,8 @@ export default function CRMPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0D9488] font-sans pb-20">
-      <div className="bg-[#0D9488] text-white px-4 py-6 sm:px-8 flex items-center justify-between">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#065F46] font-sans pb-20">
+      <div className="bg-[#065F46] text-white px-4 py-6 sm:px-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center">
             ←
@@ -262,7 +262,7 @@ export default function CRMPage() {
           <select
             value={clinic?.id || ''}
             onChange={handleBranchChange}
-            className="bg-[#0D9488] border border-[#0F766E] text-white px-4 py-2.5 rounded-xl font-semibold outline-none text-sm"
+            className="bg-[#065F46] border border-[#064E3B] text-white px-4 py-2.5 rounded-xl font-semibold outline-none text-sm"
           >
             {userClinics.map(uc => (
               <option key={uc.id} value={uc.id}>{uc.name}</option>
@@ -273,7 +273,7 @@ export default function CRMPage() {
 
       <div className="w-full mx-auto p-4 sm:p-8 space-y-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0D9488] tracking-tight">CRM & Broadcasts</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#065F46] tracking-tight">CRM & Broadcasts</h1>
           <p className="text-[#64748B] text-sm sm:text-base mt-1">Engage with your patients and customize your clinic's automated messaging.</p>
         </div>
 
@@ -283,9 +283,9 @@ export default function CRMPage() {
             {!isEliteOrTrial && (
               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
                 <div className="text-3xl mb-2 flex justify-center"><Trophy size={32} className="text-amber-500" /></div>
-                <h3 className="text-lg font-black text-[#0D9488] mb-2">Elite Feature</h3>
+                <h3 className="text-lg font-black text-[#065F46] mb-2">Elite Feature</h3>
                 <p className="text-[#64748B] text-sm mb-4 font-medium">Upgrade to Elite to set a personalized WhatsApp welcome message.</p>
-                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#0D9488] text-white px-6 py-2.5 rounded-xl font-bold text-sm">Upgrade to Elite</button>
+                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#065F46] text-white px-6 py-2.5 rounded-xl font-bold text-sm">Upgrade to Elite</button>
               </div>
             )}
             <h2 className="text-lg font-black mb-2">Personalized Welcome Message</h2>
@@ -295,14 +295,14 @@ export default function CRMPage() {
               value={welcomeMsg}
               onChange={e => setWelcomeMsg(e.target.value)}
               placeholder="e.g. Welcome to City Hospital! Please wait in the AC lounge. Free Wi-Fi password is: city123"
-              className="w-full min-h-[100px] p-4 rounded-xl border-2 border-[#E2E8F0] outline-none text-sm font-medium resize-y mb-4 focus:border-[#0D9488]"
+              className="w-full min-h-[100px] p-4 rounded-xl border-2 border-[#E2E8F0] outline-none text-sm font-medium resize-y mb-4 focus:border-[#065F46]"
             />
             
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <button 
                 onClick={saveWelcomeMessage}
                 disabled={savingWelcome}
-                className={`bg-[#0D9488] text-white px-6 py-2.5 rounded-xl font-bold ${savingWelcome ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#0F766E]'}`}
+                className={`bg-[#065F46] text-white px-6 py-2.5 rounded-xl font-bold ${savingWelcome ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#064E3B]'}`}
               >
                 {savingWelcome ? 'Saving...' : 'Save Welcome Message'}
               </button>
@@ -314,10 +314,10 @@ export default function CRMPage() {
           <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden hover-card">
             {!isEliteOrTrial && (
               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
-                <div className="text-3xl mb-2 flex justify-center"><Rocket size={32} className="text-[#0D9488]" /></div>
-                <h3 className="text-lg font-black text-[#0D9488] mb-2">Elite Feature</h3>
+                <div className="text-3xl mb-2 flex justify-center"><Rocket size={32} className="text-[#065F46]" /></div>
+                <h3 className="text-lg font-black text-[#065F46] mb-2">Elite Feature</h3>
                 <p className="text-[#64748B] text-sm mb-4 font-medium">Upgrade to Elite to send mass WhatsApp broadcasts to all your patients.</p>
-                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#0D9488] text-white px-6 py-2.5 rounded-xl font-bold text-sm">Upgrade to Elite</button>
+                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#065F46] text-white px-6 py-2.5 rounded-xl font-bold text-sm">Upgrade to Elite</button>
               </div>
             )}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-5">
@@ -357,7 +357,7 @@ export default function CRMPage() {
                 {sendingBroadcast ? 'Sending...' : <><Megaphone className="inline-block w-4 h-4 mr-2" /> Send Broadcast</>}
               </button>
               
-              <label className={`flex items-center gap-2 text-[#0D9488] font-bold text-sm bg-[#F0FDFA] px-4 py-2.5 rounded-xl border border-dashed border-[#5EEAD4] transition ${uploadingImage ? 'cursor-wait opacity-70' : 'cursor-pointer hover:bg-[#CCFBF1]'}`}>
+              <label className={`flex items-center gap-2 text-[#065F46] font-bold text-sm bg-[#F0FDFA] px-4 py-2.5 rounded-xl border border-dashed border-[#5EEAD4] transition ${uploadingImage ? 'cursor-wait opacity-70' : 'cursor-pointer hover:bg-[#CCFBF1]'}`}>
                 {uploadingImage ? 'Uploading...' : <><Camera className="inline-block w-4 h-4 mr-2" /> Attach Flyer</>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
               </label>
@@ -375,7 +375,7 @@ export default function CRMPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-base font-bold text-[#0D9488]">90-Day Routine Recall <RefreshCw className="inline-block w-4 h-4 ml-1" /></h3>
+                    <h3 className="text-base font-bold text-[#065F46]">90-Day Routine Recall <RefreshCw className="inline-block w-4 h-4 ml-1" /></h3>
                     <span className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">{recallReachable} Reachable Today</span>
                   </div>
                   <p className="text-sm text-[#64748B]">Automatically messages patients 90 days after their visit to schedule a routine check-up.</p>
@@ -389,7 +389,7 @@ export default function CRMPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-base font-bold text-[#0D9488]">Medicine Reminders <Pill className="inline-block w-4 h-4 ml-1" /></h3>
+                    <h3 className="text-base font-bold text-[#065F46]">Medicine Reminders <Pill className="inline-block w-4 h-4 ml-1" /></h3>
                     <span className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">{medsReachable} Reachable Today</span>
                   </div>
                   <p className="text-sm text-[#64748B]">Sends a friendly "Did you start your medicines?" check-in 3 days post-visit.</p>
@@ -433,7 +433,7 @@ export default function CRMPage() {
                   return (
                     <div key={idx} className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
                       <div className="flex justify-between mb-2">
-                        <span className="font-bold text-[#0D9488]">{fb.name || 'Anonymous'}</span>
+                        <span className="font-bold text-[#065F46]">{fb.name || 'Anonymous'}</span>
                         <span className="text-[#F59E0B] flex items-center">{Array.from({length: fb.crm_rating}).map((_, i) => <Star key={'f'+i} className="inline-block w-4 h-4 fill-current" />)}{Array.from({length: 5 - fb.crm_rating}).map((_, i) => <Star key={'e'+i} className="inline-block w-4 h-4" />)}</span>
                       </div>
                       {fb.feedback_text && (

@@ -354,24 +354,25 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* CURVED SVG DIVIDER */}
-            <div className="hidden md:block absolute left-[48%] top-0 h-full w-[100px] z-20 pointer-events-none -ml-[50px]">
-                <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full fill-[#FCFCFA]">
-                    <path d="M100,0 C0,300 0,700 100,1000 Z" />
-                </svg>
-            </div>
-
             {/* RIGHT PANEL (approx 52%) */}
-            <div className="relative flex-1 min-h-screen flex items-center justify-center p-6 lg:p-12 z-10">
-                {/* Subtle Checkered Grid */}
-                <div className="absolute inset-0 z-0 pointer-events-none opacity-40" style={{ backgroundImage: 'linear-gradient(to right, #EDEBE6 1px, transparent 1px), linear-gradient(to bottom, #EDEBE6 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+            <div className="relative flex-1 min-h-screen flex flex-col md:flex-row items-center justify-center p-0 md:p-6 lg:p-12 z-10 bg-gradient-to-br from-[#022c22] to-[#064e3b] md:bg-none md:bg-transparent">
                 
-                {/* Soft Radial Gradients */}
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-200/15 rounded-full mix-blend-multiply filter blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-0 left-[48%] w-[600px] h-[600px] bg-cyan-200/15 rounded-full mix-blend-multiply filter blur-[120px] pointer-events-none" />
+                {/* Mobile Premium Header */}
+                <div className="md:hidden flex flex-col items-center justify-center w-full pt-16 pb-12 text-white z-20">
+                    <img src="/logo.svg" alt="TokenPe" className="h-14 w-auto drop-shadow-md mb-6" />
+                    <h1 className="text-3xl font-bold mb-2">TokenPe</h1>
+                    <p className="text-emerald-100/80 text-sm font-medium tracking-wide uppercase">Smart Clinic Queue</p>
+                </div>
+
+                {/* Subtle Checkered Grid (Desktop) */}
+                <div className="hidden md:block absolute inset-0 z-0 pointer-events-none opacity-40" style={{ backgroundImage: 'linear-gradient(to right, #EDEBE6 1px, transparent 1px), linear-gradient(to bottom, #EDEBE6 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+                
+                {/* Soft Radial Gradients (Desktop) */}
+                <div className="hidden md:block absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-200/15 rounded-full mix-blend-multiply filter blur-[100px] pointer-events-none" />
+                <div className="hidden md:block absolute bottom-0 left-[48%] w-[600px] h-[600px] bg-cyan-200/15 rounded-full mix-blend-multiply filter blur-[120px] pointer-events-none" />
 
                 {/* LOGIN CARD */}
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="relative z-10 w-full max-w-[560px] bg-white/70 backdrop-blur-xl rounded-[28px] shadow-[0_25px_80px_rgba(0,0,0,0.08)] border border-white/60 p-8 md:p-12">
+                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="relative z-10 w-full md:max-w-[560px] bg-white md:bg-white/70 md:backdrop-blur-xl rounded-t-[40px] md:rounded-[28px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-[0_25px_80px_rgba(0,0,0,0.08)] md:border border-white/60 p-8 pt-10 md:p-12 flex-1 md:flex-none">
                     
                     <button onClick={() => router.push('/')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium text-sm mb-8">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>

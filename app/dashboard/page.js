@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useRef, Suspense, useCallback } from 'react'
+import { CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, Bell, Camera, MapPin, Pencil, Lock, Download, Printer, Star, Smartphone, Mic, Gift, AlertTriangle, Hourglass, RefreshCw, Sparkles, Plus, Copy, LogOut, Check, ChevronLeft, ChevronRight, Menu, Play, CheckCircle, Search, Edit2, X, PlusSquare, Settings, History, BarChart2, Headset, CreditCard, DoorOpen, DoorClosed, List, Pause, QrCode, Clock, Calendar } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
 import confetti from 'canvas-confetti'
@@ -20,7 +21,7 @@ function UpgradeBanner() {
 
   return (
     <div style={{ background: '#052e16', borderBottom: '1px solid #16a34a', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-      <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 14 }}>✅ Plan activated! Your clinic is now upgraded. All features are unlocked.</span>
+      <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 14 }}><CheckCircle2 className="inline-block w-4 h-4" /> Plan activated! Your clinic is now upgraded. All features are unlocked.</span>
       <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
     </div>
   )
@@ -84,12 +85,12 @@ const LANG_NAMES = {
 }
 
 const TOAST_TYPES = {
-  new: { bg: '#0F4C75', icon: '🆕' },
-  call: { bg: '#7C3AED', icon: '📢' },
-  done: { bg: '#065F46', icon: '✅' },
-  skip: { bg: '#92400E', icon: '⏭' },
-  notify: { bg: '#1E40AF', icon: '🔔' },
-  error: { bg: '#9F1239', icon: '❌' },
+  new: { bg: '#0F4C75', icon: <PlusCircle className="inline-block w-4 h-4" /> },
+  call: { bg: '#0D9488', icon: <Megaphone className="inline-block w-4 h-4" /> },
+  done: { bg: '#065F46', icon: <CheckCircle2 className="inline-block w-4 h-4" /> },
+  skip: { bg: '#92400E', icon: <SkipForward className="inline-block w-4 h-4" /> },
+  notify: { bg: '#1E40AF', icon: <Bell className="inline-block w-4 h-4" /> },
+  error: { bg: '#9F1239', icon: <XCircle className="inline-block w-4 h-4" /> },
 }
 
 // ─── QR MODAL ──────────────────────────────────────────────────────────────────────
@@ -286,19 +287,19 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;
              justify-content:center;min-height:100vh;background:#fff}
-        .card{width:320px;border:2.5px solid #7C3AED;border-radius:22px;
+        .card{width:320px;border:2.5px solid #0D9488;border-radius:22px;
               padding:32px 24px;text-align:center}
-        .logo{font-size:22px;font-weight:900;color:#7C3AED}
+        .logo{font-size:22px;font-weight:900;color:#0D9488}
         .tag{font-size:10px;color:#94a3b8;margin-bottom:20px;letter-spacing:.5px}
-        .name{font-size:17px;font-weight:800;color:#1e293b;margin-bottom:4px}
+        .name{font-size:17px;font-weight:800;color:#0F766E;margin-bottom:4px}
         .sub{font-size:12px;color:#64748b;margin-bottom:22px}
         img{width:220px;height:220px;border-radius:12px;border:1px solid #e2e8f0}
         hr{border:none;border-top:1px solid #f1f5f9;margin:18px 0}
-        .how{font-size:13px;font-weight:700;color:#1e293b}
+        .how{font-size:13px;font-weight:700;color:#0F766E}
         .steps{font-size:11px;color:#64748b;margin-top:8px;line-height:2}
-        .code-box{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#f5f3ff;border:1.5px dashed #c4b5fd;border-radius:10px;padding:8px 16px;margin-top:16px}
-        .code-label{font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:0.5px}
-        .code-val{font-size:15px;font-weight:800;color:#6d28d9;font-family:monospace;letter-spacing:1px}
+        .code-box{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#F0FDFA;border:1.5px dashed #5EEAD4;border-radius:10px;padding:8px 16px;margin-top:16px}
+        .code-label{font-size:10px;font-weight:700;color:#0D9488;text-transform:uppercase;letter-spacing:0.5px}
+        .code-val{font-size:15px;font-weight:800;color:#0F766E;font-family:monospace;letter-spacing:1px}
       </style>
       </head><body>
       <div class="card">
@@ -313,7 +314,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
           ${clinic?.logo_url ? `<img src="${clinic.logo_url}" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:50px; height:50px; border:none; border-radius:8px; padding:4px; background:white;" />` : ''}
         </div>
         <hr/>
-        <div class="how">📱 How to join</div>
+        <div class="how"><Smartphone className="inline-block w-4 h-4" /> How to join</div>
         <div class="steps">
           1. Open WhatsApp on your phone<br/>
           2. Scan this QR code with camera<br/>
@@ -337,7 +338,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         <div style={{ marginBottom: '14px', display: 'flex', justifyContent: 'center' }}>
           <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: '44px', width: 'auto' }} />
         </div>
-        <div style={{ fontSize: 17, fontWeight: 800, color: '#1e293b' }}>{clinic?.name}</div>
+        <div style={{ fontSize: 17, fontWeight: 800, color: '#0F766E' }}>{clinic?.name}</div>
         {clinic?.address && <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2, marginBottom: 4, padding: '0 10px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{clinic.address}</div>}
         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>Scan to join the OPD queue</div>
         <div style={{ background: '#f8fafc', borderRadius: 16, padding: 14, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 14, position: 'relative' }}>
@@ -351,30 +352,30 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
 
         {planId === 'elite' && (
           <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ display: 'inline-block', background: '#F5F3FF', color: '#7C3AED', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: uploadingLogo ? 'wait' : 'pointer', border: '1px dashed #C4B5FD' }}>
-              {uploadingLogo ? 'Uploading...' : '📸 Upload Center Logo'}
+            <label style={{ display: 'inline-block', background: '#F0FDFA', color: '#0D9488', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: uploadingLogo ? 'wait' : 'pointer', border: '1px dashed #5EEAD4' }}>
+              {uploadingLogo ? 'Uploading...' : <><Camera className="inline-block w-4 h-4" /> Upload Center Logo</>}
               <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={handleLogoUpload} disabled={uploadingLogo} />
             </label>
           </div>
         )}
 
         <div style={{ background: '#f0f9ff', borderRadius: 12, padding: '10px 14px', textAlign: 'left', marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#0F4C75', marginBottom: 5 }}>📱 How patients join</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0F4C75', marginBottom: 5 }}><Smartphone className="inline-block w-4 h-4" /> How patients join</div>
           <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.9 }}>
             1. Open WhatsApp → scan this QR<br />
             2. Tap Send — no typing needed<br />
-            3. Pick language → get token + voice note 🎤
+            3. Pick language → get token + voice note <Mic className="inline-block w-4 h-4" />
           </div>
         </div>
 
         {/* ── Clinic Code Section ── */}
         <div style={{ marginBottom: 14 }}>
           {/* Code badge — always visible */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#f5f3ff', border: '1.5px dashed #c4b5fd', borderRadius: 10, padding: '8px 16px', marginBottom: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: 0.5 }}>Clinic Code:</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: '#6d28d9', fontFamily: 'monospace', letterSpacing: 2 }}>{liveCode}</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#F0FDFA', border: '1.5px dashed #5EEAD4', borderRadius: 10, padding: '8px 16px', marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#0D9488', textTransform: 'uppercase', letterSpacing: 0.5 }}>Clinic Code:</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: '#0F766E', fontFamily: 'monospace', letterSpacing: 2 }}>{liveCode}</span>
           </div>
-          {codeSuccess && <div style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginBottom: 4 }}>✅ Code updated! Your new QR is ready.</div>}
+          {codeSuccess && <div style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginBottom: 4 }}><CheckCircle2 className="inline-block w-4 h-4" /> Code updated! Your new QR is ready.</div>}
 
           {/* Plan-gated edit section */}
           {canEditCode ? (
@@ -385,18 +386,18 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
                   onChange={e => { setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')); setCodeError('') }}
                   maxLength={12}
                   placeholder="e.g. DRSHARMA"
-                  style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 700, letterSpacing: 2, color: '#6d28d9', border: '2px solid #7C3AED', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#faf5ff' }}
+                  style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 700, letterSpacing: 2, color: '#0F766E', border: '2px solid #0D9488', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#faf5ff' }}
                 />
                 <input
                   value={addressInput}
                   onChange={e => setAddressInput(e.target.value)}
                   maxLength={100}
                   placeholder="Clinic Address (Optional)"
-                  style={{ fontSize: 13, color: '#1e293b', border: '2px solid #ede9fe', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#fff' }}
+                  style={{ fontSize: 13, color: '#0F766E', border: '2px solid #CCFBF1', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#fff' }}
                 />
                 {codeError && <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600 }}>{codeError}</div>}
                 <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                  <button onClick={saveCode} disabled={codeSaving} style={{ flex: 1, padding: '9px 0', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: 'white', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: codeSaving ? 0.7 : 1 }}>
+                  <button onClick={saveCode} disabled={codeSaving} style={{ flex: 1, padding: '9px 0', background: 'linear-gradient(135deg,#0D9488,#4F46E5)', color: 'white', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: codeSaving ? 0.7 : 1 }}>
                     {codeSaving ? 'Saving...' : '✓ Save'}
                   </button>
                   <button onClick={() => { setEditingCode(false); setCodeInput(clinic?.code || ''); setAddressInput(clinic?.address || ''); setCodeError('') }} style={{ flex: 1, padding: '9px 0', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
@@ -405,8 +406,8 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
                 </div>
               </div>
             ) : (
-              <button onClick={() => setEditingCode(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#7C3AED', cursor: 'pointer', margin: '0 auto' }}>
-                ✏️ Edit Code
+              <button onClick={() => setEditingCode(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F0FDFA', border: '1px solid #CCFBF1', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#0D9488', cursor: 'pointer', margin: '0 auto' }}>
+                <Pencil className="inline-block w-4 h-4" /> Edit Code
               </button>
             )
           ) : (
@@ -414,17 +415,17 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
               onClick={() => router.push('/dashboard/billing')}
               style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, color: '#92400e', cursor: 'pointer', margin: '0 auto', textAlign: 'center' }}
             >
-              🔒 Custom Code — Upgrade to Pro
+              <Lock className="inline-block w-4 h-4" /> Custom Code — Upgrade to Pro
             </button>
           )}
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={download} disabled={downloading} style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
-            {downloaded ? '✅ Saved!' : downloading ? 'Saving...' : '⬇️ Download PNG'}
+          <button onClick={download} disabled={downloading} style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#0D9488,#4F46E5)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
+            {downloaded ? <><CheckCircle2 className="inline-block w-4 h-4" /> Saved!</> : downloading ? 'Saving...' : <><Download className="inline-block w-4 h-4" /> Download PNG</>}
           </button>
-          <button onClick={print} style={{ flex: 1, padding: '11px 0', background: 'white', color: '#7C3AED', border: '2px solid #7C3AED', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            🖨️ Print Card
+          <button onClick={print} style={{ flex: 1, padding: '11px 0', background: 'white', color: '#0D9488', border: '2px solid #0D9488', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            <Printer className="inline-block w-4 h-4" /> Print Card
           </button>
         </div>
       </div>
@@ -480,12 +481,12 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-      <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+      <div style={{ background: '#0F766E', border: '1px solid #334155', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
         {clinic?.phone !== '0000000000' && clinic?.specialty && clinic?.city && (
           <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 32, height: 32, borderRadius: 16, cursor: 'pointer' }}>✕</button>
         )}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🌟</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}><Star className="inline-block w-4 h-4" /></div>
           <h2 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 8px 0' }}>Complete Your Profile</h2>
           <p style={{ color: '#94A3B8', fontSize: 14, margin: 0, lineHeight: 1.5 }}>Fill in your details so patients can find you easily on the TokenPe clinic finder.</p>
         </div>
@@ -535,9 +536,9 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: 20 }}>📍</span>
+            <span style={{ fontSize: 20 }}><MapPin className="inline-block w-4 h-4" /></span>
             <div style={{ flex: 1, fontSize: 13, color: '#94A3B8' }}>
-              {gpsStatus === 'loading' ? 'Getting location...' : gpsStatus === 'success' ? 'Location secured ✅' : 'Location failed (Optional)'}
+              {gpsStatus === 'loading' ? 'Getting location...' : gpsStatus === 'success' ? <>Location secured <CheckCircle2 className="inline-block w-4 h-4" /></> : 'Location failed (Optional)'}
             </div>
           </div>
 
@@ -778,7 +779,7 @@ export default function Dashboard() {
       return updated
     })
 
-    addToast(`✅ Clinic code updated to ${newCode}! Share it with your patients.`, 'done')
+    addToast(<><CheckCircle2 className="inline-block w-4 h-4" /> Clinic code updated to ${newCode}! Share it with your patients.</>, 'done')
   }
 
   // ── Smooth Branch Switcher (no reload) ─────────────────────────────────
@@ -794,7 +795,7 @@ export default function Dashboard() {
     localStorage.setItem('clinicCode', targetClinic.code)
     localStorage.setItem('clinicPhone', targetClinic.phone)
     localStorage.setItem('tokenpe_clinic', JSON.stringify(targetClinic))
-    addToast(`✅ Switched to ${targetClinic.name}`, 'done')
+    addToast(<><CheckCircle2 className="inline-block w-4 h-4" /> Switched to ${targetClinic.name}</>, 'done')
 
     // Update session cookie and wait for it
     await fetch('/api/auth/switch', {
@@ -971,7 +972,7 @@ export default function Dashboard() {
         if (stored) {
           try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: null })) } catch (_) {}
         }
-        addToast('✅ Clinic is now Open again!', 'done')
+        addToast(<><CheckCircle2 className="inline-block w-4 h-4" /> Clinic is now Open again!</>, 'done')
       } else {
         // REVERT ON FAILURE
         setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
@@ -1165,7 +1166,7 @@ export default function Dashboard() {
           email: data.clinicEmail,
           contact: data.clinicPhone,
         },
-        theme: { color: '#7C3AED' },
+        theme: { color: '#0D9488' },
         handler: async function (response) {
           const maxAttempts = 5
           let attempts = 0
@@ -1189,7 +1190,7 @@ export default function Dashboard() {
                     particleCount: 150,
                     spread: 80,
                     origin: { y: 0.6 },
-                    colors: ['#7c3aed', '#10b981', '#f59e0b', '#3b82f6'],
+                    colors: ['#0D9488', '#10b981', '#f59e0b', '#3b82f6'],
                     zIndex: 10000
                   })
                 }
@@ -1308,7 +1309,7 @@ export default function Dashboard() {
     <div style={{ minHeight: '100vh', background: '#0a0514', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #f59e0b, #d97706)' }} />
-        <div style={{ fontSize: 56, marginBottom: 24 }}>⏳</div>
+        <div style={{ fontSize: 56, marginBottom: 24 }}><Hourglass className="inline-block w-4 h-4" /></div>
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Free Trial Ended</h1>
         <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
           We hope you loved TokenPe! Your 7-day Elite trial has expired. To continue using the dashboard and keep your clinic data safe, please choose a plan.
@@ -1335,14 +1336,14 @@ export default function Dashboard() {
   if (isAccountLocked) return (
     <div style={{ minHeight: '100vh', background: '#0a0514', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 56, marginBottom: 24 }}>🔒</div>
+        <div style={{ fontSize: 56, marginBottom: 24 }}><Lock className="inline-block w-4 h-4" /></div>
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Account Paused</h1>
         <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
           Your subscription has ended. Your patient data is safe — reactivate any plan to continue using TokenPe.
         </p>
         <button
           onClick={() => router.push('/dashboard/billing')}
-          style={{ width: '100%', padding: '16px 24px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', marginBottom: 16, boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}
+          style={{ width: '100%', padding: '16px 24px', background: 'linear-gradient(135deg,#0D9488,#4f46e5)', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', marginBottom: 16, boxShadow: '0 8px 24px rgba(13,148,136,0.4)' }}
         >
           Reactivate Plan →
         </button>
@@ -1365,13 +1366,13 @@ export default function Dashboard() {
       </Suspense>
       <style>{`
         .dash-header {
-          background: linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%);
+          background: linear-gradient(135deg,#0D9488 0%,#0F766E 50%,#09524f 100%);
           padding: 0 24px;
           height: 72px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          box-shadow: 0 4px 32px rgba(124,58,237,0.25);
+          box-shadow: 0 4px 32px rgba(13,148,136,0.25);
           position: sticky;
           top: 0;
           z-index: 50;
@@ -1583,10 +1584,10 @@ export default function Dashboard() {
           position: fixed;
           top: 72px;
           right: 16px;
-          background: rgba(15, 10, 42, 0.97);
+          background: rgba(13, 148, 136, 0.97); /* WhatsApp Teal Green */
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border: 1px solid rgba(124, 58, 237, 0.35);
+          border: 1px solid rgba(13, 148, 136, 0.35);
           border-radius: 14px;
           padding: 8px;
           width: 220px;
@@ -1622,13 +1623,13 @@ export default function Dashboard() {
 
         .dropdown-item {
           background: transparent;
-          color: rgba(255, 255, 255, 0.85);
+          color: #ffffff;
           border: none;
           padding: 13px 16px;
           border-radius: 9px;
           text-align: left;
-          font-size: 0.9rem;
-          font-weight: 600;
+          font-size: 0.95rem;
+          font-weight: 700;
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -1639,7 +1640,7 @@ export default function Dashboard() {
         }
 
         .dropdown-item:hover, .dropdown-item:active {
-          background: rgba(124, 58, 237, 0.25);
+          background: rgba(13, 148, 136, 0.25);
           color: #fff;
         }
 
@@ -1665,8 +1666,8 @@ export default function Dashboard() {
         }
 
         .hamburger-btn:hover, .hamburger-btn:active {
-          background: rgba(124, 58, 237, 0.3);
-          border-color: rgba(124, 58, 237, 0.5);
+          background: rgba(13, 148, 136, 0.3);
+          border-color: rgba(13, 148, 136, 0.5);
         }
 
         @media (max-width: 960px) {
@@ -1748,7 +1749,7 @@ export default function Dashboard() {
               <>
                 <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 }}>Switch Clinic</div>
                 {userClinics.map(uc => (
-                  <button key={uc.id} className="dropdown-item" style={{ padding: '8px 16px', background: uc.id === clinic?.id ? 'rgba(124,58,237,0.15)' : 'transparent', color: uc.id === clinic?.id ? '#A78BFA' : 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }} onClick={() => switchToBranch(uc)}>
+                  <button key={uc.id} className="dropdown-item" style={{ padding: '8px 16px', background: uc.id === clinic?.id ? 'rgba(13,148,136,0.15)' : 'transparent', color: uc.id === clinic?.id ? '#A78BFA' : 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }} onClick={() => switchToBranch(uc)}>
                     {uc.id === clinic?.id ? '✓ ' : '○ '}{uc.name}
                   </button>
                 ))}
@@ -1757,27 +1758,27 @@ export default function Dashboard() {
             )}
 
             {(clinic?.plan_id === 'elite' || clinic?.subscription_status === 'trialing') && userClinics.length < 3 && (
-              <button className="dropdown-item" onClick={() => { setShowAddBranch(true); setMenuOpen(false); }} style={{ color: '#34D399', fontSize: '0.85rem' }}>
+              <button className="dropdown-item" onClick={() => { setShowAddBranch(true); setMenuOpen(false); }} style={{ color: '#6EE7B7', fontSize: '0.9rem' }}>
                 + Add New Branch
               </button>
             )}
 
-            <button className="dropdown-item" onClick={() => { setShowManageBranches(true); setMenuOpen(false); }} style={{ color: '#FCD34D', fontSize: '0.85rem' }}>
-              ⚙️ Manage Branches
+            <button className="dropdown-item" onClick={() => { setShowManageBranches(true); setMenuOpen(false); }} style={{ color: '#FCD34D', fontSize: '0.9rem' }}>
+              <Settings className="inline-block w-4 h-4 mr-2 mb-0.5" /> Manage Branches
             </button>
 
             <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
-              🕒 History
+              <History className="inline-block w-4 h-4 mr-2 mb-0.5" /> History
             </button>
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/analytics'); setMenuOpen(false); }}>
-              📊 Analytics (Elite)
+              <BarChart2 className="inline-block w-4 h-4 mr-2 mb-0.5" /> Analytics (Elite)
             </button>
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/crm'); setMenuOpen(false); }}>
-              📢 CRM & Broadcasts (Elite)
+              <Megaphone className="inline-block w-4 h-4" /> CRM & Broadcasts (Elite)
             </button>
             {clinic?.plan_id === 'elite' ? (
-              <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }} style={{ color: '#059669', fontWeight: 700 }}>
-                🟢 VIP Support (Elite)
+              <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }} style={{ color: '#6EE7B7', fontWeight: 800 }}>
+                <Headset className="inline-block w-4 h-4 mr-2 mb-0.5" /> VIP Support (Elite)
               </button>
             ) : clinic?.plan_id === 'pro' ? (
               <button className="dropdown-item" onClick={() => { window.open('mailto:tokenpe.online@gmail.com', '_blank'); setMenuOpen(false); }} style={{ color: '#A78BFA', fontWeight: 700 }}>
@@ -1789,7 +1790,7 @@ export default function Dashboard() {
               </button>
             )}
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
-              💳 Billing & Plan
+              <CreditCard className="inline-block w-4 h-4 mr-2 mb-0.5" /> Billing & Plan
             </button>
             <div className="dropdown-divider" />
             {/* ── Close / Re-open Clinic — ALL plans ── */}
@@ -1797,22 +1798,22 @@ export default function Dashboard() {
               <button
                 className="dropdown-item"
                 onClick={reopenClinic}
-                style={{ color: '#10B981', fontWeight: 700 }}
+                style={{ color: '#6EE7B7', fontWeight: 800 }}
               >
-                🟢 Re-open Clinic Today
+                <DoorOpen className="inline-block w-4 h-4 mr-2 mb-0.5" /> Re-open Clinic Today
               </button>
             ) : (
               <button
                 className="dropdown-item"
                 onClick={closeClinicForToday}
-                style={{ color: '#ef4444' }}
+                style={{ color: '#FCA5A5', fontWeight: 800 }}
               >
-                🔴 Close Clinic for Today
+                <DoorClosed className="inline-block w-4 h-4 mr-2 mb-0.5" /> Close Clinic for Today
               </button>
             )}
             <div className="dropdown-divider" />
             <button className="dropdown-item" onClick={() => { logout(); setMenuOpen(false); }} style={{ color: '#FDA4AF' }}>
-              🚪 Logout
+              <LogOut className="inline-block w-4 h-4 mr-2 mb-0.5" /> Logout
             </button>
           </div>
         </>
@@ -1821,7 +1822,7 @@ export default function Dashboard() {
       {/* ── Manage Branches Modal ── */}
       {showManageBranches && (
         <div onClick={() => setShowManageBranches(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#0F172A', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 500, border: '1px solid rgba(255,255,255,0.1)', maxHeight: '80vh', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#0D9488', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 500, border: '1px solid rgba(255,255,255,0.1)', maxHeight: '80vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800 }}>Manage Branches</h2>
               <button onClick={() => setShowManageBranches(false)} style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '1.5rem' }}>×</button>
@@ -1864,7 +1865,7 @@ export default function Dashboard() {
       {/* ── Add New Branch Modal ── */}
       {showAddBranch && (
         <div onClick={() => setShowAddBranch(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#0F172A', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#0D9488', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)' }}>
             <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Add New Branch</h2>
             <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: 20 }}>As an Elite user, you can manage up to 3 clinics under one login.</p>
             <input
@@ -1920,7 +1921,7 @@ export default function Dashboard() {
             key={t.id} 
             style={{ 
               ...s.toast, 
-              background: TOAST_TYPES[t.type]?.bg || '#1E293B',
+              background: TOAST_TYPES[t.type]?.bg || '#0F766E',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -1955,7 +1956,7 @@ export default function Dashboard() {
         <div style={{ ...s.banner, justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={s.bannerDot} />
-            <span>🆕 New patient joined!&nbsp;</span>
+            <span><PlusCircle className="inline-block w-4 h-4" /> New patient joined!&nbsp;</span>
             <strong>{newPatientAlert.name || maskPhone(newPatientAlert.phone)} — {newPatientAlert.token}</strong>
           </div>
           <button 
@@ -2003,8 +2004,8 @@ export default function Dashboard() {
 
       {/* ── Trial Warning Banner ── */}
       {showTrialWarning && (
-        <div style={{ background: daysLeft <= 3 ? '#DC2626' : 'rgba(124,58,237,0.15)', color: daysLeft <= 3 ? 'white' : '#C4B5FD', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative', borderBottom: daysLeft <= 3 ? 'none' : '1px solid rgba(124,58,237,0.3)' }}>
-          {daysLeft <= 3 ? '⚠️ Your' : '✨ You are on the'} Elite Free Trial. Ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'} on {trialEnd?.toLocaleDateString('en-IN')}. <button onClick={() => router.push('/dashboard/billing')} style={{ background: daysLeft <= 3 ? 'white' : 'rgba(124,58,237,0.2)', color: daysLeft <= 3 ? '#DC2626' : '#fff', border: daysLeft <= 3 ? 'none' : '1px solid rgba(124,58,237,0.4)', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Choose a Plan</button>
+        <div style={{ background: daysLeft <= 3 ? '#DC2626' : 'rgba(13,148,136,0.15)', color: daysLeft <= 3 ? 'white' : '#5EEAD4', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative', borderBottom: daysLeft <= 3 ? 'none' : '1px solid rgba(13,148,136,0.3)' }}>
+          {daysLeft <= 3 ? <><AlertTriangle className="inline-block w-4 h-4" /> Your</> : <><Sparkles className="inline-block w-4 h-4" /> You are on the</>} Elite Free Trial. Ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'} on {trialEnd?.toLocaleDateString('en-IN')}. <button onClick={() => router.push('/dashboard/billing')} style={{ background: daysLeft <= 3 ? 'white' : 'rgba(13,148,136,0.2)', color: daysLeft <= 3 ? '#DC2626' : '#fff', border: daysLeft <= 3 ? 'none' : '1px solid rgba(13,148,136,0.4)', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Choose a Plan</button>
         </div>
       )}
 
@@ -2016,7 +2017,7 @@ export default function Dashboard() {
             onClick={reopenClinic}
             className="reopen-banner-btn"
           >
-            <span style={{ fontSize: '15px' }}>✨</span> Re-open Now
+            <span style={{ fontSize: '15px' }}><Sparkles className="inline-block w-4 h-4" /></span> Re-open Now
           </button>
         </div>
       )}
@@ -2089,12 +2090,12 @@ export default function Dashboard() {
 
       {/* ── Action Bar ── */}
       <div className="action-bar-responsive" style={s.actionBar}>
-        <button style={s.btnQR} onClick={() => setShowQR(true)}>🔲 Generate QR</button>
+        <button style={s.btnQR} onClick={() => setShowQR(true)}><QrCode className="inline-block w-4 h-4 mr-1 mb-0.5" /> Generate QR</button>
         <button
           style={{ ...s.btnGhost, color: clinic?.queue_paused ? '#EF4444' : '#10B981', borderColor: clinic?.queue_paused ? '#FECACA' : '#A7F3D0', fontWeight: 700 }}
           onClick={togglePause}
         >
-          {clinic?.queue_paused ? '⏸ Paused' : '▶️ Active'}
+          {clinic?.queue_paused ? <><Pause className="inline-block w-4 h-4 mr-1 mb-0.5" /> Paused</> : <><Play className="inline-block w-4 h-4 mr-1 mb-0.5" /> Active</>}
         </button>
         <button
           style={{ ...s.btnAdd, opacity: isLimitReached || clinic?.queue_paused ? 0.5 : 1, cursor: isLimitReached || clinic?.queue_paused ? 'not-allowed' : 'pointer' }}
@@ -2110,22 +2111,22 @@ export default function Dashboard() {
             setShowAddForm(!showAddForm)
           }}
         >
-          {clinic?.queue_paused ? '⏸ Queue Paused' : isLimitReached ? `🔒 Limit (${limit})` : '+ Walk-in'}
+          {clinic?.queue_paused ? <><Pause className="inline-block w-4 h-4 mr-1 mb-0.5" /> Queue Paused</> : isLimitReached ? <><Lock className="inline-block w-4 h-4 mr-1 mb-0.5" /> Limit (${limit})</> : <><PlusCircle className="inline-block w-4 h-4 mr-1 mb-0.5" /> Walk-in</>}
         </button>
         <button
           style={{ ...s.btnCall, opacity: waiting.length === 0 ? 0.4 : 1 }}
           onClick={callNext}
           disabled={waiting.length === 0}
         >
-          📢 Call Next {waiting.length > 0 ? `(${waiting[0]?.token})` : ''}
+          <Megaphone className="inline-block w-4 h-4" /> Call Next {waiting.length > 0 ? `(${waiting[0]?.token})` : ''}
         </button>
-        <div className="qr-hint-mobile" style={s.qrHint}>📱 Patients scan QR → WhatsApp → Auto joins queue</div>
+        <div className="qr-hint-mobile" style={s.qrHint}><Smartphone className="inline-block w-4 h-4" /> Patients scan QR → WhatsApp → Auto joins queue</div>
       </div>
 
       {/* ── Add Walk-in Form ── */}
       {showAddForm && (
         <div style={s.addForm}>
-          <div style={s.addFormTitle}>➕ Add Walk-in Patient</div>
+          <div style={s.addFormTitle}><Plus className="inline-block w-4 h-4" /> Add Walk-in Patient</div>
           <div style={s.addFormRow}>
             <input style={s.input} placeholder="Patient Name (optional)" value={newName} onChange={e => setNewName(e.target.value)} />
             <input style={s.input} placeholder="WhatsApp Number *" value={newPhone} maxLength={10} onChange={e => setNewPhone(e.target.value.replace(/\D/g, ''))} />
@@ -2143,13 +2144,13 @@ export default function Dashboard() {
       {/* ── Tabs ── */}
       <div style={s.tabs}>
         <button style={{ ...s.tab, ...(activeTab === 'active' ? s.tabActive : {}) }} onClick={() => setActiveTab('active')}>
-          Active Queue ({activePatients.length})
+          <List className="inline-block w-4 h-4 mr-1 mb-0.5" /> Active Queue ({activePatients.length})
         </button>
         <button style={{ ...s.tab, ...(activeTab === 'done' ? s.tabActive : {}) }} onClick={() => setActiveTab('done')}>
-          Completed ({done.length})
+          <CheckCircle2 className="inline-block w-4 h-4 mr-1 mb-0.5" /> Completed ({done.length})
         </button>
         <button style={{ ...s.tab, ...(activeTab === 'payments' ? s.tabActive : {}) }} onClick={() => setActiveTab('payments')}>
-          Payments
+          <CreditCard className="inline-block w-4 h-4 mr-1 mb-0.5" /> Payments
         </button>
       </div>
 
@@ -2157,8 +2158,8 @@ export default function Dashboard() {
       <div style={s.list}>
         {activeTab !== 'history' && activeTab !== 'payments' && displayPatients.length === 0 && (
           <div style={s.empty}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>{activeTab === 'active' ? '🎉' : '📋'}</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>
+            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>{activeTab === 'active' ? <Sparkles className="w-12 h-12 text-[#0D9488]" /> : <CheckCircle className="w-12 h-12 text-[#94A3B8]" />}</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0D9488' }}>
               {activeTab === 'active' ? 'Queue is clear!' : 'No completed patients yet'}
             </div>
             <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: 6 }}>
@@ -2171,7 +2172,7 @@ export default function Dashboard() {
           <div style={{ marginBottom: 16, background: 'white', padding: '16px 20px', borderRadius: 16, boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
             {/* Row 1: Date picker */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E293B', whiteSpace: 'nowrap' }}>📅 Date:</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F766E', whiteSpace: 'nowrap' }}>📅 Date:</label>
               <input
                 type="date"
                 value={historyDate}
@@ -2184,7 +2185,7 @@ export default function Dashboard() {
                       : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d.toISOString().split('T')[0] })()
                 }
                 onChange={e => setHistoryDate(e.target.value)}
-                style={{ flex: 1, padding: '8px 12px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500 }}
+                style={{ flex: 1, padding: '8px 12px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0D9488', fontWeight: 500 }}
               />
             </div>
             {/* Row 2: Search + Filter */}
@@ -2196,19 +2197,19 @@ export default function Dashboard() {
                   placeholder="Search name, phone, token..."
                   value={historySearch}
                   onChange={e => setHistorySearch(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px 9px 36px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 500, boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '9px 12px 9px 36px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0D9488', fontWeight: 500, boxSizing: 'border-box' }}
                 />
               </div>
               <select
                 value={historyFilter}
                 onChange={e => setHistoryFilter(e.target.value)}
-                style={{ padding: '9px 12px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0F172A', fontWeight: 600, cursor: 'pointer', minWidth: 100 }}
+                style={{ padding: '9px 12px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#0D9488', fontWeight: 600, cursor: 'pointer', minWidth: 100 }}
               >
                 <option value="all">All</option>
-                <option value="done">✅ Done</option>
+                <option value="done"><CheckCircle2 className="inline-block w-4 h-4" /> Done</option>
                 <option value="waiting">🟡 Waiting</option>
                 <option value="called">🟢 Called</option>
-                <option value="skipped">⏭ Skipped</option>
+                <option value="skipped"><SkipForward className="inline-block w-4 h-4" /> Skipped</option>
               </select>
             </div>
           </div>
@@ -2220,8 +2221,10 @@ export default function Dashboard() {
 
         {activeTab === 'history' && !loadingHistory && historyPatients.length === 0 && (
           <div style={s.empty}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>📅</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>No records found</div>
+            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+              <History className="w-12 h-12 text-[#94A3B8]" />
+            </div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0D9488' }}>No records found</div>
             <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: 6 }}>Try selecting a different date</div>
           </div>
         )}
@@ -2239,7 +2242,7 @@ export default function Dashboard() {
           if (filtered.length === 0 && historyPatients.length > 0) {
             return (
               <div style={{ textAlign: 'center', padding: '40px 24px', color: '#94A3B8' }}>
-                <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔍</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Search className="w-10 h-10 text-[#94A3B8]" /></div>
                 <div style={{ fontWeight: 600, color: '#64748B' }}>No matching patients</div>
                 <div style={{ fontSize: '0.8rem', marginTop: 4 }}>Try a different search or filter</div>
               </div>
@@ -2291,32 +2294,32 @@ export default function Dashboard() {
       {/* ── UPGRADE MODAL ── */}
       {showUpgradeModal && (
         <div onClick={() => setShowUpgradeModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#0a0514', width: '100%', maxWidth: 700, borderRadius: 24, padding: '32px 24px', position: 'relative', border: '1px solid rgba(124,58,237,0.3)', color: '#fff' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#0a0514', width: '100%', maxWidth: 700, borderRadius: 24, padding: '32px 24px', position: 'relative', border: '1px solid rgba(13,148,136,0.3)', color: '#fff' }}>
             <button onClick={() => setShowUpgradeModal(false)} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', width: 32, height: 32, borderRadius: '50%', color: '#94a3b8', cursor: 'pointer', fontSize: 18 }}>×</button>
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🛑</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}><AlertTriangle className="w-16 h-16 text-[#F87171] mx-auto" /></div>
               <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8, color: '#f87171' }}>Daily Limit Reached!</h2>
               <p style={{ color: '#94a3b8', fontSize: 15 }}>You have reached the maximum number of patients allowed for your current plan today. Upgrade to instantly add more patients.</p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
               {clinic?.plan_id === 'starter' && (
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '2px solid #7c3aed', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '2px solid #0D9488', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                     <span style={{ fontSize: 20 }}>🥈</span>
                     <span style={{ fontSize: 18, fontWeight: 800, color: '#a78bfa' }}>Pro Plan</span>
                   </div>
                   <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 16 }}>₹999 <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>/mo</span></div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, flex: 1 }}>
-                    <li>✔️ Up to 150 patients/day</li>
-                    <li>✔️ AI Voice Alerts</li>
-                    <li>✔️ Queue Pause feature</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 className="w-4 h-4 text-[#0D9488]" /> Up to 150 patients/day</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 className="w-4 h-4 text-[#0D9488]" /> AI Voice Alerts</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 className="w-4 h-4 text-[#0D9488]" /> Queue Pause feature</li>
                   </ul>
                   <button 
                     onClick={() => handleUpgrade('pro')}
                     disabled={!!upgrading}
-                    style={{ width: '100%', padding: '12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 800, cursor: !!upgrading ? 'default' : 'pointer', opacity: upgrading ? 0.5 : 1 }}
+                    style={{ width: '100%', padding: '12px', background: '#0D9488', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 800, cursor: !!upgrading ? 'default' : 'pointer', opacity: upgrading ? 0.5 : 1 }}
                   >
-                    {upgrading === 'pro' ? '⏳ Opening...' : 'Upgrade to Pro'}
+                    {upgrading === 'pro' ? <><Hourglass className="inline-block w-4 h-4" /> Opening...</> : 'Upgrade to Pro'}
                   </button>
                 </div>
               )}
@@ -2327,16 +2330,16 @@ export default function Dashboard() {
                 </div>
                 <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 16 }}>₹1999 <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>/mo</span></div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, flex: 1 }}>
-                  <li>✔️ Unlimited patients</li>
-                  <li>✔️ WhatsApp CRM Broadcasts</li>
-                  <li>✔️ VIP Support</li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Star className="w-4 h-4 text-[#F59E0B]" /> Unlimited patients</li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Star className="w-4 h-4 text-[#F59E0B]" /> WhatsApp CRM Broadcasts</li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Star className="w-4 h-4 text-[#F59E0B]" /> VIP Support</li>
                 </ul>
                 <button 
                   onClick={() => handleUpgrade('elite')}
                   disabled={!!upgrading}
                   style={{ width: '100%', padding: '12px', background: '#f59e0b', color: '#000', border: 'none', borderRadius: 12, fontWeight: 800, cursor: !!upgrading ? 'default' : 'pointer', opacity: upgrading ? 0.5 : 1 }}
                 >
-                  {upgrading === 'elite' ? '⏳ Opening...' : 'Upgrade to Elite'}
+                  {upgrading === 'elite' ? <><Hourglass className="inline-block w-4 h-4" /> Opening...</> : 'Upgrade to Elite'}
                 </button>
               </div>
             </div>
@@ -2347,14 +2350,14 @@ export default function Dashboard() {
       {/* ── SUCCESS MODAL ── */}
       {showSuccessModal && (
         <div onClick={() => setShowSuccessModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', width: '100%', maxWidth: 440, borderRadius: 24, padding: '40px 32px', position: 'relative', border: '1px solid rgba(124,58,237,0.3)', color: '#fff', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(124,58,237,0.3)' }}>
-            <div style={{ fontSize: 64, marginBottom: 16, animation: 'bounce 1s ease infinite' }}>🎉</div>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg, #0D9488, #1e1b4b)', width: '100%', maxWidth: 440, borderRadius: 24, padding: '40px 32px', position: 'relative', border: '1px solid rgba(13,148,136,0.3)', color: '#fff', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(13,148,136,0.3)' }}>
+            <div style={{ marginBottom: 16, animation: 'bounce 1s ease infinite', display: 'flex', justifyContent: 'center' }}><Sparkles className="w-16 h-16 text-[#0D9488]" /></div>
             <style>{`@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`}</style>
             <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12, background: 'linear-gradient(to right, #10b981, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Payment Successful!</h2>
             <p style={{ color: '#cbd5e1', marginBottom: 24, fontSize: 16, lineHeight: 1.6 }}>Your clinic has been upgraded to the <strong>{showSuccessModal} Plan</strong>! You can now resume adding patients to your queue.</p>
             <button
               onClick={() => setShowSuccessModal(null)}
-              style={{ width: '100%', padding: '14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}
+              style={{ width: '100%', padding: '14px', background: '#0D9488', color: 'white', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: '0 8px 24px rgba(13,148,136,0.4)' }}
             >
               Continue to Dashboard
             </button>
@@ -2419,19 +2422,19 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
         {/* Right: Info */}
         <div style={{ flex: 1, padding: '12px 14px', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0D9488', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
               {patient.name || 'Walk-in Patient'}
             </span>
-            <span style={{ fontSize: '0.63rem', fontWeight: 700, color: '#7C3AED', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: 20, padding: '1px 7px', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.63rem', fontWeight: 700, color: '#0D9488', background: '#F0FDFA', border: '1px solid #DDD6FE', borderRadius: 20, padding: '1px 7px', flexShrink: 0 }}>
               {LANG_NAMES[patient.language] || 'हिंदी'}
             </span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 10px', fontSize: '0.75rem', color: '#64748B' }}>
-            <span>📱 +91 {maskPhone(patient.phone)}</span>
-            <span>🕒 {joinedTime}</span>
-            {isWaiting && waitMins > 0 && <span style={{ color: waitMins > 20 ? '#EF4444' : '#F97316', fontWeight: 700 }}>⏳ {waitMins}m</span>}
-            {completedTime && <span>✅ {completedTime}</span>}
-            {position && <span style={{ color: '#7C3AED', fontWeight: 600 }}>~{position * 7}min est.</span>}
+            <span><Smartphone className="inline-block w-4 h-4" /> +91 {maskPhone(patient.phone)}</span>
+            <span><Clock className="inline-block w-4 h-4" /> {joinedTime}</span>
+            {isWaiting && waitMins > 0 && <span style={{ color: waitMins > 20 ? '#EF4444' : '#F97316', fontWeight: 700 }}><Hourglass className="inline-block w-4 h-4" /> {waitMins}m</span>}
+            {completedTime && <span><CheckCircle2 className="inline-block w-4 h-4" /> {completedTime}</span>}
+            {position && <span style={{ color: '#0D9488', fontWeight: 600 }}>~{position * 7}min est.</span>}
           </div>
         </div>
       </div>
@@ -2444,16 +2447,16 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
           display: 'flex', gap: 8, padding: '10px 12px', flexWrap: 'wrap',
         }}>
           {isCalled && (
-            <button onClick={onDone} style={{ flex: 1, minWidth: 90, padding: '9px 12px', background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>✓ Done</button>
+            <button onClick={onDone} style={{ flex: 1, minWidth: 90, padding: '9px 12px', background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Check className="w-4 h-4" /> Done</button>
           )}
           {isWaiting && onPriorityCall && (
-            <button onClick={onPriorityCall} style={{ flex: 1, minWidth: 100, padding: '9px 12px', background: 'linear-gradient(135deg,#EF4444,#DC2626)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>🚨 Call Now</button>
+            <button onClick={onPriorityCall} style={{ flex: 1, minWidth: 100, padding: '9px 12px', background: 'linear-gradient(135deg,#EF4444,#DC2626)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Megaphone className="w-4 h-4" /> Call Now</button>
           )}
           {isWaiting && (
-            <button onClick={onNotify} style={{ flex: 1, minWidth: 80, padding: '9px 12px', background: 'white', color: '#1D4ED8', border: '1.5px solid #BFDBFE', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>🔔 Notify</button>
+            <button onClick={onNotify} style={{ flex: 1, minWidth: 80, padding: '9px 12px', background: 'white', color: '#1D4ED8', border: '1.5px solid #BFDBFE', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}><Bell className="inline-block w-4 h-4" /> Notify</button>
           )}
           {isWaiting && (
-            <button onClick={onSkip} style={{ padding: '9px 14px', background: 'white', color: '#94A3B8', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>⏭ Skip</button>
+            <button onClick={onSkip} style={{ padding: '9px 14px', background: 'white', color: '#94A3B8', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}><SkipForward className="inline-block w-4 h-4" /> Skip</button>
           )}
         </div>
       )}
@@ -2543,7 +2546,7 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
     <div style={ps.container}>
       {/* ── Search Bar ── */}
       <div style={ps.searchContainer}>
-        <span style={ps.searchIcon}>🔍</span>
+        <span style={ps.searchIcon}><Search className="w-4 h-4 text-[#94A3B8]" /></span>
         <input
           type="text"
           placeholder="Search patient by name, phone, or token..."
@@ -2562,7 +2565,7 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
             ...(paymentSubTab === 'pending' ? ps.subTabActivePending : {})
           }}
         >
-          ⚠️ Pending Payments ({pendingCount})
+          <AlertTriangle className="inline-block w-4 h-4" /> Pending Payments ({pendingCount})
         </button>
         <button
           onClick={() => { setPaymentSubTab('completed'); setEditingFeeId(null); }}
@@ -2571,7 +2574,7 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
             ...(paymentSubTab === 'completed' ? ps.subTabActiveCompleted : {})
           }}
         >
-          ✅ Completed Receipts ({completedCount})
+          <CheckCircle2 className="inline-block w-4 h-4" /> Completed Receipts ({completedCount})
         </button>
       </div>
 
@@ -2601,9 +2604,9 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
         {filtered.length === 0 ? (
           <div style={ps.emptyState}>
             <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>
-              {paymentSubTab === 'pending' ? '🎉' : '🧾'}
+              {paymentSubTab === 'pending' ? <Sparkles className="w-10 h-10 text-[#0D9488] mx-auto" /> : <CheckCircle className="w-10 h-10 text-[#0D9488] mx-auto" />}
             </div>
-            <div style={{ fontWeight: 700, color: '#1E293B' }}>
+            <div style={{ fontWeight: 700, color: '#0F766E' }}>
               {paymentSubTab === 'pending' ? 'No pending payments!' : 'No completed receipts yet.'}
             </div>
             {paymentSearch && <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: 4 }}>Try clearing your search query.</div>}
@@ -2627,7 +2630,7 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
                     <span style={ps.langBadge}>{LANG_NAMES[p.language] || 'हिंदी'}</span>
                   </div>
                   <div style={ps.patientMeta}>
-                    📱 +91 {maskPhone(p.phone)} &nbsp;·&nbsp; 📅 {p.date}
+                    <Smartphone className="inline-block w-4 h-4" /> +91 {maskPhone(p.phone)} &nbsp;·&nbsp; 📅 {p.date}
                   </div>
 
                   {/* Fee Details Area */}
@@ -2702,7 +2705,7 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
                           style={ps.btnEdit}
                           title="Edit Fee"
                         >
-                          ✏️ Edit Fee
+                          <Pencil className="inline-block w-4 h-4" /> Edit Fee
                         </button>
                       )}
                     </div>
@@ -2744,12 +2747,12 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
                           cursor: remindingId === p.id ? 'not-allowed' : 'pointer'
                         }}
                       >
-                        {remindingId === p.id ? 'Sending...' : '🔔 Remind Patient'}
+                        {remindingId === p.id ? 'Sending...' : <><Bell className="inline-block w-4 h-4" /> Remind Patient</>}
                       </button>
                     </>
                   ) : (
                     <div style={ps.completedTag}>
-                      ✅ Paid / Completed
+                      <CheckCircle2 className="inline-block w-4 h-4" /> Paid / Completed
                     </div>
                   )}
                 </div>
@@ -2792,7 +2795,7 @@ const ps = {
     fontSize: '0.9rem',
     fontWeight: 500,
     outline: 'none',
-    color: '#1E293B',
+    color: '#0F766E',
     boxSizing: 'border-box',
   },
   subTabs: {
@@ -2888,7 +2891,7 @@ const ps = {
   },
   patientName: {
     fontWeight: 700,
-    color: '#0F172A',
+    color: '#0D9488',
     fontSize: '0.95rem',
     display: 'flex',
     alignItems: 'center',
@@ -2896,8 +2899,8 @@ const ps = {
     flexWrap: 'wrap',
   },
   langBadge: {
-    background: '#F5F3FF',
-    color: '#7C3AED',
+    background: '#F0FDFA',
+    color: '#0D9488',
     padding: '2px 8px',
     borderRadius: 20,
     fontSize: '0.68rem',
@@ -2964,7 +2967,7 @@ const ps = {
     width: '100%',
     outline: 'none',
     boxSizing: 'border-box',
-    color: '#0F172A',
+    color: '#0D9488',
   },
   editActions: {
     display: 'flex',
@@ -3021,7 +3024,7 @@ const ps = {
     boxShadow: '0 4px 10px rgba(16, 185, 129, 0.2)',
   },
   btnRemind: {
-    background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
+    background: 'linear-gradient(135deg, #0D9488, #4F46E5)',
     color: 'white',
     border: 'none',
     borderRadius: 10,
@@ -3031,7 +3034,7 @@ const ps = {
     cursor: 'pointer',
     width: '100%',
     textAlign: 'center',
-    boxShadow: '0 4px 10px rgba(124, 58, 237, 0.2)',
+    boxShadow: '0 4px 10px rgba(13, 148, 136, 0.2)',
   },
   completedTag: {
     color: '#047857',
@@ -3049,14 +3052,14 @@ const ps = {
 
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const s = {
-  root: { fontFamily: "'Inter','DM Sans','Segoe UI',sans-serif", background: '#F1F5F9', minHeight: '100vh', maxWidth: '1040px', margin: '0 auto' },
+  root: { fontFamily: "'Inter','DM Sans','Segoe UI',sans-serif", background: '#F1F5F9', minHeight: '100vh', width: '100%', maxWidth: 'none', margin: '0 auto' },
   loadingScreen: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F1F5F9' },
-  spinner: { width: 40, height: 40, border: '3px solid #E2E8F0', borderTop: '3px solid #7C3AED', borderRadius: '50%' },
+  spinner: { width: 40, height: 40, border: '3px solid #E2E8F0', borderTop: '3px solid #0D9488', borderRadius: '50%' },
   toastContainer: { position: 'fixed', top: 16, right: 16, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 },
   toast: { padding: '12px 18px', borderRadius: 12, color: 'white', fontWeight: 600, fontSize: '0.85rem', boxShadow: '0 8px 32px rgba(0,0,0,0.25)', minWidth: 260 },
-  banner: { background: 'linear-gradient(90deg,#7C3AED15,#06B6D415)', color: '#4F46E5', borderBottom: '1px solid #C4B5FD50', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.88rem', fontWeight: 600 },
+  banner: { background: 'linear-gradient(90deg,#0D948815,#06B6D415)', color: '#4F46E5', borderBottom: '1px solid #5EEAD450', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.88rem', fontWeight: 600 },
   bannerDot: { width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px rgba(16,185,129,0.7)', flexShrink: 0 },
-  header: { background: 'linear-gradient(135deg,#0f0a2a 0%,#1a0b3b 50%,#0c1445 100%)', padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 32px rgba(124,58,237,0.3)', position: 'sticky', top: 0, zIndex: 50 },
+  header: { background: 'linear-gradient(135deg,#0D9488 0%,#0F766E 50%,#09524f 100%)', padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 32px rgba(13,148,136,0.3)', position: 'sticky', top: 0, zIndex: 50 },
   headerLeft: { display: 'flex', alignItems: 'center', gap: 14 },
   logoBox: {}, appName: {}, clinicSubName: {},
   headerCenter: { display: 'flex', gap: 10, flexWrap: 'wrap' },
@@ -3068,11 +3071,11 @@ const s = {
   liveBadge: { display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', borderRadius: 20, padding: '4px 12px', color: '#34D399', fontSize: '0.72rem', fontWeight: 700, letterSpacing: 1 },
   liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B981' },
   clock: { color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.88rem', fontVariantNumeric: 'tabular-nums' },
-  btnBilling: { background: 'rgba(124,58,237,0.2)', color: '#C4B5FD', border: '1px solid rgba(124,58,237,0.4)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
+  btnBilling: { background: 'rgba(13,148,136,0.2)', color: '#5EEAD4', border: '1px solid rgba(13,148,136,0.4)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
   btnLogout: { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
   actionBar: { background: 'white', padding: '12px 24px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid #E2E8F0', flexWrap: 'wrap', boxShadow: '0 1px 0 #E2E8F0' },
-  btnQR: { background: '#0F172A', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' },
-  btnAdd: { background: '#F5F3FF', color: '#7C3AED', border: '1px solid #DDD6FE', padding: '10px 18px', borderRadius: 10, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' },
+  btnQR: { background: '#0D9488', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' },
+  btnAdd: { background: '#F0FDFA', color: '#0D9488', border: '1px solid #DDD6FE', padding: '10px 18px', borderRadius: 10, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' },
   btnCall: { background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white', border: 'none', padding: '10px 22px', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 4px 16px rgba(16,185,129,0.4)' },
   btnGhost: { background: 'transparent', color: '#64748B', border: '1px solid #E2E8F0', padding: '10px 16px', borderRadius: 10, fontWeight: 500, fontSize: '0.85rem', cursor: 'pointer' },
   btnDone: { background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)', color: '#065F46', border: '1px solid #A7F3D0', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
@@ -3080,21 +3083,21 @@ const s = {
   btnSkip: { background: 'linear-gradient(135deg,#FFF1F2,#FFE4E6)', color: '#9F1239', border: '1px solid #FECDD3', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   btnPriority: { background: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)', color: '#DC2626', border: '1px solid #FCA5A5', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   qrHint: { marginLeft: 'auto', color: '#CBD5E1', fontSize: '0.75rem', fontStyle: 'italic' },
-  addForm: { background: 'linear-gradient(135deg,#F5F3FF,#EFF6FF)', borderBottom: '1px solid #DDD6FE', padding: '16px 24px' },
-  addFormTitle: { fontWeight: 700, color: '#6D28D9', marginBottom: 12, fontSize: '0.88rem' },
+  addForm: { background: 'linear-gradient(135deg,#F0FDFA,#EFF6FF)', borderBottom: '1px solid #DDD6FE', padding: '16px 24px' },
+  addFormTitle: { fontWeight: 700, color: '#0F766E', marginBottom: 12, fontSize: '0.88rem' },
   addFormRow: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' },
-  input: { padding: '10px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: '0.88rem', flex: 1, minWidth: 160, outline: 'none', background: 'white', color: '#0F172A' },
-  select: { padding: '10px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: '0.88rem', background: 'white', cursor: 'pointer', color: '#0F172A' },
+  input: { padding: '10px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: '0.88rem', flex: 1, minWidth: 160, outline: 'none', background: 'white', color: '#0D9488' },
+  select: { padding: '10px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: '0.88rem', background: 'white', cursor: 'pointer', color: '#0D9488' },
   tabs: { display: 'flex', padding: '0 24px', background: 'white', borderBottom: '1px solid #F1F5F9', gap: 4 },
   tab: { padding: '15px 22px', border: 'none', background: 'transparent', color: '#94A3B8', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', borderBottom: '2px solid transparent', transition: 'color .15s' },
-  tabActive: { color: '#7C3AED', borderBottom: '2px solid #7C3AED' },
+  tabActive: { color: '#0D9488', borderBottom: '2px solid #0D9488' },
   list: { padding: '12px 16px 80px' },
   sectionLabel: { padding: '16px 8px 8px', fontSize: '0.68rem', fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '1.2px', display: 'flex', alignItems: 'center', gap: 6 },
   card: { background: 'white', borderRadius: 16, padding: '18px 20px', marginBottom: 10, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid #F1F5F9', transition: 'box-shadow .2s,transform .15s' },
   token: { fontWeight: 900, fontSize: '1.1rem', minWidth: 56, textAlign: 'center', letterSpacing: '-0.5px', fontVariantNumeric: 'tabular-nums' },
   cardInfo: { flex: 1, minWidth: 0 },
-  patientName: { fontWeight: 700, color: '#0F172A', fontSize: '0.93rem', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  langBadge: { background: '#F5F3FF', color: '#7C3AED', padding: '2px 9px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, border: '1px solid #DDD6FE' },
+  patientName: { fontWeight: 700, color: '#0D9488', fontSize: '0.93rem', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  langBadge: { background: '#F0FDFA', color: '#0D9488', padding: '2px 9px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, border: '1px solid #DDD6FE' },
   patientMeta: { fontSize: '0.75rem', color: '#94A3B8', marginTop: 4 },
   estWait: { fontSize: '0.72rem', color: '#64748B', marginTop: 3, fontWeight: 600 },
   cardActions: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 },

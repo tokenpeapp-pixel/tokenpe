@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, getISTDateString } from '../../../lib/supabase'
 import confetti from 'canvas-confetti'
+import { Gift, AlertTriangle, Hourglass, RefreshCw, CheckCircle2 } from 'lucide-react'
 
 const PLAN_META = {
   starter:      { name: 'Starter', price: '₹499',   priceNum: 499,  limit: 50,       color: '#6B7280' },
@@ -276,12 +277,12 @@ export default function BillingPage() {
                     <h2 className="text-xl sm:text-2xl font-black text-[#111827]">{planName}</h2>
                     {isTrial && !isTrialExpired && (
                       <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full text-[11px] font-extrabold tracking-wide shadow-sm">
-                        🎁 FREE TRIAL — {daysLeft} days left
+                        <Gift className="inline-block w-4 h-4 mr-1 mb-0.5" /> FREE TRIAL — {daysLeft} days left
                       </span>
                     )}
                     {isTrialExpired && (
                       <span className="px-3 py-1 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full text-[11px] font-extrabold tracking-wide shadow-sm">
-                        ⚠️ TRIAL EXPIRED
+                        <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" /> TRIAL EXPIRED
                       </span>
                     )}
                     {!isTrial && !isCanceled && (
@@ -304,10 +305,10 @@ export default function BillingPage() {
                         : isCanceled
                           ? <span className="text-red-500 font-bold">Subscription ended. Please reactivate a plan to restore service.</span>
                           : isCancelPending && clinic?.current_period_end
-                            ? <span className="text-red-500 font-medium">⚠️ Cancellation scheduled — full access until <strong>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. No further charges.</span>
+                            ? <span className="text-red-500 font-medium"><AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" /> Cancellation scheduled — full access until <strong>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. No further charges.</span>
                             : clinic?.current_period_end
                               ? <>Next billing date: <strong className="text-indigo-600">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
-                              : <span className="text-gray-500 text-xs">⏳ Confirming billing date... (may take a few seconds)</span>}
+                              : <span className="text-gray-500 text-xs"><Hourglass className="inline-block w-3 h-3 mr-1" /> Confirming billing date... (may take a few seconds)</span>}
                   </div>
                 </div>
 
@@ -353,7 +354,7 @@ export default function BillingPage() {
                           onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
                           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
                         >
-                          🔄 Reactivate Subscription
+                          <><RefreshCw className="inline-block w-4 h-4 mr-1" /> Reactivate Subscription</>
                         </button>
                       )}
                       <button
@@ -413,9 +414,9 @@ export default function BillingPage() {
 
                   // Button label
                   let btnLabel = `Upgrade to ${plan.label}`
-                  if (isLoading)                  btnLabel = '⏳ Processing...'
-                  else if (canReact)              btnLabel = '🔄 Reactivate'
-                  else if (isCurrent)             btnLabel = '✓ Current Plan'
+                  if (isLoading)                  btnLabel = <><Hourglass className="inline-block w-4 h-4 mr-1" /> Processing...</>
+                  else if (canReact)              btnLabel = <><RefreshCw className="inline-block w-4 h-4 mr-1" /> Reactivate</>
+                  else if (isCurrent)             btnLabel = <><CheckCircle2 className="inline-block w-4 h-4 mr-1" /> Current Plan</>
                   else if (isTrial || isCanceled) btnLabel = `Subscribe – ${plan.price}/mo`
 
                   const btnDisabled = (isCurrent && !canReact) || (!!upgrading && upgrading !== plan.tier)

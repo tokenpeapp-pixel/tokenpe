@@ -318,21 +318,21 @@ export default function LoginPage() {
                     </motion.p>
 
                     <div className="flex flex-col gap-4 w-full">
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg">
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.08)' }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default">
                             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><Mic className="w-5 h-5" /></div>
                             <div>
                                 <div className="font-semibold text-white">Voice updates in 10 Indian languages</div>
                                 <div className="text-sm text-emerald-100/60 mt-0.5">Inclusive. Accessible. Effortless.</div>
                             </div>
                         </motion.div>
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg">
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.08)' }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default">
                             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><MessageCircle className="w-5 h-5" /></div>
                             <div>
                                 <div className="font-semibold text-white">Patients join via WhatsApp</div>
                                 <div className="text-sm text-emerald-100/60 mt-0.5">No app download. No sign-up.</div>
                             </div>
                         </motion.div>
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg">
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.08)' }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default">
                             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><Bell className="w-5 h-5" /></div>
                             <div>
                                 <div className="font-semibold text-white">Real-time notifications</div>

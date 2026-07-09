@@ -276,18 +276,18 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex flex-col md:flex-row min-h-screen w-full bg-[#FCFCFA] relative overflow-hidden font-sans" suppressHydrationWarning={true}>
+        <div className="flex min-h-screen w-full bg-[#FCFCFA] overflow-hidden font-sans text-slate-800" suppressHydrationWarning={true}>
             
             {/* LEFT PANEL (approx 48%) */}
-            <div className="relative hidden md:flex flex-col w-[48%] min-h-screen bg-gradient-to-br from-[#083D35] via-[#0A5644] to-[#0F6A53] text-white p-12 lg:p-20 overflow-hidden justify-between z-10">
-                {/* Background Image Blend */}
-                <div className="absolute inset-0 z-0">
+            <div className="relative hidden md:flex flex-col justify-between w-[48%] min-h-screen bg-gradient-to-br from-[#022c22] to-[#064e3b] text-white p-12 overflow-hidden z-10">
+                {/* Immersive Background Image */}
+                <div className="absolute inset-0 z-0 pointer-events-none">
                     <img 
                         src="https://images.unsplash.com/photo-1538108149393-fbbd81895907?q=80&w=2000&auto=format&fit=crop" 
                         alt="Clinic Waiting Room" 
                         className="w-full h-full object-cover mix-blend-overlay opacity-20 blur-[2px]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#083D35]/40 to-[#0F6A53]/90" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#022c22]/60 to-[#022c22]/95" />
                 </div>
 
                 {/* Decorative Grid & Radials */}
@@ -318,25 +318,31 @@ export default function LoginPage() {
                     </motion.p>
 
                     <div className="flex flex-col gap-4 w-full">
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.08)' }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><Mic className="w-5 h-5" /></div>
-                            <div>
-                                <div className="font-semibold text-white">Voice updates in 10 Indian languages</div>
-                                <div className="text-sm text-emerald-100/60 mt-0.5">Inclusive. Accessible. Effortless.</div>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+                            <div className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default hover:-translate-y-1 hover:bg-white/10 hover:shadow-xl transition-all duration-200">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><Mic className="w-5 h-5" /></div>
+                                <div>
+                                    <div className="font-semibold text-white">Voice updates in 10 Indian languages</div>
+                                    <div className="text-sm text-emerald-100/60 mt-0.5">Inclusive. Accessible. Effortless.</div>
+                                </div>
                             </div>
                         </motion.div>
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.08)' }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><MessageCircle className="w-5 h-5" /></div>
-                            <div>
-                                <div className="font-semibold text-white">Patients join via WhatsApp</div>
-                                <div className="text-sm text-emerald-100/60 mt-0.5">No app download. No sign-up.</div>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+                            <div className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default hover:-translate-y-1 hover:bg-white/10 hover:shadow-xl transition-all duration-200">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><MessageCircle className="w-5 h-5" /></div>
+                                <div>
+                                    <div className="font-semibold text-white">Patients join via WhatsApp</div>
+                                    <div className="text-sm text-emerald-100/60 mt-0.5">No app download. No sign-up.</div>
+                                </div>
                             </div>
                         </motion.div>
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} whileHover={{ y: -4, backgroundColor: 'rgba(255, 255, 255, 0.08)' }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><Bell className="w-5 h-5" /></div>
-                            <div>
-                                <div className="font-semibold text-white">Real-time notifications</div>
-                                <div className="text-sm text-emerald-100/60 mt-0.5">Stay informed. Always.</div>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
+                            <div className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg cursor-default hover:-translate-y-1 hover:bg-white/10 hover:shadow-xl transition-all duration-200">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><Bell className="w-5 h-5" /></div>
+                                <div>
+                                    <div className="font-semibold text-white">Real-time notifications</div>
+                                    <div className="text-sm text-emerald-100/60 mt-0.5">Stay informed. Always.</div>
+                                </div>
                             </div>
                         </motion.div>
                     </div>

@@ -29,7 +29,7 @@ export default function LoginPage() {
                         localStorage.removeItem('tokenpe_user_clinics')
                     }
                 })
-                .catch(() => {})
+                .catch(() => { })
 
             const params = new URLSearchParams(window.location.search)
             const errType = params.get('error')
@@ -100,7 +100,7 @@ export default function LoginPage() {
         setError('')
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { 
+            options: {
                 redirectTo: `${window.location.origin}/auth/callback?intent=${mode}`,
                 queryParams: {
                     prompt: 'select_account'
@@ -170,10 +170,10 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    name: regName, 
-                    phone: regPhone, 
-                    email: regEmail, 
+                body: JSON.stringify({
+                    name: regName,
+                    phone: regPhone,
+                    email: regEmail,
                     pin: regPin,
                     specialty: regSpecialty === 'Other' ? customSpecialty : regSpecialty,
                     city: regCity,
@@ -190,16 +190,16 @@ export default function LoginPage() {
             }
 
             setLoading(false)
-            
+
             // Set localStorage 
             localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
             localStorage.setItem('clinicCode', result.clinic.code)
             localStorage.setItem('clinicPhone', result.clinic.phone)
             localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
-            
+
             // Trigger celebration pop-up!
             setCelebration({ clinicName: result.clinic.name, trialEnd: result.clinic.trial_ends_at })
-            
+
         } catch (err) {
             setError('Something went wrong. Please try again.')
             setLoading(false)
@@ -281,82 +281,83 @@ export default function LoginPage() {
                 * { box-sizing: border-box; margin: 0; padding: 0; }
 
                 .left-panel {
-                    width: 42%;
-                    background: linear-gradient(160deg, #1a0b3b 0%, #0f0a2a 60%, #080818 100%);
+                    width: 45%;
+                    background: #022c22;
                     display: flex;
                     flex-direction: column;
                     justify-content: space-between;
-                    padding: 48px 44px;
+                    padding: 48px 60px;
                     color: white;
                     position: relative;
                     overflow: hidden;
+                    z-index: 1;
                 }
                 .left-panel::before {
                     content: '';
                     position: absolute;
-                    top: -120px; right: -120px;
-                    width: 380px; height: 380px;
-                    border-radius: 50%;
-                    background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%);
-                    pointer-events: none;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background-image: url('/clinic-bg.jpg');
+                    background-size: cover;
+                    background-position: center;
+                    opacity: 0.25;
+                    mix-blend-mode: overlay;
+                    z-index: -1;
                 }
                 .left-panel::after {
                     content: '';
                     position: absolute;
-                    bottom: -80px; left: -80px;
-                    width: 300px; height: 300px;
-                    border-radius: 50%;
-                    background: radial-gradient(circle, rgba(79,70,229,0.12) 0%, transparent 70%);
-                    pointer-events: none;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: linear-gradient(160deg, rgba(2,44,34,0.92) 0%, rgba(6,78,59,0.85) 100%);
+                    z-index: -1;
                 }
 
                 .logo-area {
                     display: flex;
                     align-items: center;
                     cursor: pointer;
+                    z-index: 2;
                 }
                 .logo-img {
                     height: 48px;
                     width: auto;
                 }
 
-                .panel-divider-wave {
-                    position: absolute;
-                    top: 0;
-                    right: -1px;
-                    height: 100%;
-                    width: 45px;
-                    fill: #ffffff;
-                    pointer-events: none;
-                    z-index: 10;
+                .mid-content { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 0 20px; z-index: 2; }
+                .main-heading {
+                    font-size: 38px;
+                    font-weight: 800;
+                    line-height: 1.2;
+                    margin-bottom: 16px;
                 }
-
-                .mid-content { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 0 20px; }
+                .text-highlight { color: #10B981; }
                 .mid-desc {
-                    font-size: 16px; color: rgba(255,255,255,0.65);
-                    line-height: 1.65; margin-bottom: 36px; max-width: 320px;
+                    font-size: 16px; color: rgba(255,255,255,0.75);
+                    line-height: 1.6; margin-bottom: 40px; max-width: 360px;
                 }
 
-                .feature-list { display: flex; flex-direction: column; gap: 18px; }
+                .feature-list { display: flex; flex-direction: column; gap: 16px; }
                 .feature-item {
-                    display: flex; align-items: center; gap: 14px;
-                    background: rgba(255,255,255,0.05);
-                    border: 1px solid rgba(255,255,255,0.08);
-                    border-radius: 14px;
-                    padding: 14px 18px;
-                    transition: background 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
-                    will-change: transform;
+                    display: flex; align-items: center; gap: 16px;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.06);
+                    border-radius: 12px;
+                    padding: 16px;
+                    transition: background 0.25s ease, transform 0.25s ease;
+                    max-width: 400px;
                 }
-                .feature-item:hover { background: rgba(255,255,255,0.1); transform: translateX(6px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+                .feature-item:hover { background: rgba(255,255,255,0.06); transform: translateX(4px); }
                 .feature-icon {
-                    width: 36px; height: 36px; border-radius: 10px;
-                    background: rgba(255,255,255,0.1);
+                    width: 40px; height: 40px; border-radius: 50%;
+                    background: rgba(16,185,129,0.2);
+                    color: #10B981;
                     display: flex; align-items: center; justify-content: center;
-                    font-size: 17px; flex-shrink: 0;
+                    font-size: 18px; flex-shrink: 0;
                 }
-                .feature-text { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.8); }
+                .feature-text-block { display: flex; flex-direction: column; }
+                .feature-text { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+                .feature-sub { font-size: 12px; color: rgba(255,255,255,0.6); }
 
-                .left-footer { font-size: 12px; color: rgba(255,255,255,0.3); }
+                .left-footer { font-size: 13px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 8px; font-weight: 500; z-index: 2; }
 
                 /* RIGHT PANEL */
                 .right-panel {
@@ -366,59 +367,70 @@ export default function LoginPage() {
                     flex-direction: column;
                     padding: 48px 40px;
                     overflow-y: auto;
+                    position: relative;
                 }
-                .form-box { width: 100%; max-width: 400px; margin: auto; }
 
-                .form-title { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+                .form-box { 
+                    width: 100%; max-width: 420px; margin: auto; 
+                    background: #fff;
+                    padding: 24px;
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .form-title { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
                 .form-subtitle { font-size: 14px; color: #64748b; margin-bottom: 28px; }
 
                 .btn-google {
-                    width: 100%; padding: 13px 20px;
-                    border: 1.5px solid #e2e8f0; border-radius: 10px;
-                    background: #fff; color: #0f172a;
+                    width: 100%; padding: 12px 20px;
+                    border: 1px solid #e2e8f0; border-radius: 8px;
+                    background: #fff; color: #334155;
                     font-size: 14px; font-weight: 600;
                     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-                    transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease, background 0.15s ease; margin-bottom: 22px;
+                    transition: all 0.2s; margin-bottom: 24px;
                     font-family: inherit;
-                    will-change: transform;
                 }
-                .btn-google:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: 0 6px 20px rgba(0,0,0,0.09); transform: translateY(-2px); }
-                .btn-google:active { transform: scale(0.97); }
-                .btn-google:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+                .btn-google:hover { background: #f8fafc; border-color: #cbd5e1; }
 
                 .or-divider {
                     display: flex; align-items: center; gap: 12px;
-                    margin-bottom: 22px;
+                    margin-bottom: 24px;
                 }
                 .or-line { flex: 1; height: 1px; background: #e2e8f0; }
-                .or-text { font-size: 12px; color: #94a3b8; font-weight: 600; }
+                .or-text { font-size: 12px; color: #94a3b8; font-weight: 500; }
 
                 /* TABS */
                 .tabs {
-                    display: flex; border-radius: 10px; overflow: hidden;
-                    border: 1.5px solid #e2e8f0; margin-bottom: 22px;
+                    display: flex; border-radius: 8px; overflow: hidden;
+                    border: 1px solid #e2e8f0; margin-bottom: 24px;
+                    background: #fff;
                 }
                 .tab-btn {
-                    flex: 1; padding: 11px 10px;
+                    flex: 1; padding: 12px 10px;
                     font-size: 14px; font-weight: 600;
                     border: none; background: transparent; cursor: pointer;
-                    color: #94a3b8; transition: all 0.2s; font-family: inherit;
-                    display: flex; align-items: center; justify-content: center; gap: 6px;
+                    color: #64748b; transition: all 0.2s; font-family: inherit;
+                    display: flex; align-items: center; justify-content: center; gap: 8px;
                 }
                 .tab-btn.active {
-                    background: #7C3AED; color: #ffffff;
+                    background: #059669; color: #ffffff;
+                    border-radius: 8px;
                 }
 
                 /* INPUTS */
-                .field { margin-bottom: 16px; }
-                .field label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+                .field { margin-bottom: 20px; }
+                .field label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; }
                 .field input, .field select {
                     width: 100%; padding: 12px 14px;
-                    border: 1.5px solid #e2e8f0; border-radius: 10px;
+                    border: 1px solid #e2e8f0; border-radius: 8px;
                     font-size: 14px; font-family: inherit; color: #0f172a;
-                    background: #f9fafb; outline: none;
+                    background: #fff; outline: none;
                     transition: border-color 0.2s, box-shadow 0.2s;
                 }
+                .field-icon-wrapper { position: relative; }
+                .field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; display: flex; }
+                .field input.with-icon { padding-left: 40px; }
+
                 .field select {
                     cursor: pointer;
                     appearance: none;
@@ -426,100 +438,122 @@ export default function LoginPage() {
                     background-repeat: no-repeat;
                     background-position: right 14px center;
                     background-size: 14px;
-                    padding-right: 40px;
                 }
-                .field input::placeholder { color: #94a3b8; }
-                .field input:focus, .field select:focus { border-color: #7C3AED; background: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+                .field input::placeholder { color: #cbd5e1; font-weight: 400; }
+                .field input:focus, .field select:focus { border-color: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
 
                 .btn-submit {
-                    width: 100%; padding: 13px;
-                    background: linear-gradient(135deg, #7C3AED, #4F46E5); color: #fff;
-                    border: none; border-radius: 10px;
-                    font-size: 15px; font-weight: 700; cursor: pointer;
-                    transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease, background 0.2s ease; margin-top: 6px; font-family: inherit;
-                    will-change: transform;
+                    width: 100%; padding: 14px;
+                    background: #059669; color: #fff;
+                    border: none; border-radius: 8px;
+                    font-size: 15px; font-weight: 600; cursor: pointer;
+                    transition: all 0.2s; margin-top: 8px; font-family: inherit;
                 }
-                .btn-submit:hover:not(:disabled) { background: linear-gradient(135deg, #6d28d9, #4338ca); box-shadow: 0 10px 30px rgba(124,58,237,0.4); transform: translateY(-2px); }
-                .btn-submit:active:not(:disabled) { transform: scale(0.96); box-shadow: 0 3px 10px rgba(124,58,237,0.25); }
-                .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+                .btn-submit:hover:not(:disabled) { background: #047857; }
+                .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
                 .alert-error {
                     background: #fef2f2; border: 1px solid #fecaca;
-                    color: #dc2626; border-radius: 10px;
+                    color: #dc2626; border-radius: 8px;
                     padding: 12px 14px; font-size: 13px; font-weight: 500;
-                    margin-bottom: 16px; display: flex; align-items: flex-start; gap: 8px;
+                    margin-bottom: 20px; display: flex; align-items: flex-start; gap: 8px;
                 }
                 .alert-success {
                     background: #f0fdf4; border: 1px solid #bbf7d0;
-                    color: #16a34a; border-radius: 10px;
+                    color: #16a34a; border-radius: 8px;
                     padding: 12px 14px; font-size: 13px; font-weight: 500;
-                    margin-bottom: 16px;
+                    margin-bottom: 20px;
                 }
+
+                .right-footer { text-align: center; margin-top: 24px; font-size: 13px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; }
 
                 /* RESPONSIVE */
                 @media (max-width: 768px) {
                     .left-panel { display: none; }
-                    .right-panel { padding: 40px 24px; }
+                    .right-panel { padding: 24px 16px; background: #f8fafc; }
+                    .form-box { padding: 32px 24px; box-shadow: none; border-color: #e2e8f0; }
                 }
             `}</style>
 
             {/* LEFT PANEL */}
             <div className="left-panel">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 1000" preserveAspectRatio="none" className="panel-divider-wave">
-                    <path d="M100,0 L0,0 C30,150 70,350 40,500 C10,650 60,850 100,1000 Z" />
-                </svg>
                 <div className="logo-area" onClick={() => router.push('/')}>
                     <img src="/logo.svg" alt="TokenPe" className="logo-img" />
                 </div>
 
                 <div className="mid-content">
+                    <div className="main-heading">
+                        Smart Queue<br />
+                        Management for<br />
+                        <span className="text-highlight">Modern Clinics</span>
+                    </div>
                     <p className="mid-desc">
-                        Digital OPD queue management for modern clinics. No crowding. No confusion.
+                        Digital OPD queue management that reduces crowding, saves time, and improves patient experience.
                     </p>
                     <div className="feature-list">
-                        <div className="feature-item animate-slide-right animate-delay-2">
-                            <div className="feature-icon">🎙️</div>
-                            <span className="feature-text">Voice updates in 10 Indian languages</span>
+                        <div className="feature-item">
+                            <div className="feature-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                            </div>
+                            <div className="feature-text-block">
+                                <span className="feature-text">Voice updates in 10 Indian languages</span>
+                                <span className="feature-sub">Inclusive. Accessible. Effortless.</span>
+                            </div>
                         </div>
-                        <div className="feature-item animate-slide-right animate-delay-3">
-                            <div className="feature-icon">💬</div>
-                            <span className="feature-text">Patients join via WhatsApp — zero app needed</span>
+                        <div className="feature-item">
+                            <div className="feature-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                            </div>
+                            <div className="feature-text-block">
+                                <span className="feature-text">Patients join via WhatsApp</span>
+                                <span className="feature-sub">No app download. No sign-up.</span>
+                            </div>
                         </div>
-                        <div className="feature-item animate-slide-right animate-delay-4">
-                            <div className="feature-icon">🔔</div>
-                            <span className="feature-text">Real-time notifications for every action</span>
+                        <div className="feature-item">
+                            <div className="feature-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                            </div>
+                            <div className="feature-text-block">
+                                <span className="feature-text">Real-time notifications</span>
+                                <span className="feature-sub">Stay informed. Always.</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="left-footer">Made in India · TokenPe © 2026</div>
+                <div className="left-footer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                    Secure. Reliable. Built for Healthcare.
+                </div>
             </div>
 
             {/* RIGHT PANEL */}
             <div className="right-panel">
                 <div className="form-box animate-fade-up">
-                    <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24, padding: 0 }} suppressHydrationWarning={true}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24, padding: 0 }} suppressHydrationWarning={true}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
                         Back to Home
                     </button>
-                    <div className="form-title">{mode === 'login' ? 'Welcome back' : 'New Clinic'}</div>
+                    <div className="form-title">{mode === 'login' ? 'Welcome back! 👋' : 'New Clinic 👋'}</div>
                     <div className="form-subtitle">
                         {mode === 'login' ? 'Sign in to your TokenPe dashboard' : 'Register your clinic and get started in 2 minutes'}
                     </div>
 
-                    {/* Google */}
-                    <button className="btn-google" onClick={handleGoogleLogin} disabled={googleLoading} suppressHydrationWarning={true}>
-                        <svg width="18" height="18" viewBox="0 0 18 18">
-                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
-                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
-                            <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
-                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" />
+                    {/* Google Auth */}
+                    <button type="button" onClick={handleGoogleLogin} className="btn-google" suppressHydrationWarning={true}>
+                        <svg width="18" height="18" viewBox="0 0 48 48">
+                            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+                            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+                            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+                            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                         </svg>
-                        {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+                        Continue with Google
                     </button>
 
                     <div className="or-divider">
-                        <div className="or-line" /><span className="or-text">or</span><div className="or-line" />
+                        <div className="or-line"></div>
+                        <div className="or-text">or</div>
+                        <div className="or-line"></div>
                     </div>
 
                     {/* Tabs */}
@@ -529,14 +563,16 @@ export default function LoginPage() {
                             onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
                             suppressHydrationWarning={true}
                         >
-                            🔑 Login
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            Login
                         </button>
                         <button
                             className={`tab-btn ${mode === 'register' ? 'active' : ''}`}
                             onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
                             suppressHydrationWarning={true}
                         >
-                            🏥 New Clinic
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>
+                            New Clinic
                         </button>
                     </div>
 
@@ -553,19 +589,28 @@ export default function LoginPage() {
                         <form onSubmit={handleLogin}>
                             <div className="field">
                                 <label>Registered Email</label>
-                                <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
+                                <div className="field-icon-wrapper">
+                                    <div className="field-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></div>
+                                    <input className="with-icon" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
+                                </div>
                             </div>
                             <div className="field">
                                 <label>Registered Phone</label>
-                                <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
+                                <div className="field-icon-wrapper">
+                                    <div className="field-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div>
+                                    <input className="with-icon" value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
+                                </div>
                             </div>
                             <div className="field" style={{ position: 'relative' }}>
                                 <label>4-Digit PIN</label>
-                                <input value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
-                                <button type="button" onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }} style={{ position: 'absolute', right: 0, top: 0, background: 'none', border: 'none', fontSize: 13, color: '#7C3AED', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>Forgot PIN?</button>
+                                <div className="field-icon-wrapper">
+                                    <div className="field-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+                                    <input className="with-icon" value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
+                                </div>
+                                <button type="button" onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }} style={{ position: 'absolute', right: 0, top: 0, background: 'none', border: 'none', fontSize: 13, color: '#059669', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>Forgot PIN?</button>
                             </div>
                             <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
-                                {loading ? 'Signing in...' : 'Sign in →'}
+                                {loading ? 'Signing in...' : 'Login'}
                             </button>
                         </form>
                     ) : mode === 'forgot' ? (
@@ -653,8 +698,8 @@ export default function LoginPage() {
                             <div className="field">
                                 <label>Clinic GPS Location</label>
                                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={requestGps}
                                         style={{
                                             padding: '10px 16px',
@@ -678,7 +723,7 @@ export default function LoginPage() {
                                         <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✅ GPS Active</span>
                                     )}
                                     {gpsStatus === 'denied' && (
-                                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500, lineHeight: 1.3 }}>⚠️ Permission Denied.<br/>Please allow location access.</span>
+                                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500, lineHeight: 1.3 }}>⚠️ Permission Denied.<br />Please allow location access.</span>
                                     )}
                                     {gpsStatus === 'error' && (
                                         <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500 }}>⚠️ Failed to get location</span>
@@ -705,6 +750,11 @@ export default function LoginPage() {
                             </button>
                         </form>
                     )}
+                </div>
+
+                <div className="right-footer">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                    Your data is safe and encrypted
                 </div>
             </div>
         </div>

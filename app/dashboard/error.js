@@ -15,7 +15,7 @@ export default function Error({ error, reset }) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#0f172a',
+      backgroundColor: '#065F46',
       color: '#fff',
       padding: '24px',
       fontFamily: "'Inter', sans-serif"
@@ -25,7 +25,7 @@ export default function Error({ error, reset }) {
       `}</style>
       
       <div style={{
-        background: '#1e293b',
+        background: '#064E3B',
         padding: '40px',
         borderRadius: '24px',
         maxWidth: '500px',
@@ -41,7 +41,7 @@ export default function Error({ error, reset }) {
         <button
           onClick={() => reset()}
           style={{
-            background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
+            background: 'linear-gradient(135deg, #065F46, #4F46E5)',
             color: 'white',
             border: 'none',
             padding: '14px 28px',
@@ -49,7 +49,7 @@ export default function Error({ error, reset }) {
             fontSize: '15px',
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)',
+            boxShadow: '0 8px 24px rgba(6,95,70, 0.3)',
             transition: 'transform 0.15s'
           }}
           onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}

@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 import CelebrationScreen from '../components/CelebrationScreen'
-
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mic, MessageCircle, Bell, ShieldCheck, Mail, Phone, Lock, Building, MapPin, Activity } from 'lucide-react'
 export default function LoginPage() {
     const router = useRouter()
     const [mode, setMode] = useState('login') // 'login' | 'register'
@@ -29,7 +30,7 @@ export default function LoginPage() {
                         localStorage.removeItem('tokenpe_user_clinics')
                     }
                 })
-                .catch(() => { })
+                .catch(() => {})
 
             const params = new URLSearchParams(window.location.search)
             const errType = params.get('error')
@@ -100,7 +101,7 @@ export default function LoginPage() {
         setError('')
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: {
+            options: { 
                 redirectTo: `${window.location.origin}/auth/callback?intent=${mode}`,
                 queryParams: {
                     prompt: 'select_account'
@@ -170,10 +171,10 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: regName,
-                    phone: regPhone,
-                    email: regEmail,
+                body: JSON.stringify({ 
+                    name: regName, 
+                    phone: regPhone, 
+                    email: regEmail, 
                     pin: regPin,
                     specialty: regSpecialty === 'Other' ? customSpecialty : regSpecialty,
                     city: regCity,
@@ -190,16 +191,16 @@ export default function LoginPage() {
             }
 
             setLoading(false)
-
+            
             // Set localStorage 
             localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
             localStorage.setItem('clinicCode', result.clinic.code)
             localStorage.setItem('clinicPhone', result.clinic.phone)
             localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
-
+            
             // Trigger celebration pop-up!
             setCelebration({ clinicName: result.clinic.name, trialEnd: result.clinic.trial_ends_at })
-
+            
         } catch (err) {
             setError('Something went wrong. Please try again.')
             setLoading(false)
@@ -275,486 +276,365 @@ export default function LoginPage() {
     }
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", overflow: 'hidden' }} suppressHydrationWarning={true}>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-
-                .left-panel {
-                    width: 45%;
-                    background: #022c22;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                    padding: 48px 60px;
-                    color: white;
-                    position: relative;
-                    overflow: hidden;
-                    z-index: 1;
-                }
-                .left-panel::before {
-                    content: '';
-                    position: absolute;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background-image: url('/clinic-bg.jpg');
-                    background-size: cover;
-                    background-position: center;
-                    opacity: 0.25;
-                    mix-blend-mode: overlay;
-                    z-index: -1;
-                }
-                .left-panel::after {
-                    content: '';
-                    position: absolute;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background: linear-gradient(160deg, rgba(2,44,34,0.92) 0%, rgba(6,78,59,0.85) 100%);
-                    z-index: -1;
-                }
-
-                .logo-area {
-                    display: flex;
-                    align-items: center;
-                    cursor: pointer;
-                    z-index: 2;
-                }
-                .logo-img {
-                    height: 48px;
-                    width: auto;
-                }
-
-                .mid-content { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 0 20px; z-index: 2; }
-                .main-heading {
-                    font-size: 38px;
-                    font-weight: 800;
-                    line-height: 1.2;
-                    margin-bottom: 16px;
-                }
-                .text-highlight { color: #10B981; }
-                .mid-desc {
-                    font-size: 16px; color: rgba(255,255,255,0.75);
-                    line-height: 1.6; margin-bottom: 40px; max-width: 360px;
-                }
-
-                .feature-list { display: flex; flex-direction: column; gap: 16px; }
-                .feature-item {
-                    display: flex; align-items: center; gap: 16px;
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.06);
-                    border-radius: 12px;
-                    padding: 16px;
-                    transition: background 0.25s ease, transform 0.25s ease;
-                    max-width: 400px;
-                }
-                .feature-item:hover { background: rgba(255,255,255,0.06); transform: translateX(4px); }
-                .feature-icon {
-                    width: 40px; height: 40px; border-radius: 50%;
-                    background: rgba(16,185,129,0.2);
-                    color: #10B981;
-                    display: flex; align-items: center; justify-content: center;
-                    font-size: 18px; flex-shrink: 0;
-                }
-                .feature-text-block { display: flex; flex-direction: column; }
-                .feature-text { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 2px; }
-                .feature-sub { font-size: 12px; color: rgba(255,255,255,0.6); }
-
-                .left-footer { font-size: 13px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 8px; font-weight: 500; z-index: 2; }
-
-                /* RIGHT PANEL */
-                .right-panel {
-                    flex: 1;
-                    background: #ffffff;
-                    display: flex;
-                    flex-direction: column;
-                    padding: 48px 40px;
-                    overflow-y: auto;
-                    position: relative;
-                }
-
-                .form-box { 
-                    width: 100%; max-width: 420px; margin: auto; 
-                    background: #fff;
-                    padding: 24px;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                .form-title { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-                .form-subtitle { font-size: 14px; color: #64748b; margin-bottom: 28px; }
-
-                .btn-google {
-                    width: 100%; padding: 12px 20px;
-                    border: 1px solid #e2e8f0; border-radius: 8px;
-                    background: #fff; color: #334155;
-                    font-size: 14px; font-weight: 600;
-                    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-                    transition: all 0.2s; margin-bottom: 24px;
-                    font-family: inherit;
-                }
-                .btn-google:hover { background: #f8fafc; border-color: #cbd5e1; }
-
-                .or-divider {
-                    display: flex; align-items: center; gap: 12px;
-                    margin-bottom: 24px;
-                }
-                .or-line { flex: 1; height: 1px; background: #e2e8f0; }
-                .or-text { font-size: 12px; color: #94a3b8; font-weight: 500; }
-
-                /* TABS */
-                .tabs {
-                    display: flex; border-radius: 8px; overflow: hidden;
-                    border: 1px solid #e2e8f0; margin-bottom: 24px;
-                    background: #fff;
-                }
-                .tab-btn {
-                    flex: 1; padding: 12px 10px;
-                    font-size: 14px; font-weight: 600;
-                    border: none; background: transparent; cursor: pointer;
-                    color: #64748b; transition: all 0.2s; font-family: inherit;
-                    display: flex; align-items: center; justify-content: center; gap: 8px;
-                }
-                .tab-btn.active {
-                    background: #059669; color: #ffffff;
-                    border-radius: 8px;
-                }
-
-                /* INPUTS */
-                .field { margin-bottom: 20px; }
-                .field label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; }
-                .field input, .field select {
-                    width: 100%; padding: 12px 14px;
-                    border: 1px solid #e2e8f0; border-radius: 8px;
-                    font-size: 14px; font-family: inherit; color: #0f172a;
-                    background: #fff; outline: none;
-                    transition: border-color 0.2s, box-shadow 0.2s;
-                }
-                .field-icon-wrapper { position: relative; }
-                .field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; display: flex; }
-                .field input.with-icon { padding-left: 40px; }
-
-                .field select {
-                    cursor: pointer;
-                    appearance: none;
-                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
-                    background-repeat: no-repeat;
-                    background-position: right 14px center;
-                    background-size: 14px;
-                }
-                .field input::placeholder { color: #cbd5e1; font-weight: 400; }
-                .field input:focus, .field select:focus { border-color: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
-
-                .btn-submit {
-                    width: 100%; padding: 14px;
-                    background: #059669; color: #fff;
-                    border: none; border-radius: 8px;
-                    font-size: 15px; font-weight: 600; cursor: pointer;
-                    transition: all 0.2s; margin-top: 8px; font-family: inherit;
-                }
-                .btn-submit:hover:not(:disabled) { background: #047857; }
-                .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-
-                .alert-error {
-                    background: #fef2f2; border: 1px solid #fecaca;
-                    color: #dc2626; border-radius: 8px;
-                    padding: 12px 14px; font-size: 13px; font-weight: 500;
-                    margin-bottom: 20px; display: flex; align-items: flex-start; gap: 8px;
-                }
-                .alert-success {
-                    background: #f0fdf4; border: 1px solid #bbf7d0;
-                    color: #16a34a; border-radius: 8px;
-                    padding: 12px 14px; font-size: 13px; font-weight: 500;
-                    margin-bottom: 20px;
-                }
-
-                .right-footer { text-align: center; margin-top: 24px; font-size: 13px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; }
-
-                /* RESPONSIVE */
-                @media (max-width: 768px) {
-                    .left-panel { display: none; }
-                    .right-panel { padding: 24px 16px; background: #f8fafc; }
-                    .form-box { padding: 32px 24px; box-shadow: none; border-color: #e2e8f0; }
-                }
-            `}</style>
-
-            {/* LEFT PANEL */}
-            <div className="left-panel">
-                <div className="logo-area" onClick={() => router.push('/')}>
-                    <img src="/logo.svg" alt="TokenPe" className="logo-img" />
+        <div className="flex flex-col md:flex-row min-h-screen w-full bg-[#FCFCFA] relative overflow-hidden font-sans" suppressHydrationWarning={true}>
+            
+            {/* LEFT PANEL (approx 48%) */}
+            <div className="relative hidden md:flex flex-col w-[48%] min-h-screen bg-gradient-to-br from-[#083D35] via-[#0A5644] to-[#0F6A53] text-white p-12 lg:p-20 overflow-hidden justify-between z-10">
+                {/* Background Image Blend */}
+                <div className="absolute inset-0 z-0">
+                    <img 
+                        src="https://images.unsplash.com/photo-1538108149393-fbbd81895907?q=80&w=2000&auto=format&fit=crop" 
+                        alt="Clinic Waiting Room" 
+                        className="w-full h-full object-cover mix-blend-overlay opacity-20 blur-[2px]"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#083D35]/40 to-[#0F6A53]/90" />
                 </div>
 
-                <div className="mid-content">
-                    <div className="main-heading">
+                {/* Decorative Grid & Radials */}
+                <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-8 left-8 w-32 h-32 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px] opacity-[0.15]" />
+                    <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-400 rounded-full mix-blend-screen filter blur-[100px] opacity-25 animate-pulse" />
+                </div>
+
+                {/* Abstract SVG Wave at Bottom */}
+                <svg className="absolute bottom-0 left-0 w-full h-auto opacity-[0.15] z-0 pointer-events-none" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#ffffff" fillOpacity="1" d="M0,128L48,138.7C96,149,192,171,288,165.3C384,160,480,128,576,133.3C672,139,768,181,864,197.3C960,213,1056,203,1152,170.7C1248,139,1344,85,1392,58.7L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                </svg>
+
+                {/* Content */}
+                <div className="relative z-10 flex flex-col items-start max-w-lg">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex items-center cursor-pointer mb-16" onClick={() => router.push('/')}>
+                        <img src="/logo.svg" alt="TokenPe" className="h-10 w-auto drop-shadow-sm" />
+                    </motion.div>
+
+                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-4xl lg:text-5xl font-bold leading-tight mb-6">
                         Smart Queue<br />
                         Management for<br />
-                        <span className="text-highlight">Modern Clinics</span>
-                    </div>
-                    <p className="mid-desc">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-emerald-100">Modern Clinics</span>
+                    </motion.h1>
+
+                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-emerald-50/80 text-lg mb-12 max-w-md">
                         Digital OPD queue management that reduces crowding, saves time, and improves patient experience.
-                    </p>
-                    <div className="feature-list">
-                        <div className="feature-item">
-                            <div className="feature-icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                    </motion.p>
+
+                    <div className="flex flex-col gap-4 w-full">
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><Mic className="w-5 h-5" /></div>
+                            <div>
+                                <div className="font-semibold text-white">Voice updates in 10 Indian languages</div>
+                                <div className="text-sm text-emerald-100/60 mt-0.5">Inclusive. Accessible. Effortless.</div>
                             </div>
-                            <div className="feature-text-block">
-                                <span className="feature-text">Voice updates in 10 Indian languages</span>
-                                <span className="feature-sub">Inclusive. Accessible. Effortless.</span>
+                        </motion.div>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><MessageCircle className="w-5 h-5" /></div>
+                            <div>
+                                <div className="font-semibold text-white">Patients join via WhatsApp</div>
+                                <div className="text-sm text-emerald-100/60 mt-0.5">No app download. No sign-up.</div>
                             </div>
-                        </div>
-                        <div className="feature-item">
-                            <div className="feature-icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                        </motion.div>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[18px] shadow-lg">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300"><Bell className="w-5 h-5" /></div>
+                            <div>
+                                <div className="font-semibold text-white">Real-time notifications</div>
+                                <div className="text-sm text-emerald-100/60 mt-0.5">Stay informed. Always.</div>
                             </div>
-                            <div className="feature-text-block">
-                                <span className="feature-text">Patients join via WhatsApp</span>
-                                <span className="feature-sub">No app download. No sign-up.</span>
-                            </div>
-                        </div>
-                        <div className="feature-item">
-                            <div className="feature-icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                            </div>
-                            <div className="feature-text-block">
-                                <span className="feature-text">Real-time notifications</span>
-                                <span className="feature-sub">Stay informed. Always.</span>
-                            </div>
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
 
-                <div className="left-footer">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-                    Secure. Reliable. Built for Healthcare.
+                <div className="relative z-10 flex items-center gap-2 text-emerald-200/50 mt-12">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="text-sm">Secure. Reliable. Built for Healthcare.</span>
                 </div>
             </div>
 
-            {/* RIGHT PANEL */}
-            <div className="right-panel">
-                <div className="form-box animate-fade-up">
-                    <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24, padding: 0 }} suppressHydrationWarning={true}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+            {/* CURVED SVG DIVIDER */}
+            <div className="hidden md:block absolute left-[48%] top-0 h-full w-[100px] z-20 pointer-events-none -ml-[50px]">
+                <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full fill-[#FCFCFA]">
+                    <path d="M100,0 C0,300 0,700 100,1000 Z" />
+                </svg>
+            </div>
+
+            {/* RIGHT PANEL (approx 52%) */}
+            <div className="relative flex-1 min-h-screen flex items-center justify-center p-6 lg:p-12 z-10">
+                {/* Subtle Checkered Grid */}
+                <div className="absolute inset-0 z-0 pointer-events-none opacity-40" style={{ backgroundImage: 'linear-gradient(to right, #EDEBE6 1px, transparent 1px), linear-gradient(to bottom, #EDEBE6 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+                
+                {/* Soft Radial Gradients */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-200/15 rounded-full mix-blend-multiply filter blur-[100px] pointer-events-none" />
+                <div className="absolute bottom-0 left-[48%] w-[600px] h-[600px] bg-cyan-200/15 rounded-full mix-blend-multiply filter blur-[120px] pointer-events-none" />
+
+                {/* LOGIN CARD */}
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="relative z-10 w-full max-w-[560px] bg-white/70 backdrop-blur-xl rounded-[28px] shadow-[0_25px_80px_rgba(0,0,0,0.08)] border border-white/60 p-8 md:p-12">
+                    
+                    <button onClick={() => router.push('/')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium text-sm mb-8">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                         Back to Home
                     </button>
-                    <div className="form-title">{mode === 'login' ? 'Welcome back! 👋' : 'New Clinic 👋'}</div>
-                    <div className="form-subtitle">
+
+                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
+                        {mode === 'login' ? 'Welcome back!' : 'Create New Clinic'}
+                    </h2>
+                    <p className="text-slate-500 mb-8">
                         {mode === 'login' ? 'Sign in to your TokenPe dashboard' : 'Register your clinic and get started in 2 minutes'}
-                    </div>
+                    </p>
 
-                    {/* Google Auth */}
-                    <button type="button" onClick={handleGoogleLogin} className="btn-google" suppressHydrationWarning={true}>
-                        <svg width="18" height="18" viewBox="0 0 48 48">
-                            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-                            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-                            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-                            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+                    {/* Google Button */}
+                    <motion.button 
+                        whileHover={{ y: -2, boxShadow: '0 8px 20px -4px rgba(0,0,0,0.05)' }} 
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border border-slate-200 rounded-[16px] text-slate-700 font-semibold mb-8 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                        onClick={handleGoogleLogin} 
+                        disabled={googleLoading}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
+                            <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" />
                         </svg>
-                        Continue with Google
-                    </button>
+                        {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+                    </motion.button>
 
-                    <div className="or-divider">
-                        <div className="or-line"></div>
-                        <div className="or-text">or</div>
-                        <div className="or-line"></div>
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="flex-1 h-[1px] bg-slate-100" />
+                        <span className="text-xs font-semibold text-slate-400">or</span>
+                        <div className="flex-1 h-[1px] bg-slate-100" />
                     </div>
 
-                    {/* Tabs */}
-                    <div className="tabs">
-                        <button
-                            className={`tab-btn ${mode === 'login' ? 'active' : ''}`}
-                            onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
-                            suppressHydrationWarning={true}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                            Login
-                        </button>
-                        <button
-                            className={`tab-btn ${mode === 'register' ? 'active' : ''}`}
-                            onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
-                            suppressHydrationWarning={true}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>
-                            New Clinic
-                        </button>
+                    {/* Animated Segmented Control */}
+                    <div className="relative flex bg-slate-100/50 p-1.5 rounded-[20px] mb-8 border border-slate-200/50">
+                        <div className="flex-1 relative z-10">
+                            <button
+                                onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+                                className={`w-full py-2.5 text-sm font-semibold rounded-[16px] transition-colors flex items-center justify-center gap-2 ${mode === 'login' ? 'text-white' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                <Lock className="w-4 h-4" /> Login
+                            </button>
+                        </div>
+                        <div className="flex-1 relative z-10">
+                            <button
+                                onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
+                                className={`w-full py-2.5 text-sm font-semibold rounded-[16px] transition-colors flex items-center justify-center gap-2 ${mode === 'register' ? 'text-white' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                <Building className="w-4 h-4" /> New Clinic
+                            </button>
+                        </div>
+                        {/* Active Pill Background */}
+                        <div className="absolute top-1.5 bottom-1.5 left-1.5 right-1.5 flex pointer-events-none">
+                            <motion.div 
+                                className="w-1/2 h-full bg-emerald-600 rounded-[16px] shadow-sm"
+                                animate={{ x: mode === 'login' ? 0 : '100%' }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            />
+                        </div>
                     </div>
 
                     {/* Alerts */}
-                    {error && (
-                        <div className="alert-error">
-                            <span>✖</span><span>{error}</span>
-                        </div>
-                    )}
-                    {success && <div className="alert-success">{success}</div>}
+                    <AnimatePresence mode="wait">
+                        {error && (
+                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm font-medium mb-6">
+                                <span className="mt-0.5">✖</span><span>{error}</span>
+                            </motion.div>
+                        )}
+                        {success && (
+                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl text-sm font-medium mb-6">
+                                {success}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Forms */}
-                    {mode === 'login' ? (
-                        <form onSubmit={handleLogin}>
-                            <div className="field">
-                                <label>Registered Email</label>
-                                <div className="field-icon-wrapper">
-                                    <div className="field-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></div>
-                                    <input className="with-icon" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
+                    <AnimatePresence mode="wait">
+                        {mode === 'login' && (
+                            <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Email</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="field">
-                                <label>Registered Phone</label>
-                                <div className="field-icon-wrapper">
-                                    <div className="field-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div>
-                                    <input className="with-icon" value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Phone</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="field" style={{ position: 'relative' }}>
-                                <label>4-Digit PIN</label>
-                                <div className="field-icon-wrapper">
-                                    <div className="field-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
-                                    <input className="with-icon" value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
+                                <div className="relative">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-sm font-semibold text-slate-700">4-Digit PIN</label>
+                                        <button type="button" onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }} className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">Forgot PIN?</button>
+                                    </div>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
                                 </div>
-                                <button type="button" onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }} style={{ position: 'absolute', right: 0, top: 0, background: 'none', border: 'none', fontSize: 13, color: '#059669', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>Forgot PIN?</button>
-                            </div>
-                            <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
-                                {loading ? 'Signing in...' : 'Login'}
-                            </button>
-                        </form>
-                    ) : mode === 'forgot' ? (
-                        <form onSubmit={handleSendOtp}>
-                            <div style={{ background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#6d28d9', fontWeight: 500 }}>
-                                🔐 Enter your registered email and phone. We'll send a 6-digit OTP to your inbox.
-                            </div>
-                            <div className="field">
-                                <label>Registered Email</label>
-                                <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
-                            </div>
-                            <div className="field">
-                                <label>Registered Phone</label>
-                                <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
-                            </div>
-                            <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
-                                {loading ? 'Sending OTP...' : 'Send OTP to Email →'}
-                            </button>
-                            <div style={{ textAlign: 'center', marginTop: 16 }}>
-                                <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', fontSize: 13, color: '#64748b', cursor: 'pointer', fontWeight: 500 }}>← Back to Login</button>
-                            </div>
-                        </form>
-                    ) : mode === 'verify-otp' ? (
-                        <form onSubmit={handleResetPin}>
-                            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#16a34a', fontWeight: 500 }}>
-                                ✅ Check your email for the 6-digit OTP. It expires in 10 minutes.
-                            </div>
-                            <div className="field">
-                                <label>6-Digit OTP</label>
-                                <input value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="123456" required type="text" inputMode="numeric" maxLength={6} style={{ letterSpacing: 6, fontSize: 22, textAlign: 'center', fontWeight: 700 }} suppressHydrationWarning={true} />
-                            </div>
-                            <div className="field">
-                                <label>New 4-Digit PIN</label>
-                                <input value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
-                            </div>
-                            <div className="field">
-                                <label>Confirm New PIN</label>
-                                <input value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
-                            </div>
-                            <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
-                                {loading ? 'Updating PIN...' : 'Reset PIN →'}
-                            </button>
-                            <div style={{ textAlign: 'center', marginTop: 16, display: 'flex', gap: 16, justifyContent: 'center' }}>
-                                <button type="button" onClick={handleSendOtp} style={{ background: 'none', border: 'none', fontSize: 13, color: '#7C3AED', cursor: 'pointer', fontWeight: 600 }}>Resend OTP</button>
-                                <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', fontSize: 13, color: '#64748b', cursor: 'pointer', fontWeight: 500 }}>← Back to Login</button>
-                            </div>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleRegister}>
-                            <div className="field">
-                                <label>Clinic Name *</label>
-                                <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="Dr. Sharma Clinic" required suppressHydrationWarning={true} />
-                            </div>
-                            <div className="field">
-                                <label>Specialty *</label>
-                                <select value={regSpecialty} onChange={e => setRegSpecialty(e.target.value)} required suppressHydrationWarning={true}>
-                                    <option value="Other">Other (Custom)</option>
-                                    <option value="General Physician">General Physician</option>
-                                    <option value="Pediatrician">Pediatrician</option>
-                                    <option value="Dermatologist">Dermatologist</option>
-                                    <option value="Gynecologist">Gynecologist</option>
-                                    <option value="Orthopedic">Orthopedic</option>
-                                    <option value="Dentist">Dentist</option>
-                                    <option value="ENT">ENT</option>
-                                    <option value="Ophthalmologist">Ophthalmologist</option>
-                                    <option value="Cardiologist">Cardiologist</option>
-                                    <option value="Neurologist">Neurologist</option>
-                                    <option value="Psychiatrist">Psychiatrist</option>
-                                    <option value="Urologist">Urologist</option>
-                                    <option value="Oncologist">Oncologist</option>
-                                    <option value="Diabetologist">Diabetologist</option>
-                                    <option value="Physiotherapist">Physiotherapist</option>
-                                </select>
-                            </div>
-                            {regSpecialty === 'Other' && (
-                                <div className="field">
-                                    <label>Enter Custom Specialty *</label>
-                                    <input value={customSpecialty} onChange={e => setCustomSpecialty(e.target.value)} placeholder="e.g. Homeopath, Ayurveda, etc." required suppressHydrationWarning={true} />
-                                </div>
-                            )}
-                            <div className="field">
-                                <label>City *</label>
-                                <input value={regCity} onChange={e => setRegCity(e.target.value)} placeholder="e.g. Mumbai, Bangalore" required suppressHydrationWarning={true} />
-                            </div>
-                            <div className="field">
-                                <label>Clinic GPS Location</label>
-                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                    <button
-                                        type="button"
-                                        onClick={requestGps}
-                                        style={{
-                                            padding: '10px 16px',
-                                            borderRadius: 10,
-                                            border: '1.5px solid #e2e8f0',
-                                            background: '#f8fafc',
-                                            fontSize: 13,
-                                            fontWeight: 600,
-                                            color: '#334155',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                            outline: 'none'
-                                        }}
-                                        suppressHydrationWarning={true}
-                                    >
-                                        📍 {gpsStatus === 'loading' ? 'Detecting GPS...' : gpsStatus === 'success' ? 'Location Linked' : 'Detect GPS Location'}
-                                    </button>
-                                    {gpsStatus === 'success' && (
-                                        <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✅ GPS Active</span>
-                                    )}
-                                    {gpsStatus === 'denied' && (
-                                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500, lineHeight: 1.3 }}>⚠️ Permission Denied.<br />Please allow location access.</span>
-                                    )}
-                                    {gpsStatus === 'error' && (
-                                        <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500 }}>⚠️ Failed to get location</span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="field">
-                                <label>Phone Number *</label>
-                                <input value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="9876543210" required type="tel" suppressHydrationWarning={true} />
-                            </div>
-                            <div className="field">
-                                <label>Registered Email *</label>
-                                <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required suppressHydrationWarning={true} />
-                            </div>
-                            <div className="field">
-                                <label>Set 4-Digit PIN *</label>
-                                <input value={regPin} onChange={e => setRegPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" suppressHydrationWarning={true} />
-                            </div>
-                            <div style={{ background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#6d28d9', fontWeight: 500 }}>
-                                🎲 A unique clinic code will be auto-generated. You can customize it later from your dashboard.
-                            </div>
-                            <button type="submit" disabled={loading} className="btn-submit" suppressHydrationWarning={true}>
-                                {loading ? 'Creating account...' : 'Create Account →'}
-                            </button>
-                        </form>
-                    )}
-                </div>
+                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold rounded-[16px] py-4 shadow-sm hover:from-emerald-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
+                                    {loading ? 'Signing in...' : 'Sign in →'}
+                                </motion.button>
+                            </motion.form>
+                        )}
 
-                <div className="right-footer">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-                    Your data is safe and encrypted
+                        {mode === 'forgot' && (
+                            <motion.form key="forgot" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleSendOtp} className="space-y-5">
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-sm text-emerald-800 font-medium mb-2">
+                                    🔐 Enter your registered email and phone. We&apos;ll send a 6-digit OTP to your inbox.
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Email</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Phone</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold rounded-[16px] py-4 shadow-sm hover:from-emerald-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
+                                    {loading ? 'Sending OTP...' : 'Send OTP to Email →'}
+                                </motion.button>
+                                <div className="text-center mt-4">
+                                    <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-sm font-semibold text-slate-500 hover:text-slate-700">← Back to Login</button>
+                                </div>
+                            </motion.form>
+                        )}
+
+                        {mode === 'verify-otp' && (
+                            <motion.form key="verify-otp" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleResetPin} className="space-y-5">
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-sm text-emerald-800 font-medium mb-2">
+                                    ✅ Check your email for the 6-digit OTP. It expires in 10 minutes.
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">6-Digit OTP</label>
+                                    <input value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="123456" required type="text" inputMode="numeric" maxLength={6} className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-4 px-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner text-center text-2xl tracking-[0.5em] font-bold" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">New 4-Digit PIN</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Confirm New PIN</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold rounded-[16px] py-4 shadow-sm hover:from-emerald-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
+                                    {loading ? 'Updating PIN...' : 'Reset PIN →'}
+                                </motion.button>
+                                <div className="flex justify-center gap-6 mt-4">
+                                    <button type="button" onClick={handleSendOtp} className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">Resend OTP</button>
+                                    <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-sm font-semibold text-slate-500 hover:text-slate-700">← Back to Login</button>
+                                </div>
+                            </motion.form>
+                        )}
+
+                        {mode === 'register' && (
+                            <motion.form key="register" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleRegister} className="space-y-5 h-[50vh] overflow-y-auto pr-2 pb-4 scrollbar-hide">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Clinic Name *</label>
+                                    <div className="relative">
+                                        <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="Dr. Sharma Clinic" required className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Specialty *</label>
+                                    <div className="relative">
+                                        <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <select value={regSpecialty} onChange={e => setRegSpecialty(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-10 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222.5%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19.5%208.25l-7.5%207.5-7.5-7.5%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_14px_center] bg-[length:14px]">
+                                            <option value="Other">Other (Custom)</option>
+                                            <option value="General Physician">General Physician</option>
+                                            <option value="Pediatrician">Pediatrician</option>
+                                            <option value="Dermatologist">Dermatologist</option>
+                                            <option value="Gynecologist">Gynecologist</option>
+                                            <option value="Orthopedic">Orthopedic</option>
+                                            <option value="Dentist">Dentist</option>
+                                            <option value="ENT">ENT</option>
+                                            <option value="Ophthalmologist">Ophthalmologist</option>
+                                            <option value="Cardiologist">Cardiologist</option>
+                                            <option value="Neurologist">Neurologist</option>
+                                            <option value="Psychiatrist">Psychiatrist</option>
+                                            <option value="Urologist">Urologist</option>
+                                            <option value="Oncologist">Oncologist</option>
+                                            <option value="Diabetologist">Diabetologist</option>
+                                            <option value="Physiotherapist">Physiotherapist</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {regSpecialty === 'Other' && (
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Enter Custom Specialty *</label>
+                                        <input value={customSpecialty} onChange={e => setCustomSpecialty(e.target.value)} placeholder="e.g. Homeopath, Ayurveda, etc." required className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 px-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">City *</label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={regCity} onChange={e => setRegCity(e.target.value)} placeholder="e.g. Mumbai, Bangalore" required className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Clinic GPS Location</label>
+                                    <div className="flex items-center gap-3">
+                                        <button 
+                                            type="button" 
+                                            onClick={requestGps}
+                                            className="flex items-center gap-2 py-3 px-4 bg-slate-50 border border-slate-200 rounded-[16px] text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+                                        >
+                                            📍 {gpsStatus === 'loading' ? 'Detecting...' : gpsStatus === 'success' ? 'Linked' : 'Detect GPS'}
+                                        </button>
+                                        {gpsStatus === 'success' && <span className="text-xs font-bold text-emerald-600">✅ Active</span>}
+                                        {gpsStatus === 'denied' && <span className="text-xs font-medium text-red-600">⚠️ Denied</span>}
+                                        {gpsStatus === 'error' && <span className="text-xs font-medium text-red-600">⚠️ Error</span>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Phone Number *</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="9876543210" required type="tel" className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Email *</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Set 4-Digit PIN *</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input value={regPin} onChange={e => setRegPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" className="w-full bg-slate-50 border border-slate-200 rounded-[16px] py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700 font-medium">
+                                    🎲 A unique clinic code will be auto-generated. You can customize it later from your dashboard.
+                                </div>
+                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold rounded-[16px] py-4 shadow-sm hover:from-emerald-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
+                                    {loading ? 'Creating account...' : 'Create Account →'}
+                                </motion.button>
+                            </motion.form>
+                        )}
+                    </AnimatePresence>
+
+                </motion.div>
+                
+                <div className="absolute bottom-6 flex items-center justify-center gap-2 text-emerald-600/70 text-xs font-semibold z-10">
+                    <ShieldCheck className="w-4 h-4" /> Your data is safe and encrypted
                 </div>
             </div>
         </div>

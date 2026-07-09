@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import { Lock, Download, Printer, Rocket, Building, Calendar, Trophy, Brain, TrendingUp } from 'lucide-react'
 
 // ─── PHONE MASKING (Privacy) ────────────────────────────────────────────────
 function maskPhone(phone) {
@@ -341,7 +342,7 @@ export default function AnalyticsPage() {
   const ratingCount = overallFeedback?.ratingCount || 0
 
   if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-[#0F172A]">
+    <div className="flex h-screen items-center justify-center bg-[#0D9488]">
       <div className="w-10 h-10 border-4 border-white/10 border-t-[#F59E0B] rounded-full animate-spin"></div>
     </div>
   )
@@ -353,8 +354,8 @@ export default function AnalyticsPage() {
   const LockCard = ({ title, planRequired }) => (
     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl border border-[#E2E8F0]">
       <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center text-center max-w-sm">
-        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-2xl">🔒</div>
-        <h3 className="text-xl font-bold text-[#0F172A] mb-2">Unlock {title}</h3>
+        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4"><Lock className="w-6 h-6 text-slate-500" /></div>
+        <h3 className="text-xl font-bold text-[#0D9488] mb-2">Unlock {title}</h3>
         <p className="text-slate-500 mb-6 text-sm">Upgrade to the {planRequired} plan to access advanced analytics and grow your clinic.</p>
         <button onClick={() => router.push('/dashboard/billing')} className="bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#059669]">
           Upgrade Now
@@ -393,11 +394,11 @@ export default function AnalyticsPage() {
       `}</style>
       
       {/* HEADER */}
-      <div className="bg-[#0F172A] text-white p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+      <div className="bg-[#0D9488] text-white p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center">←</button>
           <div>
-            <div className="text-xs text-[#94A3B8] font-bold tracking-widest uppercase mb-1">Analytics Dashboard</div>
+            <div className="text-xs text-[#CCFBF1] font-bold tracking-widest uppercase mb-1">Analytics Dashboard</div>
             <div className="text-2xl font-black">{clinic?.name}</div>
           </div>
         </div>
@@ -407,68 +408,68 @@ export default function AnalyticsPage() {
               <select
                 value={clinic?.id || ''}
                 onChange={handleBranchChange}
-                className="bg-[#7C3AED] border border-[#6D28D9] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
+                className="bg-[#0D9488] border border-[#0F766E] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
               >
                 {userClinics.map(uc => (
-                  <option key={uc.id} value={uc.id}>🏥 {uc.name}</option>
+                  <option key={uc.id} value={uc.id}>{uc.name}</option>
                 ))}
               </select>
             )}
             <select 
               value={dateRange} 
               onChange={handleDateChange}
-              className="bg-[#1E293B] border border-[#334155] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
+              className="bg-[#0F766E] border border-[#334155] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
             >
               <option value="today">Today Only</option>
               <option value="7">Last 7 Days</option>
-              <option value="30">Last 30 Days {isStarter ? '🔒' : ''}</option>
-              <option value="90">Last 90 Days {isStarter || isPro ? '🔒' : ''}</option>
-              <option value="180">Last 6 Months {!isElite ? '🔒' : ''}</option>
-              <option value="365">Last 1 Year {!isElite ? '🔒' : ''}</option>
-              <option value="custom">📅 Custom Range</option>
+              <option value="30">Last 30 Days {isStarter ? '(Locked)' : ''}</option>
+              <option value="90">Last 90 Days {isStarter || isPro ? '(Locked)' : ''}</option>
+              <option value="180">Last 6 Months {!isElite ? '(Locked)' : ''}</option>
+              <option value="365">Last 1 Year {!isElite ? '(Locked)' : ''}</option>
+              <option value="custom">Custom Range</option>
             </select>
             <button
               onClick={() => isStarter ? router.push('/dashboard/billing') : exportCSV()}
-              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#1E293B] text-[#94A3B8] cursor-not-allowed' : 'bg-[#10B981] text-white hover:bg-[#059669]'}`}
+              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#0F766E] text-[#99F6E4] cursor-not-allowed' : 'bg-[#10B981] text-white hover:bg-[#059669]'}`}
             >
-              {isStarter ? '🔒 CSV Export' : '📥 CSV'}
+              {isStarter ? <><Lock className="inline-block w-4 h-4 mr-1" /> CSV Export</> : <><Download className="inline-block w-4 h-4 mr-1" /> CSV</>}
             </button>
             <button
               onClick={() => isStarter ? router.push('/dashboard/billing') : window.print()}
-              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#1E293B] text-[#94A3B8] cursor-not-allowed' : 'bg-[#F59E0B] text-white hover:bg-[#D97706]'}`}
+              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#0F766E] text-[#99F6E4] cursor-not-allowed' : 'bg-[#F59E0B] text-white hover:bg-[#D97706]'}`}
             >
-              {isStarter ? '🔒 PDF Report' : '📄 PDF'}
+              {isStarter ? <><Lock className="inline-block w-4 h-4 mr-1" /> PDF Report</> : <><Printer className="inline-block w-4 h-4 mr-1" /> PDF</>}
             </button>
           </div>
 
           {/* Custom Date Range Picker */}
           {dateRange === 'custom' && (
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#1E293B] border border-[#334155] p-3 rounded-xl">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#0F766E] border border-[#115E59] p-3 rounded-xl">
               <div className="flex items-center gap-2 flex-1">
-                <label className="text-[#94A3B8] text-xs font-bold whitespace-nowrap">FROM</label>
+                <label className="text-[#CCFBF1] text-xs font-bold whitespace-nowrap">FROM</label>
                 <input
                   type="date"
                   value={customStart}
                   onChange={e => setCustomStart(e.target.value)}
                   max={customEnd || getISTDateString(new Date())}
                   min={(() => { const d = new Date(); d.setDate(d.getDate() - getMaxDays(clinic?.plan_id)); return getISTDateString(d) })()}
-                  className="bg-[#0F172A] border border-[#475569] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
+                  className="bg-[#0D9488] border border-[#115E59] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
                 />
               </div>
               <div className="flex items-center gap-2 flex-1">
-                <label className="text-[#94A3B8] text-xs font-bold whitespace-nowrap">TO</label>
+                <label className="text-[#CCFBF1] text-xs font-bold whitespace-nowrap">TO</label>
                 <input
                   type="date"
                   value={customEnd}
                   onChange={e => setCustomEnd(e.target.value)}
                   min={customStart}
                   max={getISTDateString(new Date())}
-                  className="bg-[#0F172A] border border-[#475569] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
+                  className="bg-[#0D9488] border border-[#115E59] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
                 />
               </div>
               <button
                 onClick={applyCustomRange}
-                className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-5 py-2 rounded-lg font-bold text-sm whitespace-nowrap"
+                className="bg-[#0D9488] hover:bg-[#0F766E] text-white px-5 py-2 rounded-lg font-bold text-sm whitespace-nowrap"
               >
                 Apply ✓
               </button>
@@ -477,23 +478,23 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="w-full mx-auto p-4 sm:p-6 space-y-6">
         
         {/* PRINT HEADER ONLY */}
         <div className="hidden print:block mb-8 border-b-2 border-[#E2E8F0] pb-4">
-          <h1 className="text-3xl font-black text-[#0F172A]">{clinic?.name}</h1>
+          <h1 className="text-3xl font-black text-[#0D9488]">{clinic?.name}</h1>
           <p className="text-[#64748B] font-semibold">Analytics Report • Generated {new Date().toLocaleDateString('en-IN')}</p>
         </div>
 
         {/* SEC 1: PERIOD SNAPSHOT */}
         <div>
-          <h2 className="text-xl font-black text-[#0F172A] mb-4">
+          <h2 className="text-xl font-black text-[#0D9488] mb-4">
             {getSnapshotTitle()}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Patients</div>
-              <div className="text-3xl font-black text-[#0F172A]">{rangeTotal}</div>
+              <div className="text-3xl font-black text-[#0D9488]">{rangeTotal}</div>
             </div>
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
               <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Avg Wait Time</div>
@@ -513,19 +514,19 @@ export default function AnalyticsPage() {
         {/* SEC 2 & 3: INSIGHTS & PERFORMANCE */}
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-            <h2 className="text-lg font-black text-[#0F172A] mb-6">Patient Insights</h2>
+            <h2 className="text-lg font-black text-[#0D9488] mb-6">Patient Insights</h2>
             <div className="space-y-5">
               <div className="flex justify-between items-center">
                 <span className="text-[#64748B] font-semibold">Total Patients</span>
                 <span className="font-bold text-lg">{rangeTotal}</span>
               </div>
               <div className="w-full bg-[#F1F5F9] h-3 rounded-full overflow-hidden flex">
-                <div style={{width: `${returningPct}%`}} className="bg-[#7C3AED] h-full"></div>
+                <div style={{width: `${returningPct}%`}} className="bg-[#0D9488] h-full"></div>
                 <div style={{width: `${newPct}%`}} className="bg-[#38BDF8] h-full"></div>
               </div>
               <div className="flex justify-between text-sm">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#7C3AED]"></div><span className="font-semibold text-[#0F172A]">Returning ({returningPct}%)</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#38BDF8]"></div><span className="font-semibold text-[#0F172A]">New ({newPct}%)</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#0D9488]"></div><span className="font-semibold text-[#0D9488]">Returning ({returningPct}%)</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#38BDF8]"></div><span className="font-semibold text-[#0D9488]">New ({newPct}%)</span></div>
               </div>
               <div className="pt-4 border-t border-[#F1F5F9] flex justify-between items-center">
                 <span className="text-[#64748B] font-semibold">WhatsApp Joins</span>
@@ -545,7 +546,7 @@ export default function AnalyticsPage() {
           <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
             {isStarter && <LockCard title="Advanced Queue Analytics" planRequired="Pro" />}
             <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#0F172A] mb-6">Queue Performance</h2>
+              <h2 className="text-lg font-black text-[#0D9488] mb-6">Queue Performance</h2>
             <div className="space-y-5">
               <div className="flex justify-between items-center">
                 <span className="text-[#64748B] font-semibold">Average Wait</span>
@@ -576,7 +577,7 @@ export default function AnalyticsPage() {
         <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
           {isStarter && <LockCard title="Busy Hour Heatmap" planRequired="Pro" />}
           <div className={isStarter ? 'blur-sm select-none' : ''}>
-            <h2 className="text-lg font-black text-[#0F172A] mb-6">Busy Hour Heatmap</h2>
+            <h2 className="text-lg font-black text-[#0D9488] mb-6">Busy Hour Heatmap</h2>
             <div className="overflow-x-auto pb-4 custom-scrollbar">
               <div className="min-w-[800px] pr-4">
                 <div className="flex mb-2">
@@ -608,7 +609,7 @@ export default function AnalyticsPage() {
                         <div 
                           key={hIdx} 
                           title={`${count} patients`}
-                          className="flex-1 h-8 rounded-sm transition-all hover:ring-2 hover:ring-[#0F172A]"
+                          className="flex-1 h-8 rounded-sm transition-all hover:ring-2 hover:ring-[#0D9488]"
                           style={{ backgroundColor: bgColor }}
                         ></div>
                       )
@@ -625,7 +626,7 @@ export default function AnalyticsPage() {
           <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
             {isStarter && <LockCard title="Language Analytics" planRequired="Pro" />}
             <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#0F172A] mb-6">Language Breakdown</h2>
+              <h2 className="text-lg font-black text-[#0D9488] mb-6">Language Breakdown</h2>
               <div className="space-y-4">
                 {sortedLangs.slice(0,5).map(([code, count]) => (
                   <div key={code}>
@@ -634,7 +635,7 @@ export default function AnalyticsPage() {
                       <span>{Math.round((count/rangeTotal)*100)}%</span>
                     </div>
                     <div className="w-full bg-[#F1F5F9] h-2 rounded-full">
-                      <div className="bg-[#7C3AED] h-full rounded-full" style={{width: `${(count/rangeTotal)*100}%`}}></div>
+                      <div className="bg-[#0D9488] h-full rounded-full" style={{width: `${(count/rangeTotal)*100}%`}}></div>
                     </div>
                   </div>
                 ))}
@@ -646,10 +647,10 @@ export default function AnalyticsPage() {
           <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
             {isStarter && <LockCard title="Monthly Comparison" planRequired="Pro" />}
             <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#0F172A] mb-6">Period Comparison</h2>
+              <h2 className="text-lg font-black text-[#0D9488] mb-6">Period Comparison</h2>
               {totalChange > 0 ? (
                 <div className="bg-[#ECFDF5] text-[#065F46] p-3 rounded-xl text-sm font-bold mb-4 flex items-center gap-2">
-                  <span>📈</span> Your clinic grew {totalChange}% this period!
+                  <TrendingUp className="inline-block w-5 h-5" /> Your clinic grew {totalChange}% this period!
                 </div>
               ) : (
                 <div className="bg-[#F8FAFC] text-[#64748B] p-3 rounded-xl text-sm font-bold mb-4">
@@ -664,7 +665,7 @@ export default function AnalyticsPage() {
                     <th className="pb-2 font-semibold text-right">Previous</th>
                   </tr>
                 </thead>
-                <tbody className="font-semibold text-[#0F172A]">
+                <tbody className="font-semibold text-[#0D9488]">
                   <tr className="border-b border-[#F1F5F9]">
                     <td className="py-3 text-[#64748B]">Total Patients</td>
                     <td className="py-3 text-right">{rangeTotal}</td>
@@ -690,7 +691,7 @@ export default function AnalyticsPage() {
         <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
           {!isElite && <LockCard title="Patient Feedback" planRequired="Elite" />}
           <div className={!isElite ? 'blur-sm select-none' : ''}>
-            <h2 className="text-lg font-black text-[#0F172A] mb-6">Patient Feedback Summary</h2>
+            <h2 className="text-lg font-black text-[#0D9488] mb-6">Patient Feedback Summary</h2>
             <div className="flex flex-col md:flex-row gap-8 items-center">
               <div className="text-center">
                 <div className="text-6xl font-black text-[#F59E0B]">{avgRating}</div>
@@ -706,7 +707,7 @@ export default function AnalyticsPage() {
                     <div className="flex-1 bg-[#F1F5F9] h-2 rounded-full">
                       <div className="bg-[#F59E0B] h-full rounded-full" style={{width: `${ratingCount ? (ratings[star]/ratingCount)*100 : 0}%`}}></div>
                     </div>
-                    <span className="w-8 text-right text-[#0F172A]">{ratingCount ? Math.round((ratings[star]/ratingCount)*100) : 0}%</span>
+                    <span className="w-8 text-right text-[#0D9488]">{ratingCount ? Math.round((ratings[star]/ratingCount)*100) : 0}%</span>
                   </div>
                 ))}
               </div>
@@ -715,21 +716,21 @@ export default function AnalyticsPage() {
         </div>
 
         {/* SEC 8: AI INSIGHTS */}
-        <div className="relative bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-1 rounded-2xl shadow-xl overflow-hidden hover-card print:bg-none print:shadow-none print:p-0 print:border print:border-[#E2E8F0] print:break-inside-avoid">
+        <div className="relative bg-gradient-to-br from-[#0D9488] to-[#0F766E] p-1 rounded-2xl shadow-xl overflow-hidden hover-card print:bg-none print:shadow-none print:p-0 print:border print:border-[#E2E8F0] print:break-inside-avoid">
           {!isElite && <LockCard title="Smart AI Insights" planRequired="Elite" />}
-          <div className={`bg-[#0F172A] rounded-xl p-6 print:bg-white print:p-5 ${!isElite ? 'blur-sm select-none' : ''}`}>
+          <div className={`bg-[#0D9488] rounded-xl p-6 print:bg-white print:p-5 ${!isElite ? 'blur-sm select-none' : ''}`}>
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl">🧠</span>
-              <h2 className="text-xl font-black text-white print:text-[#0F172A]">TokenPe AI Insights</h2>
+              <Brain className="w-8 h-8" />
+              <h2 className="text-xl font-black text-white print:text-[#0D9488]">TokenPe AI Insights</h2>
             </div>
             {loadingAi ? (
-              <div className="text-[#94A3B8] font-semibold animate-pulse print:text-[#64748B]">Generating insights using TokenPe AI...</div>
+              <div className="text-[#CCFBF1] font-semibold animate-pulse print:text-[#64748B]">Generating insights using TokenPe AI...</div>
             ) : aiInsights ? (
               <div className="grid md:grid-cols-3 gap-4">
                 {aiInsights.map((insight, i) => (
                   <div key={i} className="bg-white/5 border border-white/10 p-5 rounded-xl backdrop-blur-md print:bg-[#F8FAFC] print:border-[#E2E8F0] print:break-inside-avoid print:backdrop-blur-none">
                     <div className="text-2xl mb-3">{insight.icon}</div>
-                    <p className="text-white text-sm font-semibold leading-relaxed print:text-[#0F172A]">{insight.insight}</p>
+                    <p className="text-white text-sm font-semibold leading-relaxed print:text-[#0D9488]">{insight.insight}</p>
                     <div className={`mt-4 text-xs font-bold uppercase tracking-wider ${insight.type==='positive'?'text-[#10B981]':insight.type==='warning'?'text-[#F59E0B]':'text-[#38BDF8]'}`}>
                       {insight.type}
                     </div>
@@ -737,7 +738,7 @@ export default function AnalyticsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-[#94A3B8] font-semibold print:text-[#64748B]">Not enough data to generate insights yet.</div>
+              <div className="text-[#CCFBF1] font-semibold print:text-[#64748B]">Not enough data to generate insights yet.</div>
             )}
           </div>
         </div>

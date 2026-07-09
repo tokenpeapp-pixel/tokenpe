@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, Bell, Camera
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
 import confetti from 'canvas-confetti'
+import CallNextButton from '../../components/CallNextButton'
 
 // ─── UPGRADE BANNER (Suspense wrapped to prevent Next.js build errors) ────────
 function UpgradeBanner() {
@@ -2113,13 +2114,13 @@ export default function Dashboard() {
         >
           {clinic?.queue_paused ? <><Pause className="inline-block w-4 h-4 mr-1 mb-0.5" /> Queue Paused</> : isLimitReached ? <><Lock className="inline-block w-4 h-4 mr-1 mb-0.5" /> Limit (${limit})</> : <><PlusCircle className="inline-block w-4 h-4 mr-1 mb-0.5" /> Walk-in</>}
         </button>
-        <button
-          style={{ ...s.btnCall, opacity: waiting.length === 0 ? 0.4 : 1 }}
-          onClick={callNext}
-          disabled={waiting.length === 0}
-        >
-          <Megaphone className="inline-block w-4 h-4" /> Call Next {waiting.length > 0 ? `(${waiting[0]?.token})` : ''}
-        </button>
+        <div className="flex-1 max-w-[200px]">
+          <CallNextButton 
+            onCall={callNext} 
+            disabled={waiting.length === 0} 
+            nextToken={waiting[0]?.token} 
+          />
+        </div>
         <div className="qr-hint-mobile" style={s.qrHint}><Smartphone className="inline-block w-4 h-4" /> Patients scan QR → WhatsApp → Auto joins queue</div>
       </div>
 

@@ -341,7 +341,7 @@ export async function POST(req) {
             const today = getISTDateString()
             const planId = clinic.plan_id || 'starter' // default to starter
             
-            // Item 5: Rate limit joins (3 per phone per day, unique names)
+            // Item 5: Rate limit joins (3 per phone per day, max 2 per same name)
             const cleanedPhone = cleanPhone(phone)
             const { data: existingJoins } = await supabase
                 .from('patients')
@@ -352,7 +352,7 @@ export async function POST(req) {
 
             if (existingJoins && existingJoins.length >= 3) {
                 console.log(`[Join] ❌ Rate limit reached for ${maskPhone(phone)} at ${clinic.name}`)
-                await sendText(cleanedPhone, `❌ *Limit Reached*\n\nYou can only join the queue 3 times per day from the same phone number.`)
+                await sendText(cleanedPhone, `❌ *Limit Reached*\n\nYou have reached the maximum daily limit for this phone number.\n\nPlease visit the clinic to join via walk-in.`)
                 return Response.json({
                     success: false,
                     message: 'Daily join limit reached for this phone number.',
@@ -360,12 +360,13 @@ export async function POST(req) {
                 }, { status: 200 })
             }
 
-            if (existingJoins?.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-                console.log(`[Join] ❌ Duplicate name for ${maskPhone(phone)}: ${maskName(name)}`)
-                await sendText(cleanedPhone, `❌ *Already Joined*\n\nA patient named "${name}" has already joined the queue today from this phone number.`)
+            const nameCount = existingJoins?.filter(p => p.name.toLowerCase() === name.toLowerCase()).length || 0;
+            if (nameCount >= 2) {
+                console.log(`[Join] ❌ Name limit reached for ${maskPhone(phone)}: ${maskName(name)}`)
+                await sendText(cleanedPhone, `❌ *Limit Reached*\n\nA patient named "${name}" has already joined the queue twice today.\n\nTo join again, please visit the clinic and use the walk-in method.`)
                 return Response.json({
                     success: false,
-                    message: 'A patient with this name has already joined.',
+                    message: 'A patient with this name has reached the daily limit.',
                     token: 'DUPE', position: 0, wait: 'N/A', clinicName: clinic.name, name: name
                 }, { status: 200 })
             }

@@ -169,6 +169,32 @@ export default function BillingPage() {
     }
   }
 
+  const executeResume = async () => {
+    setUpgrading('resume')
+    try {
+      const res = await fetch('/api/razorpay/resume-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to reactivate')
+
+      const res2 = await fetch(`/api/clinics/get?id=${clinic.id}`)
+      if (res2.ok) {
+        const data2 = await res2.json()
+        if (data2.success && data2.clinic) {
+          setClinic(data2.clinic)
+          localStorage.setItem('tokenpe_clinic', JSON.stringify(data2.clinic))
+        }
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`)
+    } finally {
+      setUpgrading(null)
+    }
+  }
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAF8]">
       <div className="w-10 h-10 border-4 border-[#E5E7EB] border-t-[#065F46] rounded-full animate-spin"></div>
@@ -321,12 +347,19 @@ export default function BillingPage() {
                         ? new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
                         : (isTrial ? (trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '---') : '---')}
                     </p>
-                    <div className="flex items-center sm:justify-center gap-2">
+                    <button 
+                      onClick={!isCancelPending ? () => setShowCancelModal(true) : executeResume}
+                      disabled={!!upgrading}
+                      className="flex items-center sm:justify-center gap-2 group disabled:opacity-50 transition-opacity"
+                    >
                       <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!isCancelPending ? 'bg-[#065F46]' : 'bg-[#E5E7EB]'}`}>
                         <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${!isCancelPending ? 'translate-x-[18px]' : 'translate-x-1'}`}></span>
                       </div>
-                      <span className="text-xs font-semibold text-[#6B7280]">Auto renewal {!isCancelPending ? 'ON' : 'OFF'}</span>
-                    </div>
+                      <span className="text-xs font-semibold text-[#6B7280] group-hover:text-[#111827] transition-colors flex items-center gap-1">
+                        Auto renewal {!isCancelPending ? 'ON' : 'OFF'}
+                        {upgrading === 'resume' && <RefreshCw className="w-3 h-3 animate-spin text-[#065F46]" />}
+                      </span>
+                    </button>
                   </div>
                 )}
 
@@ -347,14 +380,6 @@ export default function BillingPage() {
                         >
                           <span className="material-symbols-outlined text-base">cancel</span>
                           Cancel Plan
-                        </button>
-                      )}
-                      {isCancelPending && (
-                        <button
-                          onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#065F46] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
-                        >
-                          <><RefreshCw className="inline-block w-4 h-4 mr-1" /> Reactivate Subscription</>
                         </button>
                       )}
                       <button

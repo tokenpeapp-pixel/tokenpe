@@ -359,8 +359,7 @@ export default function LoginPage() {
                 
                 {/* Mobile Premium Header */}
                 <div className="md:hidden flex flex-col items-center justify-center w-full pt-16 pb-12 text-white z-20">
-                    <img src="/logo.svg" alt="TokenPe" className="h-14 w-auto drop-shadow-md mb-6" />
-                    <p className="text-emerald-100/80 text-sm font-medium tracking-wide uppercase">Smart Clinic Queue</p>
+                    <img src="/logo.svg" alt="TokenPe" className="h-14 w-auto drop-shadow-md" />
                 </div>
 
                 {/* Subtle Checkered Grid (Desktop) */}
@@ -378,10 +377,10 @@ export default function LoginPage() {
                         Back to Home
                     </button>
 
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
+                    <h2 className="hidden md:block text-3xl font-bold text-slate-900 tracking-tight mb-2">
                         {mode === 'login' ? 'Welcome back!' : 'Create New Clinic'}
                     </h2>
-                    <p className="text-slate-500 mb-8">
+                    <p className="hidden md:block text-slate-500 mb-8">
                         {mode === 'login' ? 'Sign in to your TokenPe dashboard' : 'Register your clinic and get started in 2 minutes'}
                     </p>
 
@@ -637,11 +636,10 @@ export default function LoginPage() {
                         )}
                     </AnimatePresence>
 
+                    <div className="mt-8 flex items-center justify-center gap-2 text-emerald-600/70 text-xs font-semibold">
+                        <ShieldCheck className="w-4 h-4" /> Your data is safe and encrypted
+                    </div>
                 </motion.div>
-                
-                <div className="absolute bottom-6 flex items-center justify-center gap-2 text-emerald-600/70 text-xs font-semibold z-10">
-                    <ShieldCheck className="w-4 h-4" /> Your data is safe and encrypted
-                </div>
             </div>
         </div>
     )

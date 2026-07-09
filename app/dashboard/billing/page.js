@@ -7,8 +7,8 @@ import { Gift, AlertTriangle, Hourglass, RefreshCw, CheckCircle2 } from 'lucide-
 
 const PLAN_META = {
   starter:      { name: 'Starter', price: '₹499',   priceNum: 499,  limit: 50,       color: '#6B7280' },
-  pro:          { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#0D9488' },
-  professional: { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#0D9488' },
+  pro:          { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#065F46' },
+  professional: { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#065F46' },
   elite:        { name: 'Elite',   price: '₹1,999', priceNum: 1999, limit: Infinity, color: '#F59E0B' },
 }
 
@@ -92,7 +92,7 @@ export default function BillingPage() {
             if (isActivated) {
               const meta = PLAN_META[fresh.plan_id]
               setShowSuccessModal(meta?.name || fresh.plan_id)
-              confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#0D9488', '#2DD4BF', '#059669', '#ffffff'], zIndex: 10000 })
+              confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#065F46', '#2DD4BF', '#059669', '#ffffff'], zIndex: 10000 })
             }
             return
           }
@@ -123,7 +123,7 @@ export default function BillingPage() {
         description: `${PLAN_META[tier]?.name || tier} Plan Subscription`,
         image: `${window.location.origin}/logo-light.svg`,
         prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.clinicPhone },
-        theme: { color: '#0D9488' },
+        theme: { color: '#065F46' },
         handler: () => pollForUpdate(clinic.id, tier),
         modal: { ondismiss: () => setUpgrading(null) }
       }
@@ -171,7 +171,7 @@ export default function BillingPage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAF8]">
-      <div className="w-10 h-10 border-4 border-[#E5E7EB] border-t-[#0D9488] rounded-full animate-spin"></div>
+      <div className="w-10 h-10 border-4 border-[#E5E7EB] border-t-[#065F46] rounded-full animate-spin"></div>
     </div>
   )
 
@@ -218,7 +218,7 @@ export default function BillingPage() {
     {
       tier: 'pro', label: 'Pro', price: '₹999',
       features: ['Up to 150 patients/day', 'Branded WhatsApp Identity', 'Multilingual AI Voice Alerts', 'Queue Pause & Smart Wait Time', '30-Day History & Heatmap'],
-      checkColor: '#0D9488', accent: '#0D9488', featured: true
+      checkColor: '#065F46', accent: '#065F46', featured: true
     },
     {
       tier: 'elite', label: 'Elite', price: '₹1,999',
@@ -246,7 +246,7 @@ export default function BillingPage() {
             {/* Top Bar */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
               <div>
-                <button onClick={() => router.push('/dashboard')} className="mb-3 text-[#0D9488] font-bold text-[13px] hover:underline flex items-center gap-1">
+                <button onClick={() => router.push('/dashboard')} className="mb-3 text-[#065F46] font-bold text-[13px] hover:underline flex items-center gap-1">
                   ← Back to Dashboard
                 </button>
                 <h1 className="text-xl sm:text-2xl font-black text-[#111827]">Billing</h1>
@@ -256,7 +256,7 @@ export default function BillingPage() {
               {(planId !== 'elite' || isCanceled || isTrial) && (
                 <button
                   onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="bg-[#0D9488] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-teal-900/10 hover:opacity-90 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+                  className="bg-[#065F46] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-teal-900/10 hover:opacity-90 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   <span className="material-symbols-outlined text-[18px]">upgrade</span>
                   Upgrade Plan
@@ -322,7 +322,7 @@ export default function BillingPage() {
                         : (isTrial ? (trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '---') : '---')}
                     </p>
                     <div className="flex items-center sm:justify-center gap-2">
-                      <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!isCancelPending ? 'bg-[#0D9488]' : 'bg-[#E5E7EB]'}`}>
+                      <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!isCancelPending ? 'bg-[#065F46]' : 'bg-[#E5E7EB]'}`}>
                         <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${!isCancelPending ? 'translate-x-[18px]' : 'translate-x-1'}`}></span>
                       </div>
                       <span className="text-xs font-semibold text-[#6B7280]">Auto renewal {!isCancelPending ? 'ON' : 'OFF'}</span>
@@ -352,7 +352,7 @@ export default function BillingPage() {
                       {isCancelPending && (
                         <button
                           onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#065F46] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
                         >
                           <><RefreshCw className="inline-block w-4 h-4 mr-1" /> Reactivate Subscription</>
                         </button>
@@ -374,7 +374,7 @@ export default function BillingPage() {
             {/* ── Usage Section ── */}
             <section className="mb-10">
               <h3 className="flex items-center gap-2 text-[15px] font-bold text-[#111827] mb-4">
-                <span className="material-symbols-outlined text-[#0D9488]">bar_chart</span> Daily Usage
+                <span className="material-symbols-outlined text-[#065F46]">bar_chart</span> Daily Usage
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
@@ -382,7 +382,7 @@ export default function BillingPage() {
                 <div className="bg-white p-4 border border-[#E5E7EB] rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[#0D9488] text-lg">person</span>
+                      <span className="material-symbols-outlined text-[#065F46] text-lg">person</span>
                     </div>
                     <span className="text-xs font-bold text-[#6B7280]">Patients Today</span>
                   </div>
@@ -391,7 +391,7 @@ export default function BillingPage() {
                     <span className="text-[10px] text-[#9CA3AF]">/ {planLimit === Infinity ? '∞' : planLimit}</span>
                   </div>
                   <div className="w-full bg-[#F3F4F6] h-1.5 rounded-full overflow-hidden">
-                    <div className={`h-full transition-all ${percentage >= 100 ? 'bg-[#DC2626]' : percentage >= 80 ? 'bg-[#F59E0B]' : 'bg-[#0D9488]'}`} style={{ width: `${percentage}%` }}></div>
+                    <div className={`h-full transition-all ${percentage >= 100 ? 'bg-[#DC2626]' : percentage >= 80 ? 'bg-[#F59E0B]' : 'bg-[#065F46]'}`} style={{ width: `${percentage}%` }}></div>
                   </div>
                 </div>
 
@@ -401,7 +401,7 @@ export default function BillingPage() {
             {/* ── Plans Section ── */}
             <section className="mb-12" id="plans-section">
                 <h3 className="flex items-center gap-2 text-[16px] font-bold text-[#111827] mb-6">
-                <span className="material-symbols-outlined text-[#0D9488]">inventory_2</span> Available plans
+                <span className="material-symbols-outlined text-[#065F46]">inventory_2</span> Available plans
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -424,7 +424,7 @@ export default function BillingPage() {
                   // isLower plans: no action button rendered
 
                   const cardBorder = plan.featured
-                    ? 'border-2 border-[#0D9488]'
+                    ? 'border-2 border-[#065F46]'
                     : plan.tier === 'elite'
                     ? 'border border-[#FDE68A]'
                     : 'border border-[#E5E7EB]'
@@ -434,15 +434,15 @@ export default function BillingPage() {
                   const btnClass = btnActive
                     ? plan.tier === 'elite'
                       ? 'bg-[#F59E0B] text-[#111827] hover:opacity-90 shadow-lg shadow-amber-900/10'
-                      : 'bg-[#0D9488] text-white hover:opacity-90 shadow-lg shadow-teal-900/10'
+                      : 'bg-[#065F46] text-white hover:opacity-90 shadow-lg shadow-teal-900/10'
                     : 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
 
                   return (
                     <div key={plan.tier} className={`${cardBg} ${cardBorder} rounded-2xl p-6 flex flex-col relative transition-all`}
-                      style={plan.featured ? { boxShadow: '0 0 0 4px rgba(13,148,136,0.06)' } : {}}>
+                      style={plan.featured ? { boxShadow: '0 0 0 4px rgba(6,95,70,0.06)' } : {}}>
 
                       {plan.featured && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0D9488] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#065F46] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
                           Most Popular
                         </div>
                       )}
@@ -464,7 +464,7 @@ export default function BillingPage() {
                             {plan.tier === 'elite'
                               ? <span className="material-symbols-outlined text-[#F59E0B] text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span>
                               : plan.featured
-                              ? <span className="material-symbols-outlined text-[#0D9488] text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                              ? <span className="material-symbols-outlined text-[#065F46] text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                               : <span className="material-symbols-outlined text-[#D1D5DB] text-lg">radio_button_unchecked</span>
                             }
                             {f}
@@ -507,7 +507,7 @@ export default function BillingPage() {
               <h4 className="text-[15px] font-bold text-[#111827] mb-4">Billing Timeline</h4>
               <div className="relative pl-6 space-y-6 border-l-2 border-dashed border-[#E5E7EB]">
                 <div className="relative">
-                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#0D9488] rounded-full"></div>
+                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#065F46] rounded-full"></div>
                   <p className="text-xs font-bold text-[#111827]">{planName} {isTrial ? 'Trial' : isActive ? 'Active' : isCancelPending ? 'Ending' : 'Inactive'}</p>
                   <p className="text-[10px] text-[#6B7280]">
                     {clinic?.created_at ? new Date(clinic.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
@@ -544,7 +544,7 @@ export default function BillingPage() {
                   </div>
                 ))}
               </div>
-              <a href="mailto:tokenpe.online@gmail.com" className="mt-4 flex items-center gap-2 p-4 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#0D9488] hover:bg-teal-50 transition-colors">
+              <a href="mailto:tokenpe.online@gmail.com" className="mt-4 flex items-center gap-2 p-4 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#065F46] hover:bg-teal-50 transition-colors">
                 <span className="material-symbols-outlined text-base">headset_mic</span>
                 Contact Support
               </a>
@@ -561,7 +561,7 @@ export default function BillingPage() {
               <h4 className="text-[15px] font-bold text-[#111827] mb-4">Billing Timeline</h4>
               <div className="relative pl-6 space-y-6 border-l-2 border-dashed border-[#E5E7EB]">
                 <div className="relative">
-                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#0D9488] rounded-full"></div>
+                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#065F46] rounded-full"></div>
                   <p className="text-xs font-bold text-[#111827]">{planName} {isTrial ? 'Trial' : isActive ? 'Active' : isCancelPending ? 'Ending' : 'Inactive'}</p>
                   <p className="text-[10px] text-[#6B7280]">
                     {clinic?.created_at ? new Date(clinic.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
@@ -603,7 +603,7 @@ export default function BillingPage() {
               </div>
 
               {/* Contact Support */}
-              <a href="mailto:tokenpe.online@gmail.com" className="mt-6 flex items-center gap-2 p-3 border border-[#E5E7EB] rounded-xl text-[11px] font-bold text-[#0D9488] hover:bg-teal-50 transition-colors">
+              <a href="mailto:tokenpe.online@gmail.com" className="mt-6 flex items-center gap-2 p-3 border border-[#E5E7EB] rounded-xl text-[11px] font-bold text-[#065F46] hover:bg-teal-50 transition-colors">
                 <span className="material-symbols-outlined text-base">headset_mic</span>
                 Contact Support
               </a>
@@ -630,7 +630,7 @@ export default function BillingPage() {
                   <tr>
                     <th className="px-6 py-4 w-2/5">Feature</th>
                     <th className="px-4 py-4 text-center">Starter</th>
-                    <th className="px-4 py-4 text-center text-[#0D9488]">Pro</th>
+                    <th className="px-4 py-4 text-center text-[#065F46]">Pro</th>
                     <th className="px-4 py-4 text-center text-[#F59E0B]">Elite</th>
                   </tr>
                 </thead>
@@ -648,7 +648,7 @@ export default function BillingPage() {
                     <tr key={feature}>
                       <td className="px-6 py-4 font-bold">{feature}</td>
                       <td className="px-4 py-4 text-center text-[#6B7280]">{s}</td>
-                      <td className="px-4 py-4 text-center font-bold text-[#0D9488]">{p}</td>
+                      <td className="px-4 py-4 text-center font-bold text-[#065F46]">{p}</td>
                       <td className="px-4 py-4 text-center font-bold text-[#F59E0B]">{e}</td>
                     </tr>
                   ))}
@@ -669,7 +669,7 @@ export default function BillingPage() {
             <select
               value={cancelReason}
               onChange={e => setCancelReason(e.target.value)}
-              className="w-full mb-6 p-3 border border-[#E5E7EB] rounded-xl text-sm bg-gray-50 outline-none focus:border-[#0D9488]"
+              className="w-full mb-6 p-3 border border-[#E5E7EB] rounded-xl text-sm bg-gray-50 outline-none focus:border-[#065F46]"
             >
               <option value="">Select a reason... (Optional)</option>
               <option value="too_expensive">Too expensive</option>
@@ -680,7 +680,7 @@ export default function BillingPage() {
             </select>
 
             <div className="flex flex-col gap-3">
-              <button onClick={() => setShowCancelModal(false)} disabled={isCanceling} className="w-full py-3 bg-[#0D9488] text-white rounded-xl font-bold shadow-sm hover:bg-[#0F766E] transition-colors disabled:opacity-60">
+              <button onClick={() => setShowCancelModal(false)} disabled={isCanceling} className="w-full py-3 bg-[#065F46] text-white rounded-xl font-bold shadow-sm hover:bg-[#064E3B] transition-colors disabled:opacity-60">
                 Keep my plan
               </button>
               <button onClick={executeCancel} disabled={isCanceling} className="w-full py-3 bg-transparent text-[#EF4444] border border-[#FECACA] rounded-xl font-bold hover:bg-[#FEF2F2] transition-colors disabled:opacity-60">
@@ -694,15 +694,15 @@ export default function BillingPage() {
       {/* Success Modal */}
       {showSuccessModal && (
         <div onClick={() => setShowSuccessModal(null)} className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div onClick={e => e.stopPropagation()} className="bg-white w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl border border-[#0D9488]/20" style={{ background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)' }}>
-            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg text-[#0D9488]">
+          <div onClick={e => e.stopPropagation()} className="bg-white w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl border border-[#065F46]/20" style={{ background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)' }}>
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg text-[#065F46]">
               <span className="material-symbols-outlined text-[48px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             </div>
-            <h3 className="text-2xl font-extrabold text-[#0D9488] mb-2">You&apos;re all set!</h3>
-            <p className="text-sm text-[#0D9488]/80 mb-8">
+            <h3 className="text-2xl font-extrabold text-[#065F46] mb-2">You&apos;re all set!</h3>
+            <p className="text-sm text-[#065F46]/80 mb-8">
               Your <strong>{showSuccessModal}</strong> plan is now active. All features are unlocked.
             </p>
-            <button onClick={() => router.push('/dashboard')} className="w-full py-3 bg-[#0D9488] text-white rounded-xl font-bold shadow-lg shadow-teal-900/20 hover:opacity-90 transition-all">
+            <button onClick={() => router.push('/dashboard')} className="w-full py-3 bg-[#065F46] text-white rounded-xl font-bold shadow-lg shadow-teal-900/20 hover:opacity-90 transition-all">
               Continue to Dashboard
             </button>
           </div>

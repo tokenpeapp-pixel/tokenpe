@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useRef, Suspense, useCallback } from 'react'
-import { CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, Bell, Camera, MapPin, Pencil, Lock, Download, Printer, Star, Smartphone, Mic, Gift, AlertTriangle, Hourglass, RefreshCw, Sparkles, Plus, Copy, LogOut, Check, ChevronLeft, ChevronRight, Menu, Play, CheckCircle, Search, Edit2, X, PlusSquare, Settings, History, BarChart2, Headset, CreditCard, DoorOpen, DoorClosed, List, Pause, QrCode, Clock, Calendar } from 'lucide-react'
+import { CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, Bell, Camera, MapPin, Pencil, Lock, Download, Printer, Star, Smartphone, Mic, Gift, AlertTriangle, Hourglass, RefreshCw, Sparkles, Plus, Copy, LogOut, Check, ChevronLeft, ChevronRight, Menu, Play, CheckCircle, Search, Edit2, X, PlusSquare, Settings, History, BarChart2, Headset, CreditCard, DoorOpen, DoorClosed, List, Pause, QrCode, Clock, Calendar, CalendarX, CalendarCheck } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
 import confetti from 'canvas-confetti'
@@ -1585,20 +1585,20 @@ export default function Dashboard() {
           position: fixed;
           top: 72px;
           right: 16px;
-          background: rgba(6,95,70, 0.97); /* WhatsApp Teal Green */
+          background: #0f172a; /* Dark Navy Background */
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border: 1px solid rgba(6,95,70, 0.35);
+          border: 1px solid #1e293b;
           border-radius: 14px;
-          padding: 8px;
-          width: 220px;
+          padding: 16px;
+          width: 300px;
           max-height: calc(100vh - 90px);
           overflow-y: auto;
-          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.07) inset;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
           z-index: 9999;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 6px;
           animation: slideDown 0.18s ease-out forwards;
           transform-origin: top right;
         }
@@ -1624,25 +1624,100 @@ export default function Dashboard() {
 
         .dropdown-item {
           background: transparent;
-          color: #ffffff;
+          color: #f1f5f9;
           border: none;
-          padding: 13px 16px;
-          border-radius: 9px;
+          padding: 8px 12px;
+          border-radius: 10px;
           text-align: left;
           font-size: 0.95rem;
-          font-weight: 700;
+          font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
-          gap: 11px;
-          transition: background 0.12s ease, color 0.12s ease;
+          gap: 16px;
+          transition: all 0.2s ease;
           width: 100%;
           font-family: inherit;
+          position: relative;
         }
 
         .dropdown-item:hover, .dropdown-item:active {
-          background: rgba(6,95,70, 0.25);
+          background: #1e293b;
           color: #fff;
+        }
+
+        .dropdown-item.active {
+          background: #1e293b;
+          color: #eab308;
+          position: relative;
+        }
+
+        .dropdown-item.active::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 3px;
+          height: 20px;
+          background: #eab308;
+          border-radius: 0 4px 4px 0;
+        }
+
+        .menu-icon-wrapper {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #1e293b;
+          flex-shrink: 0;
+        }
+
+        .dropdown-item:hover .menu-icon-wrapper {
+          background: #334155;
+        }
+
+        .dropdown-item.active .menu-icon-wrapper {
+          background: rgba(234, 179, 8, 0.15);
+          color: #eab308;
+        }
+
+        .dropdown-item.primary-action .menu-icon-wrapper {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10b981;
+        }
+        .dropdown-item.primary-action {
+          background: #162842;
+          margin-bottom: 4px;
+        }
+
+        .dropdown-item.danger-action {
+          background: #162032;
+          margin-top: 4px;
+        }
+        .dropdown-item.danger-action .menu-icon-wrapper {
+          background: rgba(239, 68, 68, 0.15);
+          color: #ef4444;
+        }
+
+        .elite-badge {
+          font-size: 0.65rem;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 4px;
+          border: 1px solid rgba(234, 179, 8, 0.5);
+          color: #eab308;
+          margin-left: auto;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .menu-chevron {
+          margin-left: auto;
+          color: #94a3b8;
+          opacity: 0.7;
         }
 
         .dropdown-divider {
@@ -1750,8 +1825,11 @@ export default function Dashboard() {
               <>
                 <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 }}>Switch Clinic</div>
                 {userClinics.map(uc => (
-                  <button key={uc.id} className="dropdown-item" style={{ padding: '8px 16px', background: uc.id === clinic?.id ? 'rgba(6,95,70,0.15)' : 'transparent', color: uc.id === clinic?.id ? '#A78BFA' : 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }} onClick={() => switchToBranch(uc)}>
-                    {uc.id === clinic?.id ? '✓ ' : '○ '}{uc.name}
+                  <button key={uc.id} className="dropdown-item" style={{ background: uc.id === clinic?.id ? '#1e293b' : 'transparent', color: uc.id === clinic?.id ? '#6EE7B7' : '#94A3B8' }} onClick={() => switchToBranch(uc)}>
+                    <div className="menu-icon-wrapper" style={{ background: uc.id === clinic?.id ? 'rgba(16, 185, 129, 0.15)' : 'transparent', color: uc.id === clinic?.id ? '#10b981' : '#64748b' }}>
+                      {uc.id === clinic?.id ? '✓' : '○'}
+                    </div>
+                    {uc.name}
                   </button>
                 ))}
                 <div className="dropdown-divider" />
@@ -1759,62 +1837,118 @@ export default function Dashboard() {
             )}
 
             {(clinic?.plan_id === 'elite' || clinic?.subscription_status === 'trialing') && userClinics.length < 3 && (
-              <button className="dropdown-item" onClick={() => { setShowAddBranch(true); setMenuOpen(false); }} style={{ color: '#6EE7B7', fontSize: '0.9rem' }}>
-                + Add New Branch
+              <button className="dropdown-item primary-action" onClick={() => { setShowAddBranch(true); setMenuOpen(false); }}>
+                <div className="menu-icon-wrapper">
+                  <Plus className="w-5 h-5" />
+                </div>
+                Add New Branch
               </button>
             )}
 
-            <button className="dropdown-item" onClick={() => { setShowManageBranches(true); setMenuOpen(false); }} style={{ color: '#FCD34D', fontSize: '0.9rem' }}>
-              <Settings className="inline-block w-4 h-4 mr-2 mb-0.5" /> Manage Branches
+            <button className="dropdown-item active" onClick={() => { setShowManageBranches(true); setMenuOpen(false); }}>
+              <div className="menu-icon-wrapper">
+                <Settings className="w-5 h-5" />
+              </div>
+              Manage Branches
+              <span className="menu-chevron">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
             </button>
 
+            <div className="dropdown-divider" style={{ margin: '8px 0' }} />
+
             <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
-              <History className="inline-block w-4 h-4 mr-2 mb-0.5" /> History
+              <div className="menu-icon-wrapper">
+                <History className="w-5 h-5" />
+              </div>
+              History
             </button>
+            
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/analytics'); setMenuOpen(false); }}>
-              <BarChart2 className="inline-block w-4 h-4 mr-2 mb-0.5" /> Analytics (Elite)
+              <div className="menu-icon-wrapper">
+                <BarChart2 className="w-5 h-5" />
+              </div>
+              Analytics
+              <span className="elite-badge">Elite</span>
             </button>
+            
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/crm'); setMenuOpen(false); }}>
-              <Megaphone className="inline-block w-4 h-4" /> CRM & Broadcasts (Elite)
+              <div className="menu-icon-wrapper">
+                <Megaphone className="w-5 h-5" />
+              </div>
+              CRM & Broadcasts
+              <span className="elite-badge">Elite</span>
             </button>
+
             {clinic?.plan_id === 'elite' ? (
-              <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }} style={{ color: '#6EE7B7', fontWeight: 800 }}>
-                <Headset className="inline-block w-4 h-4 mr-2 mb-0.5" /> VIP Support (Elite)
+              <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }}>
+                <div className="menu-icon-wrapper">
+                  <Headset className="w-5 h-5" />
+                </div>
+                VIP Support
+                <span className="elite-badge">Elite</span>
               </button>
             ) : clinic?.plan_id === 'pro' ? (
-              <button className="dropdown-item" onClick={() => { window.open('mailto:tokenpe.online@gmail.com', '_blank'); setMenuOpen(false); }} style={{ color: '#A78BFA', fontWeight: 700 }}>
-                ⭐ Priority Support (Pro)
+              <button className="dropdown-item" onClick={() => { window.open('mailto:tokenpe.online@gmail.com', '_blank'); setMenuOpen(false); }}>
+                <div className="menu-icon-wrapper">
+                  <span style={{ fontSize: '1.2rem' }}>⭐</span>
+                </div>
+                Priority Support
               </button>
             ) : (
               <button className="dropdown-item" onClick={() => { window.open('mailto:tokenpe.online@gmail.com', '_blank'); setMenuOpen(false); }}>
-                ✉️ Standard Support
+                <div className="menu-icon-wrapper">
+                  <span style={{ fontSize: '1.2rem' }}>✉️</span>
+                </div>
+                Standard Support
               </button>
             )}
+            
             <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
-              <CreditCard className="inline-block w-4 h-4 mr-2 mb-0.5" /> Billing & Plan
+              <div className="menu-icon-wrapper">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              Billing & Plan
             </button>
-            <div className="dropdown-divider" />
+
+            <div className="dropdown-divider" style={{ margin: '8px 0' }} />
+
             {/* ── Close / Re-open Clinic — ALL plans ── */}
             {isClosedToday ? (
               <button
-                className="dropdown-item"
+                className="dropdown-item danger-action"
                 onClick={reopenClinic}
-                style={{ color: '#6EE7B7', fontWeight: 800 }}
               >
-                <DoorOpen className="inline-block w-4 h-4 mr-2 mb-0.5" /> Re-open Clinic Today
+                <div className="menu-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                  <CalendarCheck className="w-5 h-5" />
+                </div>
+                <span style={{ color: '#10b981' }}>Re-open Clinic Today</span>
+                <span className="menu-chevron">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </span>
               </button>
             ) : (
               <button
-                className="dropdown-item"
+                className="dropdown-item danger-action"
                 onClick={closeClinicForToday}
-                style={{ color: '#FCA5A5', fontWeight: 800 }}
               >
-                <DoorClosed className="inline-block w-4 h-4 mr-2 mb-0.5" /> Close Clinic for Today
+                <div className="menu-icon-wrapper">
+                  <CalendarX className="w-5 h-5" />
+                </div>
+                <span style={{ color: '#f87171' }}>Close Clinic for Today</span>
+                <span className="menu-chevron">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </span>
               </button>
             )}
+            
             <div className="dropdown-divider" />
-            <button className="dropdown-item" onClick={() => { logout(); setMenuOpen(false); }} style={{ color: '#FDA4AF' }}>
-              <LogOut className="inline-block w-4 h-4 mr-2 mb-0.5" /> Logout
+            
+            <button className="dropdown-item" onClick={() => { logout(); setMenuOpen(false); }}>
+              <div className="menu-icon-wrapper">
+                <LogOut className="w-5 h-5" />
+              </div>
+              Logout
             </button>
           </div>
         </>

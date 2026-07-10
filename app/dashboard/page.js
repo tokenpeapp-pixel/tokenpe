@@ -2600,7 +2600,9 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
 }
 
 // ─── PAYMENTS VIEW ──────────────────────────────────────────────────────────
-function PaymentsView({ patients, onUpdatePayment, addToast }) {
+function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addToast }) {
+  const [globalPatients, setGlobalPatients] = useState([])
+  const [loadingGlobal, setLoadingGlobal] = useState(true)
   const [paymentSubTab, setPaymentSubTab] = useState('pending')
   const [paymentSearch, setPaymentSearch] = useState('')
   const [editingFeeId, setEditingFeeId] = useState(null)
@@ -2645,25 +2647,62 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
     }
   }
 
-  // Sub-tab counters
-  const pendingCount = patients.filter(p => p.payment_status !== 'completed').length
-  const completedCount = patients.filter(p => p.payment_status === 'completed').length
+  const fetchPayments = async (query = '') => {
+    setLoadingGlobal(true)
+    try {
+      const url = query ? `/api/dashboard/payments?search=${encodeURIComponent(query)}` : '/api/dashboard/payments'
+      const res = await fetch(url)
+      const data = await res.json()
+      if (data.success) {
+        setGlobalPatients(data.patients || [])
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    setLoadingGlobal(false)
+  }
 
-  // Metrics (calculated dynamically from all records)
-  const pendingAmountCompleted = patients
+  useEffect(() => {
+    fetchPayments()
+  }, [])
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (paymentSearch.trim().length >= 3) {
+        fetchPayments(paymentSearch)
+      } else if (paymentSearch.trim() === '') {
+        fetchPayments()
+      }
+    }, 500)
+    return () => clearTimeout(delayDebounceFn)
+  }, [paymentSearch])
+
+  const onUpdatePayment = async (id, updates) => {
+    setGlobalPatients(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
+    if (externalOnUpdatePayment) {
+      await externalOnUpdatePayment(id, updates)
+    }
+  }
+
+  // Sub-tab counters
+  const pendingCount = globalPatients.filter(p => p.payment_status !== 'completed').length
+  const completedCount = globalPatients.filter(p => p.payment_status === 'completed').length
+
+  // Metrics (calculated dynamically from fetched records)
+  const pendingAmountCompleted = globalPatients
     .filter(p => p.payment_status !== 'completed')
     .reduce((sum, p) => sum + (parseFloat(p.fee_paid) || 0), 0)
 
-  const pendingRemainingBalance = patients
+  const pendingRemainingBalance = globalPatients
     .filter(p => p.payment_status !== 'completed')
     .reduce((sum, p) => sum + ((parseFloat(p.fee_total) || 0) - (parseFloat(p.fee_paid) || 0)), 0)
 
-  const completedTransactionsDone = patients
+  const completedTransactionsDone = globalPatients
     .filter(p => p.payment_status === 'completed')
     .reduce((sum, p) => sum + (parseFloat(p.fee_paid) || 0), 0)
 
   // Real-time Search & Filter
-  const filtered = patients.filter(p => {
+  const filtered = globalPatients.filter(p => {
     const matchesSubTab = paymentSubTab === 'pending'
       ? p.payment_status !== 'completed'
       : p.payment_status === 'completed'
@@ -2736,7 +2775,9 @@ function PaymentsView({ patients, onUpdatePayment, addToast }) {
 
       {/* ── Payments List ── */}
       <div style={ps.list}>
-        {filtered.length === 0 ? (
+        {loadingGlobal ? (
+          <div style={{ textAlign: 'center', padding: '60px 24px', color: '#64748b', fontWeight: 600 }}>Loading ledger...</div>
+        ) : filtered.length === 0 ? (
           <div style={ps.emptyState}>
             <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>
               {paymentSubTab === 'pending' ? <Sparkles className="w-10 h-10 text-[#065F46] mx-auto" /> : <CheckCircle className="w-10 h-10 text-[#065F46] mx-auto" />}

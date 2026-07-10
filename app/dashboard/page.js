@@ -87,8 +87,8 @@ const LANG_NAMES = {
 
 const TOAST_TYPES = {
   new: { bg: '#0F4C75', icon: <PlusCircle className="inline-block w-4 h-4" /> },
-  call: { bg: '#065F46', icon: <Megaphone className="inline-block w-4 h-4" /> },
-  done: { bg: '#065F46', icon: <CheckCircle2 className="inline-block w-4 h-4" /> },
+  call: { bg: '#1E40AF', icon: <Megaphone className="inline-block w-4 h-4" /> },
+  done: { bg: '#1E40AF', icon: <CheckCircle2 className="inline-block w-4 h-4" /> },
   skip: { bg: '#92400E', icon: <SkipForward className="inline-block w-4 h-4" /> },
   notify: { bg: '#1E40AF', icon: <Bell className="inline-block w-4 h-4" /> },
   error: { bg: '#9F1239', icon: <XCircle className="inline-block w-4 h-4" /> },
@@ -780,7 +780,7 @@ export default function Dashboard() {
       return updated
     })
 
-    addToast(<><CheckCircle2 className="inline-block w-4 h-4" /> Clinic code updated to ${newCode}! Share it with your patients.</>, 'done')
+    addToast(`Clinic code updated to ${newCode}! Share it with your patients.`, 'done')
   }
 
   // ── Smooth Branch Switcher (no reload) ─────────────────────────────────
@@ -796,7 +796,7 @@ export default function Dashboard() {
     localStorage.setItem('clinicCode', targetClinic.code)
     localStorage.setItem('clinicPhone', targetClinic.phone)
     localStorage.setItem('tokenpe_clinic', JSON.stringify(targetClinic))
-    addToast(<><CheckCircle2 className="inline-block w-4 h-4" /> Switched to ${targetClinic.name}</>, 'done')
+    addToast(`Switched to ${targetClinic.name}`, 'done')
 
     // Update session cookie and wait for it
     await fetch('/api/auth/switch', {
@@ -3275,7 +3275,7 @@ const s = {
   btnNotify: { background: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)', color: '#92400E', border: '1px solid #FDE68A', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   btnSkip: { background: 'linear-gradient(135deg,#FFF1F2,#FFE4E6)', color: '#9F1239', border: '1px solid #FECDD3', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   btnPriority: { background: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)', color: '#DC2626', border: '1px solid #FCA5A5', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
-  qrHint: { marginLeft: 'auto', color: '#CBD5E1', fontSize: '0.75rem', fontStyle: 'italic' },
+  qrHint: { marginLeft: 'auto', color: '#64748B', fontSize: '0.75rem', fontStyle: 'italic' },
   addForm: { background: 'linear-gradient(135deg,#F0FDFA,#EFF6FF)', borderBottom: '1px solid #DDD6FE', padding: '16px 24px' },
   addFormTitle: { fontWeight: 700, color: '#064E3B', marginBottom: 12, fontSize: '0.88rem' },
   addFormRow: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' },

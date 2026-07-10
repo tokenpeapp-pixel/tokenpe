@@ -22,11 +22,6 @@ export const metadata = {
   alternates: {
     canonical: "https://tokenpe.online",
   },
-  icons: {
-    icon: '/icon.png',
-    apple: '/apple-icon.png',
-    shortcut: '/icon.png',
-  },
   verification: {
     google: "YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_STRING",
   },

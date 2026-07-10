@@ -2678,9 +2678,26 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
   }, [paymentSearch])
 
   const onUpdatePayment = async (id, updates) => {
+    // Optimistically update local state immediately
     setGlobalPatients(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
-    if (externalOnUpdatePayment) {
-      await externalOnUpdatePayment(id, updates)
+
+    // Call the API directly — do NOT delegate to parent's onUpdatePayment
+    // which is tied to today's queue state and would cause a revert error
+    try {
+      const res = await fetch('/api/queue/update-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: id, updates })
+      })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.message || 'API request failed')
+      }
+    } catch (e) {
+      console.error('[PaymentsView onUpdatePayment Error]', e)
+      addToast('Failed to save payment changes. Please try again.', 'error')
+      // Revert optimistic update by re-fetching global data
+      fetchPayments()
     }
   }
 

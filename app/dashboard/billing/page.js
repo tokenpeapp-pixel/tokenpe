@@ -210,9 +210,13 @@ export default function BillingPage() {
 
   const status          = clinic?.subscription_status || 'trialing'
   const isTrial         = status === 'trialing'
-  const isActive        = status === 'active'
-  const isCancelPending = status === 'cancel_at_period_end'
-  const isCanceled      = status === 'canceled'
+  // Display-only safety check: treat period as expired if current_period_end is in the past,
+  // even if the cron/webhook hasn't updated the DB yet.
+  const periodExpired   = clinic?.current_period_end && new Date(clinic.current_period_end) < new Date()
+  const isActive        = status === 'active' && !periodExpired
+  const isCancelPending = status === 'cancel_at_period_end' && !periodExpired
+  // If the billing period is over and the webhook/cron hasn't fired yet, show as canceled
+  const isCanceled      = status === 'canceled' || (!!periodExpired && !isTrial)
 
   const percentage = planLimit === Infinity ? 0 : Math.min((todayCount / planLimit) * 100, 100)
 

@@ -27,7 +27,7 @@ export async function POST(req) {
         const code = String(clinicCode).trim().toUpperCase()
         const { data: clinic, error: clinicError } = await supabaseAdmin
             .from('clinics')
-            .select('id, name, plan_id, subscription_status')
+            .select('id, name, plan_id, subscription_status, current_period_end')
             .eq('code', code)
             .single()
 
@@ -35,7 +35,8 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Clinic not found' }, { status: 404 })
         }
 
-        if (clinic.plan_id !== 'pro' && clinic.plan_id !== 'elite' && clinic.subscription_status !== 'trialing') {
+        const subExpired = clinic.current_period_end && new Date(clinic.current_period_end) < new Date()
+        if (subExpired || (clinic.plan_id !== 'pro' && clinic.plan_id !== 'elite' && clinic.subscription_status !== 'trialing')) {
             return Response.json({ success: false, message: 'Normal ratings are available for Pro and Elite/Trial plans only' }, { status: 403 })
         }
 

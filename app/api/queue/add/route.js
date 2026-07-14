@@ -28,8 +28,11 @@ export async function POST(req) {
         const today = getISTDateString()
         
         // Fetch clinic plan limits AND closed status
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, closed_today_date').eq('id', clinicId).single()
-        const planId = clinic?.plan_id || 'starter'
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, closed_today_date, current_period_end').eq('id', clinicId).single()
+        const rawPlanId = clinic?.plan_id || 'starter'
+        // If current_period_end has passed, enforce starter limits regardless of stored plan_id
+        const subExpired = clinic?.current_period_end && new Date(clinic.current_period_end) < new Date()
+        const planId = subExpired ? 'starter' : rawPlanId
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
 
         // ── Block walk-ins if the clinic is closed for today ──────────────
@@ -104,8 +107,10 @@ export async function POST(req) {
             after(async () => {
                 try {
                     // Fetch clinic info for messaging
-                    const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, subscription_status').eq('id', clinicId).single()
-                    const planId = clinic?.plan_id || 'starter'
+                    const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, subscription_status, current_period_end').eq('id', clinicId).single()
+                    const rawPlanId = clinic?.plan_id || 'starter'
+                    const subExpired = clinic?.current_period_end && new Date(clinic.current_period_end) < new Date()
+                    const planId = subExpired ? 'starter' : rawPlanId
                     const clinicName = clinic?.name || 'the clinic'
 
                     // Count people ahead

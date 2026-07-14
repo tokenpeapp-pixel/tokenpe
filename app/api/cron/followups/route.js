@@ -18,13 +18,18 @@ export async function GET(req) {
     // 2. Fetch all Elite/Trial clinics that have either feature enabled
     const { data: clinics, error: clinicError } = await supabase
       .from('clinics')
-      .select('id, name, smart_recall_enabled, smart_meds_enabled, plan_id, subscription_status')
+      .select('id, name, smart_recall_enabled, smart_meds_enabled, plan_id, subscription_status, current_period_end')
       .or('smart_recall_enabled.eq.true,smart_meds_enabled.eq.true')
       
     if (clinicError) throw clinicError
 
-    // Filter only active Pro, Elite, or Trial
-    const activeClinics = clinics.filter(c => c.plan_id === 'elite' || c.plan_id === 'pro' || c.subscription_status === 'trialing')
+    // Filter only active Pro, Elite, or Trial — and exclude those whose billing period has expired
+    const nowMs = Date.now()
+    const activeClinics = clinics.filter(c => {
+      const subExpired = c.current_period_end && new Date(c.current_period_end).getTime() < nowMs
+      if (subExpired) return false
+      return c.plan_id === 'elite' || c.plan_id === 'pro' || c.subscription_status === 'trialing'
+    })
     
     if (activeClinics.length === 0) {
       return NextResponse.json({ success: true, message: 'No active clinics with follow-ups enabled' })

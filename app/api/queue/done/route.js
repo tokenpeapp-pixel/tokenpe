@@ -32,8 +32,10 @@ export async function POST(req) {
         const phone = cleanPhone(patientPhone)
 
         // 1. Fetch clinic to check plan
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, code, subscription_status').eq('id', clinicId).single()
-        const planId = clinic?.plan_id || 'starter'
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, code, subscription_status, current_period_end').eq('id', clinicId).single()
+        const rawPlanId = clinic?.plan_id || 'starter'
+        const subExpired = clinic?.current_period_end && new Date(clinic.current_period_end) < new Date()
+        const planId = subExpired ? 'starter' : rawPlanId
 
         // 2. Mark done in DB immediately (block on this so UI updates accurately)
         const { error: dbError } = await supabaseAdmin

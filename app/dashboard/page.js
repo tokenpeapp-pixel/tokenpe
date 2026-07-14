@@ -1337,7 +1337,9 @@ export default function Dashboard() {
   if (isAccountLocked) return (
     <div style={{ minHeight: '100vh', background: '#0a0514', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 56, marginBottom: 24 }}><Lock className="inline-block w-4 h-4" /></div>
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
+          <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: 48, width: 'auto' }} />
+        </div>
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Account Paused</h1>
         <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
           Your subscription has ended. Your patient data is safe — reactivate any plan to continue using TokenPe.
@@ -1354,7 +1356,7 @@ export default function Dashboard() {
         >
           Sign Out
         </button>
-        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Questions? Email <a href="mailto:support@tokenpe.online" style={{ color: '#a78bfa' }}>support@tokenpe.online</a></p>
+        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Questions? Email <a href="mailto:tokenpe.online@gmail.com" style={{ color: '#a78bfa' }}>tokenpe.online@gmail.com</a></p>
       </div>
     </div>
   )

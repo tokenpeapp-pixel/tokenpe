@@ -32,15 +32,16 @@ export async function POST(req) {
         )
 
         // 1. Verify the clinic exists and check their plan
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, subscription_status').eq('id', clinicId).single()
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, subscription_status, current_period_end').eq('id', clinicId).single()
         
         if (!clinic) {
             return NextResponse.json({ success: false, message: 'Clinic not found' }, { status: 404 })
         }
 
         const planId = clinic.plan_id || 'starter'
+        const subExpired = clinic.current_period_end && new Date(clinic.current_period_end) < new Date()
         const isTrialing = planId === 'trialing' || clinic.subscription_status === 'trialing'
-        const canEditCode = planId === 'pro' || planId === 'elite' || isTrialing
+        const canEditCode = !subExpired && (planId === 'pro' || planId === 'elite' || isTrialing)
 
         if (!canEditCode) {
             return NextResponse.json({ success: false, message: 'Upgrade to Pro or Elite to customize your clinic code.' }, { status: 403 })

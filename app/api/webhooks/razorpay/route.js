@@ -3,7 +3,7 @@
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
-import { sendTemplateMessage, cleanPhone } from '../../../../lib/messaging'
+import { sendTemplateMessage, cleanPhone, sendCancellationEmail } from '../../../../lib/messaging'
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 
@@ -129,7 +129,7 @@ export async function POST(req) {
       // ── Fetch clinic FIRST (separately from update so email never gets skipped) ──
       const { data: clinicInfo, error: fetchErr } = await supabaseAdmin
         .from('clinics')
-        .select('name, email, phone, plan_id')
+        .select('name, email, phone, plan_id, current_period_end')
         .eq('id', clinicId)
         .single()
 
@@ -137,6 +137,17 @@ export async function POST(req) {
         console.error(`[Razorpay Webhook] Could not find clinic ${clinicId}:`, fetchErr)
       } else {
         console.log(`[Razorpay Webhook] Found clinic: ${clinicInfo.name} (${clinicInfo.email})`)
+      }
+
+      // ── Defensive check for webhook delay ──
+      if (eventType === 'subscription.cancelled' && clinicInfo?.current_period_end) {
+        const periodEnd = new Date(clinicInfo.current_period_end)
+        const now = new Date()
+        const diffMs = now.getTime() - periodEnd.getTime()
+        const diffDays = diffMs / (1000 * 60 * 60 * 24)
+        if (diffDays > 2) {
+          console.warn(`[Razorpay Webhook] ⚠️ Webhook delayed: subscription.cancelled arrived ${diffDays.toFixed(1)} days after current_period_end for clinic ${clinicId}`)
+        }
       }
 
       // ── Perform the update ──
@@ -158,11 +169,9 @@ export async function POST(req) {
       // ── Send email notification ──
       if (clinicInfo?.email) {
         const isHalted = eventType === 'subscription.halted'
-        const subject = isHalted
-          ? '⚠️ Payment Failed – Action Required | TokenPe'
-          : '❌ Subscription Cancelled | TokenPe'
 
-        const bodyHtml = isHalted ? `
+        if (isHalted) {
+          const haltedHtml = `
           <div style="font-family:Inter,sans-serif;max-width:540px;margin:auto;padding:32px;background:#0f172a;color:#e2e8f0;border-radius:16px;">
             <img src="https://tokenpe.online/logo.svg" alt="TokenPe" style="height:36px;margin-bottom:24px;" />
             <h2 style="color:#f59e0b;font-size:22px;margin-bottom:8px;">⚠️ Payment Failed</h2>
@@ -174,36 +183,26 @@ export async function POST(req) {
             </a>
             <p style="margin-top:24px;font-size:12px;color:#475569;">Need help? Email support@tokenpe.online</p>
           </div>
-        ` : `
-          <div style="font-family:Inter,sans-serif;max-width:540px;margin:auto;padding:32px;background:#0f172a;color:#e2e8f0;border-radius:16px;">
-            <img src="https://tokenpe.online/logo.svg" alt="TokenPe" style="height:36px;margin-bottom:24px;" />
-            <h2 style="color:#ef4444;font-size:22px;margin-bottom:8px;">❌ Subscription Cancelled</h2>
-            <p>Hi <strong style="color:#fff">${clinicInfo.name}</strong>,</p>
-            <p>Your TokenPe subscription has been cancelled. Your clinic's premium features are now disabled.</p>
-            <p style="color:#94a3b8;">You can reactivate your plan anytime from the billing dashboard to restore full access.</p>
-            <a href="https://tokenpe.online/dashboard/billing" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;margin-top:16px;">
-              Reactivate Plan →
-            </a>
-            <p style="margin-top:24px;font-size:12px;color:#475569;">Need help? Email support@tokenpe.online</p>
-          </div>
         `
-
-        try {
-          const { data: mailData, error: mailErr } = await resend.emails.send({
-            from: 'TokenPe <support@tokenpe.online>',
-            to: clinicInfo.email,
-            subject,
-            html: bodyHtml
-          })
-          if (mailErr) {
-            console.error(`[Razorpay Webhook] Resend API error:`, mailErr)
-          } else {
-            console.log(`[Razorpay Webhook] 📧 ${isHalted ? 'Payment failure' : 'Cancellation'} email sent to ${clinicInfo.email}`, mailData)
+          try {
+            const { data: mailData, error: mailErr } = await resend.emails.send({
+              from: 'TokenPe <support@tokenpe.online>',
+              to: clinicInfo.email,
+              subject: '⚠️ Payment Failed – Action Required | TokenPe',
+              html: haltedHtml
+            })
+            if (mailErr) {
+              console.error(`[Razorpay Webhook] Resend API error:`, mailErr)
+            } else {
+              console.log(`[Razorpay Webhook] 📧 Payment failure email sent to ${clinicInfo.email}`, mailData)
+            }
+          } catch (e) {
+            console.error('[Razorpay Webhook] Failed to send email:', e)
           }
-        } catch (e) {
-          console.error('[Razorpay Webhook] Failed to send email:', e)
+        } else {
+          // subscription.cancelled — use shared helper (same template, no duplicate)
+          await sendCancellationEmail(clinicInfo.email, clinicInfo.name)
         }
-
 
       } else {
         console.warn(`[Razorpay Webhook] No email found for clinic ${clinicId} — skipping email`)

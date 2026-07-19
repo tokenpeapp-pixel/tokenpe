@@ -483,7 +483,7 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-      <div style={{ backgroundColor: '#09090b', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.15), transparent 70%)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+      <div className="discovery-modal-container" style={{ backgroundColor: '#09090b', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.15), transparent 70%)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, maxHeight: '90vh', color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', overflowY: 'auto', fontFamily: "'Inter', sans-serif" }}>
         
         
 
@@ -498,8 +498,8 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', zIndex: 10 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Clinic / Doctor Name *</label>
-            <input value={clinicName} onChange={e => setClinicName(e.target.value)} placeholder="e.g. Apollo Clinic or Dr. Sharma" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Clinic's Name *</label>
+            <input value={clinicName} onChange={e => setClinicName(e.target.value)} placeholder="e.g. Apollo Clinic" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
           </div>
 
           <div>

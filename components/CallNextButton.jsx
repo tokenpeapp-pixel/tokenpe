@@ -58,6 +58,7 @@ export default function CallNextButton({ onCall, disabled, nextToken }) {
 
   return (
     <motion.button
+      title={disabled && status === 'idle' ? "No one is currently in the queue" : undefined}
       onClick={handleCall}
       disabled={disabled || status !== 'idle'}
       whileHover={status === 'idle' && !disabled ? { y: -2, boxShadow: '0 8px 20px -4px rgba(16, 185, 129, 0.4)' } : {}}
@@ -67,7 +68,7 @@ export default function CallNextButton({ onCall, disabled, nextToken }) {
         status === 'idle' && !disabled
           ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm hover:from-emerald-400 hover:to-emerald-500'
           : 'bg-emerald-50 text-emerald-900 border border-emerald-100 shadow-inner',
-        disabled && status === 'idle' && 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border-none'
+        disabled && status === 'idle' && 'cursor-not-allowed bg-[#E2E8F0] text-[#475569] border-none shadow-none'
       )}
       style={{
         cursor: status !== 'idle' ? 'not-allowed' : disabled ? 'not-allowed' : 'pointer'

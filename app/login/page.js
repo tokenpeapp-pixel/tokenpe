@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 import CelebrationScreen from '../components/CelebrationScreen'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mic, MessageCircle, Bell, ShieldCheck, Mail, Phone, Lock, Building, MapPin, Activity } from 'lucide-react'
+import { Mic, MessageCircle, Bell, ShieldCheck, Mail, Phone, Lock, Building, MapPin, Activity, CheckSquare, AlertTriangle, Sparkles } from 'lucide-react'
 export default function LoginPage() {
     const router = useRouter()
     const [mode, setMode] = useState('login') // 'login' | 'register'
@@ -598,11 +598,11 @@ export default function LoginPage() {
                                             onClick={requestGps}
                                             className="flex items-center gap-2 py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
                                         >
-                                            📍 {gpsStatus === 'loading' ? 'Detecting...' : gpsStatus === 'success' ? 'Linked' : 'Detect GPS'}
+                                            <MapPin className={`w-4 h-4 mr-1 inline-block ${gpsStatus === 'success' ? 'text-rose-500' : 'text-slate-500'}`} /> {gpsStatus === 'loading' ? 'Detecting...' : gpsStatus === 'success' ? 'Linked' : 'Detect GPS'}
                                         </button>
-                                        {gpsStatus === 'success' && <span className="text-xs font-bold text-emerald-600">✅ Active</span>}
-                                        {gpsStatus === 'denied' && <span className="text-xs font-medium text-red-600">⚠️ Denied</span>}
-                                        {gpsStatus === 'error' && <span className="text-xs font-medium text-red-600">⚠️ Error</span>}
+                                        {gpsStatus === 'success' && <span className="text-xs font-bold text-emerald-600 flex items-center"><CheckSquare className="w-4 h-4 mr-1 inline-block" /> Active</span>}
+                                        {gpsStatus === 'denied' && <span className="text-xs font-medium text-rose-600 flex items-center"><AlertTriangle className="w-4 h-4 mr-1 inline-block" /> Denied</span>}
+                                        {gpsStatus === 'error' && <span className="text-xs font-medium text-rose-600 flex items-center"><AlertTriangle className="w-4 h-4 mr-1 inline-block" /> Error</span>}
                                     </div>
                                 </div>
                                 <div>
@@ -626,8 +626,8 @@ export default function LoginPage() {
                                         <input value={regPin} onChange={e => setRegPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-inner" />
                                     </div>
                                 </div>
-                                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700 font-medium">
-                                    🎲 A unique clinic code will be auto-generated. You can customize it later from your dashboard.
+                                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700 font-medium flex items-center">
+                                    <Sparkles className="w-5 h-5 mr-2 shrink-0 inline-block text-indigo-500" /> A unique clinic code will be auto-generated. You can customize it later from your dashboard.
                                 </div>
                                 <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-emerald-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
                                     {loading ? 'Creating account...' : 'Create Account →'}

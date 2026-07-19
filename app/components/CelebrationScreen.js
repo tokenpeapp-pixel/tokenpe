@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { PartyPopper, CheckCircle2, Check, Sparkles, ShieldCheck, Activity, Users, Building, Globe, Server, Database } from 'lucide-react'
 
 export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
     const [mounted, setMounted] = useState(false)
@@ -9,37 +10,27 @@ export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
     }, [])
 
     return (
-        <div style={{ position:'fixed', top:0, left:0, width:'100vw', height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#000', backgroundImage:'radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.12), transparent 70%)', fontFamily:"'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", color:'#fff', flexDirection:'column', textAlign:'center', padding:24, zIndex:99999, overflow:'hidden' }}>
-            
-            {/* Ambient animated glow */}
-            <div style={{ position:'absolute', width:'80vw', height:'80vw', maxWidth:600, maxHeight:600, background:'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', top:'50%', left:'50%', transform:'translate(-50%,-50%)', filter:'blur(60px)', animation:'pulseGlow 4s ease-in-out infinite alternate', pointerEvents:'none' }} />
+        <div style={{ position:'fixed', top:0, left:0, width:'100vw', height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#09090b', backgroundImage:'radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15), transparent 60%)', fontFamily:"'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", color:'#fff', flexDirection:'column', textAlign:'center', padding:24, zIndex:99999, overflow:'hidden' }}>
+
+            {/* Dots Grid Background */}
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1.5px, transparent 1.5px)', backgroundSize: '32px 32px', opacity: 0.8, maskImage: 'radial-gradient(ellipse at center, black 20%, transparent 80%)', WebkitMaskImage: 'radial-gradient(ellipse at center, black 20%, transparent 80%)', pointerEvents: 'none' }} />
 
             <div style={{ position:'relative', zIndex:10, width:'100%', maxWidth:420, opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(20px)', transition:'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}>
                 
-                {/* Premium Success Badge */}
-                <div style={{ margin:'0 auto 32px', width:72, height:72, borderRadius:20, background:'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(0,0,0,0))', border:'1px solid rgba(139, 92, 246, 0.3)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 40px rgba(139, 92, 246, 0.15)', position:'relative' }}>
-                    <div style={{ position:'absolute', inset:0, borderRadius:20, background:'inherit', filter:'blur(10px)', opacity:0.5 }} />
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position:'relative', zIndex:2 }}>
-                        <defs>
-                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#c4b5fd" />
-                                <stop offset="100%" stopColor="#8b5cf6" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M20 6L9 17l-5-5" strokeDasharray="30" strokeDashoffset={mounted ? 0 : 30} style={{ transition:'stroke-dashoffset 0.8s ease-out 0.2s' }} />
-                    </svg>
+                <div style={{ margin:'0 auto 32px', display:'flex', alignItems:'center', justifyContent:'center', animation:'fadeInUp 0.8s ease-out 0.2s both' }}>
+                    <CheckCircle2 size={80} color="#10b981" strokeWidth={1.5} style={{ filter: 'drop-shadow(0 0 15px rgba(16,185,129,0.3))' }} />
                 </div>
 
-                <div style={{ fontSize:13, fontWeight:600, color:'#a78bfa', letterSpacing:1.5, textTransform:'uppercase', marginBottom:12, animation:'fadeInUp 0.8s ease-out 0.3s both' }}>
+                <div style={{ fontSize:13, fontWeight:600, color:'#10b981', letterSpacing:1.5, textTransform:'uppercase', marginBottom:12, animation:'fadeInUp 0.8s ease-out 0.3s both' }}>
                     Welcome to TokenPe
                 </div>
                 
-                <h1 style={{ fontSize:32, fontWeight:700, margin:'0 0 16px', letterSpacing:'-0.03em', animation:'fadeInUp 0.8s ease-out 0.4s both', color:'#f8fafc' }}>
-                    Congratulations! 🎉
+                <h1 style={{ fontSize:32, fontWeight:700, margin:'0 0 16px', letterSpacing:'-0.03em', animation:'fadeInUp 0.8s ease-out 0.4s both', color:'#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    Congratulations! <Sparkles size={32} color="#10b981" style={{ marginLeft: 10 }} />
                 </h1>
 
                 <p style={{ fontSize:15, color:'#94a3b8', lineHeight:1.6, marginBottom:32, animation:'fadeInUp 0.8s ease-out 0.5s both', padding:'0 10px' }}>
-                    <strong style={{ color:'#e2e8f0', fontWeight:600 }}>{clinicName}</strong> is now live. We've unlocked the <strong style={{ color:'#c4b5fd', fontWeight:600 }}>7-Day Elite Plan Trial</strong> for you, completely free until {new Date(trialEnd).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}.
+                    <strong style={{ color:'#fff', fontWeight:700, fontSize:16 }}>{clinicName}</strong> is now live. We've unlocked the <strong style={{ color:'#10b981', fontWeight:700, background:'rgba(16,185,129,0.15)', padding:'2px 8px', borderRadius:6, whiteSpace:'nowrap', display:'inline-block', margin:'0 2px' }}>7-Day Elite Plan Trial</strong> for you, completely free until <strong style={{ color:'#fff', fontWeight:700, whiteSpace:'nowrap' }}>{new Date(trialEnd).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</strong>.
                 </p>
 
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:40, animation:'fadeInUp 0.8s ease-out 0.6s both' }}>
@@ -51,8 +42,8 @@ export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
                         { icon: '✓', text: 'Multi-Branch Support' },
                         { icon: '✓', text: 'Priority Support Line' }
                     ].map((feature, i) => (
-                        <div key={i} style={{ display:'flex', alignItems:'center', gap:10, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:12, padding:'12px', fontSize:13, color:'#cbd5e1', textAlign:'left' }}>
-                            <span style={{ color:'#a78bfa', fontWeight:'bold', fontSize:14 }}>{feature.icon}</span>
+                        <div key={i} className="feat-card" style={{ display:'flex', alignItems:'center', gap:10, background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:12, padding:'12px', fontSize:13, color:'#f8fafc', textAlign:'left' }}>
+                            <Check size={18} color="#10b981" />
                             <span style={{ fontWeight: 500, lineHeight: 1.3 }}>{feature.text}</span>
                         </div>
                     ))}
@@ -61,10 +52,10 @@ export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
                 <button 
                     onClick={onDone} 
                     style={{ 
-                        width:'100%', padding:'16px', background:'#fff', color:'#000', border:'none', borderRadius:12, fontSize:15, fontWeight:600, cursor:'pointer', transition:'all 0.2s ease', animation:'fadeInUp 0.8s ease-out 0.7s both', outline:'none', boxShadow:'0 4px 14px 0 rgba(255,255,255,0.1)'
+                        width:'100%', padding:'16px', background:'#059669', color:'#fff', border:'none', borderRadius:12, fontSize:15, fontWeight:600, cursor:'pointer', transition:'all 0.2s ease', animation:'fadeInUp 0.8s ease-out 0.7s both', outline:'none', boxShadow:'0 4px 14px 0 rgba(5, 150, 105, 0.4)'
                     }}
-                    onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,255,255,0.15)' }}
-                    onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(255,255,255,0.1)' }}
+                    onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.6)'; e.currentTarget.style.background = '#10b981' }}
+                    onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(5, 150, 105, 0.4)'; e.currentTarget.style.background = '#059669' }}
                 >
                     Go to Dashboard
                 </button>
@@ -78,6 +69,14 @@ export default function CelebrationScreen({ clinicName, trialEnd, onDone }) {
                 @keyframes pulseGlow { 
                     from { opacity: 0.5; } 
                     to { opacity: 1; } 
+                }
+                .feat-card {
+                    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+                }
+                .feat-card:hover {
+                    transform: translateY(-2px);
+                    background: rgba(255,255,255,0.12) !important;
+                    border-color: rgba(255,255,255,0.2) !important;
                 }
             `}</style>
         </div>

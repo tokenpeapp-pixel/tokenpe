@@ -1,8 +1,52 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Sparkles, Search, Check, Users, Megaphone, ClipboardList, Stethoscope, Activity, Building2, Smile, Mic, MessageSquare, Zap, Bell, Calendar, QrCode, FileSignature, BellRing, FileText, CheckCircle2, XCircle, ChevronRight } from "lucide-react";
+
 import WhatsAppDemo from "./components/WhatsAppDemo";
+
+
+const MobileCarousel = ({ children, gridClass }) => {
+  const [active, setActive] = useState(0);
+  const scrollRef = useRef();
+
+  const count = React.Children.count(children);
+
+  const handleScroll = (e) => {
+    const scrollLeft = e.target.scrollLeft;
+    const cardWidth = e.target.scrollWidth / count;
+    const index = Math.round(scrollLeft / cardWidth);
+    if(index !== active && index >= 0 && index < count) {
+      setActive(index);
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (scrollRef.current && window.innerWidth <= 768) {
+        let nextIndex = active + 1;
+        if (nextIndex >= count) nextIndex = 0;
+        const cardWidth = scrollRef.current.scrollWidth / count;
+        scrollRef.current.scrollTo({ left: nextIndex * cardWidth, behavior: 'smooth' });
+      }
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [active, count]);
+
+  return (
+    <div className="lp-carousel-wrapper">
+      <div className={`lp-carousel-track ${gridClass}`} ref={scrollRef} onScroll={handleScroll}>
+        {children}
+      </div>
+      <div className="lp-carousel-dots">
+        {React.Children.map(children, (child, i) => (
+          <span key={i} className={`lp-carousel-dot ${i === active ? 'active' : ''}`} />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default function LandingPage() {
   const router = useRouter();
@@ -21,42 +65,96 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
-    const observe = () => {
-      const observer = new IntersectionObserver(
-        (entries) =>
-          entries.forEach((e) => {
-            if (e.isIntersecting) e.target.classList.add("lp-visible");
-          }),
-        { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
-      );
-      document.querySelectorAll(".lp-reveal:not(.lp-visible)").forEach((el) => observer.observe(el));
-      return observer;
-    };
-    // Initial pass
-    let obs = observe();
-    // Re-observe after 600ms to catch elements rendered later (e.g. FAQ)
-    const timer = setTimeout(() => { obs.disconnect(); obs = observe(); }, 600);
-    return () => { obs.disconnect(); clearTimeout(timer); };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add("lp-visible");
+            observer.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.05, rootMargin: "0px 0px -20px 0px" }
+    );
+    
+    document.querySelectorAll(".lp-reveal").forEach((el) => {
+      observer.observe(el);
+    });
+    
+    return () => observer.disconnect();
   }, []);
 
   const compData = [
-    ["Paper Token System", "Digital Chaos", "🏥 TokenPe"],
-    ["Crowded waiting rooms", "❌", "✅ Wait comfortably at home"],
-    ["No status updates", "❌", "✅ Real-time WhatsApp alerts"],
-    ["Hindi only / no language", "❌", "✅ 10 Indian languages + voice"],
-    ["Manual token calling", "❌", "✅ Automated notifications"],
-    ["No patient data", "❌", "✅ Full history & analytics"],
-    ["App required to use", "❌", "✅ Works on any phone via WhatsApp"],
-    ["Zero digital presence", "❌", "✅ Your own clinic QR code"],
+    { old: "Crowded waiting rooms", new: "Wait comfortably at home" },
+    { old: "No status updates", new: "Real-time WhatsApp alerts" },
+    { old: "No multiple language support", new: "10 Indian languages + voice" },
+    { old: "Manual token calling", new: "Automated notifications" },
+    { old: "No patient data", new: "Full history & analytics" },
+    { old: "App required to use", new: "Works on any phone via WhatsApp" },
+    { old: "Zero digital presence", new: "Your own clinic QR code" },
   ];
 
   const features = [
-    { ico: "🎙️", color: "#e8f5e9", title: "Voice in 10 Languages", desc: "Patients get WhatsApp voice alerts in Hindi, Tamil, Telugu, Marathi, Gujarati & 5 more." },
-    { ico: "💬", color: "#e3f2fd", title: "Zero App for Patients", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone." },
-    { ico: "⚡", color: "#f3e5f5", title: "Live Dashboard", desc: "See who's waiting, with doctor, and done — updating in real-time." },
-    { ico: "🔔", color: "#fff3e0", title: "Smart Auto Alerts", desc: "10-away, 5-away, and your-turn notifications sent automatically." },
-    { ico: "📅", color: "#e0f7fa", title: "Date-wise History", desc: "Complete patient records for any past date. Daily volumes at a glance." },
-    { ico: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01" /><path d="M11 11h2v2h-2z" /><path d="M14 11h.01M11 14h.01" /></svg>, color: "#fce4ec", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card." },
+    { 
+      ico: <Mic size="1em" color="#374151" />, color: "#e8f5e9", iconColor: "#16a34a", bloom: "rgba(156, 163, 175, 0.15)", title: "Voice in 10 Languages", desc: "Patients get WhatsApp voice alerts in Hindi, Tamil, Telugu, Marathi, Gujarati & 5 more.",
+      GhostIco: Mic,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 20L15 10L20 30L25 15L30 25L35 5L40 35L45 15L50 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <MessageSquare size="1em" color="#374151" />, color: "#e3f2fd", iconColor: "#0ea5e9", bloom: "rgba(156, 163, 175, 0.15)", title: "Zero App for Patients", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone.",
+      GhostIco: MessageSquare,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="20" cy="10" r="1.5" fill="currentColor"/><circle cx="30" cy="10" r="1.5" fill="currentColor"/>
+          <circle cx="10" cy="20" r="1.5" fill="currentColor"/><circle cx="20" cy="20" r="1.5" fill="currentColor"/><circle cx="30" cy="20" r="1.5" fill="currentColor"/>
+          <circle cx="10" cy="30" r="1.5" fill="currentColor"/><circle cx="20" cy="30" r="1.5" fill="currentColor"/><circle cx="30" cy="30" r="1.5" fill="currentColor"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <Zap size="1em" color="#374151" />, color: "#f3e5f5", iconColor: "#8b5cf6", bloom: "rgba(156, 163, 175, 0.15)", title: "Live Dashboard", desc: "See who's waiting, with doctor, and done — updating in real-time.",
+      GhostIco: Zap,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 35L20 20L35 25L55 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <Bell size="1em" color="#374151" />, color: "#fff3e0", iconColor: "#f59e0b", bloom: "rgba(156, 163, 175, 0.15)", title: "Smart Auto Alerts", desc: "10-away, 5-away, and your-turn notifications sent automatically.",
+      GhostIco: Bell,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="30" cy="40" r="20" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" fill="none"/>
+          <circle cx="30" cy="40" r="35" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 6" fill="none"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <Calendar size="1em" color="#374151" />, color: "#e0f7fa", iconColor: "#06b6d4", bloom: "rgba(156, 163, 175, 0.15)", title: "Date-wise History", desc: "Complete patient records for any past date. Daily volumes at a glance.",
+      GhostIco: Calendar,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="25" width="8" height="15" rx="2" fill="currentColor"/>
+          <rect x="20" y="15" width="8" height="25" rx="2" fill="currentColor"/>
+          <rect x="35" y="5" width="8" height="35" rx="2" fill="currentColor"/>
+          <rect x="50" y="20" width="8" height="20" rx="2" fill="currentColor"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <QrCode size="1em" color="#374151" />, color: "#fce4ec", iconColor: "#ec4899", bloom: "rgba(156, 163, 175, 0.15)", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card.",
+      GhostIco: QrCode,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 15V5H15M45 5H55V15M55 25V35H45M15 35H5V25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
   ];
 
   return (
@@ -68,7 +166,8 @@ export default function LandingPage() {
         html { scroll-behavior: smooth; }
         body {
           font-family: 'Plus Jakarta Sans', sans-serif;
-          background: #fff;
+          background: linear-gradient(160deg, #e6f9ec 0%, #ffffff 50%, #ffedd5 100%);
+          background-attachment: fixed;
           color: #1a202c;
           overflow-x: hidden;
           -webkit-font-smoothing: antialiased;
@@ -168,6 +267,26 @@ export default function LandingPage() {
         }
         .lp-nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(249,115,22,0.45); background: #ea6c0a; }
         .lp-nav-cta:active { transform: scale(0.96); }
+        .lp-nav-find {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #f0fdf4;
+          color: #15803d;
+          padding: 8px 18px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 700;
+          border: 1.5px solid #86efac;
+          text-decoration: none;
+          transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+        }
+        .lp-nav-find:hover {
+          background: #dcfce7;
+          border-color: #4ade80;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(22,163,74,0.12);
+        }
         .lp-hamburger {
           display: none;
           background: none;
@@ -203,6 +322,22 @@ export default function LandingPage() {
           display: block;
         }
         .lp-mlink:hover { background: #f9fafb; }
+        .lp-mfind {
+          margin: 16px 24px 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: #f0fdf4;
+          color: #15803d;
+          padding: 14px;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 700;
+          border: 1.5px solid #86efac;
+          text-decoration: none;
+          width: calc(100% - 48px);
+        }
         .lp-mcta {
           margin: 16px 24px;
           background: #f97316;
@@ -220,7 +355,6 @@ export default function LandingPage() {
 
         /* ── HERO ── */
         .lp-hero {
-          background: linear-gradient(160deg, #f0fdf4 0%, #ffffff 50%, #fff7ed 100%);
           padding: 80px 24px 60px;
           position: relative;
           overflow: hidden;
@@ -383,7 +517,7 @@ export default function LandingPage() {
         .lp-hero-trust-item span:first-child { color: #16a34a; font-size: 14px; }
 
         /* ── SECTION COMMON ── */
-        .lp-sec { padding: 90px 24px; }
+        .lp-sec { padding: 60px 24px; }
         .lp-sec-inner { max-width: 1100px; margin: 0 auto; }
         .lp-sec-tag {
           display: inline-block;
@@ -415,7 +549,7 @@ export default function LandingPage() {
         .lp-sec-centered.lp-sec-sub { margin: 0 auto; }
 
         /* ── PAIN POINTS ── */
-        .lp-pain-sec { background: #f9fafb; }
+        .lp-pain-sec { background: transparent; }
         .lp-pain-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -446,7 +580,7 @@ export default function LandingPage() {
         }
 
         /* ── WHO IS THIS FOR ── */
-        .lp-who-sec { background: #f0fdf4; }
+        .lp-who-sec { background: transparent; }
         .lp-who-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -463,38 +597,49 @@ export default function LandingPage() {
           text-align: center;
         }
         .lp-who-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(22,163,74,0.14); }
-        .lp-who-ico { font-size: 36px; margin-bottom: 12px; }
+        .lp-who-ico { font-size: 36px; margin-bottom: 12px; display: flex; justify-content: center; }
         .lp-who-title { font-size: 15px; font-weight: 800; color: #065f46; margin-bottom: 6px; }
         .lp-who-desc { font-size: 13px; color: #4b5563; line-height: 1.65; }
 
+        /* ── GHOST ICONS FOR SLIDERS ── */
+        .lp-pain-card, .lp-who-card { position: relative; overflow: hidden; }
+        .lp-pain-card > div:not(.lp-pain-ghost), .lp-who-card > div:not(.lp-who-ghost) { position: relative; z-index: 1; }
+        .lp-pain-ghost, .lp-who-ghost {
+          position: absolute;
+          bottom: -20px;
+          right: -20px;
+          color: #6b7280;
+          opacity: 0.05;
+          filter: blur(1px);
+          z-index: 0;
+          transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+          pointer-events: none;
+        }
+        .lp-pain-card:hover .lp-pain-ghost, .lp-who-card:hover .lp-who-ghost {
+          transform: translate(6px, -4px);
+          opacity: 0.08;
+        }
+
         /* ── COMPARISON ── */
-        .lp-cmp-sec { background: #fff; }
-        .lp-cmp-wrap { margin-top: 48px; overflow-x: auto; border-radius: 16px; box-shadow: 0 4px 32px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; }
-        .lp-cmp-table { width: 100%; border-collapse: collapse; min-width: 560px; }
-        .lp-cmp-table thead tr { background: #f9fafb; }
-        .lp-cmp-table th {
-          padding: 18px 20px;
-          font-size: 13px;
-          font-weight: 800;
-          color: #374151;
-          text-align: center;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        .lp-cmp-table th:first-child { text-align: left; width: 42%; }
-        .lp-cmp-table th.lp-cmp-good { background: #f0fdf4; color: #16a34a; }
-        .lp-cmp-table td {
-          padding: 14px 20px;
-          font-size: 13.5px;
-          color: #4b5563;
-          border-bottom: 1px solid #f3f4f6;
-          text-align: center;
-        }
-        .lp-cmp-table td:first-child { text-align: left; font-weight: 600; color: #374151; }
-        .lp-cmp-table td.lp-cmp-good { background: rgba(240,253,244,0.5); color: #15803d; font-weight: 600; }
-        .lp-cmp-table tr:last-child td { border-bottom: none; }
-        .lp-cmp-table tr:hover td { background: #fafafa; }
-        .lp-cmp-table tr:hover td.lp-cmp-good { background: #f0fdf4; }
-        .lp-cmp-bad { color: #ef4444; font-weight: 700; }
+        .lp-cmp-sec { background: transparent; }
+        .lp-cmp-wrap { margin-top: 48px; border-radius: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #e5e7eb; }
+        .lp-cmp-grid { display: grid; grid-template-columns: 1fr 1fr; background: #fff; }
+        .lp-cmp-col { padding: 40px 32px; display: flex; flex-direction: column; gap: 32px; }
+        .lp-cmp-old { background: #f3f4f6; border-right: 1px solid #e5e7eb; }
+        .lp-cmp-new { background: linear-gradient(145deg, #dcfce7 0%, #f0fdf4 100%); position: relative; }
+        .lp-cmp-badge { position: absolute; top: 16px; right: 24px; background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 800; border: 1px solid #86efac; }
+        .lp-cmp-header { text-align: center; margin-bottom: 8px; }
+        .lp-cmp-header-title { font-size: 24px; font-weight: 900; color: #4b5563; margin-bottom: 4px; letter-spacing: -0.5px; }
+        .lp-cmp-header-sub { font-size: 15px; color: #6b7280; font-weight: 600; }
+        .lp-cmp-list { display: flex; flex-direction: column; gap: 20px; flex: 1; justify-content: center; }
+        .lp-cmp-item { display: flex; align-items: flex-start; gap: 14px; padding: 16px; border-radius: 12px; background: #fff; border: 1px solid #f3f4f6; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .lp-cmp-item-bad { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+        .lp-cmp-item-bad:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,0.1); border-color: #fecaca; }
+        .lp-cmp-item-good { background: #fff; border: 1px solid #dcfce7; box-shadow: 0 4px 12px rgba(22,163,74,0.06); transition: transform 0.2s; }
+        .lp-cmp-item-good:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,163,74,0.12); }
+        .lp-cmp-icon-bad { color: #ef4444; flex-shrink: 0; margin-top: 2px; }
+        .lp-cmp-icon-good { color: #16a34a; flex-shrink: 0; margin-top: 2px; }
+        .lp-cmp-item-title { font-size: 15px; font-weight: 700; color: #111827; line-height: 1.4; }
 
         /* ── MID CTA ── */
         .lp-midcta {
@@ -565,10 +710,10 @@ export default function LandingPage() {
           margin-top: 20px;
         }
         .lp-midcta-note { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 500; display: flex; align-items: center; gap: 5px; }
-        .lp-midcta-note::before { content: '✓'; color: #bbf7d0; }
+        .lp-midcta-note::before { content: ''; color: #bbf7d0; }
 
         /* ── FEATURES ── */
-        .lp-feat-sec { background: #fff; }
+        .lp-feat-sec { background: transparent; }
         .lp-feat-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
@@ -578,35 +723,77 @@ export default function LandingPage() {
         .lp-feat-card {
           border: 1px solid #e5e7eb;
           border-radius: 20px;
-          padding: 28px;
-          transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s, border-color 0.2s;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+          padding: 32px 28px 24px;
+          background-color: #fff;
+          transition: transform 0.25s ease-out, box-shadow 0.25s ease-out, border-color 0.25s ease-out;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.03);
           position: relative;
           overflow: hidden;
+          display: flex;
+          flex-direction: column;
         }
-        .lp-feat-card::after {
+        .lp-feat-card::before {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(22,163,74,0.04), rgba(8,145,178,0.04));
-          opacity: 0;
-          transition: opacity 0.25s;
+          background-image: radial-gradient(circle at 100% 100%, var(--feat-bloom) 0%, transparent 70%);
+          z-index: 0;
+          opacity: 0.6;
+          transition: opacity 0.25s ease-out;
+          pointer-events: none;
         }
-        .lp-feat-card:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(0,0,0,0.09); border-color: #86efac; }
-        .lp-feat-card:hover::after { opacity: 1; }
+        .lp-feat-card:hover { 
+          transform: translateY(-6px); 
+          box-shadow: 0 20px 48px rgba(0,0,0,0.08); 
+          border-color: #d1d5db; 
+        }
+        .lp-feat-card:hover::before {
+          opacity: 1;
+        }
+        .lp-feat-ghost {
+          position: absolute;
+          bottom: -30px;
+          right: -30px;
+          color: #6b7280;
+          opacity: 0.05;
+          filter: blur(1px);
+          z-index: 0;
+          transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+          pointer-events: none;
+        }
+        .lp-feat-card:hover .lp-feat-ghost {
+          transform: translate(6px, -4px);
+          opacity: 0.08;
+        }
+        .lp-feat-deco {
+          position: absolute;
+          top: 32px;
+          right: 28px;
+          color: #6b7280;
+          opacity: 0.06;
+          z-index: 0;
+          transition: opacity 0.25s ease-out;
+          pointer-events: none;
+        }
+        .lp-feat-card:hover .lp-feat-deco {
+          opacity: 0.12;
+        }
         .lp-feat-ico {
           width: 52px; height: 52px;
           border-radius: 16px;
           display: flex; align-items: center; justify-content: center;
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
           font-size: 26px;
-          margin-bottom: 16px;
+          margin-bottom: 24px;
           position: relative; z-index: 1;
         }
-        .lp-feat-title { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 8px; position: relative; z-index: 1; }
-        .lp-feat-desc { font-size: 13.5px; color: #6b7280; line-height: 1.7; position: relative; z-index: 1; }
+        .lp-feat-title { font-size: 17px; font-weight: 800; color: #111827; margin-bottom: 10px; position: relative; z-index: 1; }
+        .lp-feat-desc { font-size: 14px; color: #6b7280; line-height: 1.6; position: relative; z-index: 1; flex: 1; margin-bottom: 24px; }
+
 
         /* ── HOW IT WORKS ── */
-        .lp-how-sec { background: #f9fafb; }
+        .lp-how-sec { background: transparent; }
         .lp-how-steps {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -646,7 +833,7 @@ export default function LandingPage() {
         .lp-step-desc { font-size: 13.5px; color: #6b7280; line-height: 1.7; }
 
         /* ── PRICING ── */
-        .lp-price-sec { background: #fff; }
+        .lp-price-sec { background: transparent; }
         .lp-plans {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -715,7 +902,7 @@ export default function LandingPage() {
         .lp-plan-btn.lp-ghost:hover { border-color: #16a34a; background: #f0fdf4; }
 
         /* ── FAQ ── */
-        .lp-faq-sec { background: #f9fafb; }
+        .lp-faq-sec { background: transparent; }
         .lp-faq-inner { max-width: 780px; margin: 0 auto; }
         .lp-faq-list { margin-top: 48px; display: flex; flex-direction: column; gap: 12px; }
         .lp-faq-item {
@@ -841,7 +1028,10 @@ export default function LandingPage() {
         }
         .lp-modal-close:hover { background: #e5e7eb; }
 
-        /* ── RESPONSIVE ── */
+        
+        /* Carousel Desktop Default (Hidden) */
+        .lp-carousel-dots { display: none; }
+\n        /* ── RESPONSIVE ── */
         @media (max-width: 1024px) {
           .lp-hero-inner { flex-direction: column; text-align: center; }
           .lp-hero-content { max-width: 100%; }
@@ -852,17 +1042,67 @@ export default function LandingPage() {
           .lp-hero-visual { width: 100%; }
         }
         @media (max-width: 768px) {
+          /* Mobile Carousels */
+          .lp-carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 16px; }
+          .lp-carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: #d1d5db; transition: 0.2s; }
+          .lp-carousel-dot.active { background: #16a34a; width: 14px; border-radius: 100px; }
+          .lp-carousel-track { 
+            display: flex !important; 
+            overflow-x: auto; 
+            scroll-snap-type: x mandatory; 
+            -webkit-overflow-scrolling: touch; 
+            scrollbar-width: none; 
+            padding-bottom: 12px; 
+            margin-left: -20px;
+            padding-left: 20px;
+            margin-right: -20px; 
+            padding-right: 20px; 
+            gap: 16px; 
+          }
+          .lp-carousel-track::-webkit-scrollbar { display: none; }
+          .lp-carousel-track > div { width: 78%; min-width: 78%; max-width: 78%; flex-shrink: 0; scroll-snap-align: center; white-space: normal; }
+          .lp-carousel-track .lp-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+          
+          /* Features 2-column Grid */
+          .lp-feat-grid { display: grid !important; grid-template-columns: 1fr 1fr; gap: 12px; }
+          .lp-feat-card { padding: 20px 16px 16px; border-radius: 16px; }
+          .lp-feat-ico { width: 36px; height: 36px; font-size: 20px !important; margin-bottom: 16px; border-radius: 12px; }
+          .lp-feat-title { font-size: 14px; margin-bottom: 6px; }
+          .lp-feat-desc { font-size: 12px; line-height: 1.45; margin-bottom: 0; }
+          .lp-feat-ghost { bottom: -20px; right: -20px; transform: scale(0.65); }
+          .lp-feat-deco { transform: scale(0.7); top: 16px; right: 12px; }
+
+          /* Generic Mobile Fixes */
+          .lp-sec { padding: 48px 20px; }
+          .lp-sec-sub { font-size: 14px; max-width: 100%; line-height: 1.6; }
+          .lp-pain-ico, .lp-who-ico { font-size: 26px !important; }
+          .lp-step-ico { font-size: 24px !important; height: 32px; }
+          
+          /* Comparison Compression */
+          .lp-cmp-grid { grid-template-columns: 1fr; }
+          .lp-cmp-old { border-right: none; border-bottom: 1px solid #e5e7eb; padding: 24px 16px; gap: 20px; }
+          .lp-cmp-new { padding: 24px 16px; gap: 20px; }
+          .lp-cmp-item { padding: 12px; gap: 10px; }
+          .lp-cmp-header-title { font-size: 20px; }
+          .lp-cmp-header-sub { font-size: 13px; }
+          .lp-cmp-item-title { font-size: 13.5px; }
+          
+          /* Pricing Compression */
+          .lp-plans { max-width: 100%; grid-template-columns: 1fr; gap: 16px; margin-top: 36px; }
+          .lp-plan { padding: 24px 20px; gap: 16px; border-radius: 20px; }
+          .lp-plan-price { font-size: 32px; letter-spacing: -1px; }
+          .lp-pf { font-size: 13px; gap: 8px; }
+
+          /* Nav & UI */
           .lp-nav-links { display: none; }
           .lp-hamburger { display: block; }
           .lp-hero { padding: 60px 20px 48px; }
-          .lp-sec { padding: 64px 20px; }
           .lp-midcta { padding: 60px 20px; }
           .lp-hero-h1 { letter-spacing: -1px; }
           .lp-hero-btns { flex-direction: column; width: 100%; }
           .lp-btn-primary, .lp-btn-secondary { width: 100%; justify-content: center; }
           .lp-footer-top { grid-template-columns: 1fr; gap: 32px; }
           .lp-footer-links { align-items: flex-start; flex-direction: column; gap: 12px; }
-          .lp-plans { max-width: 100%; }
           .lp-topbar { font-size: 12px; padding: 8px 12px; }
           .lp-modal { padding: 28px 18px; border-radius: 16px; }
           .lp-cmp-table th, .lp-cmp-table td { padding: 12px 10px; font-size: 12px; }
@@ -872,9 +1112,7 @@ export default function LandingPage() {
         @media (max-width: 480px) {
           .lp-hero-h1 { font-size: 30px; }
           .lp-sec-h2 { font-size: 24px; }
-          .lp-pain-grid, .lp-who-grid, .lp-feat-grid { grid-template-columns: 1fr; }
           .lp-how-steps { grid-template-columns: 1fr; gap: 24px; }
-          .lp-plans { grid-template-columns: 1fr; }
           .lp-footer-bottom { flex-direction: column; align-items: center; text-align: center; }
           .lp-midcta h2 { font-size: 26px; }
         }
@@ -882,7 +1120,7 @@ export default function LandingPage() {
 
       {/* ── TOP BAR ── */}
       <div className="lp-topbar">
-        🎉 7-Day Elite Trial — No credit card needed.
+        <Sparkles size={16} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "text-bottom" }} /> 7-Day Elite Trial — No credit card needed.
         <a href="#" onClick={(e) => { e.preventDefault(); router.push("/login"); }}>Start now →</a>
       </div>
 
@@ -894,7 +1132,8 @@ export default function LandingPage() {
             <span className="lp-nl" onClick={() => go("features")}>Features</span>
             <span className="lp-nl" onClick={() => go("how")}>How it works</span>
             <span className="lp-nl" onClick={() => go("pricing")}>Pricing</span>
-            <Link href="/find" className="lp-nl" style={{ color: "#16a34a" }}>🔍 Find Clinic</Link>
+            <span className="lp-nl" onClick={() => go("faq")}>FAQ</span>
+            <Link href="/find" className="lp-nav-find"><Search size={16} strokeWidth={2.5} /> Find Clinic</Link>
             <button className="lp-nav-cta" onClick={() => router.push("/login")}>Get Started →</button>
           </div>
           <button className="lp-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
@@ -906,8 +1145,12 @@ export default function LandingPage() {
         <span className="lp-mlink" onClick={() => go("features")}>Features</span>
         <span className="lp-mlink" onClick={() => go("how")}>How it works</span>
         <span className="lp-mlink" onClick={() => go("pricing")}>Pricing</span>
-        <Link href="/find" className="lp-mlink" style={{ color: "#16a34a" }}>🔍 Find Clinic</Link>
+        <span className="lp-mlink" onClick={() => go("faq")}>FAQ</span>
+        <Link href="/find" className="lp-mfind"><Search size={16} strokeWidth={2.5} /> Find Clinic</Link>
         <button className="lp-mcta" onClick={() => { router.push("/login"); setMenuOpen(false); }}>Start Free Trial →</button>
+        <span className="lp-mlink" style={{ textAlign: "center", marginTop: "4px", color: "#6b7280", fontSize: "14px" }} onClick={() => { router.push("/login"); setMenuOpen(false); }}>
+          Already registered? <strong style={{ color: "#16a34a" }}>Log in</strong>
+        </span>
       </div>
 
       {/* ── HERO ── */}
@@ -935,15 +1178,15 @@ export default function LandingPage() {
               </button>
             </div>
             <div className="lp-hero-trust">
-              <span className="lp-hero-trust-item"><span>✓</span> No app for patients</span>
-              <span className="lp-hero-trust-item"><span>✓</span> Works on any phone</span>
-              <span className="lp-hero-trust-item"><span>✓</span> 2-min setup</span>
-              <span className="lp-hero-trust-item"><span>✓</span> 7-Day Elite Trial</span>
+              <span className="lp-hero-trust-item"><span style={{display: "flex", alignItems: "center"}}><Check size={16} strokeWidth={3} /> No app for patients</span></span>
+              <span className="lp-hero-trust-item"><span style={{display: "flex", alignItems: "center"}}><Check size={16} strokeWidth={3} /> Works on any phone</span></span>
+              <span className="lp-hero-trust-item"><span style={{display: "flex", alignItems: "center"}}><Check size={16} strokeWidth={3} /> 2-min setup</span></span>
+              <span className="lp-hero-trust-item"><span style={{display: "flex", alignItems: "center"}}><Check size={16} strokeWidth={3} /> 7-Day Elite Trial</span></span>
             </div>
           </div>
           <div className="lp-hero-visual">
             <WhatsAppDemo />
-            <span className="lp-demo-label">✨ Live WhatsApp Preview</span>
+            <span className="lp-demo-label"><Sparkles size={14} style={{ display: "inline-block", marginRight: "4px", verticalAlign: "text-bottom" }} /> Live WhatsApp Preview</span>
           </div>
         </div>
       </section>
@@ -954,20 +1197,21 @@ export default function LandingPage() {
           <div className="lp-sec-tag lp-reveal">Sound Familiar?</div>
           <h2 className="lp-sec-h2 lp-reveal lp-reveal-d1">These problems are costing your clinic every day</h2>
           <p className="lp-sec-sub lp-reveal lp-reveal-d2">TokenPe fixes all three. In 2 minutes.</p>
-          <div className="lp-pain-grid">
+          <MobileCarousel gridClass="lp-pain-grid">
             {[
-              { ico: "😤", tag: "Patient Problem", title: "Overcrowded Rooms", desc: "Patients sit for 3+ hours in packed waiting areas. They leave frustrated — or worse, they leave and never come back." },
-              { ico: "📢", tag: "Staff Problem", title: "Missed Turns", desc: "The receptionist calls out names. Half the patients step out. Chaos ensues. Turns are missed, slots are wasted." },
-              { ico: "📋", tag: "Clinic Problem", title: "Inefficient Queues", desc: "Paper tokens can't scale. No data, no history, no visibility. You don't know how busy you are until it's too late." },
+              { ico: <Users size="1em" color="#ef4444" />, tag: "Patient Problem", title: "Overcrowded Rooms", desc: "Patients sit for 3+ hours in packed waiting areas. They leave frustrated — or worse, they leave and never come back." },
+              { ico: <Megaphone size="1em" color="#f97316" />, tag: "Staff Problem", title: "Missed Turns", desc: "The receptionist calls out names. Half the patients step out. Chaos ensues. Turns are missed, slots are wasted." },
+              { ico: <ClipboardList size="1em" color="#374151" />, tag: "Clinic Problem", title: "Inefficient Queues", desc: "Paper tokens can't scale. No data, no history, no visibility. You don't know how busy you are until it's too late." },
             ].map((c, i) => (
               <div key={c.title} className={`lp-pain-card lp-reveal lp-reveal-d${i + 1}`}>
+                <div className="lp-pain-ghost">{React.cloneElement(c.ico, { size: 140, color: "currentColor" })}</div>
                 <div className="lp-pain-badge">{c.tag}</div>
                 <div className="lp-pain-ico">{c.ico}</div>
                 <div className="lp-pain-title">{c.title}</div>
                 <div className="lp-pain-desc">{c.desc}</div>
               </div>
             ))}
-          </div>
+          </MobileCarousel>
         </div>
       </section>
 
@@ -977,20 +1221,21 @@ export default function LandingPage() {
           <div className="lp-sec-tag lp-reveal">Who is this for?</div>
           <h2 className="lp-sec-h2 lp-reveal lp-reveal-d1">Built for every kind of clinic</h2>
           <p className="lp-sec-sub lp-reveal lp-reveal-d2">From solo practitioners to large polyclinics — if you have a waiting room, TokenPe is for you.</p>
-          <div className="lp-who-grid">
+          <MobileCarousel gridClass="lp-who-grid">
             {[
-              { ico: "👨‍⚕️", title: "General Physicians", desc: "Manage high patient volumes effortlessly. Reduce no-shows, eliminate crowding." },
-              { ico: "🩺", title: "Specialists", desc: "Set precise appointment slots. Patients know exactly when their turn is." },
-              { ico: "🏥", title: "Polyclinics", desc: "Manage multiple departments and doctors with one centralised dashboard." },
-              { ico: "🦷", title: "Dentists & Eye Clinics", desc: "Appointment-style queuing with automated reminders for longer consultations." },
+              { ico: <Stethoscope size="1em" color="#065f46" />, title: "General Physicians", desc: "Manage high patient volumes effortlessly. Reduce no-shows, eliminate crowding." },
+              { ico: <Activity size="1em" color="#065f46" />, title: "Specialists", desc: "Set precise appointment slots. Patients know exactly when their turn is." },
+              { ico: <Building2 size="1em" color="#065f46" />, title: "Polyclinics", desc: "Manage multiple departments and doctors with one centralised dashboard." },
+              { ico: <Smile size="1em" color="#065f46" />, title: "Dentists & Eye Clinics", desc: "Appointment-style queuing with automated reminders for longer consultations." },
             ].map((c, i) => (
               <div key={c.title} className={`lp-who-card lp-reveal lp-reveal-d${i + 1}`}>
+                <div className="lp-who-ghost">{React.cloneElement(c.ico, { size: 140, color: "currentColor" })}</div>
                 <div className="lp-who-ico">{c.ico}</div>
                 <div className="lp-who-title">{c.title}</div>
                 <div className="lp-who-desc">{c.desc}</div>
               </div>
             ))}
-          </div>
+          </MobileCarousel>
         </div>
       </section>
 
@@ -1001,24 +1246,40 @@ export default function LandingPage() {
           <h2 className="lp-sec-h2 lp-sec-centered lp-reveal lp-reveal-d1">The old way vs. the TokenPe way</h2>
           <p className="lp-sec-sub lp-sec-centered lp-reveal lp-reveal-d2" style={{ marginBottom: 0 }}>See the difference at a glance.</p>
           <div className="lp-cmp-wrap lp-reveal lp-reveal-d3">
-            <table className="lp-cmp-table">
-              <thead>
-                <tr>
-                  <th>Feature</th>
-                  <th>Paper Tokens</th>
-                  <th className="lp-cmp-good">🏥 TokenPe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {compData.slice(1).map(([feat, bad, good]) => (
-                  <tr key={feat}>
-                    <td>{feat}</td>
-                    <td className="lp-cmp-bad">{bad}</td>
-                    <td className="lp-cmp-good">{good}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="lp-cmp-grid">
+              <div className="lp-cmp-col lp-cmp-old">
+                <div className="lp-cmp-header">
+                  <div className="lp-cmp-header-title">The Old Way</div>
+                  <div className="lp-cmp-header-sub">Paper Token System</div>
+                </div>
+                <div className="lp-cmp-list">
+                  {compData.map((item, i) => (
+                    <div key={i} className="lp-cmp-item lp-cmp-item-bad">
+                      <XCircle size={20} className="lp-cmp-icon-bad" />
+                      <div className="lp-cmp-item-content">
+                        <div className="lp-cmp-item-title">{item.old}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="lp-cmp-col lp-cmp-new">
+                <div className="lp-cmp-header">
+                  <div className="lp-cmp-header-title" style={{color: '#16a34a'}}>The TokenPe Way</div>
+                  <div className="lp-cmp-header-sub" style={{color: '#065f46'}}>Digital WhatsApp Queue</div>
+                </div>
+                <div className="lp-cmp-list">
+                  {compData.map((item, i) => (
+                    <div key={i} className="lp-cmp-item lp-cmp-item-good">
+                      <CheckCircle2 size={20} className="lp-cmp-icon-good" />
+                      <div className="lp-cmp-item-content">
+                        <div className="lp-cmp-item-title">{item.new}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1037,10 +1298,10 @@ export default function LandingPage() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
           </button>
           <div className="lp-midcta-notes lp-reveal lp-reveal-d4">
-            <span className="lp-midcta-note">No credit card required</span>
-            <span className="lp-midcta-note">No auto-charge after trial</span>
-            <span className="lp-midcta-note">Cancel anytime</span>
-            <span className="lp-midcta-note">2-minute setup</span>
+            <span className="lp-midcta-note"><Check size={16} strokeWidth={3} color="#bbf7d0" /> No credit card required</span>
+            <span className="lp-midcta-note"><Check size={16} strokeWidth={3} color="#bbf7d0" /> No auto-charge after trial</span>
+            <span className="lp-midcta-note"><Check size={16} strokeWidth={3} color="#bbf7d0" /> Cancel anytime</span>
+            <span className="lp-midcta-note"><Check size={16} strokeWidth={3} color="#bbf7d0" /> 2-minute setup</span>
           </div>
         </div>
       </div>
@@ -1053,8 +1314,10 @@ export default function LandingPage() {
           <p className="lp-sec-sub lp-reveal lp-reveal-d2">One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.</p>
           <div className="lp-feat-grid">
             {features.map((f, i) => (
-              <div key={f.title} className={`lp-feat-card lp-reveal lp-reveal-d${(i % 3) + 1}`}>
-                <div className="lp-feat-ico" style={{ background: f.color }}>{f.ico}</div>
+              <div key={f.title} className={`lp-feat-card lp-reveal lp-reveal-d${(i % 3) + 1}`} style={{ '--feat-color': f.iconColor, '--feat-bloom': f.bloom }}>
+                <f.GhostIco size={160} className="lp-feat-ghost" />
+                <div className="lp-feat-deco"><f.Deco /></div>
+                <div className="lp-feat-ico">{f.ico}</div>
                 <div className="lp-feat-title">{f.title}</div>
                 <div className="lp-feat-desc">{f.desc}</div>
               </div>
@@ -1071,9 +1334,9 @@ export default function LandingPage() {
           <p className="lp-sec-sub lp-sec-centered lp-reveal lp-reveal-d2" style={{ marginBottom: 0 }}>No IT team. No hardware. No complexity.</p>
           <div className="lp-how-steps">
             {[
-              { n: "1", ico: "📝", title: "Register your clinic", desc: "Sign up in 2 minutes with Google. Get your unique WhatsApp clinic QR code instantly." },
-              { n: "2", ico: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M7 7h.01M18 7h.01M18 18h.01M7 18h.01" /><path d="M11 11h2v2h-2z" /><path d="M14 11h.01M11 14h.01" /></svg>, title: "Display the QR code", desc: "Print and display the QR card at reception. Patients scan once — they're in the queue." },
-              { n: "3", ico: "📣", title: "Call with one tap", desc: "Press 'Call Next' on your dashboard. The patient gets a WhatsApp alert in their language." },
+              { n: "1", ico: <FileSignature size="1em" color="#111827" />, title: "Register your clinic", desc: "Sign up in 2 minutes with Google. Get your unique WhatsApp clinic QR code instantly." },
+              { n: "2", ico: <QrCode size="1em" color="#111827" />, title: "Display the QR code", desc: "Print and display the QR card at reception. Patients scan once — they're in the queue." },
+              { n: "3", ico: <BellRing size="1em" color="#111827" />, title: "Call with one tap", desc: "Press 'Call Next' on your dashboard. The patient gets a WhatsApp alert in their language." },
             ].map((s, i) => (
               <div key={s.n} className={`lp-how-step lp-reveal lp-reveal-d${i + 1}`}>
                 <div className="lp-step-num">{s.n}</div>
@@ -1107,7 +1370,7 @@ export default function LandingPage() {
                 <div className="lp-plan-price">{p.price}<span>{p.per}</span></div>
                 <div className="lp-plan-feats">
                   {p.feats.map((f) => (
-                    <div key={f} className="lp-pf"><span className="lp-pf-check">✓</span>{f}</div>
+                    <div key={f} className="lp-pf"><span className="lp-pf-check"><Check size={16} strokeWidth={3} /></span>{f}</div>
                   ))}
                 </div>
                 <button className={`lp-plan-btn${p.hot ? "" : " lp-ghost"}`} onClick={() => router.push("/login")}>
@@ -1121,7 +1384,7 @@ export default function LandingPage() {
               onClick={() => setShowDetails(true)}
               style={{ background: "none", border: "none", color: "#16a34a", fontSize: "14px", fontWeight: 700, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 4, fontFamily: "inherit" }}
             >
-              📄 View full feature comparison & terms
+              <FileText size={16} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "text-bottom" }} /> View full feature comparison & terms
             </button>
           </div>
         </div>
@@ -1151,7 +1414,7 @@ export default function LandingPage() {
               <span className="lp-flink" style={{ cursor: "pointer" }} onClick={() => go("features")}>Features</span>
               <span className="lp-flink" style={{ cursor: "pointer" }} onClick={() => go("how")}>How it works</span>
               <span className="lp-flink" style={{ cursor: "pointer" }} onClick={() => go("pricing")}>Pricing</span>
-              <Link href="/find" className="lp-flink">🔍 Find a Clinic</Link>
+              <Link href="/find" className="lp-flink"><Search size={16} style={{ display: "inline-block", marginRight: "4px", verticalAlign: "text-bottom" }} /> Find a Clinic</Link>
             </div>
             <div className="lp-footer-links">
               <div className="lp-footer-links-title">Support & Legal</div>

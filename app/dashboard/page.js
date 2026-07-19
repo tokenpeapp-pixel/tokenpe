@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useRef, Suspense, useCallback } from 'react'
-import { CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, Bell, Camera, MapPin, Pencil, Lock, Download, Printer, Star, Smartphone, Mic, Gift, AlertTriangle, Hourglass, RefreshCw, Sparkles, Plus, Copy, LogOut, Check, ChevronLeft, ChevronRight, Menu, Play, CheckCircle, Search, Edit2, X, PlusSquare, Settings, History, BarChart2, Headset, CreditCard, DoorOpen, DoorClosed, List, Pause, QrCode, Clock, Calendar, CalendarX, CalendarCheck } from 'lucide-react'
+import { CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, Bell, Camera, MapPin, Pencil, Lock, Download, Printer, Star, Smartphone, Mic, Gift, AlertTriangle, Hourglass, RefreshCw, Sparkles, Plus, Copy, LogOut, Check, ChevronLeft, ChevronRight, Menu, Play, CheckCircle, Search, Edit2, X, PlusSquare, Settings, History, BarChart2, Headset, CreditCard, DoorOpen, DoorClosed, List, Pause, QrCode, Clock, Calendar, CalendarX, CalendarCheck, UserCheck, ChevronDown } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
 import confetti from 'canvas-confetti'
@@ -482,68 +482,74 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-      <div style={{ background: '#064E3B', border: '1px solid #334155', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+      <div style={{ backgroundColor: '#09090b', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.15), transparent 70%)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+        
+        {/* Ghost Background Elements */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.03, color: '#10b981' }}>
+           <UserCheck size={250} style={{ position: 'absolute', top: '-10%', left: '-10%', transform: 'rotate(-10deg)' }} />
+           <MapPin size={200} style={{ position: 'absolute', bottom: '-10%', right: '-10%', transform: 'rotate(10deg)' }} />
+        </div>
+
         {clinic?.phone !== '0000000000' && clinic?.specialty && clinic?.city && (
-          <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 32, height: 32, borderRadius: 16, cursor: 'pointer' }}>✕</button>
+          <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 32, height: 32, borderRadius: 16, cursor: 'pointer', zIndex: 10 }}>✕</button>
         )}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}><Star className="inline-block w-4 h-4" /></div>
+        <div style={{ textAlign: 'center', marginBottom: 24, position: 'relative', zIndex: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><UserCheck size={48} color="#10b981" style={{ filter: 'drop-shadow(0 0 10px rgba(16,185,129,0.3))' }} /></div>
           <h2 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 8px 0' }}>Complete Your Profile</h2>
           <p style={{ color: '#94A3B8', fontSize: 14, margin: 0, lineHeight: 1.5 }}>Fill in your details so patients can find you easily on the TokenPe clinic finder.</p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', zIndex: 10 }}>
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Specialty *</label>
-            <select value={specialty} onChange={e => setSpecialty(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }}>
-              <option value="General Physician" style={{ color: 'black' }}>General Physician</option>
-              <option value="Pediatrician" style={{ color: 'black' }}>Pediatrician</option>
-              <option value="Gynecologist" style={{ color: 'black' }}>Gynecologist</option>
-              <option value="Dermatologist" style={{ color: 'black' }}>Dermatologist</option>
-              <option value="Dentist" style={{ color: 'black' }}>Dentist</option>
-              <option value="Orthopedic" style={{ color: 'black' }}>Orthopedic</option>
-              <option value="Eye Specialist" style={{ color: 'black' }}>Eye Specialist</option>
-              <option value="ENT Specialist" style={{ color: 'black' }}>ENT Specialist</option>
-              <option value="Cardiologist" style={{ color: 'black' }}>Cardiologist</option>
-              <option value="Physiotherapist" style={{ color: 'black' }}>Physiotherapist</option>
-              <option value="Other" style={{ color: 'black' }}>Other (Type your own)</option>
-            </select>
+            <div style={{ position: 'relative' }}>
+              <select value={specialty} onChange={e => setSpecialty(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15, appearance: 'none', cursor: 'pointer' }}>
+                <option value="General Physician">General Physician</option>
+                <option value="Pediatrician">Pediatrician</option>
+                <option value="Gynecologist">Gynecologist</option>
+                <option value="Dermatologist">Dermatologist</option>
+                <option value="Dentist">Dentist</option>
+                <option value="Orthopedic">Orthopedic</option>
+                <option value="Eye Specialist">Eye Specialist</option>
+                <option value="ENT Specialist">ENT Specialist</option>
+                <option value="Cardiologist">Cardiologist</option>
+                <option value="Physiotherapist">Physiotherapist</option>
+                <option value="Other">Other (Type your own)</option>
+              </select>
+              <ChevronDown size={18} color="#64748b" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            </div>
             {specialty === 'Other' && (
               <input 
                 autoFocus
                 value={customSpecialty} 
                 onChange={e => setCustomSpecialty(e.target.value)} 
                 placeholder="Type your specialty..." 
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15, marginTop: 10 }} 
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15, marginTop: 10 }} 
               />
             )}
           </div>
 
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>City *</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }} />
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
           </div>
 
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Local Area</label>
-            <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Andheri West" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }} />
+            <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Andheri West, Bandra" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
+            <div style={{ marginTop: 6, fontSize: 13, color: '#10b981', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {gpsStatus === 'loading' ? <span style={{ color: '#94a3b8' }}>Getting location...</span> : gpsStatus === 'success' ? <><CheckCircle2 size={14} /> <span>Location secured</span></> : <span style={{ color: '#94a3b8' }}>Location failed (Optional)</span>}
+            </div>
           </div>
 
           {clinic?.phone === '0000000000' && (
             <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>WhatsApp Number * (required for Queue)</label>
-              <input type="tel" maxLength={10} value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="10-digit number" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }} />
+              <input type="tel" maxLength={10} value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="10-digit number" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: 20 }}><MapPin className="inline-block w-4 h-4" /></span>
-            <div style={{ flex: 1, fontSize: 13, color: '#94A3B8' }}>
-              {gpsStatus === 'loading' ? 'Getting location...' : gpsStatus === 'success' ? <>Location secured <CheckCircle2 className="inline-block w-4 h-4" /></> : 'Location failed (Optional)'}
-            </div>
-          </div>
-
-          <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: 14, borderRadius: 12, background: 'linear-gradient(135deg, #10B981, #059669)', color: 'white', fontWeight: 800, fontSize: 16, border: 'none', cursor: saving ? 'wait' : 'pointer', marginTop: 8, boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)' }}>
+          <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: 14, borderRadius: 12, background: '#059669', color: 'white', fontWeight: 800, fontSize: 16, border: 'none', cursor: saving ? 'wait' : 'pointer', marginTop: 8, boxShadow: '0 4px 14px rgba(5, 150, 105, 0.4)', transition: 'background 0.2s ease' }} onMouseOver={(e) => e.currentTarget.style.background = '#10b981'} onMouseOut={(e) => e.currentTarget.style.background = '#059669'}>
             {saving ? 'Saving Profile...' : 'Save & Continue'}
           </button>
         </div>

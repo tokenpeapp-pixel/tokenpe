@@ -255,18 +255,18 @@ export default function WhatsAppDemo() {
   const msgCounter = useRef(0);
 
   useEffect(() => {
-    aliveRef.current = true;
+    let alive = true;
     (async () => {
-      while (aliveRef.current) {
+      while (alive) {
         setMsgs([]); setProgress(0); setHeaderStatus("online"); setTyping(false);
         await wait(1500);
         for (let i = 0; i < FLOW.length; i++) {
-          if (!aliveRef.current) return;
+          if (!alive) return;
           const msg = FLOW[i];
           if (msg.side === "bot") {
             setHeaderStatus("typing..."); setTyping(true);
             await wait(1200);
-            if (!aliveRef.current) return;
+            if (!alive) return;
             setTyping(false); setHeaderStatus("online");
           }
           msgCounter.current += 1;
@@ -277,7 +277,7 @@ export default function WhatsAppDemo() {
         await wait(8000);
       }
     })();
-    return () => { aliveRef.current = false; };
+    return () => { alive = false; };
   }, []);
 
   return (

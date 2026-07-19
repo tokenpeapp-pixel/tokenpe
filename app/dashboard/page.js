@@ -437,6 +437,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
 // ─── DISCOVERY PROFILE MODAL ─────────────────────────────────────────────────────────
 function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
   const [saving, setSaving] = useState(false)
+  const [clinicName, setClinicName] = useState(clinic?.name || '')
   const [specialty, setSpecialty] = useState(clinic?.specialty || 'General Physician')
   const [customSpecialty, setCustomSpecialty] = useState('')
   const [city, setCity] = useState(clinic?.city || '')
@@ -458,7 +459,7 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
 
   async function handleSave() {
     const finalSpecialty = specialty === 'Other' ? (customSpecialty || 'Other') : specialty
-    if (!city || !finalSpecialty) return alert("City and Specialty are required to be visible to patients.")
+    if (!clinicName || !city || !finalSpecialty) return alert("Clinic Name, City and Specialty are required to be visible to patients.")
     if (!phone || phone.length < 10) return alert("A valid 10-digit WhatsApp number is required.")
     
     setSaving(true)
@@ -466,10 +467,10 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
       const res = await fetch('/api/clinics/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, specialty: finalSpecialty, city, area, phone, lat, lng })
+        body: JSON.stringify({ clinicId: clinic.id, name: clinicName, specialty: finalSpecialty, city, area, phone, lat, lng })
       })
       if (res.ok) {
-        onSuccess({ specialty: finalSpecialty, city, area, phone, lat, lng })
+        onSuccess({ name: clinicName, specialty: finalSpecialty, city, area, phone, lat, lng })
         onClose()
       } else {
         alert("Failed to save profile.")
@@ -484,11 +485,7 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
       <div style={{ backgroundColor: '#09090b', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.15), transparent 70%)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
         
-        {/* Ghost Background Elements */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.03, color: '#10b981' }}>
-           <UserCheck size={250} style={{ position: 'absolute', top: '-10%', left: '-10%', transform: 'rotate(-10deg)' }} />
-           <MapPin size={200} style={{ position: 'absolute', bottom: '-10%', right: '-10%', transform: 'rotate(10deg)' }} />
-        </div>
+        
 
         {clinic?.phone !== '0000000000' && clinic?.specialty && clinic?.city && (
           <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 32, height: 32, borderRadius: 16, cursor: 'pointer', zIndex: 10 }}>✕</button>
@@ -500,6 +497,11 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', zIndex: 10 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Clinic / Doctor Name *</label>
+            <input value={clinicName} onChange={e => setClinicName(e.target.value)} placeholder="e.g. Apollo Clinic or Dr. Sharma" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
+          </div>
+
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Specialty *</label>
             <div style={{ position: 'relative' }}>

@@ -1307,27 +1307,31 @@ export default function Dashboard() {
 
   // ── Trial Expired Lockout ───────────────────────────────────────────────
   if (isTrialExpired) return (
-    <div style={{ minHeight: '100vh', background: '#0a0514', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #f59e0b, #d97706)' }} />
-        <div style={{ fontSize: 56, marginBottom: 24 }}><Hourglass className="inline-block w-4 h-4" /></div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#09090b', backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15), transparent 60%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #10b981, #059669)' }} />
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}><Hourglass size={56} color="#10b981" style={{ filter: 'drop-shadow(0 0 15px rgba(16,185,129,0.3))' }} /></div>
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Free Trial Ended</h1>
         <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
           We hope you loved TokenPe! Your 7-day Elite trial has expired. To continue using the dashboard and keep your clinic data safe, please choose a plan.
         </p>
         <button
           onClick={() => router.push('/dashboard/billing')}
-          style={{ width: '100%', padding: '16px 24px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', marginBottom: 16, boxShadow: '0 8px 24px rgba(245,158,11,0.25)' }}
+          style={{ width: '100%', padding: '16px 24px', background: '#059669', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', marginBottom: 16, boxShadow: '0 4px 14px 0 rgba(5, 150, 105, 0.4)', transition: 'all 0.2s ease' }}
+          onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.6)'; e.currentTarget.style.background = '#10b981' }}
+          onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(5, 150, 105, 0.4)'; e.currentTarget.style.background = '#059669' }}
         >
           View Plans & Upgrade →
         </button>
         <button
           onClick={logout}
-          style={{ width: '100%', padding: '12px 24px', background: 'transparent', color: '#64748b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+          style={{ width: '100%', padding: '12px 24px', background: 'transparent', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, fontWeight: 600, fontSize: 14, cursor: 'pointer', transition: 'background 0.2s ease' }}
+          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
         >
           Sign Out
         </button>
-        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Need help? Email <a href="mailto:support@tokenpe.online" style={{ color: '#f59e0b' }}>support@tokenpe.online</a></p>
+        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Need help? Email <a href="mailto:tokenpe.online@gmail.com" style={{ color: '#10b981', fontWeight: 500 }}>tokenpe.online@gmail.com</a></p>
       </div>
     </div>
   )
@@ -1337,9 +1341,7 @@ export default function Dashboard() {
   if (isAccountLocked) return (
     <div style={{ minHeight: '100vh', background: '#0a0514', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center' }}>
-        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
-          <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: 48, width: 'auto' }} />
-        </div>
+        <div style={{ fontSize: 56, marginBottom: 24 }}><Lock className="inline-block w-4 h-4" /></div>
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Account Paused</h1>
         <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
           Your subscription has ended. Your patient data is safe — reactivate any plan to continue using TokenPe.
@@ -1356,7 +1358,7 @@ export default function Dashboard() {
         >
           Sign Out
         </button>
-        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Questions? Email <a href="mailto:tokenpe.online@gmail.com" style={{ color: '#a78bfa' }}>tokenpe.online@gmail.com</a></p>
+        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Questions? Email <a href="mailto:support@tokenpe.online" style={{ color: '#a78bfa' }}>support@tokenpe.online</a></p>
       </div>
     </div>
   )

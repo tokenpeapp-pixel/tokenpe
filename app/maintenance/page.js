@@ -8,13 +8,13 @@ export default function MaintenancePage() {
     const router = useRouter();
 
     return (
-        <div className="flex min-h-[100dvh] w-full bg-[#FCFCFA] overflow-hidden font-sans text-slate-800">
+        <div className="fixed inset-0 w-full overflow-y-auto bg-[#FCFCFA] font-sans text-slate-800 flex flex-col">
             {/* Background elements */}
             <div className="absolute inset-0 z-0 pointer-events-none opacity-40" style={{ backgroundImage: 'linear-gradient(to right, #EDEBE6 1px, transparent 1px), linear-gradient(to bottom, #EDEBE6 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-200/15 rounded-full mix-blend-multiply filter blur-[100px] pointer-events-none" />
             <div className="absolute bottom-0 left-[48%] w-[600px] h-[600px] bg-orange-200/15 rounded-full mix-blend-multiply filter blur-[120px] pointer-events-none" />
 
-            <div className="relative flex-1 min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6 z-10">
+            <div className="relative flex-1 flex flex-col items-center justify-center p-4 sm:p-6 z-10 min-h-full py-12">
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
@@ -51,7 +51,7 @@ export default function MaintenancePage() {
                 </motion.div>
                 
                 <div className="mt-8">
-                    <img src="/logo-dark.svg" alt="TokenPe" className="h-8 w-auto" />
+                    <img src="/logo.svg" alt="TokenPe" className="h-8 w-auto brightness-0 opacity-80" />
                 </div>
             </div>
         </div>

@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Temp scripts
 resize.ps1
+
+# 🔒 Private / Secret files - NEVER push to GitHub
+/private/

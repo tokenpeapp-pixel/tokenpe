@@ -51,7 +51,7 @@ export default function MaintenancePage() {
                 </motion.div>
                 
                 <div className="mt-8">
-                    <img src="/logo-nav.svg" alt="TokenPe" className="h-8 w-auto opacity-50 grayscale" />
+                    <img src="/logo.svg" alt="TokenPe" className="h-8 w-auto" />
                 </div>
             </div>
         </div>

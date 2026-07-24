@@ -345,10 +345,7 @@ export async function POST(req) {
 
             // 2. Count patients & calculate waits in PARALLEL
             const today = getISTDateString()
-            const rawPlanId = clinic.plan_id || 'starter'
-            // If billing period has expired (webhook/cron not yet fired), enforce starter limits
-            const subExpired = clinic.current_period_end && new Date(clinic.current_period_end) < new Date()
-            const planId = subExpired ? 'starter' : rawPlanId // default to starter
+            const planId = clinic.plan_id || 'starter' // default to starter
             
             // Item 5: Rate limit joins (3 per phone per day, max 2 per same name)
             const cleanedPhone = cleanPhone(phone)

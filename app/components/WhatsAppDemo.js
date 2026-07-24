@@ -3,27 +3,27 @@ import { useState, useEffect, useRef } from "react";
 
 // ── Flow data ────────────────────────────────────────────────────────────────
 
-const FLOW = [
-  { side: "pat", type: "text", time: "9:56 AM", text: "JOIN CITYCLINIC", delay: 1000 },
-  { side: "bot", type: "join-card", time: "9:56 AM", delay: 1200 },
-  { side: "pat", type: "join-reply", time: "9:56 AM", delay: 1000 },
+const DEFAULT_FLOW = [
+  { side: "pat", type: "text", time: "9:56 AM", text: "JOIN STARBUSINESS", delay: 1000 },
+  { side: "bot", type: "join-card", time: "9:56 AM", msg: { title: "🏢 Welcome to Star Business!", body: "You are about to join the digital queue.\n\nTap the button below to confirm your spot 👇", button: "Join Queue" }, delay: 1200 },
+  { side: "pat", type: "join-reply", time: "9:56 AM", msg: { title: "🏢 Welcome to Star Business!", quoteBody: "You are about to join the digital queue...", button: "Join Queue" }, delay: 1000 },
   { side: "bot", type: "text", time: "9:57 AM", text: "👤 Please enter your full name 👇", delay: 1500 },
-  { side: "pat", type: "text", time: "9:57 AM", text: "Dipak Shah", delay: 1000 },
-  { side: "bot", type: "lang-card", time: "9:57 AM", delay: 1500 },
-  { side: "pat", type: "lang-reply", time: "9:57 AM", text: "हिंदी", delay: 1000 },
-  { side: "bot", type: "text", time: "9:58 AM", text: "✅ *Queue Confirmed, Dipak Shah!*\n\n🏥 Clinic: CityClinic\n🎟 Your Token:  *T013*\n👥 People ahead: *12*\n⏳ Est. wait: ~22 mins\n\nWe'll alert you when you're close! 🔔\nSit back and relax 😊\n\n_Powered by TokenPe_", delay: 2500 },
-  { side: "bot", type: "voice", time: "9:58 AM", lang: "हिंदी", dur: "0:12", delay: 1500 },
-  { side: "bot", type: "text", time: "10:24 AM", text: "🔔 *Heads up, Dipak Shah!*\n\n📍 Now Serving: *T003*\n🎟 Your Token: *T013*\n🏥 CityClinic\n\nAbout *10 tokens* to go. Start making your way to the clinic! 🏃\n\n_Powered by TokenPe_", delay: 2500 },
-  { side: "bot", type: "voice", time: "10:24 AM", lang: "हिंदी", dur: "0:09", delay: 1500 },
-  { side: "bot", type: "text", time: "10:37 AM", text: "⚡ *Almost your turn, Dipak Shah!*\n\n📍 Now Serving: *T008*\n🎟 Your Token: *T013*\n🏥 CityClinic\n\nOnly *5 tokens* away — please be ready near the cabin! 🙏\n\n_Powered by TokenPe_", delay: 2500 },
-  { side: "bot", type: "voice", time: "10:37 AM", lang: "हिंदी", dur: "0:08", delay: 1500 },
-  { side: "bot", type: "text", time: "10:49 AM", text: "🚨 *It's YOUR turn, Dipak Shah!*\n\n🎟 Token *T013* — Please go now!\n🏥 CityClinic\n\nProceed to the doctor's cabin immediately! 🏥\nThank you for your patience 🙏\n\n_Powered by TokenPe_", delay: 2500 },
-  { side: "bot", type: "voice", time: "10:49 AM", lang: "हिंदी", dur: "0:08", delay: 1500 },
-  { side: "bot", type: "text", time: "11:04 AM", text: "✅ *Consultation Completed, Dipak Shah!*\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_", delay: 2500 },
-  { side: "bot", type: "voice", time: "11:04 AM", lang: "हिंदी", dur: "0:11", delay: 1500 },
-  { side: "bot", type: "rating", time: "11:05 AM", delay: 2000 },
-  { side: "pat", type: "rating-reply", time: "11:05 AM", text: "⭐⭐⭐⭐⭐ Excellent", delay: 1500 },
-  { side: "bot", type: "text", time: "11:05 AM", text: "🙏 *Thank You, Dipak Shah!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!\n\nThank you for visiting *CityClinic*. We hope you feel better soon! 🌟", delay: 3500 },
+  { side: "pat", type: "text", time: "9:57 AM", text: "Rohan Kumar", delay: 1000 },
+  { side: "bot", type: "lang-card", time: "9:57 AM", msg: { body: "🌐 Choose your preferred language for updates:" }, delay: 1500 },
+  { side: "pat", type: "lang-reply", time: "9:57 AM", msg: { text: "English" }, delay: 1000 },
+  { side: "bot", type: "text", time: "9:58 AM", text: "✅ *Queue Confirmed, Rohan!*\n\n🏢 Business: Star Business\n🎟 Your Token:  *T013*\n👥 People ahead: *12*\n⏳ Est. wait: ~22 mins\n\nWe'll alert you when you're close! 🔔\nSit back and relax 😊\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "9:58 AM", lang: "English", dur: "0:12", delay: 1500 },
+  { side: "bot", type: "text", time: "10:24 AM", text: "🔔 *Heads up, Rohan!*\n\n📍 Now Serving: *T003*\n🎟 Your Token: *T013*\n🏢 Star Business\n\nAbout *10 tokens* to go. Start making your way over! 🏃\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "10:24 AM", lang: "English", dur: "0:09", delay: 1500 },
+  { side: "bot", type: "text", time: "10:37 AM", text: "⚡ *Almost your turn, Rohan!*\n\n📍 Now Serving: *T008*\n🎟 Your Token: *T013*\n🏢 Star Business\n\nOnly *5 tokens* away — please be ready nearby! 🙏\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "10:37 AM", lang: "English", dur: "0:08", delay: 1500 },
+  { side: "bot", type: "text", time: "10:49 AM", text: "🚨 *It's YOUR turn, Rohan!*\n\n🎟 Token *T013* — Please go now!\n🏢 Star Business\n\nProceed to the counter immediately! 🏢\nThank you for your patience 🙏\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "10:49 AM", lang: "English", dur: "0:08", delay: 1500 },
+  { side: "bot", type: "text", time: "11:04 AM", text: "✅ *Service Completed, Rohan!*\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "voice", time: "11:04 AM", lang: "English", dur: "0:11", delay: 1500 },
+  { side: "bot", type: "rating", time: "11:05 AM", msg: { title: "Rate Your Experience", body: "How was your visit at Star Business?\nYour feedback helps us improve! 🙏", button: "Tap to Rate" }, delay: 2000 },
+  { side: "pat", type: "rating-reply", time: "11:05 AM", msg: { title: "Rate Your Experience", quoteBody: "How was your visit at Star Business?...", text: "⭐⭐⭐⭐⭐ Excellent" }, delay: 1500 },
+  { side: "bot", type: "text", time: "11:05 AM", text: "🙏 *Thank You, Rohan!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!\n\nThank you for visiting *Star Business*. Have a great day! 🌟", delay: 3500 },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -65,9 +65,9 @@ const TS = ({ time, pat }) => (
 );
 
 const LRQuote = ({ title, body }) => (
-  <div style={{ borderLeft: "3px solid #25D366", background: "rgba(0,0,0,0.05)", borderRadius: "3px", padding: "4px 7px", marginBottom: "5px" }}>
-    <div style={{ fontSize: "9px", color: "#008069", fontWeight: 700, marginBottom: "1px" }}>{title}</div>
-    {body && <div style={{ fontSize: "10px", color: "#555" }}>{body}</div>}
+  <div style={{ borderLeft: "3px solid #25D366", background: "rgba(0,0,0,0.05)", borderRadius: "3px", padding: "4px 7px", marginBottom: "5px", overflow: "hidden" }}>
+    <div style={{ fontSize: "9px", color: "#008069", fontWeight: 700, marginBottom: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
+    {body && <div style={{ fontSize: "10px", color: "#555", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{body}</div>}
   </div>
 );
 
@@ -97,46 +97,50 @@ const S = {
   card: { maxWidth: "225px", minWidth: "205px", background: "#fff", alignSelf: "flex-start", borderRadius: "10px", overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.12)", marginTop: "2px", fontFamily: "sans-serif", animation: "waPopIn 0.22s cubic-bezier(0.175,0.885,0.32,1.275) forwards" },
 };
 
-function JoinCard() {
+function JoinCard({ msg }) {
+  const m = msg.msg || {};
   return (
     <div style={S.card}>
       <div style={{ padding: "8px 10px 6px" }}>
-        <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#111b21", marginBottom: "4px" }}>🏥 Welcome to our Clinic!</div>
-        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>You are about to join today's OPD queue.<br /><br />Tap the button below to confirm your spot 👇</div>
+        <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#111b21", marginBottom: "4px" }}>{m.title || "🏢 Welcome to Star Business!"}</div>
+        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>{fmt(m.body || "You are about to join the digital queue.\n\nTap the button below to confirm your spot 👇")}</div>
         <em style={{ fontSize: "9.5px", color: "#8696a0", fontStyle: "italic", marginTop: "4px", display: "block" }}>Powered by TokenPe</em>
       </div>
-      <CardDivider /><CardAction><CheckSvg /> Join Queue</CardAction>
+      <CardDivider /><CardAction><CheckSvg /> {m.button || "Join Queue"}</CardAction>
     </div>
   );
 }
 
-function JoinReply({ time }) {
+function JoinReply({ msg }) {
+  const m = msg.msg || {};
   return (
     <div style={{ ...S.bubble, ...S.pat }} className="wa-pat-tail">
-      <LRQuote title="🏥 Welcome to our Clinic!" body="You are about to join today's OPD queue..." />
-      <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px" }}><CheckSvg /><span style={{ color: "#008069", fontWeight: 700 }}>Join Queue</span></div>
-      <TS time={time} pat />
+      <LRQuote title={m.title || "🏢 Welcome to Star Business!"} body={m.quoteBody || "You are about to join the digital queue..."} />
+      <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px" }}><CheckSvg /><span style={{ color: "#008069", fontWeight: 700 }}>{m.button || "Join Queue"}</span></div>
+      <TS time={msg.time} pat />
     </div>
   );
 }
 
-function LangCard() {
+function LangCard({ msg }) {
+  const m = msg.msg || {};
   return (
     <div style={S.card}>
       <div style={{ padding: "8px 10px 6px" }}>
-        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>🌐 Choose your preferred language for voice updates:</div>
+        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>{fmt(m.body || "🌐 Choose your preferred language for updates:")}</div>
       </div>
-      <CardDivider /><CardAction small><ListSvg /> Select Language 🌐</CardAction>
+      <CardDivider /><CardAction small><ListSvg /> {m.button || "Select Language 🌐"}</CardAction>
     </div>
   );
 }
 
-function LangReply({ text, time }) {
+function LangReply({ msg }) {
+  const m = msg.msg || {};
   return (
     <div style={{ ...S.bubble, ...S.pat }} className="wa-pat-tail">
-      <LRQuote title="🌐 Choose your preferred language for voice updates:" />
-      <div style={{ fontSize: "12px", marginTop: "2px" }}>{text}</div>
-      <TS time={time} pat />
+      <LRQuote title={m.quoteTitle || "🌐 Choose your preferred language for updates:"} />
+      <div style={{ fontSize: "12px", marginTop: "2px" }}>{m.text}</div>
+      <TS time={msg.time} pat />
     </div>
   );
 }
@@ -168,25 +172,27 @@ function VoiceNote({ green, lang, dur, time }) {
   );
 }
 
-function RatingCard() {
+function RatingCard({ msg }) {
+  const m = msg.msg || {};
   return (
     <div style={S.card}>
       <div style={{ padding: "8px 10px 6px" }}>
-        <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#111b21", marginBottom: "4px" }}>Rate Your Visit</div>
-        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>How was your consultation at CityClinic?<br />Your feedback helps us improve! 🙏</div>
+        <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#111b21", marginBottom: "4px" }}>{m.title || "Rate Your Visit"}</div>
+        <div style={{ fontSize: "11px", color: "#111b21", lineHeight: 1.45 }}>{fmt(m.body || "How was your visit at Star Business?\nYour feedback helps us improve! 🙏")}</div>
         <em style={{ fontSize: "9.5px", color: "#8696a0", fontStyle: "italic", marginTop: "4px", display: "block" }}>Powered by TokenPe</em>
       </div>
-      <CardDivider /><CardAction><ListSvg /> Tap to Rate</CardAction>
+      <CardDivider /><CardAction><ListSvg /> {m.button || "Tap to Rate"}</CardAction>
     </div>
   );
 }
 
-function RatingReply({ text, time }) {
+function RatingReply({ msg }) {
+  const m = msg.msg || {};
   return (
     <div style={{ ...S.bubble, ...S.pat }} className="wa-pat-tail">
-      <LRQuote title="Rate Your Visit" body="How was your consultation at CityClinic?..." />
-      <div style={{ fontSize: "12px", marginTop: "2px" }}>{text}</div>
-      <TS time={time} pat />
+      <LRQuote title={m.title || "Rate Your Visit"} body={m.quoteBody || "How was your visit at Star Business?..."} />
+      <div style={{ fontSize: "12px", marginTop: "2px" }}>{m.text}</div>
+      <TS time={msg.time} pat />
     </div>
   );
 }
@@ -214,20 +220,21 @@ function TypingIndicator() {
 
 function renderMsg(msg) {
   switch (msg.type) {
-    case "join-card": return <JoinCard key={msg.id} />;
-    case "join-reply": return <JoinReply key={msg.id} time={msg.time} />;
-    case "lang-card": return <LangCard key={msg.id} />;
-    case "lang-reply": return <LangReply key={msg.id} text={msg.text} time={msg.time} />;
+    case "join-card": return <JoinCard key={msg.id} msg={msg} />;
+    case "join-reply": return <JoinReply key={msg.id} msg={msg} />;
+    case "lang-card": return <LangCard key={msg.id} msg={msg} />;
+    case "lang-reply": return <LangReply key={msg.id} msg={msg} />;
     case "voice": return <VoiceNote key={msg.id} green={msg.green} lang={msg.lang} dur={msg.dur} time={msg.time} />;
-    case "rating": return <RatingCard key={msg.id} />;
-    case "rating-reply": return <RatingReply key={msg.id} text={msg.text} time={msg.time} />;
+    case "rating": return <RatingCard key={msg.id} msg={msg} />;
+    case "rating-reply": return <RatingReply key={msg.id} msg={msg} />;
     default: return <TextBubble key={msg.id} msg={msg} />;
   }
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function WhatsAppDemo() {
+export default function WhatsAppDemo({ flow }) {
+  const activeFlow = flow || DEFAULT_FLOW;
   const [msgs, setMsgs] = useState([]);
   const [typing, setTyping] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -260,9 +267,9 @@ export default function WhatsAppDemo() {
       while (alive) {
         setMsgs([]); setProgress(0); setHeaderStatus("online"); setTyping(false);
         await wait(1500);
-        for (let i = 0; i < FLOW.length; i++) {
+        for (let i = 0; i < activeFlow.length; i++) {
           if (!alive) return;
-          const msg = FLOW[i];
+          const msg = activeFlow[i];
           if (msg.side === "bot") {
             setHeaderStatus("typing..."); setTyping(true);
             await wait(1200);
@@ -271,7 +278,7 @@ export default function WhatsAppDemo() {
           }
           msgCounter.current += 1;
           setMsgs(prev => [...prev, { ...msg, id: `msg-${msgCounter.current}` }]);
-          setProgress(((i + 1) / FLOW.length) * 100);
+          setProgress(((i + 1) / activeFlow.length) * 100);
           await wait(msg.delay || 2000);
         }
         await wait(8000);

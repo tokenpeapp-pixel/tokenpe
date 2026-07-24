@@ -14,15 +14,20 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Target clinic ID required' }, { status: 400 })
         }
 
-        // Fetch current clinic to get the email
-        const { data: currentClinic, error: err1 } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
+        // Fetch current clinic to get the email AND vertical
+        const { data: currentClinic, error: err1 } = await supabaseAdmin.from('clinics').select('email, vertical').eq('id', session.clinicId).single()
         if (err1 || !currentClinic) {
             return Response.json({ success: false, message: 'Invalid session' }, { status: 401 })
         }
 
         // Fetch target clinic to verify ownership and get details
         const { data: targetClinic, error: err2 } = await supabaseAdmin.from('clinics').select('*').eq('id', targetClinicId).single()
-        if (err2 || !targetClinic || targetClinic.email !== currentClinic.email) {
+        // Verify: target must be owned by same user AND be in the same vertical.
+        // Cross-industry switching is intentionally blocked — each industry is a
+        // separate account with its own subscription.
+        if (err2 || !targetClinic
+            || targetClinic.email !== currentClinic.email
+            || targetClinic.vertical !== currentClinic.vertical) {
             return Response.json({ success: false, message: 'Unauthorized branch switch' }, { status: 403 })
         }
 

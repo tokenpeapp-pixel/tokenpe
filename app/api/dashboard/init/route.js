@@ -10,7 +10,7 @@ export async function GET(req) {
 
         const clinicId = session.clinicId
 
-        // Fetch fresh clinic
+        // Fetch the current clinic (source of truth for vertical + identity)
         const { data: clinic, error: clinicError } = await supabaseAdmin
             .from('clinics')
             .select('*')
@@ -21,14 +21,26 @@ export async function GET(req) {
             return Response.json({ success: false, message: 'Clinic not found' }, { status: 404 })
         }
 
-        // Fetch all clinics owned by this user (same email OR same phone)
-        // Since we don't have user_id, we group by email if exists, else by phone
+        // Fetch all accounts owned by this user within the SAME vertical only.
+        // This is the multi-branch switcher (e.g. two clinic locations).
+        // Cross-vertical accounts (e.g. the same user's restaurant account) are
+        // intentionally excluded — each industry is billed and managed separately.
         let userClinics = [clinic]
         if (clinic.email) {
-            const { data } = await supabaseAdmin.from('clinics').select('*').eq('email', clinic.email).order('created_at', { ascending: true })
+            const { data } = await supabaseAdmin
+                .from('clinics')
+                .select('*')
+                .eq('email', clinic.email)
+                .eq('vertical', clinic.vertical)   // ← same industry only
+                .order('created_at', { ascending: true })
             if (data && data.length > 0) userClinics = data
         } else if (clinic.phone) {
-            const { data } = await supabaseAdmin.from('clinics').select('*').eq('phone', clinic.phone).order('created_at', { ascending: true })
+            const { data } = await supabaseAdmin
+                .from('clinics')
+                .select('*')
+                .eq('phone', clinic.phone)
+                .eq('vertical', clinic.vertical)   // ← same industry only
+                .order('created_at', { ascending: true })
             if (data && data.length > 0) userClinics = data
         }
 

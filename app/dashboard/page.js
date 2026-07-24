@@ -672,8 +672,12 @@ export default function Dashboard() {
           localStorage.removeItem('clinicCode')
           localStorage.removeItem('clinicPhone')
           localStorage.removeItem('tokenpe_clinic')
-          localStorage.removeItem('tokenpe_user_clinics')
-          router.push('/login')
+          const vertical = localStorage.getItem('tokenpe_vertical')
+          if (vertical === 'salon') router.push('/salon-login')
+          else if (vertical === 'restaurant') router.push('/restaurant-login')
+          else if (vertical === 'school') router.push('/school-login')
+          else if (vertical === 'other') router.push('/business-login')
+          else router.push('/login')
         }
       }
     }
@@ -888,13 +892,19 @@ export default function Dashboard() {
 
   // ── Logout ──────────────────────────────────────────────────────────────
   async function logout() {
+    const vertical = localStorage.getItem('tokenpe_vertical')
     localStorage.removeItem('clinicCode')
     localStorage.removeItem('clinicPhone')
     localStorage.removeItem('tokenpe_clinic')
     localStorage.removeItem('tokenpe_user_clinics')
     await fetch('/api/auth/logout', { method: 'POST' })
     await supabase.auth.signOut()
-    router.push('/login')
+    
+    if (vertical === 'salon') router.push('/salon-login')
+    else if (vertical === 'restaurant') router.push('/restaurant-login')
+    else if (vertical === 'school') router.push('/school-login')
+    else if (vertical === 'other') router.push('/business-login')
+    else router.push('/login')
   }
 
   // ── Toggle Pause ────────────────────────────────────────────────────────

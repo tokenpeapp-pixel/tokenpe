@@ -16,6 +16,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
+            localStorage.setItem('tokenpe_vertical', 'clinic')
             // Check session via API instead of localStorage directly to be secure
             fetch('/api/auth/me')
                 .then(res => res.json())
@@ -36,6 +37,9 @@ export default function LoginPage() {
             const errType = params.get('error')
             if (errType === 'no_clinic') {
                 setError('No clinic account found for this Google email. Please register first, or use your Clinic Code to log in.')
+                setMode('register')
+            } else if (params.get('mode') === 'register') {
+                setMode('register')
             }
         }
     }, [router])

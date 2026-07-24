@@ -1,20 +1,39 @@
 import { supabaseAdmin, getISTDateString } from '../../../../lib/supabase'
 
+/**
+ * GET /api/clinics/nearby
+ * Returns nearby clinics for a given location, filtered strictly by vertical.
+ *
+ * Query params: lat, lng, radius (metres, max 50000), vertical (REQUIRED)
+ * Valid verticals: clinic, restaurant, salon, school, business
+ */
+
+const VALID_VERTICALS = new Set(['clinic', 'restaurant', 'salon', 'school', 'business'])
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url)
     const lat = parseFloat(searchParams.get('lat'))
     const lng = parseFloat(searchParams.get('lng'))
     const radius = parseFloat(searchParams.get('radius') || '10000')
+    const vertical = (searchParams.get('vertical') || '').trim().toLowerCase()
 
     if (isNaN(lat) || isNaN(lng)) {
       return Response.json({ error: 'lat and lng are required' }, { status: 400 })
     }
 
+    // ── Vertical guard: reject missing or invalid verticals ──────────────────
+    if (!vertical || !VALID_VERTICALS.has(vertical)) {
+      return Response.json(
+        { clinics: [], error: `Missing or invalid 'vertical' param. Must be one of: ${[...VALID_VERTICALS].join(', ')}` },
+        { status: 400 }
+      )
+    }
+
     const safeRadius = Math.min(radius, 50000)
     const today = getISTDateString()
 
-    console.log(`[Nearby API] lat=${lat}, lng=${lng}, radius=${safeRadius}m`)
+    console.log(`[Nearby API] lat=${lat}, lng=${lng}, radius=${safeRadius}m, vertical=${vertical}`)
 
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371e3
@@ -29,15 +48,14 @@ export async function GET(req) {
       return R * c
     }
 
-    // ── Helper: enrich clinics list with closed_today_date from clinics table ──
-    // We fetch this from the real clinics table (not the view) because the view
-    // may not have the column yet. This keeps the view untouched.
+    // ── Helper: enrich results with closed_today_date from clinics table ──────
     async function enrichWithClosedStatus(clinics) {
       if (!clinics.length) return clinics
       const ids = clinics.map(c => c.id)
       const { data: closedData } = await supabaseAdmin
         .from('clinics')
         .select('id, closed_today_date')
+        .eq('vertical', vertical)
         .in('id', ids)
       const closedMap = {}
       for (const c of (closedData || [])) {
@@ -55,24 +73,27 @@ export async function GET(req) {
         user_lat: lat,
         user_lng: lng,
         radius_m: safeRadius,
+        filter_vertical: vertical,   // ← pass vertical into RPC if supported
       })
       if (!error && data && data.length > 0) {
-        console.log(`[Nearby API] RPC success: ${data.length} clinics`)
-        const clinics = data.map(c => ({
-          id: c.id,
-          name: c.name,
-          specialty: c.specialty,
-          city: c.city,
-          area: c.area,
-          code: c.code,
-          avg_rating: c.avg_rating,
-          photo_url: c.photo_url,
-          lat: c.lat,
-          lng: c.lng,
-          distance_km: c.distance_m ? (c.distance_m / 1000).toFixed(1) : null,
-          queue_paused: c.queue_paused,
-          waiting_count: c.waiting_count || 0,
-        }))
+        console.log(`[Nearby API] RPC success: ${data.length} results`)
+        const clinics = data
+          .filter(c => !c.vertical || c.vertical === vertical)  // extra safety filter
+          .map(c => ({
+            id: c.id,
+            name: c.name,
+            specialty: c.specialty,
+            city: c.city,
+            area: c.area,
+            code: c.code,
+            avg_rating: c.avg_rating,
+            photo_url: c.photo_url,
+            lat: c.lat,
+            lng: c.lng,
+            distance_km: c.distance_m ? (c.distance_m / 1000).toFixed(1) : null,
+            queue_paused: c.queue_paused,
+            waiting_count: c.waiting_count || 0,
+          }))
         const enriched = await enrichWithClosedStatus(clinics)
         return Response.json({ clinics: enriched }, { status: 200 })
       }
@@ -81,17 +102,18 @@ export async function GET(req) {
       console.log(`[Nearby API] RPC exception: ${rpcErr.message}`)
     }
 
-    // Strategy 2: Query public_clinics view directly (no closed_today_date in view)
+    // Strategy 2: Fallback — query public_clinics view filtered by vertical
     const { data: allClinics, error: dbError } = await supabaseAdmin
       .from('public_clinics')
       .select('id, name, specialty, city, area, code, avg_rating, photo_url, queue_paused, waiting_count, lat, lng')
+      .eq('vertical', vertical)   // ← enforces isolation
 
     if (dbError) {
       console.error('[Nearby API] DB error:', dbError)
       return Response.json({ clinics: [] }, { status: 200 })
     }
 
-    console.log(`[Nearby API] DB returned ${(allClinics || []).length} public clinics`)
+    console.log(`[Nearby API] DB returned ${(allClinics || []).length} results for vertical=${vertical}`)
 
     const clinics = (allClinics || [])
       .map(c => {
@@ -115,10 +137,9 @@ export async function GET(req) {
       .filter(c => c !== null && c.distance_m <= safeRadius)
       .sort((a, b) => a.distance_m - b.distance_m)
 
-    // Enrich with closed status from clinics table (separate query, safe)
     const enriched = await enrichWithClosedStatus(clinics)
 
-    console.log(`[Nearby API] Returning ${enriched.length} clinics within range`)
+    console.log(`[Nearby API] Returning ${enriched.length} results within range`)
 
     return Response.json({ clinics: enriched }, { status: 200 })
   } catch (err) {

@@ -2,7 +2,7 @@
 // Manual payment reminder from dashboard — sends WhatsApp alert with pending balance
 
 import { supabaseAdmin } from '../../../../lib/supabase'
-import { sendTemplateMessage, cleanPhone } from '../../../../lib/messaging'
+import { sendText } from '../../../../lib/messaging'
 import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
@@ -50,19 +50,21 @@ export async function POST(req) {
         const feePaid = parseFloat(patient.fee_paid) || 0
         const remaining = feeTotal - feePaid
 
-        await sendTemplateMessage({
-            phone: cleanPhone(patient.phone),
-            templateName: 'patient_payment_reminder',
-            languageCode: 'en',
-            bodyValues: [
-                clinicName,
-                patient.name || 'Patient',
-                feeTotal.toFixed(2),
-                feePaid.toFixed(2),
-                remaining.toFixed(2)
-            ],
-            callbackData: 'patient_payment_reminder'
-        })
+        const reminderMsg = `🏥 *${clinicName}*
+        
+Dear *${patient.name || 'Patient'}*,
+
+This is a friendly reminder regarding your pending payment.
+
+💵 Total Bill: *₹${feeTotal.toFixed(2)}*
+✅ Paid So Far: *₹${feePaid.toFixed(2)}*
+⚠️ Pending Balance: *₹${remaining.toFixed(2)}*
+
+Please clear the balance at your earliest convenience. Thank you!
+
+_Powered by TokenPe_`
+
+        await sendText(patient.phone, reminderMsg)
 
         return Response.json({ success: true })
 

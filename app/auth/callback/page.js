@@ -14,9 +14,12 @@ function AuthCallbackContent() {
 
     useEffect(() => {
         async function processAuth() {
+            const vertical = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_vertical') : null
+            const redirectBase = vertical === 'salon' ? '/salon-login' : vertical === 'restaurant' ? '/restaurant-login' : vertical === 'school' ? '/school-login' : vertical === 'other' ? '/business-login' : '/login'
+            
             try {
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-                if (sessionError || !session) { router.replace('/login'); return }
+                if (sessionError || !session) { router.replace(redirectBase); return }
                 
                 const intent = searchParams.get('intent') || 'login'
                 
@@ -40,7 +43,7 @@ function AuthCallbackContent() {
                 
                 if (!res.ok || !data.success) {
                     await supabase.auth.signOut()
-                    router.replace('/login?error=' + (data.message || 'auth_failed'))
+                    router.replace(`${redirectBase}?error=` + (data.message || 'auth_failed'))
                     return
                 }
 
@@ -60,7 +63,7 @@ function AuthCallbackContent() {
 
             } catch (err) {
                 console.error('Auth callback error:', err)
-                router.replace('/login')
+                router.replace(redirectBase)
             }
         }
         processAuth()

@@ -3,7 +3,7 @@
 
 import { supabaseAdmin } from '../../../../lib/supabase'
 import { getSession } from '../../../../lib/auth'
-import { sendTemplateMessage, cleanPhone } from '../../../../lib/messaging'
+import { sendText } from '../../../../lib/messaging'
 import { after } from 'next/server'
 
 export async function POST(req) {
@@ -71,18 +71,21 @@ export async function POST(req) {
                     const totalBill = allowedUpdates.fee_total !== undefined ? allowedUpdates.fee_total : (parseFloat(patient.fee_total) || 0)
                     const amountPaid = allowedUpdates.fee_paid !== undefined ? allowedUpdates.fee_paid : (parseFloat(patient.fee_paid) || 0)
 
-                    await sendTemplateMessage({
-                        phone: cleanPhone(patient.phone),
-                        templateName: 'patient_payment_success',
-                        languageCode: 'en',
-                        bodyValues: [
-                            clinicName,
-                            patient.name || 'Patient',
-                            totalBill.toFixed(2),
-                            amountPaid.toFixed(2)
-                        ],
-                        callbackData: 'patient_payment_success'
-                    })
+                    const receiptMsg = `🏥 *${clinicName}*
+                    
+Dear *${patient.name || 'Patient'}*,
+
+Thank you! Your payment has been received successfully.
+
+💵 Total Bill: *₹${totalBill.toFixed(2)}*
+✅ Amount Paid: *₹${amountPaid.toFixed(2)}*
+🎉 Remaining Balance: *₹0.00 (Fully Paid)*
+
+We appreciate your payment!
+
+_Powered by TokenPe_`
+
+                    await sendText(patient.phone, receiptMsg)
                 } catch (err) {
                     console.error('[queue/update-payment] WhatsApp receipt send error:', err.message)
                 }

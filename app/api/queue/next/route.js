@@ -75,7 +75,7 @@ export async function POST(req) {
 
         // 1. Fetch clinic to check plan, Mark patient as CALLED, fetch waiting list — in parallel
         const [ { data: clinic }, , { data: waitingPatients }] = await Promise.all([
-            supabaseAdmin.from('clinics').select('plan_id, current_period_end').eq('id', clinicId).single(),
+            supabaseAdmin.from('clinics').select('plan_id').eq('id', clinicId).single(),
             supabaseAdmin.from('patients').update({ status: 'called' }).eq('id', patientId),
             supabaseAdmin.from('patients').select('*')
                 .eq('clinic_id', clinicId)
@@ -84,9 +84,7 @@ export async function POST(req) {
                 .order('joined_at', { ascending: true })
         ])
 
-        const rawPlanId = clinic?.plan_id || 'starter'
-        const subExpired = clinic?.current_period_end && new Date(clinic.current_period_end) < new Date()
-        const planId = subExpired ? 'starter' : rawPlanId
+        const planId = clinic?.plan_id || 'starter'
 
         // Fire all messaging asynchronously so the dashboard UI updates instantly and doesn't crash on TTS failure
         after(async () => {

@@ -70,7 +70,7 @@ export async function POST(req) {
     let updateQuery = supabaseAdmin
       .from('clinics')
       .update({ subscription_status: 'cancel_at_period_end' })
-
+      
     if (clinic.email) {
       updateQuery = updateQuery.eq('email', clinic.email)
     } else {
@@ -104,7 +104,7 @@ export async function POST(req) {
               <a href="https://tokenpe.online/dashboard/billing" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;margin-top:8px;">
                 Reactivate Plan →
               </a>
-              <p style="margin-top:24px;font-size:12px;color:#475569;">Questions? Reply to this email or contact us at tokenpe.online@gmail.com </p>
+              <p style="margin-top:24px;font-size:12px;color:#475569;">Questions? Reply to this email or contact support@tokenpe.online</p>
             </div>
           `
         })

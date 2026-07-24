@@ -3,16 +3,15 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import {
-  MapPin, Search, Check, Clock, Users, Link as LinkIcon, Hospital
+  MapPin, Search, Clock, Users, Link as LinkIcon, Hospital, ArrowRight, Star, IconActivity as Activity
 } from '../../lib/icons'
 
 const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919892875513'
 
 // Dynamically import the Leaflet map component with ssr: false
-// This prevents "window is not defined" errors during server-side rendering
 const MapComponent = dynamic(() => import('./MapComponent'), {
   ssr: false,
-  loading: () => <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e5e7eb' }}>Loading Map...</div>
+  loading: () => <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>Loading Map...</div>
 })
 
 function ClinicCard({ clinic, isNearby, onClick, isSelected }) {
@@ -22,82 +21,116 @@ function ClinicCard({ clinic, isNearby, onClick, isSelected }) {
     <div 
       className={`clinic-card ${isSelected ? 'selected' : ''}`} 
       onClick={onClick} 
-      style={{ 
-        cursor: 'pointer', 
-        borderColor: isSelected ? '#0d9488' : '#e5e7eb',
-        borderWidth: isSelected ? '2px' : '1px'
-      }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-          {clinic.name}
+      <div>
+        <h3 className="cc-title">{clinic.name}</h3>
+        <div className="cc-meta">
+          <span className="cc-meta-item"><Activity size={14} /> {clinic.specialty || 'General Physician'}</span>
+          {clinic.city && <span className="cc-meta-item"><MapPin size={14} /> {clinic.city}</span>}
+          {isNearby && clinic.distance_km && (
+            <span className="cc-meta-item" style={{color: '#10b981'}}><MapPin size={14} /> {clinic.distance_km} km</span>
+          )}
         </div>
-        {isNearby && clinic.distance_km && (
-          <div style={{ background: '#ecfdf5', color: '#10b981', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-            <MapPin size={10} /> {clinic.distance_km} km
-          </div>
-        )}
-      </div>
-      <div style={{ fontSize: 13, color: '#4b5563', marginBottom: 12 }}>
-        Specialty: {clinic.specialty || 'General Physician'}
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <span className="badge-teal">Voice Alerts</span>
-        <span className="badge-teal">No App Required</span>
       </div>
       
-      {clinic.is_closed_today ? (
-        <div style={{ fontSize: 13, color: '#ef4444', fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-          🔴 Closed for Today
-        </div>
-      ) : clinic.queue_paused ? (
-        <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Clock size={14} /> Queue Paused
-        </div>
-      ) : (
-        <>
-          <div style={{ fontSize: 13, color: '#374151', marginBottom: 4 }}>
-            Live Queue Status: <strong>{clinic.waiting_count || 0} people waiting</strong>
+      <div className="cc-right">
+        {clinic.is_closed_today ? (
+          <div style={{ textAlign: "right" }}>
+            <div className="cc-wait-label">Status</div>
+            <div className="cc-wait-val" style={{color: '#ef4444'}}>
+              🔴 Closed
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: '#374151', marginBottom: 16 }}>
-            Estimated Wait Time: <strong>{Math.max((clinic.waiting_count || 0) * 5, 10)} min</strong>
+        ) : clinic.queue_paused ? (
+          <div style={{ textAlign: "right" }}>
+            <div className="cc-wait-label">Status</div>
+            <div className="cc-wait-val" style={{color: '#f59e0b'}}>
+              <Clock size={16} /> Paused
+            </div>
           </div>
-        </>
-      )}
-
-      {clinic.is_closed_today ? (
-        <div className="btn-join" style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fee2e2', cursor: 'not-allowed' }}>
-          Closed Today
-        </div>
-      ) : (
-        <a
-          href={waLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-join"
-          onClick={(e) => e.stopPropagation()}
-        >
-          Join Queue via WhatsApp
-        </a>
-      )}
+        ) : (
+          <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: "2px" }}>
+            <div className="cc-wait-label">Est. Wait Time</div>
+            <div className="cc-wait-val" style={{color: '#10b981'}}>
+              <Clock size={16} /> {Math.max((clinic.waiting_count || 0) * 5, 10)} mins
+            </div>
+            <div style={{ fontSize: "11px", color: "#64748b" }}>
+              {clinic.waiting_count || 0} waiting
+            </div>
+          </div>
+        )}
+        
+        {clinic.is_closed_today ? (
+          <button className="cc-btn cc-btn-disabled" disabled>
+            Closed
+          </button>
+        ) : (
+          <a href={waLink} target="_blank" rel="noopener noreferrer" className="cc-btn cc-btn-active" onClick={e => e.stopPropagation()}>
+            Join Queue <ArrowRight size={16} />
+          </a>
+        )}
+      </div>
     </div>
   )
 }
 
 function EmptyState() {
+  const [showPopup, setShowPopup] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const link = "https://tokenpe.online";
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="empty-state-overlay">
-      <div className="empty-icon-wrap">
-        <Search size={32} color="#0d9488" />
+    <>
+      <div className="empty-state-overlay">
+        <div className="empty-icon-wrap">
+          <Search size={32} color="#10b981" />
+        </div>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc', marginBottom: 8 }}>
+          No clinics found in this area.
+        </h3>
+        <p style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', marginBottom: 16, maxWidth: 280, lineHeight: 1.5 }}>
+          Try searching for a different location or invite your doctor to join TokenPe to get started!
+        </p>
+        <button className="btn-invite" onClick={() => setShowPopup(true)}>Invite Doctor</button>
       </div>
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 8 }}>
-        No clinics found in this area.
-      </h3>
-      <p style={{ fontSize: 13, color: '#4b5563', textAlign: 'center', marginBottom: 16, maxWidth: 280, lineHeight: 1.5 }}>
-        Try searching for a different location or invite your doctor to join TokenPe to get started!
-      </p>
-      <button className="btn-invite">Invite Doctor</button>
-    </div>
+
+      {showPopup && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+          <div style={{ background: "#022c22", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "16px", padding: "32px", width: "90%", maxWidth: "400px", position: "relative", textAlign: "center", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+            <button 
+              onClick={() => setShowPopup(false)} 
+              style={{ position: "absolute", top: "16px", right: "16px", background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "16px" }}
+            >
+              ✕
+            </button>
+            <h3 style={{ fontSize: "20px", fontWeight: 700, color: "#fff", marginBottom: "12px" }}>Invite Your Doctor</h3>
+            <p style={{ fontSize: "14px", color: "#a7f3d0", marginBottom: "24px", lineHeight: 1.5 }}>
+              Share this link with your doctor so they can register their clinic for free and set up WhatsApp queuing.
+            </p>
+            <div style={{ display: "flex", gap: "8px", background: "rgba(255,255,255,0.05)", padding: "8px 8px 8px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <input 
+                type="text" 
+                value={link} 
+                readOnly 
+                style={{ flex: 1, background: "transparent", border: "none", color: "#fff", fontSize: "15px", outline: "none" }}
+              />
+              <button 
+                onClick={handleCopy}
+                style={{ background: "#10b981", color: "#022c22", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "14px", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", opacity: copied ? 0.8 : 1 }}
+              >
+                {copied ? "Copied!" : "Copy Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -111,8 +144,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'open', 'paused', 'closed'
   const [activeView, setActiveView] = useState('list') // 'list' or 'map'
   const [selectedClinic, setSelectedClinic] = useState(null)
-  // Incrementing this key forces a full Leaflet remount when map view activates,
-  // preventing the "grey tiles / 0x0 container" bug on mobile.
+  
   const [mapMountKey, setMapMountKey] = useState(0)
 
   const [gpsLoading, setGpsLoading] = useState(false)
@@ -122,8 +154,6 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
 
   const debounceRef = useRef(null)
 
-  // Client-side filtering is only used for Nearby mode now.
-  // Standard searches fetch perfectly from the database based on the statusFilter.
   const displayedClinics = isNearbyMode 
     ? nearbyClinics.filter(c => {
         if (statusFilter === 'open') return !c.is_closed_today && !c.queue_paused;
@@ -139,12 +169,13 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
     setGpsError('')
     try {
       const params = new URLSearchParams()
+      params.set('vertical', 'clinic')   // ← strict vertical isolation
       if (q) params.set('q', q)
       if (city) params.set('city', city)
       if (spec) params.set('specialty', spec)
       if (status && status !== 'all') params.set('status', status)
       
-      const res = await fetch(`/api/clinics/search${params.toString() ? '?' + params.toString() : ''}`)
+      const res = await fetch(`/api/clinics/search?${params.toString()}`)
       const json = await res.json()
       setClinics(json.clinics || [])
     } catch {
@@ -161,7 +192,6 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
       if (query) params.set('q', query)
       if (selectedCity) params.set('city', selectedCity)
       if (selectedSpecialty) params.set('specialty', selectedSpecialty)
-      // We don't necessarily need to push status into the URL, but we can
       router.replace(`/find${params.toString() ? '?' + params.toString() : ''}`, { scroll: false })
     }, 300)
     return () => clearTimeout(debounceRef.current)
@@ -169,7 +199,7 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
 
   const fetchNearby = useCallback(async (lat, lng) => {
     try {
-      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=50000`)
+      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=50000&vertical=clinic`)
       const json = await res.json()
       setNearbyClinics(json.clinics || [])
       setIsNearbyMode(true)
@@ -203,92 +233,126 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #f9fafb; color: #111827; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #021c13; color: #f8fafc; }
         
-        .find-nav { padding: 0 32px; height: 72px; display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 100; }
+        .find-nav { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(16,185,129,0.1); position: sticky; top: 0; z-index: 100; background: #021c13; }
         .find-nav-logo { height: 32px; cursor: pointer; }
-        .find-nav-back { color: #0d9488; font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 4px; }
-        .find-nav-back:hover { text-decoration: underline; }
+        .find-nav-btn { 
+          background: transparent; 
+          color: #10b981; 
+          border: 1px solid #10b981; 
+          padding: 8px 16px; 
+          border-radius: 8px; 
+          cursor: pointer; 
+          font-weight: 600; 
+          text-decoration: none; 
+          transition: all 0.3s ease;
+          box-shadow: 0 0 0 rgba(16,185,129,0);
+        }
+        .find-nav-btn:hover { 
+          background: rgba(16,185,129,0.15); 
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 4px 16px rgba(16,185,129,0.4);
+          color: #34d399;
+          border-color: #34d399;
+        }
         
-        .layout-container { max-width: 1440px; margin: 0 auto; padding: 32px; display: grid; grid-template-columns: minmax(400px, 1fr) 1.2fr; gap: 32px; min-height: calc(100vh - 72px); }
+        .layout-container { max-width: 1440px; margin: 0 auto; padding: 40px 32px; display: grid; grid-template-columns: minmax(400px, 1fr) 1.2fr; gap: 40px; min-height: calc(100vh - 72px); }
         .left-col { display: flex; flex-direction: column; }
-        .right-col { position: sticky; top: 104px; height: calc(100vh - 136px); border-radius: 20px; overflow: hidden; background: #f3f4f6; }
         
-        .page-title { font-size: 26px; font-weight: 800; color: #111827; margin-bottom: 24px; }
+        /* Map Dark Mode Hack */
+        .right-col, .mobile-map-container { 
+          border-radius: 20px; 
+          overflow: hidden; 
+          background: #022c22; 
+          border: 1px solid rgba(255,255,255,0.05);
+          position: relative;
+        }
+        .right-col { position: sticky; top: 112px; height: calc(100vh - 150px); }
         
-        .search-row { display: flex; align-items: center; background: #fff; border: 2px solid #0d9488; border-radius: 100px; padding: 4px 4px 4px 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.08); transition: box-shadow 0.2s; }
-        .search-row:focus-within { box-shadow: 0 6px 20px rgba(13, 148, 136, 0.15); }
-        .search-input { border: none; outline: none; flex: 1; font-size: 15px; padding: 8px 0; color: #111827; }
-        .btn-search { background: #0d9488; color: #fff; border: none; padding: 10px 28px; border-radius: 100px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
-        .btn-search:hover { background: #0f766e; }
+        .right-col .leaflet-container, .mobile-map-container .leaflet-container {
+          filter: invert(100%) hue-rotate(160deg) brightness(95%) contrast(90%) sepia(20%);
+          background: #f9fafb !important; /* ensures proper inversion */
+        }
         
-        .filters-row { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; flex-wrap: wrap; }
+        .page-title { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+        .page-sub { color: #94a3b8; font-size: 16px; margin-bottom: 40px; }
         
-        .btn-near-me { padding: 8px 14px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; height: 36px; background: #fff; border: 1px solid #d1d5db; color: #374151; }
+        .search-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .search-input-wrap { flex: 1; position: relative; }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; }
+        .search-input { width: 100%; padding: 16px 16px 16px 48px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 16px; outline: none; transition: border-color 0.2s; }
+        .search-input:focus { border-color: #10b981; }
+        
+        .btn-search { padding: 0 32px; height: 53px; background: #10b981; color: #022c22; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; transition: background 0.2s; }
+        .btn-search:hover { background: #34d399; }
+        
+        .filters-row { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+        
+        .btn-near-me { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #f8fafc; }
+        .btn-near-me:hover { background: rgba(255,255,255,0.08); }
         .btn-near-me:disabled { opacity: 0.7; cursor: not-allowed; }
-        .btn-near-me.active { background: #ecfdf5; border: 1px solid #10b981; color: #10b981; }
+        .btn-near-me.active { background: rgba(16,185,129,0.1); border-color: #10b981; color: #10b981; }
         
-        .status-filters { display: flex; background: #e5e7eb; padding: 4px; border-radius: 100px; align-items: center; height: 36px; }
-        .status-filter-btn { padding: 4px 14px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-        .status-filter-btn.active { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); color: #111827; }
-        .status-filter-btn.inactive { background: transparent; color: #6b7280; }
-        .status-filter-btn.active.open { color: #0d9488; }
-        .status-filter-btn.active.paused { color: #f59e0b; }
-        .status-filter-btn.active.closed { color: #ef4444; }
-
-        .filter-group { display: flex; align-items: center; gap: 8px; }
-        .filter-select { padding: 8px 32px 8px 14px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 13px; font-weight: 600; color: #374151; background: #fff url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; appearance: none; outline: none; cursor: pointer; min-width: 160px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .status-filters { display: flex; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
+        .status-filter-btn { padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .status-filter-btn.active { background: rgba(255,255,255,0.1); color: #fff; }
+        .status-filter-btn.inactive { background: transparent; color: #64748b; }
+        
+        .filter-select { padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: #f8fafc; background: rgba(255,255,255,0.03); outline: none; cursor: pointer; }
+        .filter-select option { background: #022c22; color: #fff; }
         
         .clinic-list { display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
-        .clinic-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; }
-        .clinic-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.06); border-color: #d1d5db; }
         
-        .badge-teal { background: #ccfbf1; color: #0f766e; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 100px; display: inline-block; }
+        /* Clinic Card */
+        .clinic-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 24px; display: flex; justify-content: space-between; alignItems: center; flex-wrap: wrap; gap: 16px; transition: all 0.2s; cursor: pointer; }
+        .clinic-card:hover { border-color: rgba(16,185,129,0.3); background: rgba(255,255,255,0.04); }
+        .clinic-card.selected { border-color: #10b981; background: rgba(16,185,129,0.05); }
         
-        .btn-join { display: inline-block; background: #0d9488; color: #fff; text-align: center; padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; width: 100%; transition: background 0.2s, transform 0.1s; }
-        .btn-join:hover { background: #0f766e; }
-        .btn-join:active { transform: scale(0.98); }
-
-        .empty-state-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.95); padding: 32px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; width: 340px; text-align: center; z-index: 10; }
-        .empty-icon-wrap { width: 64px; height: 64px; background: #e0f2fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-        .btn-invite { background: #0d9488; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
-        .btn-invite:hover { background: #0f766e; }
+        .cc-title { font-size: 20px; font-weight: 700; color: #f8fafc; margin-bottom: 8px; }
+        .cc-meta { display: flex; gap: 16px; color: #94a3b8; font-size: 14px; flex-wrap: wrap; }
+        .cc-meta-item { display: flex; align-items: center; gap: 4px; }
+        
+        .cc-right { display: flex; alignItems: center; gap: 24px; }
+        .cc-wait-label { font-size: 13px; color: #94a3b8; margin-bottom: 4px; }
+        .cc-wait-val { display: flex; align-items: center; gap: 6px; font-weight: 600; justify-content: flex-end; }
+        
+        .cc-btn { padding: 12px 24px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; text-decoration: none; border: none; cursor: pointer; }
+        .cc-btn-active { background: #10b981; color: #022c22; }
+        .cc-btn-active:hover { background: #34d399; }
+        .cc-btn-disabled { background: rgba(255,255,255,0.1); color: #64748b; cursor: not-allowed; }
+        
+        .empty-state-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(2,28,19,0.85); padding: 32px; border-radius: 20px; backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; width: 340px; text-align: center; z-index: 10; border: 1px solid rgba(255,255,255,0.1); }
+        .empty-icon-wrap { width: 64px; height: 64px; background: rgba(16,185,129,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .btn-invite { background: transparent; border: 1px solid #10b981; color: #10b981; padding: 10px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px; }
         
         .mobile-view-toggle { display: none; }
-
+        
         @media (max-width: 1024px) {
-          .layout-container { grid-template-columns: 1fr; padding: 20px; }
+          .layout-container { grid-template-columns: 1fr; padding: 24px; }
           .right-col { display: none; }
-          .search-row { padding: 4px 4px 4px 16px; }
-          .btn-search { padding: 10px 20px; }
         }
-
+        
         @media (max-width: 768px) {
-          .find-nav { padding: 0 16px; height: 64px; }
-          .layout-container { padding: 16px; min-height: auto; gap: 16px; margin-bottom: 24px; }
-          .page-title { font-size: 22px; margin-bottom: 16px; }
-          .search-row { border-radius: 16px; padding: 10px; flex-direction: column; gap: 10px; align-items: stretch; border-width: 1.5px; }
-          .search-input { padding: 8px; font-size: 16px; }
-          .btn-search { width: 100%; justify-content: center; padding: 12px; border-radius: 10px; font-size: 15px; }
+          .find-nav { padding: 16px 20px; }
+          .layout-container { padding: 16px; gap: 16px; margin-bottom: 24px; }
+          .page-title { font-size: 26px; }
+          .page-sub { font-size: 14px; margin-bottom: 24px; }
           
-          .filters-row { gap: 12px; }
-          .filter-group { width: 100%; justify-content: space-between; }
-          .filter-select { flex: 1; max-width: none; min-width: 0; }
-          .btn-near-me { width: 100%; justify-content: center; height: 44px; font-size: 14px; }
+          .search-row { flex-direction: column; gap: 10px; }
+          .search-input-wrap, .btn-search { width: 100%; }
+          .btn-search { justify-content: center; }
           
-          .status-filters { width: 100%; justify-content: space-between; height: auto; padding: 4px; }
-          .status-filter-btn { flex: 1; text-align: center; padding: 8px 4px; }
+          .cc-right { width: 100%; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); }
+          .cc-wait-val { justify-content: flex-start; }
           
-          .clinic-card { padding: 20px; }
+          .mobile-view-toggle { display: flex; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); }
+          .mobile-view-btn { flex: 1; text-align: center; padding: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
+          .mobile-view-btn.active { background: rgba(255,255,255,0.1); color: #fff; }
           
-          /* Map view toggle on mobile */
-          .mobile-view-toggle { display: flex; background: #e5e7eb; padding: 4px; border-radius: 100px; margin-bottom: 16px; }
-          .mobile-view-btn { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 100px; color: #6b7280; transition: all 0.2s; }
-          .mobile-view-btn.active { background: #fff; color: #111827; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-
-          .mobile-map-container { height: calc(100vh - 300px); min-height: 400px; border-radius: 16px; overflow: hidden; background: #f3f4f6; position: relative; }
+          .mobile-map-container { height: calc(100vh - 300px); min-height: 400px; }
         }
       `}</style>
 
@@ -296,31 +360,33 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
         <a href="/">
           <img src="/logo-nav.svg" alt="TokenPe" className="find-nav-logo" />
         </a>
-        <a href="/" className="find-nav-back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          Back to Home
+        <a href="/login" className="find-nav-btn">
+          Clinic Login
         </a>
       </nav>
 
       <div className={`layout-container ${activeView === 'map' ? 'map-active' : ''}`}>
         <div className="left-col">
-          <h1 className="page-title">Find a Clinic Search Results</h1>
+          <h1 className="page-title">Find a TokenPe Clinic</h1>
+          <p className="page-sub">Search by clinic name, doctor, specialty, or city to join a queue remotely.</p>
           
           <div className="search-row">
-            <input 
-              className="search-input" 
-              type="text" 
-              placeholder="Search by clinic name, doctor, or locality" 
-              value={query} 
-              onChange={e => setQuery(e.target.value)} 
-            />
+            <div className="search-input-wrap">
+              <Search size={20} className="search-icon" />
+              <input 
+                className="search-input" 
+                type="text" 
+                placeholder="Search e.g., 'Dentist in Mumbai'" 
+                value={query} 
+                onChange={e => setQuery(e.target.value)} 
+              />
+            </div>
             <button className="btn-search">
-              <Search size={16} />
-              Search
+              {loading ? "Searching..." : "Search"}
             </button>
           </div>
 
-          {gpsError && <div style={{ fontSize: 13, color: '#ef4444', marginBottom: 16, background: '#fef2f2', padding: '10px 14px', borderRadius: '8px', border: '1px solid #fee2e2' }}>{gpsError}</div>}
+          {gpsError && <div style={{ fontSize: 13, color: '#ef4444', marginBottom: 16, background: 'rgba(239,68,68,0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)' }}>{gpsError}</div>}
 
           <div className="mobile-view-toggle">
             <div 
@@ -355,62 +421,56 @@ export default function FindClient({ initialClinics, initialQ, initialCity, init
               disabled={gpsLoading}
               className={`btn-near-me ${isNearbyMode ? 'active' : ''}`}
             >
-              <MapPin size={14} color={isNearbyMode ? "#10b981" : "#0d9488"} /> 
+              <MapPin size={14} color={isNearbyMode ? "#10b981" : "#64748b"} /> 
               {gpsLoading ? 'Locating...' : 'Near Me'}
             </button>
             <div className="status-filters">
               <div onClick={() => setStatusFilter('all')} className={`status-filter-btn ${statusFilter === 'all' ? 'active' : 'inactive'}`}>All</div>
-              <div onClick={() => setStatusFilter('open')} className={`status-filter-btn open ${statusFilter === 'open' ? 'active' : 'inactive'}`}>Open</div>
-              <div onClick={() => setStatusFilter('paused')} className={`status-filter-btn paused ${statusFilter === 'paused' ? 'active' : 'inactive'}`}>Paused</div>
-              <div onClick={() => setStatusFilter('closed')} className={`status-filter-btn closed ${statusFilter === 'closed' ? 'active' : 'inactive'}`}>Closed</div>
+              <div onClick={() => setStatusFilter('open')} className={`status-filter-btn ${statusFilter === 'open' ? 'active' : 'inactive'}`}>Open</div>
+              <div onClick={() => setStatusFilter('paused')} className={`status-filter-btn ${statusFilter === 'paused' ? 'active' : 'inactive'}`}>Paused</div>
+              <div onClick={() => setStatusFilter('closed')} className={`status-filter-btn ${statusFilter === 'closed' ? 'active' : 'inactive'}`}>Closed</div>
             </div>
             
-            <div className="filter-group">
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#4b5563', whiteSpace: 'nowrap' }}>Specialty</span>
-              <select 
-                className="filter-select"
-                value={selectedSpecialty}
-                onChange={(e) => setSelectedSpecialty(e.target.value)}
-              >
-                <option value="">Any Specialty</option>
-                {allSpecialties.map(spec => (
-                  <option key={spec} value={spec}>{spec}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="filter-group">
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#4b5563', whiteSpace: 'nowrap' }}>Distance</span>
-              <select className="filter-select">
-                <option value="">Any Distance</option>
-                <option value="5">Within 5 km</option>
-                <option value="10">Within 10 km</option>
-                <option value="20">Within 20 km</option>
-              </select>
-            </div>
+            <select 
+              className="filter-select"
+              value={selectedSpecialty}
+              onChange={(e) => setSelectedSpecialty(e.target.value)}
+            >
+              <option value="">Any Specialty</option>
+              {allSpecialties.map(spec => (
+                <option key={spec} value={spec}>{spec}</option>
+              ))}
+            </select>
           </div>
 
           <div className="clinic-list">
             {(loading || gpsLoading) ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>Loading...</div>
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading...</div>
             ) : displayedClinics.length > 0 ? (
-              displayedClinics.map(clinic => (
-                <ClinicCard 
-                  key={clinic.id || clinic.code} 
-                  clinic={clinic} 
-                  isNearby={isNearbyMode} 
-                  isSelected={selectedClinic && (selectedClinic.id === clinic.id || selectedClinic.code === clinic.code)}
-                  onClick={() => {
-                    setSelectedClinic(clinic)
-                    if (window.innerWidth <= 1024) {
-                      setActiveView('map')
-                      setMapMountKey(k => k + 1)
-                    }
-                  }}
-                />
-              ))
+              <>
+                <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "8px", color: "#f8fafc" }}>
+                  {displayedClinics.length} {displayedClinics.length === 1 ? "Result" : "Results"} Found
+                </h2>
+                {displayedClinics.map(clinic => (
+                  <ClinicCard 
+                    key={clinic.id || clinic.code} 
+                    clinic={clinic} 
+                    isNearby={isNearbyMode} 
+                    isSelected={selectedClinic && (selectedClinic.id === clinic.id || selectedClinic.code === clinic.code)}
+                    onClick={() => {
+                      setSelectedClinic(clinic)
+                      if (window.innerWidth <= 1024) {
+                        setActiveView('map')
+                        setMapMountKey(k => k + 1)
+                      }
+                    }}
+                  />
+                ))}
+              </>
             ) : (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>No clinics found.</div>
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', background: "rgba(255,255,255,0.01)", borderRadius: "16px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                No clinics found matching your search.
+              </div>
             )}
           </div>
         </div>

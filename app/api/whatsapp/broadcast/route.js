@@ -37,9 +37,8 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: 'Clinic not found' }, { status: 404 })
     }
 
-    const subExpired = clinic.current_period_end && new Date(clinic.current_period_end) < new Date()
-    if ((clinic.plan_id !== 'elite' && clinic.subscription_status !== 'trialing') || subExpired) {
-      return NextResponse.json({ success: false, error: 'Broadcasts are for active Elite plans only' }, { status: 403 })
+    if (clinic.plan_id !== 'elite' && clinic.subscription_status !== 'trialing') {
+      return NextResponse.json({ success: false, error: 'Broadcasts are for Elite plans only' }, { status: 403 })
     }
 
     // 2. Fetch Unique Patients

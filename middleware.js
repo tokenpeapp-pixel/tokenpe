@@ -22,10 +22,7 @@ export function middleware(request) {
         return NextResponse.rewrite(new URL('/maintenance', request.url));
     }
     
-    // Explicit rewrite for /clinics as well, since it's part of the new expansion landing page flow
-    if (url.startsWith('/clinics')) {
-        return NextResponse.rewrite(new URL('/maintenance', request.url));
-    }
+
 
     // Allow everything else (e.g., /, /login, /dashboard, /api, /find) to pass through to the live functionality
     return NextResponse.next();

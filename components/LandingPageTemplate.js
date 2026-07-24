@@ -1569,7 +1569,7 @@ export default function LandingPageTemplate({ config = {} }) {
       {/* ── NAV ── */}
       <nav className={`lp-nav${scrolled ? " scrolled" : ""}`}>
         <div className="lp-nav-inner">
-          <img src="/logo-light.svg" alt="TokenPe" style={{ height: 38, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
+          <img src="/logo.svg" alt="TokenPe" style={{ height: 38, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
           <div className="lp-nav-links">
             
           {/* Explore Dropdown */}

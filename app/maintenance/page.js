@@ -2,7 +2,6 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Wrench, ArrowRight, ShieldCheck } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export default function MaintenancePage() {
     const router = useRouter();
@@ -15,10 +14,7 @@ export default function MaintenancePage() {
             <div className="absolute bottom-0 left-[48%] w-[600px] h-[600px] bg-orange-200/15 rounded-full mix-blend-multiply filter blur-[120px] pointer-events-none" />
 
             <div className="relative flex-1 flex flex-col items-center justify-center p-4 sm:p-6 z-10 min-h-full py-12">
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                <div 
                     className="w-full max-w-md bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.08)] border border-white/60 p-6 sm:p-8 text-center"
                 >
                     <div className="flex justify-center mb-6">
@@ -48,10 +44,10 @@ export default function MaintenancePage() {
                     >
                         Return to Homepage <ArrowRight className="w-4 h-4" />
                     </button>
-                </motion.div>
+                </div>
                 
                 <div className="mt-8">
-                    <img src="/logo.svg" alt="TokenPe" className="h-8 w-auto brightness-0 opacity-80" />
+                    <img src="/logo-nav.svg" alt="TokenPe" className="h-8 w-auto" />
                 </div>
             </div>
         </div>

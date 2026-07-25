@@ -48,7 +48,15 @@ export const metadata = {
   },
 };
 
-const structuredData = {
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "TokenPe",
+  "alternateName": ["Token Pe", "TokenPe Online"],
+  "url": "https://tokenpe.online",
+};
+
+const softwareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "TokenPe",
@@ -77,7 +85,7 @@ export default function RootLayout({ children }) {
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify([websiteSchema, softwareSchema]) }}
         />
       </head>
       <body className="min-h-full flex flex-col">

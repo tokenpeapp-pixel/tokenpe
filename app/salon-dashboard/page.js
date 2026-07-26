@@ -39,24 +39,24 @@ const INITIAL_CLIENTS = [
     id: 'cl1', name: 'Anita Desai', phone: '9876543210', visits: 8, lastVisit: '2026-07-20', totalSpent: 12400,
     notes: 'Prefers ammonia-free hair color. Sensitive skin.',
     history: [
-      { id: 'h1', date: '2026-07-20', service: 'Global Hair Color', stylist: 'Rahul Sharma', price: 2499, notes: 'Used INOA ammonia-free. Kept for 45 mins. Good result.' },
-      { id: 'h2', date: '2026-06-10', service: 'Hair Cut & Blowdry', stylist: 'Priya Verma', price: 999, notes: 'U-cut with layers. Advised anti-frizz serum.' },
-      { id: 'h3', date: '2026-05-02', service: 'Hydra Facial & Glow', stylist: 'Priya Verma', price: 1800, notes: 'Skin was dry. Recommend extra hydration.' }
+      { id: 'h1', date: '2026-07-20', service: 'Global Hair Color', stylist: 'Rahul Sharma', price: 2499, rating: 5, notes: 'Used INOA ammonia-free. Kept for 45 mins. Good result.' },
+      { id: 'h2', date: '2026-06-10', service: 'Hair Cut & Blowdry', stylist: 'Priya Verma', price: 999, rating: 4, notes: 'U-cut with layers. Advised anti-frizz serum.' },
+      { id: 'h3', date: '2026-05-02', service: 'Hydra Facial & Glow', stylist: 'Priya Verma', price: 1800, rating: 5, notes: 'Skin was dry. Recommend extra hydration.' }
     ]
   },
   {
     id: 'cl2', name: 'Vikram Mehta', phone: '9820011223', visits: 4, lastVisit: '2026-07-15', totalSpent: 3800,
     notes: 'Prefers Rahul for haircut. Likes mint tea.',
     history: [
-      { id: 'h4', date: '2026-07-15', service: 'Haircut & Styling (Men)', stylist: 'Rahul Sharma', price: 499, notes: 'Classic fade. Trimmer on 2.' },
-      { id: 'h5', date: '2026-06-05', service: 'Haircut & Styling (Men)', stylist: 'Rahul Sharma', price: 499, notes: 'Standard cut.' }
+      { id: 'h4', date: '2026-07-15', service: 'Haircut & Styling (Men)', stylist: 'Rahul Sharma', price: 499, rating: 5, notes: 'Classic fade. Trimmer on 2.' },
+      { id: 'h5', date: '2026-06-05', service: 'Haircut & Styling (Men)', stylist: 'Rahul Sharma', price: 499, rating: 4, notes: 'Standard cut.' }
     ]
   },
   {
     id: 'cl3', name: 'Sunita Rao', phone: '9765432109', visits: 12, lastVisit: '2026-07-24', totalSpent: 24500,
     notes: 'Regular for facial every 3 weeks.',
     history: [
-      { id: 'h6', date: '2026-07-24', service: 'Hydra Facial & Glow', stylist: 'Priya Verma', price: 1800, notes: 'Extra steam applied.' }
+      { id: 'h6', date: '2026-07-24', service: 'Hydra Facial & Glow', stylist: 'Priya Verma', price: 1800, rating: 5, notes: 'Extra steam applied.' }
     ]
   }
 ]
@@ -118,6 +118,7 @@ export default function SalonDashboard() {
   const [activeUpiQr, setActiveUpiQr] = useState(null)
   const [settingsUpiId, setSettingsUpiId] = useState('')
   const [settingsName, setSettingsName] = useState('')
+  const [settingsAddress, setSettingsAddress] = useState('')
 
   // QR modal state
   const [editSalonCode, setEditSalonCode] = useState('')
@@ -140,6 +141,7 @@ export default function SalonDashboard() {
           setSalon(parsed)
           setSettingsUpiId(parsed.upi_id || '')
           setSettingsName(parsed.name || '')
+          setSettingsAddress(parsed.address || '')
           setEditSalonCode(parsed.code || '')
         }
       } catch (e) {
@@ -207,11 +209,11 @@ export default function SalonDashboard() {
     try {
       const res = await fetch('/api/clinics/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: salon.id, upiId: settingsUpiId, name: settingsName })
+        body: JSON.stringify({ clinicId: salon.id, upiId: settingsUpiId, name: settingsName, address: settingsAddress })
       })
       const data = await res.json()
       if (data.success) {
-        const updatedSalon = { ...salon, upi_id: settingsUpiId, name: settingsName }
+        const updatedSalon = { ...salon, upi_id: settingsUpiId, name: settingsName, address: settingsAddress }
         setSalon(updatedSalon)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedSalon))
         setShowSettings(false)
@@ -398,8 +400,10 @@ export default function SalonDashboard() {
             <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 rounded-lg lg:hidden transition-colors hover:bg-gray-100" style={{color:'#6B7280'}}>
               <Menu className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-bold capitalize hidden sm:block" style={{color:'#1A1A1A'}}>
-              {SIDEBAR_NAV.find(n => n.id === activeTab)?.label}
+            <h2 className="text-lg font-bold hidden sm:flex items-center gap-2" style={{color:'#1A1A1A'}}>
+              {salon?.name ? `${salon.name} ` : 'TokenPe Salon '} 
+              <span style={{color:'#D14D72'}}>|</span> 
+              <span className="capitalize" style={{color:'#6B7280'}}>{SIDEBAR_NAV.find(n => n.id === activeTab)?.label}</span>
             </h2>
           </div>
 
@@ -425,19 +429,19 @@ export default function SalonDashboard() {
             {/* 4 STATS CARDS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label:'Waiting', value: totalWaiting, sub:`~${totalWaiting*15} mins`, color:'#f59e0b' },
-                { label:'In Chair', value: totalServing, sub:'Active right now', color:'#3b82f6' },
-                { label:'Served Today', value: totalServedToday, sub:'Completed', color:'#10b981' },
-                { label:'Revenue', value: userRole==='owner'?`₹${totalRevenueToday}`:'🔒', sub: userRole==='owner'?'UPI + Cash':'Restricted view', color:'#D14D72' }
+                { label:'Waiting', value: totalWaiting, sub:`~${totalWaiting*15} mins` },
+                { label:'In Chair', value: totalServing, sub:'Active right now' },
+                { label:'Served Today', value: totalServedToday, sub:'Completed' },
+                { label:'Revenue', value: userRole==='owner'?`₹${totalRevenueToday}`:'🔒', sub: userRole==='owner'?'UPI + Cash':'Restricted view' }
               ].map((card, i) => (
                 <motion.div
                   key={card.label}
                   initial={{ opacity:0, y:14 }}
                   animate={{ opacity:1, y:0 }}
                   transition={{ duration:0.35, delay: i*0.07, ease:'easeOut' }}
-                  whileHover={{ y:-2, boxShadow:'0 8px 24px rgba(0,0,0,0.08)' }}
-                  className="p-5 bg-white rounded-2xl flex flex-col cursor-default"
-                  style={{border:'1px solid #EFEFEF', borderLeft:`3px solid ${card.color}`}}
+                  whileHover={{ y:-4, boxShadow:'0 12px 30px rgba(209, 77, 114, 0.15)', borderColor:'#D14D72' }}
+                  className="p-5 bg-white rounded-2xl flex flex-col transition-all cursor-default"
+                  style={{border:'1px solid #EFEFEF', borderLeft:`3px solid #D14D72`}}
                 >
                   <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>{card.label}</span>
                   <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{card.value}</div>
@@ -455,8 +459,12 @@ export default function SalonDashboard() {
                   <button onClick={handleCallNext} className="px-5 py-2.5 text-white font-semibold rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all" style={{background:'#D14D72',transform:'scale(1)'}} onMouseEnter={e=>{e.currentTarget.style.background='#C0405F';e.currentTarget.style.transform='scale(1.02)'}} onMouseLeave={e=>{e.currentTarget.style.background='#D14D72';e.currentTarget.style.transform='scale(1)'}}>
                     <Play className="w-4 h-4 fill-white" /> Call Next
                   </button>
+                  <button onClick={() => {setIsQueuePaused(!isQueuePaused); showToast(isQueuePaused ? 'Queue resumed' : 'Queue paused');}} className="px-5 py-2.5 font-semibold rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all" style={{background: isQueuePaused ? '#FEF2F2' : '#F3F4F6',color: isQueuePaused ? '#EF4444' : '#4B5563',border:`1px solid ${isQueuePaused ? '#FCA5A5' : '#E5E7EB'}`}}>
+                    {isQueuePaused ? <Play className="w-4 h-4" /> : <span className="font-bold text-lg leading-none" style={{transform:'translateY(-1px)'}}>II</span>}
+                    {isQueuePaused ? 'Resume Queue' : 'Pause Queue'}
+                  </button>
                   {(userRole === 'owner' || userRole === 'manager' || userRole === 'receptionist') && (
-                    <button onClick={() => setShowAddWalkin(true)} className="px-5 py-2.5 font-medium rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all" style={{background:'#FBEAEF',color:'#D14D72',border:'1px solid #D14D72',transform:'scale(1)'}} onMouseEnter={e=>{e.currentTarget.style.background='#F5D6E2';e.currentTarget.style.transform='scale(1.02)'}} onMouseLeave={e=>{e.currentTarget.style.background='#FBEAEF';e.currentTarget.style.transform='scale(1)'}}>
+                    <button disabled={isQueuePaused} onClick={() => {if(!isQueuePaused) setShowAddWalkin(true)}} className={`px-5 py-2.5 font-medium rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all ${isQueuePaused ? 'opacity-50 cursor-not-allowed' : ''}`} style={{background:'#FBEAEF',color:'#D14D72',border:'1px solid #D14D72'}} onMouseEnter={e=>{if(!isQueuePaused) {e.currentTarget.style.background='#F5D6E2';e.currentTarget.style.transform='scale(1.02)'}}} onMouseLeave={e=>{if(!isQueuePaused) {e.currentTarget.style.background='#FBEAEF';e.currentTarget.style.transform='scale(1)'}}}>
                       <UserPlus className="w-4 h-4" /> Add Walk-in
                     </button>
                   )}
@@ -627,6 +635,7 @@ export default function SalonDashboard() {
                                   <th className="px-4 py-3 font-semibold rounded-tl-xl">Date</th>
                                   <th className="px-4 py-3 font-semibold">Service</th>
                                   <th className="px-4 py-3 font-semibold">Stylist</th>
+                                  <th className="px-4 py-3 font-semibold">Rating</th>
                                   <th className="px-4 py-3 font-semibold rounded-tr-xl text-right">Paid</th>
                                 </tr>
                               </thead>
@@ -647,6 +656,19 @@ export default function SalonDashboard() {
                                         {v.note && <div className="text-[10px] mt-0.5 px-2 py-1 rounded inline-block" style={{background:'#FBEAEF',color:'#D14D72'}}>{v.note}</div>}
                                       </td>
                                       <td className="px-4 py-4 font-medium" style={{color:'#6B7280'}}>{v.stylist}</td>
+                                      <td className="px-4 py-4">
+                                        {v.rating ? (
+                                          <div className="flex items-center gap-0.5">
+                                            {[...Array(5)].map((_, idx) => (
+                                              <svg key={idx} className={`w-3.5 h-3.5 ${idx < v.rating ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                              </svg>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <span className="text-xs" style={{color:'#9CA3AF'}}>No rating</span>
+                                        )}
+                                      </td>
                                       <td className="px-4 py-4 text-right font-bold" style={{color:'#1A1A1A'}}>₹{v.price}</td>
                                     </tr>
                                   ))
@@ -790,6 +812,10 @@ export default function SalonDashboard() {
                   <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Direct UPI ID</label>
                   <input value={settingsUpiId} onChange={e => setSettingsUpiId(e.target.value)} placeholder="e.g. yourname@sbi" className="w-full rounded-xl px-3.5 py-2.5 outline-none transition-all" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}} onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}} onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}} />
                   <p className="text-[10px] mt-1.5 leading-relaxed" style={{color:'#6B7280'}}>Payments will go directly to your bank account via Counter Billing QR.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Salon Address</label>
+                  <input value={settingsAddress} onChange={e => setSettingsAddress(e.target.value)} placeholder="e.g. 123 Main Street" className="w-full rounded-xl px-3.5 py-2.5 outline-none transition-all" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}} onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}} onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}} />
                 </div>
                 <button type="submit" className="w-full py-3 text-white font-bold rounded-xl shadow-md transition-all mt-2" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>
                   Save All Changes

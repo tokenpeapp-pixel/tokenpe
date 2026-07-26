@@ -268,19 +268,19 @@ export default function SalonDashboard() {
       </AnimatePresence>
 
       {/* ─── LEFT SIDEBAR (OVERLAY ON MOBILE) ─── */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden"
-            />
-            <motion.aside 
-              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
-              className="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 shadow-2xl lg:shadow-none lg:static lg:block flex flex-col h-full"
-            >
-              {/* Sidebar Header */}
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+        />
+      )}
+      
+      {/* Sidebar Container */}
+      <aside 
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 shadow-2xl lg:shadow-none lg:static lg:block flex flex-col h-full transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        {/* Sidebar Header */}
               <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
@@ -352,10 +352,7 @@ export default function SalonDashboard() {
                   </div>
                 </div>
               </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+      </aside>
 
       {/* ─── MAIN CONTENT AREA ─── */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
@@ -577,10 +574,44 @@ export default function SalonDashboard() {
                               className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 shadow-sm focus:outline-none focus:border-slate-400"
                             />
                             {crmSearchDate && (
-                              <button onClick={() => setCrmSearchDate('')} className="absolute right-[-24px] top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                              <button onClick={() => setCrmSearchDate('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             )}
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                              <thead className="text-xs text-slate-500 uppercase bg-slate-50">
+                                <tr>
+                                  <th className="px-4 py-3 font-semibold rounded-tl-xl">Date</th>
+                                  <th className="px-4 py-3 font-semibold">Service</th>
+                                  <th className="px-4 py-3 font-semibold">Stylist</th>
+                                  <th className="px-4 py-3 font-semibold rounded-tr-xl text-right">Paid</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {filteredHistory.length === 0 ? (
+                                  <tr>
+                                    <td colSpan="4" className="px-4 py-8 text-center text-slate-400">No visits found in this date range.</td>
+                                  </tr>
+                                ) : (
+                                  filteredHistory.map((v, i) => (
+                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                      <td className="px-4 py-4 whitespace-nowrap">
+                                        <div className="font-semibold text-slate-900">{v.date}</div>
+                                        <div className="text-[10px] text-slate-400 mt-0.5">{v.time}</div>
+                                      </td>
+                                      <td className="px-4 py-4">
+                                        <div className="font-semibold text-slate-900">{v.service}</div>
+                                        {v.note && <div className="text-[10px] text-slate-500 mt-0.5 bg-slate-100 px-2 py-1 rounded inline-block">{v.note}</div>}
+                                      </td>
+                                      <td className="px-4 py-4 text-slate-600 font-medium">{v.stylist}</td>
+                                      <td className="px-4 py-4 text-right font-bold text-slate-900">₹{v.price}</td>
+                                    </tr>
+                                  ))
+                                )}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
 

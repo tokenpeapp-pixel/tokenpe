@@ -257,217 +257,220 @@ export default function SalonDashboard() {
   const totalServing = queue.filter(q => q.status === 'serving').length
 
   return (
-    <div className="min-h-screen bg-[#0d0914] text-slate-100 font-sans selection:bg-rose-500 selection:text-white pb-12">
+    <div className="min-h-screen bg-[#0d0914] text-slate-100 font-sans selection:bg-rose-500 selection:text-white pb-20">
       
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 bg-rose-900/90 border border-rose-500/40 text-white rounded-2xl shadow-2xl backdrop-blur-xl">
-            <Sparkles className="w-5 h-5 text-rose-400 shrink-0" />
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="fixed top-4 left-4 right-4 sm:left-auto sm:right-5 sm:w-auto z-50 flex items-center gap-3 px-4 py-3 bg-rose-900/95 border border-rose-500/40 text-white rounded-2xl shadow-2xl backdrop-blur-xl">
+            <Sparkles className="w-4 h-4 text-rose-400 shrink-0" />
             <span className="text-sm font-semibold">{toast.msg}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* TOP NAVBAR */}
-      <header className="sticky top-0 z-40 bg-[#160f22]/90 backdrop-blur-xl border-b border-rose-900/30 px-4 lg:px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-600/30 text-white font-bold">
-              <Scissors className="w-5 h-5" />
+      {/* TOP NAVBAR — MOBILE FRIENDLY 2-ROW LAYOUT */}
+      <header className="sticky top-0 z-40 bg-[#160f22]/95 backdrop-blur-xl border-b border-rose-900/30">
+        {/* Row 1: Brand + Quick Actions */}
+        <div className="flex items-center justify-between px-3 sm:px-5 lg:px-8 py-2.5 gap-2">
+          
+          {/* Salon Brand */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-600/30 text-white shrink-0">
+              <Scissors className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                {salon?.name || 'TokenPe Salon'}
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-mono font-medium border border-rose-500/30">
-                  CODE: {salon?.code || 'GLAM99'}
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5 flex-wrap leading-tight">
+                <span className="truncate max-w-[100px] xs:max-w-[140px] sm:max-w-none">{salon?.name || 'TokenPe Salon'}</span>
+                <span className="text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-mono font-medium border border-rose-500/30 shrink-0">
+                  {salon?.code || 'GLAM99'}
                 </span>
               </h1>
-              <p className="text-xs text-slate-400 flex items-center gap-2">
+              <p className="text-[10px] text-slate-400 hidden sm:flex items-center gap-1.5 mt-0.5">
                 <span>{salon?.specialty || 'Unisex Salon'}</span>
                 <span>•</span>
                 <span className="text-emerald-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Queue Active
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
                 </span>
               </p>
             </div>
           </div>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={() => setShowQrModal(true)} className="p-2 sm:p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-rose-400 transition-colors" title="View Salon QR">
+              <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+            <button onClick={handleLogout} className="p-2 sm:p-2.5 bg-slate-900 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-800/40 rounded-xl text-slate-400 hover:text-rose-300 transition-colors" title="Logout">
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* ROLE CONTROLLER & USER PROFILE */}
-        <div className="flex items-center gap-3">
-          
-          {/* Role Badge & Switcher */}
-          <div className="relative flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-800">
-            <span className="text-xs text-slate-400 font-bold px-2 hidden md:inline-block">ROLE:</span>
+        {/* Row 2: Role Switcher — Full Width, Touch-Friendly */}
+        <div className="px-3 sm:px-5 lg:px-8 pb-2">
+          <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+            <span className="text-[10px] text-slate-500 font-bold px-1.5 shrink-0 hidden sm:inline">ROLE</span>
             {[
               { id: 'owner', label: 'Owner', icon: '👑' },
-              { id: 'manager', label: 'Manager', icon: '💼' },
+              { id: 'manager', label: 'Mgr', icon: '💼' },
               { id: 'stylist', label: 'Stylist', icon: '✂️' },
-              { id: 'receptionist', label: 'Reception', icon: '🏷️' }
+              { id: 'receptionist', label: 'Recep.', icon: '🏷️' }
             ].map(r => (
               <button
                 key={r.id}
                 onClick={() => {
                   setUserRole(r.id)
                   localStorage.setItem('tokenpe_salon_role', r.id)
-                  showToast(`Switched view to ${r.label} Role mode!`, 'info')
+                  showToast(`Switched to ${r.label} role!`, 'info')
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                className={`flex-1 px-2 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
                   userRole === r.id 
                     ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md' 
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-slate-400 hover:text-slate-200 active:bg-slate-800'
                 }`}
               >
-                <span>{r.icon}</span>
-                <span className="hidden sm:inline">{r.label}</span>
+                <span className="text-sm sm:text-xs">{r.icon}</span>
+                <span className="hidden xs:inline sm:inline text-[11px] sm:text-xs">{r.label}</span>
               </button>
             ))}
           </div>
-
-          <button onClick={() => setShowQrModal(true)} className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-rose-400 transition-colors" title="View Salon QR Code">
-            <QrCode className="w-5 h-5" />
-          </button>
-
-          <button onClick={handleLogout} className="p-2.5 bg-slate-900 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-800/40 rounded-xl text-slate-400 hover:text-rose-300 transition-colors" title="Logout">
-            <LogOut className="w-5 h-5" />
-          </button>
         </div>
       </header>
 
       {/* DASHBOARD CONTAINER */}
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 pt-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 pt-4">
 
         {/* METRICS STATS BAR */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           
           {/* Waiting Count */}
-          <div className="p-5 rounded-2xl bg-[#160f22] border border-rose-900/20 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Clients Waiting</span>
-              <Users className="w-5 h-5 text-rose-400" />
+          <div className="p-3.5 sm:p-5 rounded-2xl bg-[#160f22] border border-rose-900/20 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between text-slate-400 mb-1.5">
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">Waiting</span>
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-rose-400" />
             </div>
-            <div className="text-3xl font-extrabold text-white">{totalWaiting}</div>
-            <p className="text-xs text-rose-300/70 mt-1">Est. wait: {totalWaiting * 15} mins</p>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white">{totalWaiting}</div>
+            <p className="text-[10px] sm:text-xs text-rose-300/70 mt-0.5">~{totalWaiting * 15} mins</p>
           </div>
 
           {/* Currently Serving */}
-          <div className="p-5 rounded-2xl bg-[#160f22] border border-rose-900/20 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">In Styling Chairs</span>
-              <Scissors className="w-5 h-5 text-pink-400" />
+          <div className="p-3.5 sm:p-5 rounded-2xl bg-[#160f22] border border-rose-900/20 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between text-slate-400 mb-1.5">
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">In Chair</span>
+              <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-pink-400" />
             </div>
-            <div className="text-3xl font-extrabold text-white">{totalServing}</div>
-            <p className="text-xs text-pink-300/70 mt-1">Active services ongoing</p>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white">{totalServing}</div>
+            <p className="text-[10px] sm:text-xs text-pink-300/70 mt-0.5">Active now</p>
           </div>
 
           {/* Served Today */}
-          <div className="p-5 rounded-2xl bg-[#160f22] border border-rose-900/20 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Completed Today</span>
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
+          <div className="p-3.5 sm:p-5 rounded-2xl bg-[#160f22] border border-rose-900/20 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between text-slate-400 mb-1.5">
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">Done Today</span>
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
-            <div className="text-3xl font-extrabold text-white">{totalServedToday}</div>
-            <p className="text-xs text-emerald-300/70 mt-1">Clients served</p>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white">{totalServedToday}</div>
+            <p className="text-[10px] sm:text-xs text-emerald-300/70 mt-0.5">Served</p>
           </div>
 
-          {/* Revenue (Owner Only) */}
-          <div className="p-5 rounded-2xl bg-[#160f22] border border-rose-900/20 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Today&apos;s Sales</span>
-              <DollarSign className="w-5 h-5 text-amber-400" />
+          {/* Revenue */}
+          <div className="p-3.5 sm:p-5 rounded-2xl bg-[#160f22] border border-rose-900/20 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between text-slate-400 mb-1.5">
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">Revenue</span>
+              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
             </div>
-            <div className="text-3xl font-extrabold text-white">
-              {userRole === 'owner' || userRole === 'receptionist' ? `₹${totalRevenueToday}` : '🔒 Restricted'}
+            <div className="text-xl sm:text-3xl font-extrabold text-white break-all">
+              {userRole === 'owner' || userRole === 'receptionist' ? `₹${totalRevenueToday}` : '🔒'}
             </div>
-            <p className="text-xs text-amber-300/70 mt-1">
-              {userRole === 'owner' ? 'Includes UPI & Cash' : 'Financial breakdown'}
+            <p className="text-[10px] sm:text-xs text-amber-300/70 mt-0.5">
+              {userRole === 'owner' ? 'UPI + Cash' : 'Restricted'}
             </p>
           </div>
         </div>
 
         {/* ROLE TAB NAVIGATION */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-hide border-b border-slate-800">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-5 scrollbar-hide border-b border-slate-800 -mx-3 sm:-mx-4 lg:-mx-8 px-3 sm:px-4 lg:px-8">
 
           {/* Live Queue Tab (All Roles) */}
           <button
             onClick={() => setActiveTab('queue')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${
+            className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === 'queue' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900/60 text-slate-400 hover:text-white'
             }`}
           >
-            <Clock className="w-4 h-4" /> Live Queue & Walk-ins
+            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Queue
           </button>
 
-          {/* Stylist Calendar (Stylist & Manager & Owner) */}
+          {/* Stylist Calendar */}
           {(userRole === 'stylist' || userRole === 'manager' || userRole === 'owner') && (
             <button
               onClick={() => setActiveTab('calendar')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${
+              className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'calendar' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900/60 text-slate-400 hover:text-white'
               }`}
             >
-              <Calendar className="w-4 h-4" /> {userRole === 'stylist' ? 'My Schedule & Notes' : 'Stylist Schedules'}
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {userRole === 'stylist' ? 'Schedule' : 'Schedules'}
             </button>
           )}
 
-          {/* Revenue & Sales Reports (Owner Only) */}
+          {/* Revenue & Analytics (Owner Only) */}
           {userRole === 'owner' && (
             <button
               onClick={() => setActiveTab('sales')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${
+              className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'sales' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900/60 text-slate-400 hover:text-white'
               }`}
             >
-              <BarChart3 className="w-4 h-4" /> Revenue & Analytics
+              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Revenue
             </button>
           )}
 
-          {/* Staff & Commissions (Owner & Stylist) */}
+          {/* Staff & Commissions */}
           {(userRole === 'owner' || userRole === 'stylist') && (
             <button
               onClick={() => setActiveTab('staff')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${
+              className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'staff' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900/60 text-slate-400 hover:text-white'
               }`}
             >
-              <Award className="w-4 h-4" /> {userRole === 'stylist' ? 'My Earnings & Commission' : 'Staff & Commissions'}
+              <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {userRole === 'stylist' ? 'Earnings' : 'Staff'}
             </button>
           )}
 
-          {/* Inventory Tracking (Manager & Owner) */}
+          {/* Inventory (Manager & Owner) */}
           {(userRole === 'owner' || userRole === 'manager') && (
             <button
               onClick={() => setActiveTab('inventory')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${
+              className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'inventory' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900/60 text-slate-400 hover:text-white'
               }`}
             >
-              <Package className="w-4 h-4" /> Inventory & Stock
+              <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Stock
             </button>
           )}
 
-          {/* Client CRM (Manager & Owner & Receptionist) */}
+          {/* Client CRM */}
           {(userRole === 'owner' || userRole === 'manager' || userRole === 'receptionist') && (
             <button
               onClick={() => setActiveTab('crm')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${
+              className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'crm' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900/60 text-slate-400 hover:text-white'
               }`}
             >
-              <UserCheck className="w-4 h-4" /> Client CRM & History
+              <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Clients
             </button>
           )}
 
-          {/* Service Menu & Pricing (Owner Only) */}
+          {/* Services & Pricing (Owner Only) */}
           {userRole === 'owner' && (
             <button
               onClick={() => setActiveTab('services')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${
+              className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'services' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900/60 text-slate-400 hover:text-white'
               }`}
             >
-              <Scissors className="w-4 h-4" /> Services & Pricing
+              <Scissors className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Services
             </button>
           )}
         </div>
@@ -479,43 +482,42 @@ export default function SalonDashboard() {
           <div className="space-y-6">
             
             {/* Action Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-[#160f22] p-4 rounded-2xl border border-rose-900/20">
-              <div className="flex items-center gap-3">
+            <div className="bg-[#160f22] p-3 sm:p-4 rounded-2xl border border-rose-900/20 space-y-2.5">
+              {/* Primary Actions */}
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleCallNext}
-                  className="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 text-sm"
+                  className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/30 transition-all flex items-center justify-center gap-2 text-sm"
                 >
-                  <Play className="w-4 h-4 fill-white" /> Call Next Client
+                  <Play className="w-4 h-4 fill-white" /> Call Next
                 </button>
 
                 {(userRole === 'owner' || userRole === 'manager' || userRole === 'receptionist') && (
                   <button
                     onClick={() => setShowAddWalkin(true)}
-                    className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl transition-all flex items-center gap-2 text-sm border border-slate-700"
+                    className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm border border-slate-700"
                   >
-                    <UserPlus className="w-4 h-4 text-rose-400" /> Add Walk-in Client
+                    <UserPlus className="w-4 h-4 text-rose-400" /> Walk-in
                   </button>
                 )}
 
                 {(userRole === 'receptionist' || userRole === 'owner') && (
                   <button
                     onClick={() => setShowAddInvoice(true)}
-                    className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-all flex items-center gap-2 text-sm shadow-md"
+                    className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm shadow-md"
                   >
-                    <Receipt className="w-4 h-4" /> Counter Billing & UPI
+                    <Receipt className="w-4 h-4" /> Bill & UPI
                   </button>
                 )}
-              </div>
 
-              <div className="flex items-center gap-3">
                 <button
                   onClick={() => setIsQueuePaused(!isQueuePaused)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-2 ${
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors flex items-center justify-center gap-2 ${
                     isQueuePaused ? 'bg-amber-950/60 border-amber-800/40 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-400'
                   }`}
                 >
-                  {isQueuePaused ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                  {isQueuePaused ? 'Queue Paused' : 'Pause Queue'}
+                  {isQueuePaused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  {isQueuePaused ? 'Paused' : 'Pause'}
                 </button>
               </div>
             </div>
@@ -583,35 +585,32 @@ export default function SalonDashboard() {
                     </div>
                   ) : (
                     queue.filter(q => q.status === 'waiting').map((item, idx) => (
-                      <div key={item.id} className="p-4 bg-[#160f22] border border-slate-800/80 rounded-2xl flex items-center justify-between hover:border-slate-700 transition-colors">
-                        <div className="flex items-center gap-4">
-                          <span className="w-10 h-10 rounded-xl bg-slate-900 text-rose-400 font-mono font-bold flex items-center justify-center text-sm border border-slate-800">
+                      <div key={item.id} className="p-3 sm:p-4 bg-[#160f22] border border-slate-800/80 rounded-2xl hover:border-slate-700 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 text-rose-400 font-mono font-bold flex items-center justify-center text-xs sm:text-sm border border-slate-800 shrink-0">
                             {item.tokenNum}
                           </span>
-                          <div>
-                            <div className="font-bold text-white text-base">{item.clientName}</div>
-                            <div className="text-xs text-slate-400">{item.service} • Assigned to: <strong className="text-slate-300">{item.stylist}</strong></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-white text-sm sm:text-base truncate">{item.clientName}</div>
+                            <div className="text-xs text-slate-400 truncate">{item.service}</div>
+                            <div className="text-xs text-slate-500">→ <strong className="text-slate-400">{item.stylist}</strong></div>
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-6">
-                          <div className="text-right">
-                            <div className="text-xs text-rose-400 font-semibold flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5" /> ~{item.waitTimeMins} mins
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="text-right hidden xs:block">
+                              <div className="text-xs text-rose-400 font-semibold">~{item.waitTimeMins}m</div>
+                              <div className="text-[10px] text-slate-500">#{idx + 1}</div>
                             </div>
-                            <div className="text-[11px] text-slate-500">Position #{idx + 1}</div>
+                            <button
+                              onClick={() => {
+                                setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'serving' } : q))
+                                showToast(`Moved ${item.clientName} to styling chair!`)
+                              }}
+                              className="w-9 h-9 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-xl transition-all flex items-center justify-center"
+                              title="Move to Chair"
+                            >
+                              <Play className="w-4 h-4" />
+                            </button>
                           </div>
-                          
-                          <button
-                            onClick={() => {
-                              setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'serving' } : q))
-                              showToast(`Moved ${item.clientName} to styling chair!`)
-                            }}
-                            className="p-2 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-xl transition-all"
-                            title="Move to Chair"
-                          >
-                            <Play className="w-4 h-4" />
-                          </button>
                         </div>
                       </div>
                     ))
@@ -676,13 +675,13 @@ export default function SalonDashboard() {
         {/* ─── TAB 3: REVENUE & SALES REPORTS (OWNER ONLY) ─── */}
         {activeTab === 'sales' && userRole === 'owner' && (
           <div className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              <div className="p-6 bg-[#160f22] border border-rose-900/20 rounded-2xl col-span-2">
-                <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-rose-400" /> Daily Revenue Breakdown
+              <div className="p-4 sm:p-6 bg-[#160f22] border border-rose-900/20 rounded-2xl md:col-span-2">
+                <h3 className="text-base sm:text-lg font-bold text-white mb-1 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-rose-400" /> Daily Revenue Breakdown
                 </h3>
-                <p className="text-xs text-slate-400 mb-6">Real-time payment collections breakdown</p>
+                <p className="text-xs text-slate-400 mb-4">Real-time payment collections</p>
 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-4 bg-slate-900/80 rounded-xl border border-slate-800">
@@ -702,7 +701,7 @@ export default function SalonDashboard() {
               </div>
 
               {/* Business Analytics */}
-              <div className="p-6 bg-[#160f22] border border-rose-900/20 rounded-2xl">
+              <div className="p-4 sm:p-6 bg-[#160f22] border border-rose-900/20 rounded-2xl">
                 <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-rose-400" /> Peak Business Analytics
                 </h3>

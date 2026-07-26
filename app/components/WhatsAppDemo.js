@@ -23,7 +23,7 @@ const DEFAULT_FLOW = [
   { side: "bot", type: "voice", time: "11:04 AM", lang: "English", dur: "0:11", delay: 1500 },
   { side: "bot", type: "rating", time: "11:05 AM", msg: { title: "Rate Your Experience", body: "How was your visit at Star Business?\nYour feedback helps us improve! 🙏", button: "Tap to Rate" }, delay: 2000 },
   { side: "pat", type: "rating-reply", time: "11:05 AM", msg: { title: "Rate Your Experience", quoteBody: "How was your visit at Star Business?...", text: "⭐⭐⭐⭐⭐ Excellent" }, delay: 1500 },
-  { side: "bot", type: "text", time: "11:05 AM", text: "🙏 *Thank You, Rohan!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!\n\nThank you for visiting *Star Business*. Have a great day! 🌟", delay: 3500 },
+  { side: "bot", type: "text", time: "11:05 AM", text: "🙏 *Thank You, Dipak Shah!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!\n\nThank you for visiting *Star Business*. Have a great day! 🌟", delay: 3500 },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

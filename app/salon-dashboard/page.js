@@ -293,7 +293,12 @@ export default function SalonDashboard() {
     } catch { showToast('Error updating code', 'error') }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch (e) {
+      console.error('Logout error', e)
+    }
     localStorage.removeItem('tokenpe_clinic')
     localStorage.removeItem('tokenpe_salon_role')
     router.push('/salon-login')

@@ -7,8 +7,9 @@ import { after } from 'next/server'
 export async function POST(req) {
     try {
         const body = await req.json()
-        const { intent } = body
+        const { intent, vertical = 'clinic' } = body
         const authHeader = req.headers.get('Authorization')
+        const tableName = vertical === 'salon' ? 'salons' : 'clinics'
 
         if (!authHeader) {
             return Response.json({ success: false, message: 'Missing token' }, { status: 400 })
@@ -23,7 +24,7 @@ export async function POST(req) {
 
         // Fetch user clinics via admin (bypassing RLS)
         const { data: clinics, error: clinicError } = await supabaseAdmin
-            .from('clinics')
+            .from(tableName)
             .select('*')
             .eq('email', user.email)
             .order('created_at', { ascending: true })
@@ -43,12 +44,12 @@ export async function POST(req) {
             for (let i = 0; i < strToHash.length; i++) { hash = (hash << 5) - hash + strToHash.charCodeAt(i); hash |= 0 }
             const dailyNum = (Math.abs(hash) % 900) + 100
             const newCode = `${clean}${dailyNum}`
-            
+
             finalClinicData = clinicData
-            
+
             if (clinicData.code !== newCode) {
                 const { data: updated, error: updateError } = await supabaseAdmin
-                    .from('clinics')
+                    .from(tableName)
                     .update({ code: newCode })
                     .eq('id', clinicData.id)
                     .select()
@@ -73,12 +74,12 @@ export async function POST(req) {
             for (let i = 0; i < strToHash.length; i++) { hash = (hash << 5) - hash + strToHash.charCodeAt(i); hash |= 0 }
             const num = (Math.abs(hash) % 900) + 100
             const newCode = `${clean}${num}`
-            
+
             const trialEndsAt = new Date()
             trialEndsAt.setDate(trialEndsAt.getDate() + 7)
 
             const newClinicData = {
-                name: user.user_metadata?.full_name || 'My Clinic',
+                name: user.user_metadata?.full_name || (vertical === 'salon' ? 'My Salon' : 'My Clinic'),
                 email: user.email,
                 code: newCode,
                 phone: '0000000000',
@@ -88,7 +89,7 @@ export async function POST(req) {
             }
 
             const { data: insertedClinic, error: insertError } = await supabaseAdmin
-                .from('clinics')
+                .from(tableName)
                 .insert(newClinicData)
                 .select()
                 .single()
@@ -99,7 +100,7 @@ export async function POST(req) {
 
             finalClinicData = insertedClinic
             userClinicsToReturn = [insertedClinic]
-            
+
             // Send welcome email in background
             after(async () => {
                 await sendWelcomeEmail(finalClinicData.email, finalClinicData.name)
@@ -111,7 +112,7 @@ export async function POST(req) {
             clinicId: finalClinicData.id,
             clinicCode: finalClinicData.code,
             phone: finalClinicData.phone || '0000000000'
-        }   
+        }
         const token = await signToken(sessionPayload)
 
         // Set secure cookie
@@ -124,11 +125,11 @@ export async function POST(req) {
             path: '/'
         })
 
-        return Response.json({ 
-            success: true, 
+        return Response.json({
+            success: true,
             clinic: finalClinicData,
             userClinics: userClinicsToReturn,
-            isNewRegistration 
+            isNewRegistration
         }, { status: 200 })
 
     } catch (error) {

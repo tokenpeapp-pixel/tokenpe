@@ -42,7 +42,7 @@ function SalonAuthCallbackContent() {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ intent })
+                    body: JSON.stringify({ intent, vertical: 'salon' })
                 })
 
                 const data = await res.json()

@@ -83,15 +83,13 @@ export default function SalonDashboard() {
   const [clientSearchQuery, setClientSearchQuery] = useState('')
 
   // Salon Data State
-  const [queue, setQueue] = useState(INITIAL_QUEUE)
-  const [completedToday, setCompletedToday] = useState([
-    { id: 'qc1', tokenNum: 'S-00', clientName: 'Rohan Gupta', service: 'Hair Cut & Blowdry', stylist: 'Rahul Sharma', price: 999, paymentMode: 'UPI', completedAt: '11:45 AM' }
-  ])
+  const [queue, setQueue] = useState([])
+  const [completedToday, setCompletedToday] = useState([])
   const [isQueuePaused, setIsQueuePaused] = useState(false)
   const [services, setServices] = useState(INITIAL_SERVICES)
   const [staff, setStaff] = useState(INITIAL_STAFF)
   const [inventory, setInventory] = useState(INITIAL_INVENTORY)
-  const [clients, setClients] = useState(INITIAL_CLIENTS)
+  const [clients, setClients] = useState([])
 
   // Modals state
   const [showAddWalkin, setShowAddWalkin] = useState(false)
@@ -130,6 +128,32 @@ export default function SalonDashboard() {
   // Service price editing
   const [editingPrices, setEditingPrices] = useState({})
 
+  const fetchQueueData = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const res = await fetch(`/api/salons/queue/get?date=${today}`)
+      const data = await res.json()
+      if (data.success) {
+        setQueue(data.queue.filter(q => q.status !== 'completed' && q.status !== 'skipped').map(q => ({
+          id: q.id, tokenNum: q.token_num, clientName: q.client_name, phone: q.phone,
+          service: q.service, stylist: q.stylist, price: q.price, status: q.status,
+          joinedAt: new Date(q.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          waitTimeMins: Math.floor((new Date() - new Date(q.joined_at)) / 60000)
+        })))
+        setCompletedToday(data.history.map(h => ({
+          id: h.id, tokenNum: h.queue_id || h.id.slice(0, 8), clientName: h.salon_customers?.name || 'Customer', 
+          service: h.service, stylist: h.stylist, price: h.price, paymentMode: 'UPI', 
+          completedAt: new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        })))
+        setClients(data.clients.map(c => ({
+          id: c.id, name: c.name, phone: c.phone, visits: c.visits, totalSpent: c.total_spent,
+          notes: c.notes, lastVisit: c.last_visit ? new Date(c.last_visit).toLocaleDateString() : '',
+          history: [] // Client history can be fetched specifically later
+        })))
+      }
+    } catch (e) { console.error('Fetch Queue Error', e) }
+  }
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -152,43 +176,67 @@ export default function SalonDashboard() {
     init()
   }, [])
 
-  const handleCallNext = () => {
+  useEffect(() => {
+    if (salon?.id) {
+      fetchQueueData()
+      const interval = setInterval(fetchQueueData, 10000) // Auto refresh every 10s
+      return () => clearInterval(interval)
+    }
+  }, [salon?.id])
+
+  const handleCallNext = async () => {
     const nextWaiting = queue.find(q => q.status === 'waiting')
     if (!nextWaiting) {
       showToast('No clients in waiting queue!', 'error')
       return
     }
-    setQueue(prev => prev.map(q => q.id === nextWaiting.id ? { ...q, status: 'serving' } : q))
-    showToast(`Called ${nextWaiting.clientName} to styling chair.`)
+    try {
+      const res = await fetch('/api/salons/queue/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queueId: nextWaiting.id, status: 'serving' })
+      })
+      if (res.ok) {
+        showToast(`Called ${nextWaiting.clientName} to styling chair.`)
+        fetchQueueData()
+      }
+    } catch (e) { showToast('Error updating queue', 'error') }
   }
 
-  const handleCompleteService = (id) => {
+  const handleCompleteService = async (id) => {
     const item = queue.find(q => q.id === id)
     if (!item) return
-    setQueue(prev => prev.filter(q => q.id !== id))
-    setCompletedToday(prev => [{
-      id: `qc_${Date.now()}`, tokenNum: item.tokenNum, clientName: item.clientName, service: item.service,
-      stylist: item.stylist, price: item.price, paymentMode: 'UPI', completedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }, ...prev])
-    showToast(`Completed service for ${item.clientName}! Recorded ₹${item.price}.`)
+    try {
+      const res = await fetch('/api/salons/queue/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queueId: id, status: 'completed' })
+      })
+      if (res.ok) {
+        showToast(`Completed service for ${item.clientName}! Recorded ₹${item.price}.`)
+        fetchQueueData()
+      }
+    } catch (e) { showToast('Error completing service', 'error') }
   }
 
-  const handleAddWalkinSubmit = (e) => {
+  const handleAddWalkinSubmit = async (e) => {
     e.preventDefault()
     if (!newClientName || !newClientPhone) return
     const selectedSvc = services.find(s => s.id === newServiceId) || services[0]
     const selectedStf = staff.find(s => s.id === newStylistId) || staff[0]
-    const nextTokenNum = `S-0${queue.length + completedToday.length + 1}`
-    const newQueueItem = {
-      id: `q_${Date.now()}`, tokenNum: nextTokenNum, clientName: newClientName, phone: newClientPhone,
-      service: selectedSvc.name, stylist: selectedStf.name, price: selectedSvc.price, status: 'waiting',
-      waitTimeMins: (queue.filter(q => q.status === 'waiting').length + 1) * 15,
-      joinedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-    setQueue(prev => [...prev, newQueueItem])
-    setShowAddWalkin(false)
-    setNewClientName(''); setNewClientPhone('')
-    showToast(`Added ${newClientName} to queue with Token ${nextTokenNum}!`)
+    
+    try {
+      const res = await fetch('/api/salons/queue/add', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newClientName, phone: newClientPhone, service: selectedSvc.name, stylist: selectedStf.name, price: selectedSvc.price })
+      })
+      if (res.ok) {
+        showToast(`Added ${newClientName} to queue!`)
+        setShowAddWalkin(false)
+        setNewClientName(''); setNewClientPhone('')
+        fetchQueueData()
+      } else {
+        showToast('Failed to add to queue', 'error')
+      }
+    } catch (e) { showToast('Error adding to queue', 'error') }
   }
 
   const handleGenerateInvoice = (e) => {
@@ -207,7 +255,7 @@ export default function SalonDashboard() {
   const handleSaveSettings = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/clinics/update', {
+      const res = await fetch('/api/salons/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: salon.id, upiId: settingsUpiId, name: settingsName, address: settingsAddress })
       })
@@ -229,7 +277,7 @@ export default function SalonDashboard() {
   const handleSaveSalonCode = async () => {
     if (!editSalonCode.trim()) return
     try {
-      const res = await fetch('/api/clinics/update', {
+      const res = await fetch('/api/salons/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: salon.id, code: editSalonCode.trim().toUpperCase() })
       })

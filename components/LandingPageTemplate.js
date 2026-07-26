@@ -2366,7 +2366,7 @@ export default function LandingPageTemplate({ config = {} }) {
         )}
         <div className="lp-nav-inner">
           <div className="lp-nav-left">
-            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
+            <img src="/logo.png" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
           </div>
 
           <div className="lp-nav-center">
@@ -2893,7 +2893,7 @@ export default function LandingPageTemplate({ config = {} }) {
           <div className="lp-footer-top">
             <div className="lp-footer-brand">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <img src="/logo-light.svg" alt="TokenPe" style={{ height: 36, width: "auto" }} />
+                <img src="/logo.png" alt="TokenPe" style={{ height: 36, width: "auto" }} />
               </div>
               <p className="lp-footer-tagline">WhatsApp-based digital queue management for India's businesses. No apps. No fuss.</p>
               <button className="lp-footer-explore-btn" onClick={() => go("industries")}>
@@ -2917,8 +2917,6 @@ export default function LandingPageTemplate({ config = {} }) {
               <Link href="/terms" className="lp-flink">Terms of Service</Link>
             </div>
           </div>
-
-          <div className="lp-footer-big-text">TOKENPE</div>
 
           <div className="lp-footer-divider" />
 

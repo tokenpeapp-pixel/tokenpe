@@ -117,6 +117,17 @@ export default function SalonDashboard() {
   const [invServiceId, setInvServiceId] = useState(INITIAL_SERVICES[0].id)
   const [activeUpiQr, setActiveUpiQr] = useState(null)
   const [settingsUpiId, setSettingsUpiId] = useState('')
+  const [settingsName, setSettingsName] = useState('')
+
+  // QR modal state
+  const [editSalonCode, setEditSalonCode] = useState('')
+  const [qrBgColor, setQrBgColor] = useState('#ffffff')
+  const [qrFgColor, setQrFgColor] = useState('#0f172a')
+  const [qrLogoFile, setQrLogoFile] = useState(null)
+  const [qrLogoUrl, setQrLogoUrl] = useState('')
+
+  // Service price editing
+  const [editingPrices, setEditingPrices] = useState({})
 
   useEffect(() => {
     const init = async () => {
@@ -124,11 +135,12 @@ export default function SalonDashboard() {
         const savedClinicStr = localStorage.getItem('tokenpe_clinic')
         const savedRole = localStorage.getItem('tokenpe_salon_role')
         if (savedRole) setUserRole(savedRole)
-
         if (savedClinicStr) {
           const parsed = JSON.parse(savedClinicStr)
           setSalon(parsed)
           setSettingsUpiId(parsed.upi_id || '')
+          setSettingsName(parsed.name || '')
+          setEditSalonCode(parsed.code || '')
         }
       } catch (e) {
         console.error('Init Error', e)
@@ -195,21 +207,40 @@ export default function SalonDashboard() {
     try {
       const res = await fetch('/api/clinics/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: salon.id, upiId: settingsUpiId })
+        body: JSON.stringify({ clinicId: salon.id, upiId: settingsUpiId, name: settingsName })
       })
       const data = await res.json()
       if (data.success) {
-        const updatedSalon = { ...salon, upi_id: settingsUpiId }
+        const updatedSalon = { ...salon, upi_id: settingsUpiId, name: settingsName }
         setSalon(updatedSalon)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedSalon))
         setShowSettings(false)
         showToast('Settings saved successfully!')
       } else {
-        showToast('Failed to save settings: ' + data.error, 'error')
+        showToast('Failed to save: ' + data.error, 'error')
       }
     } catch (err) {
       showToast('Error saving settings', 'error')
     }
+  }
+
+  const handleSaveSalonCode = async () => {
+    if (!editSalonCode.trim()) return
+    try {
+      const res = await fetch('/api/clinics/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: salon.id, code: editSalonCode.trim().toUpperCase() })
+      })
+      const data = await res.json()
+      if (data.success) {
+        const updated = { ...salon, code: editSalonCode.trim().toUpperCase() }
+        setSalon(updated)
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(updated))
+        showToast('Salon code updated!')
+      } else {
+        showToast('Failed to update code: ' + data.error, 'error')
+      }
+    } catch { showToast('Error updating code', 'error') }
   }
 
   const handleLogout = () => {
@@ -282,12 +313,9 @@ export default function SalonDashboard() {
         style={{background:'#FDF8F9',borderRight:'1px solid #EFEFEF'}}
       >
         {/* Sidebar Header */}
-        <div className="h-16 flex items-center justify-between px-6 shrink-0" style={{borderBottom:'1px solid #EFEFEF'}}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'#D14D72'}}>
-              <Scissors className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-sm truncate max-w-[140px]" style={{color:'#1A1A1A'}}>{salon?.name || 'Salon'}</span>
+        <div className="h-16 flex items-center justify-between px-4 shrink-0" style={{borderBottom:'1px solid #EFEFEF'}}>
+          <div className="flex items-center gap-2">
+            <img src="/logo-nav.svg" alt="TokenPe" className="h-7 w-auto" />
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 rounded-lg" style={{color:'#6B7280'}}>
             <X className="w-5 h-5" />
@@ -396,26 +424,26 @@ export default function SalonDashboard() {
 
             {/* 4 STATS CARDS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-5 bg-white rounded-2xl flex flex-col transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF',borderLeft:'3px solid #D14D72'}}>
-                <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>Waiting</span>
-                <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{totalWaiting}</div>
-                <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>~{totalWaiting * 15} mins</span>
-              </div>
-              <div className="p-5 bg-white rounded-2xl flex flex-col transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF',borderLeft:'3px solid #D14D72'}}>
-                <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>In Chair</span>
-                <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{totalServing}</div>
-                <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>Active right now</span>
-              </div>
-              <div className="p-5 bg-white rounded-2xl flex flex-col transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF',borderLeft:'3px solid #D14D72'}}>
-                <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>Served Today</span>
-                <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{totalServedToday}</div>
-                <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>Completed</span>
-              </div>
-              <div className="p-5 bg-white rounded-2xl flex flex-col transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF',borderLeft:'3px solid #D14D72'}}>
-                <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>Revenue</span>
-                <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{userRole === 'owner' ? `₹${totalRevenueToday}` : '🔒'}</div>
-                <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>{userRole === 'owner' ? 'UPI + Cash' : 'Restricted view'}</span>
-              </div>
+              {[
+                { label:'Waiting', value: totalWaiting, sub:`~${totalWaiting*15} mins`, color:'#f59e0b' },
+                { label:'In Chair', value: totalServing, sub:'Active right now', color:'#3b82f6' },
+                { label:'Served Today', value: totalServedToday, sub:'Completed', color:'#10b981' },
+                { label:'Revenue', value: userRole==='owner'?`₹${totalRevenueToday}`:'🔒', sub: userRole==='owner'?'UPI + Cash':'Restricted view', color:'#D14D72' }
+              ].map((card, i) => (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity:0, y:14 }}
+                  animate={{ opacity:1, y:0 }}
+                  transition={{ duration:0.35, delay: i*0.07, ease:'easeOut' }}
+                  whileHover={{ y:-2, boxShadow:'0 8px 24px rgba(0,0,0,0.08)' }}
+                  className="p-5 bg-white rounded-2xl flex flex-col cursor-default"
+                  style={{border:'1px solid #EFEFEF', borderLeft:`3px solid ${card.color}`}}
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>{card.label}</span>
+                  <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{card.value}</div>
+                  <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>{card.sub}</span>
+                </motion.div>
+              ))}
             </div>
 
             {/* ─── TAB 1: LIVE QUEUE & WALK-INS ─── */}
@@ -664,7 +692,72 @@ export default function SalonDashboard() {
             )}
 
             {/* Placeholder for other tabs */}
-            {['calendar', 'sales', 'staff', 'inventory', 'services'].includes(activeTab) && (
+            {activeTab === 'services' && userRole === 'owner' && (
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{border:'1px solid #EFEFEF'}}>
+                <div className="p-5 flex items-center justify-between" style={{borderBottom:'1px solid #EFEFEF',background:'#FDF8F9'}}>
+                  <div>
+                    <h3 className="text-lg font-bold" style={{color:'#1A1A1A'}}>Services Menu</h3>
+                    <p className="text-xs" style={{color:'#6B7280'}}>Edit pricing directly. Changes apply to new walk-ins immediately.</p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead style={{background:'#FDF8F9',borderBottom:'1px solid #EFEFEF'}}>
+                      <tr>
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{color:'#6B7280'}}>Service</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{color:'#6B7280'}}>Category</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{color:'#6B7280'}}>Duration</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{color:'#6B7280'}}>Price (₹)</th>
+                        <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{color:'#6B7280'}}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y" style={{borderColor:'#EFEFEF'}}>
+                      {services.map(svc => (
+                        <tr key={svc.id} className="transition-colors" onMouseEnter={e=>e.currentTarget.style.background='#FDF8F9'} onMouseLeave={e=>e.currentTarget.style.background=''}>
+                          <td className="px-5 py-4 font-semibold" style={{color:'#1A1A1A'}}>{svc.name}</td>
+                          <td className="px-5 py-4">
+                            <span className="px-2 py-1 text-[10px] font-bold rounded-md" style={{background:'#FBEAEF',color:'#D14D72'}}>{svc.category}</span>
+                          </td>
+                          <td className="px-5 py-4" style={{color:'#6B7280'}}>{svc.duration} min</td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-2">
+                              <span style={{color:'#6B7280'}}>₹</span>
+                              <input
+                                type="number"
+                                defaultValue={svc.price}
+                                onChange={e => setEditingPrices(prev => ({...prev, [svc.id]: parseInt(e.target.value)||0}))}
+                                className="w-24 rounded-lg px-2 py-1.5 text-sm font-bold outline-none"
+                                style={{border:'1px solid #EFEFEF',color:'#1A1A1A',background:'#fff'}}
+                                onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}}
+                                onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <button
+                              onClick={() => {
+                                const newPrice = editingPrices[svc.id]
+                                if (newPrice !== undefined) {
+                                  setServices(prev => prev.map(s => s.id === svc.id ? {...s, price: newPrice} : s))
+                                  showToast(`Price updated to ₹${newPrice} for ${svc.name}`)
+                                }
+                              }}
+                              className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                              style={{background:'#D14D72',color:'#fff'}}
+                              onMouseEnter={e=>e.currentTarget.style.background='#C0405F'}
+                              onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}
+                            >
+                              Save
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {['calendar', 'sales', 'staff', 'inventory'].includes(activeTab) && (
               <div className="p-12 text-center bg-white rounded-2xl" style={{border:'1px dashed #EFEFEF'}}>
                 <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{background:'#FBEAEF'}}>
                   <Sparkles className="w-5 h-5" style={{color:'#D14D72'}} />
@@ -690,12 +783,16 @@ export default function SalonDashboard() {
               </div>
               <form onSubmit={handleSaveSettings} className="space-y-4 text-sm">
                 <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Salon Name</label>
+                  <input value={settingsName} onChange={e => setSettingsName(e.target.value)} placeholder="e.g. Glamour Studio" className="w-full rounded-xl px-3.5 py-2.5 outline-none transition-all" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}} onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}} onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}} />
+                </div>
+                <div>
                   <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Direct UPI ID</label>
                   <input value={settingsUpiId} onChange={e => setSettingsUpiId(e.target.value)} placeholder="e.g. yourname@sbi" className="w-full rounded-xl px-3.5 py-2.5 outline-none transition-all" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}} onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}} onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}} />
                   <p className="text-[10px] mt-1.5 leading-relaxed" style={{color:'#6B7280'}}>Payments will go directly to your bank account via Counter Billing QR.</p>
                 </div>
                 <button type="submit" className="w-full py-3 text-white font-bold rounded-xl shadow-md transition-all mt-2" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>
-                  Save Changes
+                  Save All Changes
                 </button>
               </form>
             </motion.div>
@@ -706,21 +803,81 @@ export default function SalonDashboard() {
         {showQrModal && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-sm">
-              <div id="salon-qr-standee" className="bg-white rounded-3xl p-6 shadow-2xl text-center border border-slate-200 relative overflow-hidden">
+              {/* QR Standee Preview */}
+              <div id="salon-qr-standee" className="bg-white rounded-3xl p-6 shadow-2xl text-center relative overflow-hidden" style={{border:'1px solid #EFEFEF'}}>
                 <div className="relative z-10">
-                  <h4 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">Welcome to</h4>
-                  <h3 className="text-2xl font-extrabold text-slate-900 mb-6 leading-tight">{salon?.name || 'Your Premium Salon'}</h3>
-                  <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 inline-block mb-6 relative">
-                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://wa.me/919892875513?text=JOIN%20${encodeURIComponent(salon?.code || 'GLAM99')}&bgcolor=ffffff&color=0f172a`} alt="Salon Queue QR" className="w-48 h-48" crossOrigin="anonymous" />
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{color:'#9CA3AF'}}>Welcome to</h4>
+                  <h3 className="text-2xl font-extrabold mb-5 leading-tight" style={{color:'#1A1A1A'}}>{salon?.name || 'Your Salon'}</h3>
+                  <div className="inline-block mb-5 rounded-2xl p-3 shadow-sm" style={{border:'1px solid #EFEFEF',background: qrBgColor}}>
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/919892875513?text=JOIN%20${encodeURIComponent(editSalonCode||salon?.code||'SALON')}&bgcolor=${qrBgColor.replace('#','')}&color=${qrFgColor.replace('#','')}&margin=2`}
+                      alt="Salon Queue QR" className="w-40 h-40 block" crossOrigin="anonymous"
+                    />
+                    {qrLogoUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <img src={qrLogoUrl} alt="logo" className="w-10 h-10 rounded-lg" style={{background:'#fff',padding:'2px'}} />
+                      </div>
+                    )}
                   </div>
-                  <p className="text-slate-900 font-bold text-sm mb-1">Scan to Join Digital Queue</p>
-                  <p className="text-slate-400 text-[10px] mb-5 uppercase tracking-wider">Powered by TokenPe Salon</p>
-                  <div className="text-xs font-mono bg-slate-50 p-3 rounded-2xl border border-slate-200 text-slate-600">
-                    Manual Code: <strong className="text-slate-900 font-bold tracking-wider">{salon?.code || 'GLAM99'}</strong>
+                  <p className="font-bold text-sm mb-1" style={{color:'#1A1A1A'}}>Scan to Join Digital Queue</p>
+                  <p className="text-[10px] mb-4 uppercase tracking-wider" style={{color:'#9CA3AF'}}>Powered by TokenPe Salon</p>
+                  <div className="flex items-center justify-center gap-2 font-mono text-xs rounded-2xl p-3" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#6B7280'}}>
+                    Code: <strong style={{color:'#1A1A1A'}}>{editSalonCode||salon?.code||'---'}</strong>
+                    <button onClick={() => {navigator.clipboard.writeText(editSalonCode||salon?.code||'');showToast('Code copied!')}} className="ml-1 p-1 rounded" style={{color:'#D14D72'}}><Copy className="w-3 h-3" /></button>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-3 mt-4">
+
+              {/* Editable Controls */}
+              <div className="mt-3 bg-white rounded-2xl p-4 space-y-3" style={{border:'1px solid #EFEFEF'}}>
+                {/* Salon Code edit */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider" style={{color:'#6B7280'}}>Salon Code</label>
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      value={editSalonCode}
+                      onChange={e => setEditSalonCode(e.target.value.toUpperCase())}
+                      maxLength={10}
+                      className="flex-1 rounded-lg px-3 py-1.5 text-sm font-mono font-bold outline-none"
+                      style={{border:'1px solid #EFEFEF',color:'#1A1A1A',background:'#FDF8F9'}}
+                      onFocus={e=>{e.currentTarget.style.borderColor='#D14D72'}}
+                      onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF'}}
+                    />
+                    <button onClick={handleSaveSalonCode} className="px-3 py-1.5 text-xs font-bold rounded-lg text-white" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>Save</button>
+                  </div>
+                </div>
+                {/* QR Theme */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider" style={{color:'#6B7280'}}>QR Background</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input type="color" value={qrBgColor} onChange={e=>setQrBgColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                      <span className="text-xs font-mono" style={{color:'#6B7280'}}>{qrBgColor}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider" style={{color:'#6B7280'}}>QR Dots Color</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input type="color" value={qrFgColor} onChange={e=>setQrFgColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                      <span className="text-xs font-mono" style={{color:'#6B7280'}}>{qrFgColor}</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Logo upload */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider" style={{color:'#6B7280'}}>Center Logo (optional)</label>
+                  <input
+                    type="file" accept="image/*"
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) { setQrLogoFile(file); setQrLogoUrl(URL.createObjectURL(file)) }
+                    }}
+                    className="block w-full mt-1 text-xs" style={{color:'#6B7280'}}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-3">
                 <button onClick={() => { showToast('Printing QR Standee...'); window.print(); }} className="flex-1 py-3 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>
                   <span className="text-base">🖨️</span> Print QR
                 </button>
@@ -728,6 +885,91 @@ export default function SalonDashboard() {
                   Close
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Add Walk-in Modal */}
+        {showAddWalkin && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+            <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }} className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl" style={{border:'1px solid #EFEFEF'}}>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-lg font-bold" style={{color:'#1A1A1A'}}>Add Walk-in Client</h3>
+                <button onClick={() => setShowAddWalkin(false)} className="p-1" style={{color:'#9CA3AF'}} onMouseEnter={e=>e.currentTarget.style.color='#D14D72'} onMouseLeave={e=>e.currentTarget.style.color='#9CA3AF'}><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={handleAddWalkinSubmit} className="space-y-4 text-sm">
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Client Name</label>
+                  <input required value={newClientName} onChange={e=>setNewClientName(e.target.value)} placeholder="e.g. Priya Shah" className="w-full rounded-xl px-3.5 py-2.5 outline-none" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}} onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}} onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Phone Number</label>
+                  <input required type="tel" value={newClientPhone} onChange={e=>setNewClientPhone(e.target.value)} placeholder="10-digit number" className="w-full rounded-xl px-3.5 py-2.5 outline-none" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}} onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}} onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Service</label>
+                  <select value={newServiceId} onChange={e=>setNewServiceId(e.target.value)} className="w-full rounded-xl px-3.5 py-2.5 outline-none" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}}>
+                    {services.map(s => <option key={s.id} value={s.id}>{s.name} — ₹{s.price}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Preferred Stylist</label>
+                  <select value={newStylistId} onChange={e=>setNewStylistId(e.target.value)} className="w-full rounded-xl px-3.5 py-2.5 outline-none" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}}>
+                    {staff.filter(s=>s.role==='stylist'||s.role==='manager').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={()=>setShowAddWalkin(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{border:'1px solid #EFEFEF',color:'#6B7280'}} onMouseEnter={e=>e.currentTarget.style.background='#FDF8F9'} onMouseLeave={e=>e.currentTarget.style.background=''}>Cancel</button>
+                  <button type="submit" className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>Add to Queue</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Bill & UPI Modal */}
+        {showAddInvoice && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+            <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }} className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl" style={{border:'1px solid #EFEFEF'}}>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-lg font-bold" style={{color:'#1A1A1A'}}>Bill & UPI Payment</h3>
+                <button onClick={() => { setShowAddInvoice(false); setActiveUpiQr(null); }} className="p-1" style={{color:'#9CA3AF'}} onMouseEnter={e=>e.currentTarget.style.color='#D14D72'} onMouseLeave={e=>e.currentTarget.style.color='#9CA3AF'}><X className="w-5 h-5" /></button>
+              </div>
+              {!activeUpiQr ? (
+                <form onSubmit={handleGenerateInvoice} className="space-y-4 text-sm">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Client Name</label>
+                    <input required value={invClientName} onChange={e=>setInvClientName(e.target.value)} placeholder="e.g. Rohan Gupta" className="w-full rounded-xl px-3.5 py-2.5 outline-none" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}} onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}} onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Service</label>
+                    <select value={invServiceId} onChange={e=>setInvServiceId(e.target.value)} className="w-full rounded-xl px-3.5 py-2.5 outline-none" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}}>
+                      {services.map(s => <option key={s.id} value={s.id}>{s.name} — ₹{s.price}</option>)}
+                    </select>
+                  </div>
+                  {!salon?.upi_id && <p className="text-xs p-3 rounded-xl" style={{background:'#FFF3CD',color:'#856404',border:'1px solid #FFEEBA'}}>⚠️ No UPI ID configured. Go to Settings first.</p>}
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={()=>setShowAddInvoice(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{border:'1px solid #EFEFEF',color:'#6B7280'}}>Cancel</button>
+                    <button type="submit" className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>Generate QR</button>
+                  </div>
+                </form>
+              ) : (
+                <div className="text-center">
+                  <div className="mb-3">
+                    <div className="text-sm font-semibold" style={{color:'#1A1A1A'}}>{activeUpiQr.clientName}</div>
+                    <div className="text-xs" style={{color:'#6B7280'}}>{activeUpiQr.serviceName}</div>
+                    <div className="text-2xl font-extrabold mt-1" style={{color:'#D14D72'}}>₹{activeUpiQr.amount}</div>
+                  </div>
+                  <div className="inline-block p-3 rounded-2xl mb-4" style={{border:'1px solid #EFEFEF',background:'#FDF8F9'}}>
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(activeUpiQr.upiDeepLink)}&bgcolor=ffffff&color=0f172a`} alt="UPI QR" className="w-44 h-44" />
+                  </div>
+                  <p className="text-xs mb-4" style={{color:'#6B7280'}}>Show this QR to the client to scan and pay</p>
+                  <div className="flex gap-3">
+                    <button onClick={()=>setActiveUpiQr(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{border:'1px solid #EFEFEF',color:'#6B7280'}}>Back</button>
+                    <button onClick={()=>{setShowAddInvoice(false);setActiveUpiQr(null);showToast('Payment recorded!')}} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{background:'#10b981'}} onMouseEnter={e=>e.currentTarget.style.background='#059669'} onMouseLeave={e=>e.currentTarget.style.background='#10b981'}>✓ Done, Paid</button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

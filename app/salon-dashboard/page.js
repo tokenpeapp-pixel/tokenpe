@@ -2,11 +2,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Scissors, Users, DollarSign, Calendar, Clock, Sparkles, Plus, CheckCircle, 
-  XCircle, AlertCircle, Play, Pause, ChevronRight, Search, Settings, 
-  TrendingUp, RefreshCw, LogOut, Copy, QrCode, Phone, Mail, MapPin, 
-  Check, Award, FileText, Package, UserCheck, ShieldCheck, CreditCard, 
+import {
+  Scissors, Users, DollarSign, Calendar, Clock, Sparkles, Plus, CheckCircle,
+  XCircle, AlertCircle, Play, Pause, ChevronRight, Search, Settings,
+  TrendingUp, RefreshCw, LogOut, Copy, QrCode, Phone, Mail, MapPin,
+  Check, Award, FileText, Package, UserCheck, ShieldCheck, CreditCard,
   Receipt, BarChart3, PieChart, Layers, UserPlus, Filter, Edit3, Trash2, ArrowUpRight,
   Menu, X, History, ChevronLeft
 } from 'lucide-react'
@@ -35,8 +35,8 @@ const INITIAL_INVENTORY = [
 ]
 
 const INITIAL_CLIENTS = [
-  { 
-    id: 'cl1', name: 'Anita Desai', phone: '9876543210', visits: 8, lastVisit: '2026-07-20', totalSpent: 12400, 
+  {
+    id: 'cl1', name: 'Anita Desai', phone: '9876543210', visits: 8, lastVisit: '2026-07-20', totalSpent: 12400,
     notes: 'Prefers ammonia-free hair color. Sensitive skin.',
     history: [
       { id: 'h1', date: '2026-07-20', service: 'Global Hair Color', stylist: 'Rahul Sharma', price: 2499, notes: 'Used INOA ammonia-free. Kept for 45 mins. Good result.' },
@@ -44,16 +44,16 @@ const INITIAL_CLIENTS = [
       { id: 'h3', date: '2026-05-02', service: 'Hydra Facial & Glow', stylist: 'Priya Verma', price: 1800, notes: 'Skin was dry. Recommend extra hydration.' }
     ]
   },
-  { 
-    id: 'cl2', name: 'Vikram Mehta', phone: '9820011223', visits: 4, lastVisit: '2026-07-15', totalSpent: 3800, 
+  {
+    id: 'cl2', name: 'Vikram Mehta', phone: '9820011223', visits: 4, lastVisit: '2026-07-15', totalSpent: 3800,
     notes: 'Prefers Rahul for haircut. Likes mint tea.',
     history: [
       { id: 'h4', date: '2026-07-15', service: 'Haircut & Styling (Men)', stylist: 'Rahul Sharma', price: 499, notes: 'Classic fade. Trimmer on 2.' },
       { id: 'h5', date: '2026-06-05', service: 'Haircut & Styling (Men)', stylist: 'Rahul Sharma', price: 499, notes: 'Standard cut.' }
     ]
   },
-  { 
-    id: 'cl3', name: 'Sunita Rao', phone: '9765432109', visits: 12, lastVisit: '2026-07-24', totalSpent: 24500, 
+  {
+    id: 'cl3', name: 'Sunita Rao', phone: '9765432109', visits: 12, lastVisit: '2026-07-24', totalSpent: 24500,
     notes: 'Regular for facial every 3 weeks.',
     history: [
       { id: 'h6', date: '2026-07-24', service: 'Hydra Facial & Glow', stylist: 'Priya Verma', price: 1800, notes: 'Extra steam applied.' }
@@ -153,7 +153,7 @@ export default function SalonDashboard() {
     if (!item) return
     setQueue(prev => prev.filter(q => q.id !== id))
     setCompletedToday(prev => [{
-      id: `qc_${Date.now()}`, tokenNum: item.tokenNum, clientName: item.clientName, service: item.service, 
+      id: `qc_${Date.now()}`, tokenNum: item.tokenNum, clientName: item.clientName, service: item.service,
       stylist: item.stylist, price: item.price, paymentMode: 'UPI', completedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }, ...prev])
     showToast(`Completed service for ${item.clientName}! Recorded ₹${item.price}.`)
@@ -239,28 +239,28 @@ export default function SalonDashboard() {
     return h.date === crmSearchDate
   }) || []
 
-  const filteredClientsList = clients.filter(c => 
-    c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) || 
+  const filteredClientsList = clients.filter(c =>
+    c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
     c.phone.includes(clientSearchQuery)
   )
 
   const SIDEBAR_NAV = [
-    { id: 'queue', label: 'Live Queue & Walk-ins', icon: Clock, roles: ['owner','manager','stylist','receptionist'] },
-    { id: 'calendar', label: 'Appointments', icon: Calendar, roles: ['owner','manager','stylist'] },
+    { id: 'queue', label: 'Live Queue & Walk-ins', icon: Clock, roles: ['owner', 'manager', 'stylist', 'receptionist'] },
+    { id: 'calendar', label: 'Appointments', icon: Calendar, roles: ['owner', 'manager', 'stylist'] },
     { id: 'sales', label: 'Revenue Analytics', icon: BarChart3, roles: ['owner'] },
-    { id: 'staff', label: 'Staff & Commissions', icon: Award, roles: ['owner','stylist'] },
-    { id: 'inventory', label: 'Stock & Inventory', icon: Package, roles: ['owner','manager'] },
-    { id: 'crm', label: 'Client CRM & History', icon: UserCheck, roles: ['owner','manager','receptionist'] },
+    { id: 'staff', label: 'Staff & Commissions', icon: Award, roles: ['owner', 'stylist'] },
+    { id: 'inventory', label: 'Stock & Inventory', icon: Package, roles: ['owner', 'manager'] },
+    { id: 'crm', label: 'Client CRM & History', icon: UserCheck, roles: ['owner', 'manager', 'receptionist'] },
     { id: 'services', label: 'Services Menu', icon: Scissors, roles: ['owner'] }
   ]
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
-      
+    <div className="flex h-screen font-sans overflow-hidden" style={{background:'#F9F9F9',color:'#1A1A1A'}}>
+
       {/* ─── TOAST NOTIFICATIONS ─── */}
       <AnimatePresence>
         {toast && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-5 py-3.5 bg-slate-900 text-white rounded-xl shadow-2xl shadow-slate-900/20">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl" style={{background:'#1A1A1A',color:'#fff'}}>
             <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="text-sm font-medium tracking-wide">{toast.msg}</span>
           </motion.div>
@@ -270,114 +270,121 @@ export default function SalonDashboard() {
       {/* ─── LEFT SIDEBAR (OVERLAY ON MOBILE) ─── */}
       {/* Mobile Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           onClick={() => setIsSidebarOpen(false)}
           className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden transition-opacity"
         />
       )}
-      
+
       {/* Sidebar Container */}
-      <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 shadow-2xl lg:shadow-none lg:static lg:block flex flex-col h-full transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 shadow-2xl lg:shadow-none lg:static lg:block flex flex-col h-full transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        style={{background:'#FDF8F9',borderRight:'1px solid #EFEFEF'}}
       >
         {/* Sidebar Header */}
-              <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
-                    <Scissors className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="font-bold text-sm truncate max-w-[140px]">{salon?.name || 'Salon'}</span>
-                </div>
-                <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg">
-                  <X className="w-5 h-5" />
+        <div className="h-16 flex items-center justify-between px-6 shrink-0" style={{borderBottom:'1px solid #EFEFEF'}}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'#D14D72'}}>
+              <Scissors className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-sm truncate max-w-[140px]" style={{color:'#1A1A1A'}}>{salon?.name || 'Salon'}</span>
+          </div>
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 rounded-lg" style={{color:'#6B7280'}}>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Sidebar Content */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-hide space-y-8">
+
+          {/* Role Switcher */}
+          <div>
+            <h4 className="text-[10px] font-bold uppercase tracking-wider mb-3 px-2" style={{color:'#6B7280'}}>Active Role</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'owner', label: 'Owner' }, { id: 'manager', label: 'Manager' },
+                { id: 'stylist', label: 'Stylist' }, { id: 'receptionist', label: 'Reception' }
+              ].map(r => (
+                <button
+                  key={r.id}
+                  onClick={() => {
+                    setUserRole(r.id); localStorage.setItem('tokenpe_salon_role', r.id)
+                    showToast(`Switched to ${r.label} mode`, 'info')
+                  }}
+                  className="px-3 py-2 rounded-lg text-[11px] font-semibold text-center transition-all"
+                  style={userRole === r.id
+                    ? {background:'#D14D72',color:'#fff',border:'1px solid #D14D72',boxShadow:'0 1px 4px rgba(209,77,114,0.25)'}
+                    : {background:'#fff',color:'#6B7280',border:'1px solid #EFEFEF'}
+                  }
+                >
+                  {r.label}
                 </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Navigation Menu */}
+          <div>
+            <h4 className="text-[10px] font-bold uppercase tracking-wider mb-2 px-2" style={{color:'#6B7280'}}>Navigation</h4>
+            <nav className="space-y-1">
+              {SIDEBAR_NAV.filter(nav => nav.roles.includes(userRole)).map(nav => (
+                <button
+                  key={nav.id}
+                  onClick={() => { setActiveTab(nav.id); setIsSidebarOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+                  style={activeTab === nav.id
+                    ? {background:'#FBEAEF',color:'#D14D72',fontWeight:600}
+                    : {color:'#6B7280'}
+                  }
+                  onMouseEnter={e => { if(activeTab !== nav.id) e.currentTarget.style.background='#FDF0F3'; }}
+                  onMouseLeave={e => { if(activeTab !== nav.id) e.currentTarget.style.background=''; }}
+                >
+                  <nav.icon className="w-4 h-4" style={{color: activeTab === nav.id ? '#D14D72' : '#9CA3AF'}} />
+                  {nav.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 shrink-0" style={{borderTop:'1px solid #EFEFEF'}}>
+          <div className="p-3 rounded-xl flex items-center justify-between" style={{background:'#FDF0F3',border:'1px solid #EFEFEF'}}>
+            <div>
+              <div className="text-[10px] font-bold uppercase" style={{color:'#6B7280'}}>System Status</div>
+              <div className="text-xs font-semibold flex items-center gap-1.5 mt-0.5" style={{color:'#10b981'}}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{background:'#10b981'}} /> Online
               </div>
-
-              {/* Sidebar Content */}
-              <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-hide space-y-8">
-                
-                {/* Role Switcher */}
-                <div>
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Active Role</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'owner', label: 'Owner' }, { id: 'manager', label: 'Manager' },
-                      { id: 'stylist', label: 'Stylist' }, { id: 'receptionist', label: 'Reception' }
-                    ].map(r => (
-                      <button
-                        key={r.id}
-                        onClick={() => {
-                          setUserRole(r.id); localStorage.setItem('tokenpe_salon_role', r.id)
-                          showToast(`Switched to ${r.label} mode`, 'info')
-                        }}
-                        className={`px-3 py-2 rounded-lg text-[11px] font-semibold text-center transition-colors border ${
-                          userRole === r.id ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Navigation Menu */}
-                <div>
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">Navigation</h4>
-                  <nav className="space-y-1">
-                    {SIDEBAR_NAV.filter(nav => nav.roles.includes(userRole)).map(nav => (
-                      <button
-                        key={nav.id}
-                        onClick={() => { setActiveTab(nav.id); setIsSidebarOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                          activeTab === nav.id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                        }`}
-                      >
-                        <nav.icon className={`w-4 h-4 ${activeTab === nav.id ? 'text-slate-900' : 'text-slate-400'}`} />
-                        {nav.label}
-                      </button>
-                    ))}
-                  </nav>
-                </div>
-
-              </div>
-
-              {/* Sidebar Footer */}
-              <div className="p-4 border-t border-slate-100 shrink-0">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                  <div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase">System Status</div>
-                    <div className="text-xs font-semibold text-emerald-600 flex items-center gap-1.5 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Online
-                    </div>
-                  </div>
-                </div>
-              </div>
+            </div>
+          </div>
+        </div>
       </aside>
 
       {/* ─── MAIN CONTENT AREA ─── */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-        
+
         {/* HEADER */}
-        <header className="h-16 bg-white border-b border-slate-200 shrink-0 flex items-center justify-between px-4 sm:px-8">
+        <header className="h-16 bg-white shrink-0 flex items-center justify-between px-4 sm:px-8" style={{borderBottom:'1px solid #EFEFEF'}}>
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg lg:hidden">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 rounded-lg lg:hidden transition-colors hover:bg-gray-100" style={{color:'#6B7280'}}>
               <Menu className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-bold text-slate-900 capitalize hidden sm:block">
+            <h2 className="text-lg font-bold capitalize hidden sm:block" style={{color:'#1A1A1A'}}>
               {SIDEBAR_NAV.find(n => n.id === activeTab)?.label}
             </h2>
           </div>
 
           <div className="flex items-center gap-2">
             {userRole === 'owner' && (
-              <button onClick={() => setShowSettings(true)} className="p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-lg transition-colors" title="Settings">
+              <button onClick={() => setShowSettings(true)} className="p-2 rounded-lg transition-colors" style={{color:'#6B7280'}} onMouseEnter={e=>e.currentTarget.style.background='#F3F4F6'} onMouseLeave={e=>e.currentTarget.style.background=''} title="Settings">
                 <Settings className="w-5 h-5" />
               </button>
             )}
-            <button onClick={() => setShowQrModal(true)} className="p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-lg transition-colors" title="View Salon QR">
+            <button onClick={() => setShowQrModal(true)} className="p-2 rounded-lg transition-colors" style={{color:'#6B7280'}} onMouseEnter={e=>e.currentTarget.style.background='#F3F4F6'} onMouseLeave={e=>e.currentTarget.style.background=''} title="View Salon QR">
               <QrCode className="w-5 h-5" />
             </button>
-            <button onClick={handleLogout} className="p-2 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors" title="Logout">
+            <button onClick={handleLogout} className="p-2 rounded-lg transition-colors" style={{color:'#6B7280'}} onMouseEnter={e=>{e.currentTarget.style.background='#FBEAEF';e.currentTarget.style.color='#D14D72'}} onMouseLeave={e=>{e.currentTarget.style.background='';e.currentTarget.style.color='#6B7280'}} title="Logout">
               <LogOut className="w-5 h-5" />
             </button>
           </div>
@@ -389,44 +396,44 @@ export default function SalonDashboard() {
 
             {/* 4 STATS CARDS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Waiting</span>
-                <div className="text-3xl font-extrabold text-slate-900">{totalWaiting}</div>
-                <span className="text-xs text-slate-400 mt-1">~{totalWaiting * 15} mins</span>
+              <div className="p-5 bg-white rounded-2xl flex flex-col transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF',borderLeft:'3px solid #D14D72'}}>
+                <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>Waiting</span>
+                <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{totalWaiting}</div>
+                <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>~{totalWaiting * 15} mins</span>
               </div>
-              <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">In Chair</span>
-                <div className="text-3xl font-extrabold text-slate-900">{totalServing}</div>
-                <span className="text-xs text-slate-400 mt-1">Active right now</span>
+              <div className="p-5 bg-white rounded-2xl flex flex-col transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF',borderLeft:'3px solid #D14D72'}}>
+                <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>In Chair</span>
+                <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{totalServing}</div>
+                <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>Active right now</span>
               </div>
-              <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Served Today</span>
-                <div className="text-3xl font-extrabold text-slate-900">{totalServedToday}</div>
-                <span className="text-xs text-slate-400 mt-1">Completed</span>
+              <div className="p-5 bg-white rounded-2xl flex flex-col transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF',borderLeft:'3px solid #D14D72'}}>
+                <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>Served Today</span>
+                <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{totalServedToday}</div>
+                <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>Completed</span>
               </div>
-              <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Revenue</span>
-                <div className="text-3xl font-extrabold text-slate-900">{userRole === 'owner' ? `₹${totalRevenueToday}` : '🔒'}</div>
-                <span className="text-xs text-slate-400 mt-1">{userRole === 'owner' ? 'UPI + Cash' : 'Restricted view'}</span>
+              <div className="p-5 bg-white rounded-2xl flex flex-col transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF',borderLeft:'3px solid #D14D72'}}>
+                <span className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:'#6B7280'}}>Revenue</span>
+                <div className="text-3xl font-extrabold" style={{color:'#1A1A1A'}}>{userRole === 'owner' ? `₹${totalRevenueToday}` : '🔒'}</div>
+                <span className="text-xs mt-1" style={{color:'#9CA3AF'}}>{userRole === 'owner' ? 'UPI + Cash' : 'Restricted view'}</span>
               </div>
             </div>
 
             {/* ─── TAB 1: LIVE QUEUE & WALK-INS ─── */}
             {activeTab === 'queue' && (
               <div className="space-y-6">
-                
+
                 {/* Action Bar */}
                 <div className="flex flex-wrap gap-3">
-                  <button onClick={handleCallNext} className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm">
+                  <button onClick={handleCallNext} className="px-5 py-2.5 text-white font-semibold rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all" style={{background:'#D14D72',transform:'scale(1)'}} onMouseEnter={e=>{e.currentTarget.style.background='#C0405F';e.currentTarget.style.transform='scale(1.02)'}} onMouseLeave={e=>{e.currentTarget.style.background='#D14D72';e.currentTarget.style.transform='scale(1)'}}>
                     <Play className="w-4 h-4 fill-white" /> Call Next
                   </button>
                   {(userRole === 'owner' || userRole === 'manager' || userRole === 'receptionist') && (
-                    <button onClick={() => setShowAddWalkin(true)} className="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-xl border border-slate-200 shadow-sm transition-all flex items-center justify-center gap-2 text-sm">
+                    <button onClick={() => setShowAddWalkin(true)} className="px-5 py-2.5 font-medium rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all" style={{background:'#FBEAEF',color:'#D14D72',border:'1px solid #D14D72',transform:'scale(1)'}} onMouseEnter={e=>{e.currentTarget.style.background='#F5D6E2';e.currentTarget.style.transform='scale(1.02)'}} onMouseLeave={e=>{e.currentTarget.style.background='#FBEAEF';e.currentTarget.style.transform='scale(1)'}}>
                       <UserPlus className="w-4 h-4" /> Add Walk-in
                     </button>
                   )}
                   {(userRole === 'receptionist' || userRole === 'owner') && (
-                    <button onClick={() => setShowAddInvoice(true)} className="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-xl border border-slate-200 shadow-sm transition-all flex items-center justify-center gap-2 text-sm">
+                    <button onClick={() => setShowAddInvoice(true)} className="px-5 py-2.5 font-medium rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all" style={{background:'#FBEAEF',color:'#D14D72',border:'1px solid #D14D72',transform:'scale(1)'}} onMouseEnter={e=>{e.currentTarget.style.background='#F5D6E2';e.currentTarget.style.transform='scale(1.02)'}} onMouseLeave={e=>{e.currentTarget.style.background='#FBEAEF';e.currentTarget.style.transform='scale(1)'}}>
                       <Receipt className="w-4 h-4" /> Bill & UPI
                     </button>
                   )}
@@ -436,20 +443,20 @@ export default function SalonDashboard() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Currently Serving */}
                   <div className="lg:col-span-3">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <Scissors className="w-4 h-4 text-slate-400" /> In Styling Chairs ({queue.filter(q => q.status === 'serving').length})
+                    <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{color:'#1A1A1A'}}>
+                       <Scissors className="w-4 h-4" style={{color:'#D14D72'}} /> In Styling Chairs ({queue.filter(q => q.status === 'serving').length})
                     </h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {queue.filter(q => q.status === 'serving').length === 0 ? (
-                        <div className="col-span-full p-8 text-center bg-white border border-slate-200 border-dashed rounded-2xl text-slate-400 text-sm">No clients currently in chairs.</div>
+                        <div className="col-span-full p-8 text-center bg-white rounded-2xl text-sm" style={{border:'1px dashed #EFEFEF',color:'#9CA3AF'}}>No clients currently in chairs.</div>
                       ) : (
                         queue.filter(q => q.status === 'serving').map(item => (
-                          <div key={item.id} className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm relative group hover:border-slate-300 transition-colors">
-                            <div className="absolute top-4 right-4"><span className="px-2 py-1 bg-slate-100 text-slate-600 font-mono text-xs font-bold rounded-md border border-slate-200">{item.tokenNum}</span></div>
-                            <h4 className="font-bold text-slate-900 text-lg mb-1 pr-12">{item.clientName}</h4>
-                            <div className="text-sm text-slate-600 mb-4">{item.service}</div>
-                            <div className="text-xs text-slate-500 mb-5 flex items-center gap-1.5"><Scissors className="w-3.5 h-3.5" /> Stylist: <strong className="text-slate-900">{item.stylist}</strong></div>
-                            <button onClick={() => handleCompleteService(item.id)} className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2">
+                          <div key={item.id} className="p-5 bg-white rounded-2xl shadow-sm relative group transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF'}}>
+                            <div className="absolute top-4 right-4"><span className="px-2 py-1 font-mono text-xs font-bold rounded-md" style={{background:'#FBEAEF',color:'#D14D72',border:'1px solid #F5D6E2'}}>{item.tokenNum}</span></div>
+                            <h4 className="font-bold text-lg mb-1 pr-12" style={{color:'#1A1A1A'}}>{item.clientName}</h4>
+                            <div className="text-sm mb-4" style={{color:'#6B7280'}}>{item.service}</div>
+                            <div className="text-xs mb-5 flex items-center gap-1.5" style={{color:'#6B7280'}}><Scissors className="w-3.5 h-3.5" style={{color:'#D14D72'}} /> Stylist: <strong style={{color:'#1A1A1A'}}>{item.stylist}</strong></div>
+                            <button onClick={() => handleCompleteService(item.id)} className="w-full py-2.5 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-all" style={{background:'#FBEAEF',color:'#D14D72',border:'1px solid #F5D6E2'}} onMouseEnter={e=>e.currentTarget.style.background='#F5D6E2'} onMouseLeave={e=>e.currentTarget.style.background='#FBEAEF'}>
                               <CheckCircle className="w-4 h-4" /> Mark Complete
                             </button>
                           </div>
@@ -460,22 +467,22 @@ export default function SalonDashboard() {
 
                   {/* Waiting List */}
                   <div className="lg:col-span-3">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-slate-400" /> Waiting List ({queue.filter(q => q.status === 'waiting').length})
+                    <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{color:'#1A1A1A'}}>
+                       <Clock className="w-4 h-4" style={{color:'#D14D72'}} /> Waiting List ({queue.filter(q => q.status === 'waiting').length})
                     </h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {queue.filter(q => q.status === 'waiting').map(item => (
-                        <div key={item.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                        <div key={item.id} className="p-4 bg-white rounded-2xl shadow-sm transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF'}}>
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <h4 className="font-bold text-slate-900">{item.clientName}</h4>
-                              <span className="text-xs text-slate-500">Wait: ~{item.waitTimeMins} mins</span>
+                              <h4 className="font-bold" style={{color:'#1A1A1A'}}>{item.clientName}</h4>
+                              <span className="text-xs" style={{color:'#6B7280'}}>Wait: ~{item.waitTimeMins} mins</span>
                             </div>
-                            <span className="px-2 py-1 bg-slate-50 text-slate-500 font-mono text-xs font-bold rounded-md border border-slate-200">{item.tokenNum}</span>
+                            <span className="px-2 py-1 font-mono text-xs font-bold rounded-md" style={{background:'#FBEAEF',color:'#D14D72',border:'1px solid #F5D6E2'}}>{item.tokenNum}</span>
                           </div>
-                          <div className="text-xs text-slate-600 mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                            <strong>Service:</strong> {item.service} <br/>
-                            <strong>Prefers:</strong> {item.stylist}
+                          <div className="text-xs mt-2 p-2 rounded-lg" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#6B7280'}}>
+                            <strong style={{color:'#1A1A1A'}}>Service:</strong> {item.service} <br />
+                            <strong style={{color:'#1A1A1A'}}>Prefers:</strong> {item.stylist}
                           </div>
                         </div>
                       ))}
@@ -490,39 +497,42 @@ export default function SalonDashboard() {
               <div className="space-y-6">
                 {!selectedClient ? (
                   /* Client Directory View */
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[600px]">
-                    <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between gap-4 bg-slate-50">
+                  <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[600px]" style={{border:'1px solid #EFEFEF'}}>
+                    <div className="p-5 flex flex-col sm:flex-row justify-between gap-4" style={{borderBottom:'1px solid #EFEFEF',background:'#FDF8F9'}}>
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900">Client Directory</h3>
-                        <p className="text-xs text-slate-500">Search and view customer histories.</p>
+                        <h3 className="text-lg font-bold" style={{color:'#1A1A1A'}}>Client Directory</h3>
+                        <p className="text-xs" style={{color:'#6B7280'}}>Search and view customer histories.</p>
                       </div>
                       <div className="relative">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input 
-                          type="text" 
-                          placeholder="Search name or phone..." 
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{color:'#9CA3AF'}} />
+                        <input
+                          type="text"
+                          placeholder="Search name or phone..."
                           value={clientSearchQuery}
                           onChange={e => setClientSearchQuery(e.target.value)}
-                          className="pl-9 pr-4 py-2 w-full sm:w-64 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition-all shadow-sm"
+                          className="pl-9 pr-4 py-2 w-full sm:w-64 bg-white rounded-xl text-sm shadow-sm outline-none transition-all"
+                          style={{border:'1px solid #EFEFEF',color:'#1A1A1A'}}
+                          onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}}
+                          onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}}
                         />
                       </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-5">
                       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredClientsList.map(c => (
-                          <div key={c.id} onClick={() => setSelectedClient(c)} className="p-4 bg-white border border-slate-200 hover:border-slate-300 rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md group">
+                          <div key={c.id} onClick={() => setSelectedClient(c)} className="p-4 bg-white rounded-xl cursor-pointer shadow-sm transition-all group" style={{border:'1px solid #EFEFEF'}} onMouseEnter={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 4px 12px rgba(209,77,114,0.08)'}} onMouseLeave={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow='0 1px 2px rgba(0,0,0,0.04)'}}>
                             <div className="flex justify-between items-start mb-2">
                               <div>
-                                <h4 className="font-bold text-slate-900 group-hover:text-slate-700 transition-colors">{c.name}</h4>
-                                <div className="text-xs text-slate-500 font-mono mt-0.5">{c.phone}</div>
+                                <h4 className="font-bold" style={{color:'#1A1A1A'}}>{c.name}</h4>
+                                <div className="text-xs font-mono mt-0.5" style={{color:'#6B7280'}}>{c.phone}</div>
                               </div>
-                              <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200">
+                              <span className="px-2 py-1 text-[10px] font-bold rounded-lg" style={{background:'#FBEAEF',color:'#D14D72',border:'1px solid #F5D6E2'}}>
                                 {c.visits} Visits
                               </span>
                             </div>
-                            <div className="text-xs text-slate-600 mt-3 flex items-center justify-between pt-3 border-t border-slate-100">
+                            <div className="text-xs mt-3 flex items-center justify-between pt-3" style={{borderTop:'1px solid #EFEFEF',color:'#6B7280'}}>
                               <span>Last: {c.lastVisit}</span>
-                              <span className="font-semibold flex items-center gap-1 text-slate-400 group-hover:text-slate-900 transition-colors">
+                              <span className="font-semibold flex items-center gap-1" style={{color:'#D14D72'}}>
                                 View History <ChevronRight className="w-3.5 h-3.5" />
                               </span>
                             </div>
@@ -533,55 +543,58 @@ export default function SalonDashboard() {
                   </div>
                 ) : (
                   /* Client Detailed History View */
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[700px]">
-                    <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                  <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[700px]" style={{border:'1px solid #EFEFEF'}}>
+                    <div className="p-5 flex items-center justify-between" style={{borderBottom:'1px solid #EFEFEF',background:'#FDF8F9'}}>
                       <div className="flex items-center gap-4">
-                        <button onClick={() => { setSelectedClient(null); setCrmSearchDate(''); }} className="p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors shadow-sm">
+                        <button onClick={() => { setSelectedClient(null); setCrmSearchDate(''); }} className="p-2 bg-white rounded-lg shadow-sm transition-colors" style={{border:'1px solid #EFEFEF',color:'#6B7280'}} onMouseEnter={e=>e.currentTarget.style.background='#FBEAEF'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
                           <ChevronLeft className="w-4 h-4" />
                         </button>
                         <div>
-                          <h3 className="text-xl font-extrabold text-slate-900">{selectedClient.name}</h3>
-                          <p className="text-xs font-mono text-slate-500 mt-0.5">{selectedClient.phone} • Total Spent: ₹{selectedClient.totalSpent}</p>
+                          <h3 className="text-xl font-extrabold" style={{color:'#1A1A1A'}}>{selectedClient.name}</h3>
+                          <p className="text-xs font-mono mt-0.5" style={{color:'#6B7280'}}>{selectedClient.phone} • Total Spent: ₹{selectedClient.totalSpent}</p>
                         </div>
                       </div>
                       <div className="hidden sm:block">
-                        <span className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg shadow-sm">
+                        <span className="px-3 py-1.5 text-white text-xs font-bold rounded-lg shadow-sm" style={{background:'#D14D72'}}>
                           {selectedClient.visits} Lifetime Visits
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                       {/* Left: General Notes */}
-                      <div className="w-full md:w-1/3 p-5 border-r border-slate-100 bg-white overflow-y-auto">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Client Profile Notes</h4>
-                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-700 leading-relaxed min-h-[150px]">
+                      <div className="w-full md:w-1/3 p-5 bg-white overflow-y-auto" style={{borderRight:'1px solid #EFEFEF'}}>
+                        <h4 className="text-xs font-bold uppercase tracking-wider mb-3" style={{color:'#6B7280'}}>Client Profile Notes</h4>
+                        <div className="p-4 rounded-xl text-sm leading-relaxed min-h-[150px]" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}}>
                           {selectedClient.notes || 'No general notes available.'}
                         </div>
                       </div>
-                      
+
                       {/* Right: Visit History */}
-                      <div className="w-full md:w-2/3 p-5 bg-slate-50 overflow-y-auto">
+                      <div className="w-full md:w-2/3 p-5 overflow-y-auto" style={{background:'#FDF8F9'}}>
                         <div className="flex items-center justify-between mb-5">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                            <History className="w-4 h-4" /> Service History
+                          <h4 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{color:'#6B7280'}}>
+                            <History className="w-4 h-4" style={{color:'#D14D72'}} /> Service History
                           </h4>
                           <div className="relative">
-                            <input 
-                              type="date" 
+                            <input
+                              type="date"
                               value={crmSearchDate}
                               onChange={e => setCrmSearchDate(e.target.value)}
-                              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 shadow-sm focus:outline-none focus:border-slate-400"
+                              className="px-3 py-1.5 bg-white rounded-lg text-xs shadow-sm outline-none"
+                              style={{border:'1px solid #EFEFEF',color:'#1A1A1A'}}
+                              onFocus={e=>e.currentTarget.style.borderColor='#D14D72'}
+                              onBlur={e=>e.currentTarget.style.borderColor='#EFEFEF'}
                             />
                             {crmSearchDate && (
-                              <button onClick={() => setCrmSearchDate('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                              <button onClick={() => setCrmSearchDate('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1" style={{color:'#9CA3AF'}}>
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </div>
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                              <thead className="text-xs text-slate-500 uppercase bg-slate-50">
+                              <thead className="text-xs uppercase" style={{color:'#6B7280',background:'#FDF8F9'}}>
                                 <tr>
                                   <th className="px-4 py-3 font-semibold rounded-tl-xl">Date</th>
                                   <th className="px-4 py-3 font-semibold">Service</th>
@@ -589,24 +602,24 @@ export default function SalonDashboard() {
                                   <th className="px-4 py-3 font-semibold rounded-tr-xl text-right">Paid</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-100">
+                              <tbody className="divide-y" style={{borderColor:'#EFEFEF'}}>
                                 {filteredHistory.length === 0 ? (
                                   <tr>
-                                    <td colSpan="4" className="px-4 py-8 text-center text-slate-400">No visits found in this date range.</td>
+                                    <td colSpan="4" className="px-4 py-8 text-center" style={{color:'#9CA3AF'}}>No visits found in this date range.</td>
                                   </tr>
                                 ) : (
                                   filteredHistory.map((v, i) => (
-                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                    <tr key={i} className="transition-colors" onMouseEnter={e=>e.currentTarget.style.background='#FBEAEF'} onMouseLeave={e=>e.currentTarget.style.background=''}>
                                       <td className="px-4 py-4 whitespace-nowrap">
-                                        <div className="font-semibold text-slate-900">{v.date}</div>
-                                        <div className="text-[10px] text-slate-400 mt-0.5">{v.time}</div>
+                                        <div className="font-semibold" style={{color:'#1A1A1A'}}>{v.date}</div>
+                                        <div className="text-[10px] mt-0.5" style={{color:'#9CA3AF'}}>{v.time}</div>
                                       </td>
                                       <td className="px-4 py-4">
-                                        <div className="font-semibold text-slate-900">{v.service}</div>
-                                        {v.note && <div className="text-[10px] text-slate-500 mt-0.5 bg-slate-100 px-2 py-1 rounded inline-block">{v.note}</div>}
+                                        <div className="font-semibold" style={{color:'#1A1A1A'}}>{v.service}</div>
+                                        {v.note && <div className="text-[10px] mt-0.5 px-2 py-1 rounded inline-block" style={{background:'#FBEAEF',color:'#D14D72'}}>{v.note}</div>}
                                       </td>
-                                      <td className="px-4 py-4 text-slate-600 font-medium">{v.stylist}</td>
-                                      <td className="px-4 py-4 text-right font-bold text-slate-900">₹{v.price}</td>
+                                      <td className="px-4 py-4 font-medium" style={{color:'#6B7280'}}>{v.stylist}</td>
+                                      <td className="px-4 py-4 text-right font-bold" style={{color:'#1A1A1A'}}>₹{v.price}</td>
                                     </tr>
                                   ))
                                 )}
@@ -617,27 +630,27 @@ export default function SalonDashboard() {
 
                         <div className="space-y-4">
                           {filteredHistory.length === 0 ? (
-                            <div className="text-center p-8 text-sm text-slate-400 bg-white border border-slate-200 border-dashed rounded-xl">
+                            <div className="text-center p-8 text-sm bg-white rounded-xl" style={{border:'1px dashed #EFEFEF',color:'#9CA3AF'}}>
                               No history found for this date.
                             </div>
                           ) : (
                             filteredHistory.map(h => (
-                              <div key={h.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                              <div key={h.id} className="p-4 bg-white rounded-xl shadow-sm transition-shadow hover:shadow-md" style={{border:'1px solid #EFEFEF'}}>
                                 <div className="flex justify-between items-start mb-3">
                                   <div>
-                                    <div className="font-bold text-slate-900 text-base">{h.service}</div>
-                                    <div className="text-xs text-slate-500 font-mono mt-0.5">{h.date}</div>
+                                    <div className="font-bold text-base" style={{color:'#1A1A1A'}}>{h.service}</div>
+                                    <div className="text-xs font-mono mt-0.5" style={{color:'#6B7280'}}>{h.date}</div>
                                   </div>
                                   <div className="text-right">
-                                    <div className="font-extrabold text-slate-900">₹{h.price}</div>
-                                    <div className="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">Paid</div>
+                                    <div className="font-extrabold" style={{color:'#D14D72'}}>₹{h.price}</div>
+                                    <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{color:'#9CA3AF'}}>Paid</div>
                                   </div>
                                 </div>
-                                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-600 mb-3">
-                                  <strong>Notes:</strong> {h.notes}
+                                <div className="p-3 rounded-lg text-xs mb-3" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#6B7280'}}>
+                                  <strong style={{color:'#1A1A1A'}}>Notes:</strong> {h.notes}
                                 </div>
-                                <div className="text-xs text-slate-500 flex items-center gap-1.5">
-                                  <Scissors className="w-3.5 h-3.5 text-slate-400" /> Stylist: <span className="font-semibold text-slate-700">{h.stylist}</span>
+                                <div className="text-xs flex items-center gap-1.5" style={{color:'#6B7280'}}>
+                                  <Scissors className="w-3.5 h-3.5" style={{color:'#D14D72'}} /> Stylist: <span className="font-semibold" style={{color:'#1A1A1A'}}>{h.stylist}</span>
                                 </div>
                               </div>
                             ))
@@ -652,12 +665,12 @@ export default function SalonDashboard() {
 
             {/* Placeholder for other tabs */}
             {['calendar', 'sales', 'staff', 'inventory', 'services'].includes(activeTab) && (
-              <div className="p-12 text-center bg-white border border-slate-200 border-dashed rounded-2xl">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Sparkles className="w-5 h-5 text-slate-400" />
+              <div className="p-12 text-center bg-white rounded-2xl" style={{border:'1px dashed #EFEFEF'}}>
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{background:'#FBEAEF'}}>
+                  <Sparkles className="w-5 h-5" style={{color:'#D14D72'}} />
                 </div>
-                <h3 className="text-base font-bold text-slate-900 mb-1 capitalize">{activeTab} module</h3>
-                <p className="text-sm text-slate-500">This module has been streamlined into the new light theme.</p>
+                <h3 className="text-base font-bold mb-1 capitalize" style={{color:'#1A1A1A'}}>{activeTab} module</h3>
+                <p className="text-sm" style={{color:'#6B7280'}}>This module is coming soon.</p>
               </div>
             )}
 
@@ -669,19 +682,19 @@ export default function SalonDashboard() {
       <AnimatePresence>
         {/* Settings Modal */}
         {showSettings && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl" style={{border:'1px solid #EFEFEF'}}>
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg font-bold text-slate-900">Salon Settings</h3>
-                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600 p-1"><X className="w-5 h-5"/></button>
+                <h3 className="text-lg font-bold" style={{color:'#1A1A1A'}}>Salon Settings</h3>
+                <button onClick={() => setShowSettings(false)} className="p-1" style={{color:'#9CA3AF'}} onMouseEnter={e=>e.currentTarget.style.color='#D14D72'} onMouseLeave={e=>e.currentTarget.style.color='#9CA3AF'}><X className="w-5 h-5" /></button>
               </div>
               <form onSubmit={handleSaveSettings} className="space-y-4 text-sm">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Direct UPI ID</label>
-                  <input value={settingsUpiId} onChange={e => setSettingsUpiId(e.target.value)} placeholder="e.g. yourname@sbi" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition-all" />
-                  <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">Payments will go directly to your bank account via Counter Billing QR.</p>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{color:'#6B7280'}}>Direct UPI ID</label>
+                  <input value={settingsUpiId} onChange={e => setSettingsUpiId(e.target.value)} placeholder="e.g. yourname@sbi" className="w-full rounded-xl px-3.5 py-2.5 outline-none transition-all" style={{background:'#FDF8F9',border:'1px solid #EFEFEF',color:'#1A1A1A'}} onFocus={e=>{e.currentTarget.style.borderColor='#D14D72';e.currentTarget.style.boxShadow='0 0 0 2px rgba(209,77,114,0.1)'}} onBlur={e=>{e.currentTarget.style.borderColor='#EFEFEF';e.currentTarget.style.boxShadow=''}} />
+                  <p className="text-[10px] mt-1.5 leading-relaxed" style={{color:'#6B7280'}}>Payments will go directly to your bank account via Counter Billing QR.</p>
                 </div>
-                <button type="submit" className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all mt-2">
+                <button type="submit" className="w-full py-3 text-white font-bold rounded-xl shadow-md transition-all mt-2" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>
                   Save Changes
                 </button>
               </form>
@@ -708,10 +721,10 @@ export default function SalonDashboard() {
                 </div>
               </div>
               <div className="flex gap-3 mt-4">
-                <button onClick={() => { showToast('Printing QR Standee...'); window.print(); }} className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                <button onClick={() => { showToast('Printing QR Standee...'); window.print(); }} className="flex-1 py-3 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>
                   <span className="text-base">🖨️</span> Print QR
                 </button>
-                <button onClick={() => setShowQrModal(false)} className="flex-1 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-sm transition-all">
+                <button onClick={() => setShowQrModal(false)} className="flex-1 py-3 text-xs font-bold rounded-xl shadow-sm transition-all" style={{background:'#fff',border:'1px solid #EFEFEF',color:'#6B7280'}} onMouseEnter={e=>e.currentTarget.style.background='#FDF8F9'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
                   Close
                 </button>
               </div>

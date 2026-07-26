@@ -2788,8 +2788,11 @@ export default function LandingPageTemplate({ config = {} }) {
           <h2 className="lp-pain-h2 font-heading" style={{ marginBottom: '12px' }}>
             <span className="lp-h2-white">{config.featuresData?.h2 || "Everything your business needs."}</span>
           </h2>
-          <p className="lp-pain-sub" style={{ marginBottom: '40px' }}>
+          <p className="lp-pain-sub" style={{ marginBottom: '8px' }}>
             One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.
+          </p>
+          <p className="lp-pain-sub" style={{ marginBottom: '40px' }}>
+            We operate as a full-service agency, supplying and managing all of this end-to-end for your business.
           </p>
           <div className="lp-feat-grid">
             {(config.features || defaultFeatures).map((f, i) => (

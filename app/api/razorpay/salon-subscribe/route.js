@@ -1,5 +1,4 @@
-// POST /api/razorpay/salon-subscribe
-// Creates a Razorpay subscription for the salon Full Package plan
+ï»¿// POST /api/razorpay/salon-subscribe
 import Razorpay from 'razorpay'
 import { createClient } from '@supabase/supabase-js'
 import { getSession } from '../../../../lib/auth'
@@ -11,9 +10,7 @@ export async function POST(req) {
       key_secret: process.env.RAZORPAY_KEY_SECRET || 'dummy_secret',
     })
 
-    // Salons have a single "Full Package" plan — one Razorpay plan ID
     const planId = process.env.RAZORPAY_PLAN_SALON
-
     const { salonId } = await req.json()
 
     if (!salonId) {
@@ -26,7 +23,7 @@ export async function POST(req) {
     }
 
     if (!planId) {
-      return Response.json({ error: 'Salon plan not configured. Please set RAZORPAY_PLAN_SALON env variable.' }, { status: 500 })
+      return Response.json({ error: 'Salon plan not configured' }, { status: 500 })
     }
 
     const supabaseAdmin = createClient(
@@ -42,10 +39,9 @@ export async function POST(req) {
       return Response.json({ error: 'Salon not found' }, { status: 404 })
     }
 
-    // Create Razorpay subscription
     const subscription = await razorpay.subscriptions.create({
       plan_id: planId,
-      total_count: 12, // 12 monthly billing cycles; auto-renews after
+      total_count: 12,
       quantity: 1,
       customer_notify: 1,
       notes: {

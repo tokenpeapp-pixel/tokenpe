@@ -17,7 +17,7 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { email, phone, pin } = body
+        const { email, phone, pin, role } = body
 
         if (!email || !phone || !pin) {
             return Response.json({ success: false, message: 'Missing fields' }, { status: 400 })
@@ -55,11 +55,14 @@ export async function POST(req) {
         // Success — reset rate limiter
         loginLimiter.reset(ip)
 
+        const activeRole = role || 'owner'
+
         // Create JWT session using existing clinic data (no code rotation — doctors set custom codes)
         const sessionPayload = {
             clinicId: data.id,
             clinicCode: data.code,
-            phone: data.phone
+            phone: data.phone,
+            role: activeRole
         }
         const token = await signToken(sessionPayload)
 
@@ -73,7 +76,7 @@ export async function POST(req) {
             path: '/'
         })
 
-        return Response.json({ success: true, clinic: data }, { status: 200 })
+        return Response.json({ success: true, clinic: data, role: activeRole }, { status: 200 })
 
     } catch (error) {
         console.error('[Login API Error]', error)

@@ -44,6 +44,8 @@ export default function LoginPage() {
         }
     }, [router])
 
+    const [selectedRole, setSelectedRole] = useState('owner') // 'owner' | 'manager' | 'stylist' | 'receptionist'
+
     const [loginEmail, setLoginEmail] = useState('')
     const [loginPhone, setLoginPhone] = useState('')
     const [loginPin, setLoginPin] = useState('')
@@ -106,7 +108,7 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { 
-                redirectTo: `${window.location.origin}/auth/callback?intent=${mode}`,
+                redirectTo: `${window.location.origin}/salon-auth/callback?intent=${mode}`,
                 queryParams: {
                     prompt: 'select_account'
                 }
@@ -133,7 +135,7 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin })
+                body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin, role: selectedRole })
             })
             const result = await res.json()
 
@@ -147,6 +149,7 @@ export default function LoginPage() {
             localStorage.setItem('clinicCode', result.clinic.code)
             localStorage.setItem('clinicPhone', result.clinic.phone)
             localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
+            localStorage.setItem('tokenpe_salon_role', selectedRole)
             router.push('/salon-dashboard')
         } catch (err) {
             setError('Something went wrong. Please try again.')
@@ -201,6 +204,7 @@ export default function LoginPage() {
             localStorage.setItem('clinicCode', result.clinic.code)
             localStorage.setItem('clinicPhone', result.clinic.phone)
             localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
+            localStorage.setItem('tokenpe_salon_role', 'owner')
             
             // Trigger celebration pop-up!
             setCelebration({ clinicName: result.clinic.name, trialEnd: result.clinic.trial_ends_at })
@@ -335,7 +339,7 @@ export default function LoginPage() {
                             <div className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-lg cursor-default hover:-translate-y-1 hover:bg-white/10 hover:shadow-xl transition-all duration-200">
                                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-300"><MessageCircle className="w-5 h-5" /></div>
                                 <div>
-                                    <div className="font-semibold text-white">Patients join via WhatsApp</div>
+                                    <div className="font-semibold text-white">Clients join via WhatsApp</div>
                                     <div className="text-sm text-rose-100/60 mt-0.5">No app download. No sign-up.</div>
                                 </div>
                             </div>
@@ -456,23 +460,49 @@ export default function LoginPage() {
                     {/* Forms */}
                     <AnimatePresence mode="wait">
                         {mode === 'login' && (
-                            <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-5">
+                            <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Email</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Login Role</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { id: 'owner', label: 'Owner / Admin', icon: '👑' },
+                                            { id: 'manager', label: 'Manager', icon: '💼' },
+                                            { id: 'stylist', label: 'Stylist / Staff', icon: '✂️' },
+                                            { id: 'receptionist', label: 'Receptionist', icon: '🏷️' }
+                                        ].map((r) => (
+                                            <button
+                                                key={r.id}
+                                                type="button"
+                                                onClick={() => setSelectedRole(r.id)}
+                                                className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                                                    selectedRole === r.id
+                                                        ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-sm'
+                                                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                <span>{r.icon}</span>
+                                                <span className="truncate">{r.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Registered Email</label>
                                     <div className="relative">
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                                        <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
+                                        <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="salon@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Phone</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Registered Phone</label>
                                     <div className="relative">
                                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
                                         <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
                                     </div>
                                 </div>
                                 <div className="relative">
-                                    <div className="flex justify-between items-center mb-2">
+                                    <div className="flex justify-between items-center mb-1.5">
                                         <label className="block text-sm font-semibold text-slate-700">4-Digit PIN</label>
                                         <button type="button" onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }} className="text-sm font-semibold text-rose-600 hover:text-rose-700">Forgot PIN?</button>
                                     </div>
@@ -481,7 +511,7 @@ export default function LoginPage() {
                                         <input value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
                                     </div>
                                 </div>
-                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-rose-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
+                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(225, 29, 72, 0.3)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-rose-500 hover:to-pink-500 transition-all disabled:opacity-50 mt-4">
                                     {loading ? 'Signing in...' : 'Sign in →'}
                                 </motion.button>
                             </motion.form>
@@ -496,7 +526,7 @@ export default function LoginPage() {
                                     <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Email</label>
                                     <div className="relative">
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                                        <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
+                                        <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="salon@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
                                     </div>
                                 </div>
                                 <div>
@@ -506,7 +536,7 @@ export default function LoginPage() {
                                         <input value={loginPhone} onChange={e => setLoginPhone(e.target.value)} placeholder="9876543210" required type="tel" className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
                                     </div>
                                 </div>
-                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-rose-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
+                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(225, 29, 72, 0.3)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-rose-500 hover:to-pink-500 transition-all disabled:opacity-50 mt-4">
                                     {loading ? 'Sending OTP...' : 'Send OTP to Email →'}
                                 </motion.button>
                                 <div className="text-center mt-4">
@@ -517,7 +547,7 @@ export default function LoginPage() {
 
                         {mode === 'verify-otp' && (
                             <motion.form key="verify-otp" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleResetPin} className="space-y-5">
-                                <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-sm text-emerald-800 font-medium mb-2">
+                                <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-sm text-rose-800 font-medium mb-2">
                                     ✅ Check your email for the 6-digit OTP. It expires in 10 minutes.
                                 </div>
                                 <div>
@@ -538,7 +568,7 @@ export default function LoginPage() {
                                         <input value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" required type="password" className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
                                     </div>
                                 </div>
-                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-rose-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
+                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(225, 29, 72, 0.3)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-rose-500 hover:to-pink-500 transition-all disabled:opacity-50 mt-4">
                                     {loading ? 'Updating PIN...' : 'Reset PIN →'}
                                 </motion.button>
                                 <div className="flex justify-center gap-6 mt-4">
@@ -611,7 +641,7 @@ export default function LoginPage() {
                                     <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Email *</label>
                                     <div className="relative">
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                                        <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="doctor@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
+                                        <input value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="salon@gmail.com" type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:bg-white transition-all shadow-inner" />
                                     </div>
                                 </div>
                                 <div>
@@ -624,7 +654,7 @@ export default function LoginPage() {
                                 <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700 font-medium flex items-center">
                                     <Sparkles className="w-5 h-5 mr-2 shrink-0 inline-block text-indigo-500" /> A unique salon code will be auto-generated. You can customize it later from your dashboard.
                                 </div>
-                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-rose-500 hover:to-emerald-400 transition-all disabled:opacity-50 mt-4">
+                                <motion.button whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(225, 29, 72, 0.3)' }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl py-3 text-sm shadow-sm hover:from-rose-500 hover:to-pink-500 transition-all disabled:opacity-50 mt-4">
                                     {loading ? 'Creating account...' : 'Create Account →'}
                                 </motion.button>
                             </motion.form>

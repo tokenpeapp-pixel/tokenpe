@@ -24,7 +24,7 @@ function AuthCallbackContent() {
                 const intent = searchParams.get('intent') || 'login'
                 
                 if (intent === 'register') {
-                    setStatus('Creating your clinic workspace...')
+                    setStatus('Setting up your workspace...')
                 } else {
                     setStatus('Logging you in securely...')
                 }
@@ -55,10 +55,12 @@ function AuthCallbackContent() {
                     localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
                 }
 
+                const targetDashboard = vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : '/dashboard'
+
                 if (data.isNewRegistration) {
                     setCelebration({ clinicName: finalClinicData.name, trialEnd: finalClinicData.trial_ends_at })
                 } else {
-                    router.replace('/dashboard')
+                    router.replace(targetDashboard)
                 }
 
             } catch (err) {
@@ -70,7 +72,9 @@ function AuthCallbackContent() {
     }, [router, searchParams])
 
     if (celebration) {
-        return <CelebrationScreen clinicName={celebration.clinicName} trialEnd={celebration.trialEnd} onDone={() => router.replace('/dashboard')} />
+        const vertical = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_vertical') : null
+        const targetDashboard = vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : '/dashboard'
+        return <CelebrationScreen clinicName={celebration.clinicName} trialEnd={celebration.trialEnd} onDone={() => router.replace(targetDashboard)} />
     }
 
     return (

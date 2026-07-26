@@ -2,9 +2,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, UtensilsCrossed, GraduationCap, Scissors, MoreHorizontal, Search, Check, Users, Megaphone, ClipboardList, Stethoscope, Activity, Building2, Smile, Mic, MessageSquare, Zap, Bell, Calendar, QrCode, FileSignature, BellRing, FileText, CheckCircle2, XCircle, ChevronRight } from "lucide-react";
+import { Sparkles, UtensilsCrossed, GraduationCap, Scissors, MoreHorizontal, Search, Check, Users, Megaphone, ClipboardList, Stethoscope, Activity, Building2, Smile, Mic, MessageSquare, Zap, Bell, Calendar, QrCode, FileSignature, BellRing, FileText, CheckCircle2, XCircle, ChevronRight, Mail, PhoneOff, TrendingDown, Menu, X, Smartphone } from "lucide-react";
 
 import WhatsAppDemo from "../app/components/WhatsAppDemo";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
 
 
 const MobileCarousel = ({ children, gridClass }) => {
@@ -41,12 +43,120 @@ const MobileCarousel = ({ children, gridClass }) => {
       </div>
       <div className="lp-carousel-dots">
         {React.Children.map(children, (child, i) => (
-          <span key={i} className={`lp-carousel-dot ${i === active ? 'active' : ''}`} />
+          <div 
+            key={i} 
+            className={`lp-carousel-dot ${i === active ? 'active' : ''}`}
+            onClick={() => {
+              if (scrollRef.current) {
+                const cardWidth = scrollRef.current.scrollWidth / count;
+                scrollRef.current.scrollTo({ left: i * cardWidth, behavior: 'smooth' });
+              }
+            }}
+          />
         ))}
       </div>
     </div>
   );
 };
+
+function HeroCursorField() {
+  const containerRef = useRef(null);
+  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5, active: false });
+
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    setMousePos({ x, y, active: true });
+  };
+
+  const handleMouseLeave = () => {
+    setMousePos((prev) => ({ ...prev, active: false }));
+  };
+
+  const offsetX = mousePos.active ? (mousePos.x - 0.5) * 35 : 0;
+  const offsetY = mousePos.active ? (mousePos.y - 0.5) * 35 : 0;
+
+  return (
+    <div
+      ref={containerRef}
+      className={`lp-cursor-pulse-field ${mousePos.active ? 'active' : ''}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div
+        className="lp-pulse-cursor-glow"
+        style={{
+          left: `${mousePos.x * 100}%`,
+          top: `${mousePos.y * 100}%`,
+          opacity: mousePos.active ? 1 : 0
+        }}
+      />
+
+      {/* SVG Connecting Path with Top-to-Bottom Surging Energy Pulses */}
+      <svg className="lp-pulse-path-svg" viewBox="0 0 250 360">
+        {/* Base Connecting Wire Path */}
+        <path
+          d="M 65 45 C 200 100, 200 160, 80 220 C 30 260, 130 300, 180 325"
+          stroke="rgba(34, 197, 94, 0.28)"
+          strokeWidth="2"
+          strokeDasharray="5 5"
+          fill="none"
+        />
+
+        {/* Top-to-Bottom Surging Light Beams traveling along the path */}
+        <circle r="5.5" fill="#ffffff" filter="drop-shadow(0 0 10px #22c55e)">
+          <animateMotion
+            path="M 65 45 C 200 100, 200 160, 80 220 C 30 260, 130 300, 180 325"
+            dur={mousePos.active ? "1.0s" : "2.2s"}
+            repeatCount="indefinite"
+          />
+        </circle>
+
+        <circle r="4.5" fill="#22c55e" filter="drop-shadow(0 0 8px #22c55e)">
+          <animateMotion
+            path="M 65 45 C 200 100, 200 160, 80 220 C 30 260, 130 300, 180 325"
+            begin="0.55s"
+            dur={mousePos.active ? "1.0s" : "2.2s"}
+            repeatCount="indefinite"
+          />
+        </circle>
+      </svg>
+
+      {/* Connected Floating Micro-Chips */}
+      <div
+        className="lp-cursor-node lp-node-1"
+        style={{
+          transform: `translate(${offsetX * 0.8}px, ${offsetY * 0.8}px)`
+        }}
+      >
+        <span className="lp-node-dot" />
+        <span className="lp-node-txt">Token #013</span>
+      </div>
+
+      <div
+        className="lp-cursor-node lp-node-2"
+        style={{
+          transform: `translate(${offsetX * -0.6}px, ${offsetY * -0.6}px)`
+        }}
+      >
+        <Zap size={13} color="#22c55e" />
+        <span className="lp-node-txt">Real-time Sync</span>
+      </div>
+
+      <div
+        className="lp-cursor-node lp-node-3"
+        style={{
+          transform: `translate(${offsetX * 1.1}px, ${offsetY * 1.1}px)`
+        }}
+      >
+        <MessageSquare size={13} color="#2dd4a7" />
+        <span className="lp-node-txt">WhatsApp Alert</span>
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPageTemplate({ config = {} }) {
   const router = useRouter();
@@ -54,11 +164,43 @@ export default function LandingPageTemplate({ config = {} }) {
   const [showDetails, setShowDetails] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [dots, setDots] = useState([]);
+  const [activeWho, setActiveWho] = useState(0);
   
   const go = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    const target = document.getElementById(id);
+    if (target) {
+      if (window.lenisInstance) {
+        window.lenisInstance.scrollTo(target, { duration: 1.2 });
+      } else {
+        target.scrollIntoView({ behavior: "smooth" });
+      }
+    }
     setMenuOpen(false);
   };
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.5,
+    });
+
+    window.lenisInstance = lenis;
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => {
+      window.lenisInstance = null;
+      lenis.destroy();
+    };
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -107,7 +249,7 @@ export default function LandingPageTemplate({ config = {} }) {
 
   const defaultFeatures = [
     { 
-      ico: <Mic size="1em" color="#374151" />, color: "#e8f5e9", iconColor: "#16a34a", bloom: "rgba(156, 163, 175, 0.15)", title: "Voice in 10 Languages", desc: "Patients get WhatsApp voice alerts in Hindi, Tamil, Telugu, Marathi, Gujarati & 5 more.",
+      ico: <Mic size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Voice in 10 Languages", desc: "Patients get WhatsApp voice alerts in Hindi, Tamil, Telugu, Marathi, Gujarati & 5 more.",
       GhostIco: Mic,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -116,7 +258,7 @@ export default function LandingPageTemplate({ config = {} }) {
       )
     },
     { 
-      ico: <MessageSquare size="1em" color="#374151" />, color: "#e3f2fd", iconColor: "#0ea5e9", bloom: "rgba(156, 163, 175, 0.15)", title: "Zero App for Patients", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone.",
+      ico: <MessageSquare size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Zero App for Patients", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone.",
       GhostIco: MessageSquare,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -127,7 +269,7 @@ export default function LandingPageTemplate({ config = {} }) {
       )
     },
     { 
-      ico: <Zap size="1em" color="#374151" />, color: "#f3e5f5", iconColor: "#8b5cf6", bloom: "rgba(156, 163, 175, 0.15)", title: "Live Dashboard", desc: "See who's waiting, with doctor, and done — updating in real-time.",
+      ico: <Zap size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Live Dashboard", desc: "See who's waiting, with doctor, and done — updating in real-time.",
       GhostIco: Zap,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -136,7 +278,7 @@ export default function LandingPageTemplate({ config = {} }) {
       )
     },
     { 
-      ico: <Bell size="1em" color="#374151" />, color: "#fff3e0", iconColor: "#f59e0b", bloom: "rgba(156, 163, 175, 0.15)", title: "Smart Auto Alerts", desc: "10-away, 5-away, and your-turn notifications sent automatically.",
+      ico: <Bell size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Smart Auto Alerts", desc: "10-away, 5-away, and your-turn notifications sent automatically.",
       GhostIco: Bell,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -146,7 +288,7 @@ export default function LandingPageTemplate({ config = {} }) {
       )
     },
     { 
-      ico: <Calendar size="1em" color="#374151" />, color: "#e0f7fa", iconColor: "#06b6d4", bloom: "rgba(156, 163, 175, 0.15)", title: "Date-wise History", desc: "Complete patient records for any past date. Daily volumes at a glance.",
+      ico: <Calendar size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Date-wise History", desc: "Complete patient records for any past date. Daily volumes at a glance.",
       GhostIco: Calendar,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -158,7 +300,7 @@ export default function LandingPageTemplate({ config = {} }) {
       )
     },
     { 
-      ico: <QrCode size="1em" color="#374151" />, color: "#fce4ec", iconColor: "#ec4899", bloom: "rgba(156, 163, 175, 0.15)", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card.",
+      ico: <QrCode size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card.",
       GhostIco: QrCode,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -174,13 +316,14 @@ export default function LandingPageTemplate({ config = {} }) {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; max-width: 100vw !important; overflow-x: hidden !important; }
         body {
           font-family: 'Plus Jakarta Sans', sans-serif;
           background: var(--bg-color);
           color: var(--text-main);
           background-attachment: fixed;
-          overflow-x: hidden;
+          max-width: 100vw !important;
+          overflow-x: hidden !important;
           -webkit-font-smoothing: antialiased;
           overflow-wrap: break-word;
           word-wrap: break-word;
@@ -221,81 +364,121 @@ export default function LandingPageTemplate({ config = {} }) {
 
         /* ── TOPBAR ── */
         .lp-topbar {
-          background: #065f46;
-          color: #fff;
+          background: transparent !important;
+          color: #d1d5db !important;
           text-align: center;
           padding: 10px 16px;
           font-size: 13px;
-          font-weight: 600;
+          font-weight: 500;
           letter-spacing: 0.2px;
           line-height: 1.5;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          display: block !important;
         }
         .lp-topbar a {
-          color: #6ee7b7;
-          text-decoration: underline;
-          margin-left: 6px;
+          color: #22c55e !important;
+          font-weight: 600;
+          text-decoration: none;
+          margin-left: 8px;
           white-space: nowrap;
-          display: inline-block;
+          display: inline-flex;
+          align-items: center;
+          gap: 2px;
+          transition: color 0.15s ease;
+        }
+        .lp-topbar a:hover {
+          color: #4ade80 !important;
+          text-decoration: underline;
         }
 
-        /* ── NAV ── */
+        /* ── NAV (TRANSPARENT AT TOP, GLASSMORPHISM ON SCROLL) ── */
         .lp-nav {
-          position: sticky;
-          top: 0;
-          z-index: 200;
-          background: rgba(255,255,255,0.95);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border-bottom: 1px solid #e5e7eb;
-          transition: box-shadow 0.15s ease;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          width: 100% !important;
+          z-index: 9999 !important;
+          background: transparent !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border-bottom: 1px solid transparent !important;
+          box-shadow: none !important;
+          transition: background 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease !important;
         }
-        .lp-nav.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.07); }
+        .lp-nav.scrolled {
+          background: rgba(14, 15, 17, 0.88) !important;
+          backdrop-filter: blur(20px) !important;
+          -webkit-backdrop-filter: blur(20px) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+        }
         .lp-nav-inner {
-          max-width: 1140px;
+          max-width: 1200px;
           margin: 0 auto;
           padding: 0 24px;
-          height: 68px;
+          height: 72px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 24px;
         }
-        .lp-nav-links { display: flex; align-items: center; gap: 28px; }
+        .lp-nav-left {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+        }
+        .lp-nav-center {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 36px;
+        }
+        .lp-nav-right {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 16px;
+        }
         .lp-nl {
-          color: #4b5563;
-          font-size: 14px;
-          font-weight: 600;
+          color: #9ca3af !important;
+          font-size: 14.5px !important;
+          font-weight: 450 !important;
           cursor: pointer;
           text-decoration: none;
-          transition: all 0.15s ease;
-          padding: 6px 12px;
-          border-radius: 8px;
+          transition: color 0.2s ease, transform 0.2s ease;
+          padding: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
         }
         .lp-nl:hover { 
-          color: #065f46;
-          background: rgba(6, 95, 70, 0.04);
-          transform: translateY(-2px);
+          color: #ffffff !important;
+          background: transparent !important;
+          transform: translateY(-1px);
         }
         .lp-nav-cta {
-          background: linear-gradient(135deg, #16a34a, #0d9488);
-          color: #fff;
-          padding: 10px 24px;
-          border-radius: 999px;
-          font-size: 14px;
-          font-weight: 700;
+          background: #ffffff !important;
+          color: #0c0c0e !important;
+          padding: 10px 24px !important;
+          border-radius: 9999px !important;
+          font-size: 14px !important;
+          font-weight: 600 !important;
           cursor: pointer;
-          border: none;
-          box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
-          transition: all 0.15s ease;
+          border: none !important;
+          box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15) !important;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
           white-space: nowrap;
-          position: relative;
-          overflow: hidden;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-family: inherit;
         }
         .lp-nav-cta:hover { 
-          transform: translateY(-2px); 
-          box-shadow: 0 8px 24px rgba(22, 163, 74, 0.45); 
+          background: #f8fafc !important;
+          transform: translateY(-2px) !important; 
+          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.25) !important; 
         }
-        .lp-nav-cta:active { transform: scale(0.96); }
+        .lp-nav-cta:active { transform: scale(0.96) !important; }
         .lp-nav-find {
           display: inline-flex;
           align-items: center;
@@ -384,7 +567,7 @@ export default function LandingPageTemplate({ config = {} }) {
 
         /* ── HERO ── */
         .lp-hero {
-          padding: 80px 24px 60px;
+          padding: 125px 24px 60px;
           position: relative;
           overflow: hidden;
         }
@@ -407,21 +590,29 @@ export default function LandingPageTemplate({ config = {} }) {
           pointer-events: none;
         }
         .lp-ghost-queue {
-          position: absolute;
-          bottom: 15%;
-          left: 0;
-          width: 100%;
-          height: 200px;
-          /* SVG of 3 people standing in line, repeating horizontally */
-          background: url("data:image/svg+xml,%3Csvg width='240' height='200' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='0.5' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M23 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E") repeat-x;
-          background-size: 240px 200px;
-          animation: queue-slide 15s linear infinite;
-          pointer-events: none;
-          z-index: 0;
+          position: absolute !important;
+          top: 100px !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 480px !important;
+          pointer-events: none !important;
+          z-index: 0 !important;
+          overflow: hidden !important;
+          opacity: 0.9 !important;
+        }
+        .lp-ghost-queue-track {
+          display: flex !important;
+          width: 200% !important;
+          height: 100% !important;
+          animation: queue-slide 18s linear infinite !important;
+        }
+        .lp-ghost-queue-svg {
+          width: 50% !important;
+          height: 100% !important;
         }
         @keyframes queue-slide {
-          from { background-position-x: 240px; }
-          to { background-position-x: 0px; }
+          from { transform: translateX(0%); }
+          to { transform: translateX(-50%); }
         }
         .lp-hero-inner {
           max-width: 1140px;
@@ -431,6 +622,75 @@ export default function LandingPageTemplate({ config = {} }) {
           gap: 48px;
           position: relative;
           z-index: 1;
+        }
+        .lp-cursor-pulse-field {
+          position: absolute;
+          left: 52%;
+          top: 48%;
+          transform: translate(-50%, -50%);
+          width: 250px;
+          height: 360px;
+          z-index: 10;
+          pointer-events: auto;
+          cursor: crosshair;
+        }
+        @media (max-width: 1100px) {
+          .lp-cursor-pulse-field { display: none !important; }
+        }
+        .lp-pulse-path-svg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          overflow: visible;
+        }
+        .lp-pulse-cursor-glow {
+          position: absolute;
+          width: 160px;
+          height: 160px;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.06) 50%, transparent 70%);
+          pointer-events: none;
+          transition: opacity 0.25s ease;
+        }
+        .lp-cursor-node {
+          position: absolute;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 15px;
+          background: rgba(18, 20, 24, 0.88);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 99px;
+          backdrop-filter: blur(14px);
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(34, 197, 94, 0.12);
+          transition: transform 0.12s ease-out, border-color 0.3s ease, box-shadow 0.3s ease;
+          user-select: none;
+          pointer-events: none;
+        }
+        .lp-cursor-pulse-field:hover .lp-cursor-node,
+        .lp-cursor-pulse-field.active .lp-cursor-node {
+          border-color: rgba(34, 197, 94, 0.45);
+          box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.6), 0 0 22px rgba(34, 197, 94, 0.25);
+        }
+        .lp-node-1 { top: 25px; left: 10px; }
+        .lp-node-2 { top: 150px; right: 10px; }
+        .lp-node-3 { bottom: 25px; left: 20px; }
+        .lp-node-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #22c55e;
+          box-shadow: 0 0 8px #22c55e;
+        }
+        .lp-node-txt {
+          font-size: 11.5px;
+          font-weight: 600;
+          color: #f3f4f6;
+          letter-spacing: 0.2px;
         }
         .lp-hero-content { flex: 1; min-width: 0; }
         .lp-hero-visual {
@@ -477,15 +737,26 @@ export default function LandingPageTemplate({ config = {} }) {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: #dcfce7;
-          border: 1px solid #86efac;
-          border-radius: 100px;
-          padding: 6px 14px 6px 8px;
-          font-size: 12px;
-          font-weight: 700;
-          color: #15803d;
-          margin-bottom: 24px;
-          animation: lp-badge-pulse 2.5s ease-in-out infinite;
+          background: rgba(255, 255, 255, 0.03) !important;
+          border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          border-radius: 9999px !important;
+          padding: 5px 14px 5px 10px !important;
+          font-size: 13px !important;
+          font-weight: 500 !important;
+          color: #d1d5db !important;
+          margin-bottom: 24px !important;
+          box-shadow: none !important;
+          animation: none !important;
+        }
+        .lp-badge-country {
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          color: #9ca3af;
+          background: rgba(255, 255, 255, 0.08);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-family: system-ui, -apple-system, sans-serif;
         }
         .lp-badge-dot {
           width: 7px; height: 7px;
@@ -494,73 +765,100 @@ export default function LandingPageTemplate({ config = {} }) {
           animation: lp-pulse-ring 2s ease-out infinite;
           flex-shrink: 0;
         }
+        .font-heading {
+          font-family: 'Outfit', sans-serif !important;
+        }
         .lp-hero-h1 {
-          font-size: clamp(34px, 5vw, 60px);
-          font-weight: 900;
-          line-height: 1.08;
-          letter-spacing: -2px;
-          color: #111827;
-          margin-bottom: 20px;
+          font-family: 'Outfit', sans-serif !important;
+          font-size: 2.6rem !important;
+          font-weight: 500 !important;
+          line-height: 1.02 !important;
+          letter-spacing: -0.03em !important;
+          margin-bottom: 24px !important;
+          max-width: 680px;
+        }
+        @media (min-width: 640px) {
+          .lp-hero-h1 {
+            font-size: 3.75rem !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .lp-hero-h1 {
+            font-size: 4.7rem !important;
+          }
+        }
+        .lp-h1-dim {
+          color: #64748b;
+          font-weight: 500;
+        }
+        .lp-h1-white {
+          color: #ffffff;
+          font-weight: 500;
+        }
+        .lp-h1-green {
+          color: #22c55e;
+          font-weight: 500;
         }
         .lp-grad { background: linear-gradient(135deg, #16a34a, #0891b2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .lp-hero-sub {
-          color: #6b7280;
-          font-size: clamp(15px, 2vw, 18px);
-          line-height: 1.75;
-          margin-bottom: 36px;
-          max-width: 520px;
+          color: #9ca3af !important;
+          font-size: 15px !important;
+          line-height: 1.65 !important;
+          margin-bottom: 32px !important;
+          max-width: 480px !important;
+          font-weight: 400 !important;
         }
-        .lp-hero-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+        .lp-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 32px; }
         .lp-btn-primary {
-          background: #16a34a;
-          color: #fff;
-          padding: 15px 32px;
-          border-radius: 12px;
-          font-size: 15px;
-          font-weight: 700;
+          background: #22c55e !important;
+          color: #0c0c0e !important;
+          padding: 12px 24px !important;
+          border-radius: 9999px !important;
+          font-size: 14.5px !important;
+          font-weight: 600 !important;
           cursor: pointer;
-          border: none;
-          box-shadow: 0 8px 28px rgba(22,163,74,0.35);
-          transition: transform 0.15s ease, box-shadow 0.22s, background 0.15s;
+          border: none !important;
+          box-shadow: 0 4px 16px rgba(34, 197, 94, 0.25) !important;
+          transition: all 0.2s ease !important;
           text-decoration: none;
-          display: inline-flex; align-items: center; gap: 8px;
+          display: inline-flex; align-items: center; gap: 6px;
         }
-        .lp-btn-primary:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(22,163,74,0.45); background: #15803d; }
-        .lp-btn-primary:active { transform: scale(0.96); }
+        .lp-btn-primary:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35) !important; background: #16a34a !important; }
+        .lp-btn-primary:active { transform: scale(0.96) !important; }
         .lp-btn-secondary {
-          background: #fff;
-          color: #374151;
-          padding: 15px 32px;
-          border-radius: 12px;
-          font-size: 15px;
-          font-weight: 700;
+          background: transparent !important;
+          color: #ffffff !important;
+          padding: 12px 24px !important;
+          border-radius: 9999px !important;
+          font-size: 14.5px !important;
+          font-weight: 500 !important;
           cursor: pointer;
-          border: 1.5px solid #d1d5db;
-          transition: transform 0.15s ease, border-color 0.15s, box-shadow 0.22s;
-          display: inline-flex; align-items: center; gap: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.2) !important;
+          transition: all 0.2s ease !important;
+          display: inline-flex; align-items: center; gap: 6px;
         }
-        .lp-btn-secondary:hover { border-color: #16a34a; color: #16a34a; transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
-        .lp-btn-secondary:active { transform: scale(0.96); }
+        .lp-btn-secondary:hover { border-color: rgba(255, 255, 255, 0.4) !important; background: rgba(255, 255, 255, 0.06) !important; transform: translateY(-2px) !important; }
+        .lp-btn-secondary:active { transform: scale(0.96) !important; }
         .lp-hero-trust {
           display: flex;
           flex-wrap: wrap;
-          gap: 16px;
+          gap: 28px;
           align-items: center;
+          margin-top: 12px;
         }
         .lp-hero-trust-item {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          font-weight: 700;
-          color: #15803d;
-          background: #dcfce7;
-          padding: 4px 12px;
-          border-radius: 100px;
-          border: 1px solid #86efac;
-          box-shadow: 0 2px 8px rgba(22,163,74,0.15);
+          gap: 10px;
+          font-size: 14.5px;
+          font-weight: 400;
+          color: #9ca3af;
+          background: transparent !important;
+          border: none !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
         }
-        .lp-hero-trust-item span:first-child { color: #16a34a; font-size: 14px; }
 
         /* ── SECTION COMMON ── */
         .lp-sec { padding: 60px 24px; scroll-margin-top: 69px; position: relative; overflow: hidden; }
@@ -595,57 +893,289 @@ export default function LandingPageTemplate({ config = {} }) {
         .lp-sec-centered.lp-sec-sub { margin: 0 auto; }
 
         /* ── PAIN POINTS ── */
-        .lp-pain-sec { background: transparent; }
+        .lp-pain-sec { background: transparent; padding: 70px 24px 60px; }
+        .lp-pain-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: #9ca3af;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          margin-bottom: 16px;
+        }
+        .lp-pain-eyebrow.centered {
+          display: flex !important;
+          justify-content: center !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+          width: fit-content !important;
+        }
+        .lp-pain-eyebrow-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #22c55e;
+        }
+        .lp-pain-h2 {
+          font-family: 'Outfit', sans-serif !important;
+          font-size: 2.25rem !important;
+          font-weight: 500 !important;
+          line-height: 1.08 !important;
+          letter-spacing: -0.02em !important;
+          color: #ffffff !important;
+          margin-bottom: 12px !important;
+        }
+        @media (min-width: 640px) {
+          .lp-pain-h2 {
+            font-size: 2.8rem !important;
+          }
+        }
+        .lp-h2-dim {
+          color: #64748b !important;
+          font-weight: 500 !important;
+        }
+        .lp-h2-white {
+          color: #ffffff !important;
+          font-weight: 500 !important;
+        }
+        .lp-pain-dim {
+          color: #64748b;
+          font-weight: 500;
+        }
+        .lp-pain-sub {
+          color: #9ca3af !important;
+          font-size: 16px !important;
+          line-height: 1.6 !important;
+          margin-bottom: 40px !important;
+        }
         .lp-pain-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 20px;
-          margin-top: 48px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+        @media (max-width: 900px) {
+          .lp-pain-grid { grid-template-columns: 1fr; }
         }
         .lp-pain-card {
-          background: #fff;
-          border: 1px solid #e5e7eb;
-          border-radius: 20px;
-          padding: 28px;
-          transition: transform 0.15s ease, box-shadow 0.15s, border-color 0.15s;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+          background: #161a22 !important;
+          border: 1px solid rgba(255, 255, 255, 0.07) !important;
+          border-radius: 18px !important;
+          padding: 34px 28px !important;
+          position: relative !important;
+          overflow: hidden !important;
+          box-shadow: none !important;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          text-align: left !important;
         }
-        .lp-pain-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(0,0,0,0.09); border-color: #fca5a5; }
-        .lp-pain-ico { font-size: 32px; margin-bottom: 14px; display: flex; justify-content: center; }
-        .lp-pain-title { font-size: 16px; font-weight: 800; color: #111827; margin-bottom: 8px; }
-        .lp-pain-desc { font-size: 13.5px; color: #6b7280; line-height: 1.7; }
-        .lp-pain-badge {
-          display: inline-block;
-          background: #fee2e2;
-          color: #dc2626;
+        .lp-pain-card:hover {
+          background: #1c212b !important;
+          border-color: rgba(255, 255, 255, 0.16) !important;
+          transform: translateY(-4px) !important;
+          box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6) !important;
+        }
+        .lp-pain-num {
+          position: absolute !important;
+          top: 12px !important;
+          right: 20px !important;
+          left: auto !important;
+          font-size: 96px !important;
+          font-weight: 800 !important;
+          color: rgba(255, 255, 255, 0.05) !important;
+          line-height: 0.85 !important;
+          pointer-events: none !important;
+          font-family: 'Outfit', sans-serif !important;
+          user-select: none !important;
+          z-index: 0 !important;
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease !important;
+        }
+        .lp-pain-card:hover .lp-pain-num {
+          color: rgba(255, 255, 255, 0.10) !important;
+          transform: scale(1.04) translateY(-2px) !important;
+        }
+        .lp-pain-card-body {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          text-align: left;
+        }
+        .lp-pain-tag {
           font-size: 11px;
-          font-weight: 700;
-          padding: 3px 10px;
-          border-radius: 100px;
-          margin-bottom: 12px;
+          font-weight: 600;
+          letter-spacing: 1.5px;
+          color: #64748b;
+          text-transform: uppercase;
+          margin-bottom: 24px;
+          text-align: left;
+          width: 100%;
+        }
+        .lp-pain-iconbox {
+          width: 44px;
+          height: 44px;
+          border-radius: 10px;
+          background: rgba(239, 68, 68, 0.08);
+          border: 1px solid rgba(239, 68, 68, 0.18);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 24px;
+          color: #f87171;
+          transition: all 0.3s ease;
+        }
+        .lp-pain-card:hover .lp-pain-iconbox {
+          background: rgba(239, 68, 68, 0.14);
+          border-color: rgba(239, 68, 68, 0.35);
+          box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+          transform: scale(1.05);
+        }
+        .lp-pain-title {
+          font-family: 'Outfit', sans-serif !important;
+          font-size: 22px !important;
+          font-weight: 600 !important;
+          color: #ffffff !important;
+          margin-bottom: 12px !important;
+          letter-spacing: -0.01em;
+          text-align: left !important;
+          width: 100%;
+        }
+        .lp-pain-desc {
+          font-size: 14px !important;
+          color: #9ca3af !important;
+          line-height: 1.6 !important;
+          font-weight: 400 !important;
+          text-align: left !important;
+          width: 100%;
         }
 
-        /* ── WHO IS THIS FOR ── */
-        .lp-who-sec { background: transparent; }
-        .lp-who-grid {
+        /* ── WHO IS THIS FOR (2-COLUMN SPLIT SHOWCASE) ── */
+        .lp-who-sec { background: transparent; padding: 80px 24px 70px; }
+        .lp-who-split {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 20px;
-          margin-top: 48px;
+          grid-template-columns: 1fr 1.15fr;
+          gap: 32px;
+          margin-top: 40px;
+          align-items: stretch;
         }
-        .lp-who-card {
-          background: #fff;
-          border: 1.5px solid #86efac;
+        @media (max-width: 960px) {
+          .lp-who-split { grid-template-columns: 1fr; }
+        }
+        .lp-who-list {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          justify-content: center;
+        }
+        .lp-who-item {
+          background: #141517;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 16px;
+          padding: 20px 24px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          text-align: left;
+        }
+        .lp-who-item:hover {
+          background: #17181b;
+          border-color: rgba(255, 255, 255, 0.15);
+          transform: translateX(4px);
+        }
+        .lp-who-item.active {
+          background: #17181c;
+          border-color: rgba(34, 197, 94, 0.35);
+          box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 197, 94, 0.1);
+        }
+        .lp-who-iconbox {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #9ca3af;
+          flex-shrink: 0;
+          transition: all 0.25s ease;
+        }
+        .lp-who-item.active .lp-who-iconbox,
+        .lp-who-item:hover .lp-who-iconbox {
+          background: rgba(34, 197, 94, 0.12);
+          border-color: rgba(34, 197, 94, 0.3);
+          color: #22c55e;
+        }
+        .lp-who-item-title {
+          font-family: 'Outfit', sans-serif !important;
+          font-size: 18px !important;
+          font-weight: 600 !important;
+          color: #ffffff !important;
+          margin-bottom: 4px !important;
+        }
+        .lp-who-item-desc {
+          font-size: 13.5px !important;
+          color: #9ca3af !important;
+          line-height: 1.5 !important;
+          font-weight: 400 !important;
+        }
+        .lp-who-showcase {
+          background: #141517;
+          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 20px;
-          padding: 28px;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          box-shadow: 0 4px 16px rgba(22,163,74,0.06);
-          text-align: center;
+          position: relative;
+          overflow: hidden;
+          min-height: 480px;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
-        .lp-who-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(22,163,74,0.14); }
-        .lp-who-ico { font-size: 36px; margin-bottom: 12px; display: flex; justify-content: center; }
-        .lp-who-title { font-size: 15px; font-weight: 800; color: #065f46; margin-bottom: 6px; }
-        .lp-who-desc { font-size: 13px; color: #4b5563; line-height: 1.65; }
+        .lp-who-showcase-slide {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          padding: 36px 32px;
+          pointer-events: none;
+        }
+        .lp-who-showcase-img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+          filter: brightness(0.7) contrast(1.1);
+        }
+        .lp-who-showcase-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(12, 13, 15, 0.95) 0%, rgba(12, 13, 15, 0.4) 45%, transparent 100%);
+          pointer-events: none;
+        }
+        .lp-who-showcase-content {
+          position: relative;
+          z-index: 2;
+          text-align: left;
+        }
+        .lp-who-showcase-tag {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          color: #22c55e;
+          text-transform: uppercase;
+          margin-bottom: 8px;
+        }
+        .lp-who-showcase-title {
+          font-family: 'Outfit', sans-serif !important;
+          font-size: 28px !important;
+          font-weight: 600 !important;
+          color: #ffffff !important;
+          margin-bottom: 0 !important;
+          letter-spacing: -0.01em;
+        }
 
         /* ── GHOST ICONS FOR SLIDERS ── */
         .lp-pain-card, .lp-who-card { position: relative; overflow: hidden; text-align: center; }
@@ -835,85 +1365,84 @@ export default function LandingPageTemplate({ config = {} }) {
           margin-top: 52px;
         }
         .lp-feat-card {
-          border: 1px solid #e5e7eb;
-          border-radius: 20px;
-          padding: 32px 28px 24px;
-          background-color: #fff;
-          text-align: center;
-          transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.03);
           position: relative;
+          background: #161a22 !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-radius: 20px;
+          padding: 32px 28px;
           overflow: hidden;
+          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
         }
         .lp-feat-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(circle at 100% 100%, var(--feat-bloom) 0%, transparent 70%);
-          z-index: 0;
-          opacity: 0.6;
-          transition: opacity 0.15s ease;
-          pointer-events: none;
+          display: none !important;
         }
-        .lp-feat-card:hover { 
-          transform: translateY(-6px); 
-          box-shadow: 0 20px 48px rgba(0,0,0,0.08); 
-          border-color: #d1d5db; 
-        }
-        .lp-feat-card:hover::before {
-          opacity: 1;
+        .lp-feat-card:hover {
+          transform: translateY(-5px) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
+          box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.7) !important;
         }
         .lp-feat-ghost {
           position: absolute;
-          bottom: -30px;
-          right: -30px;
-          color: #6b7280;
-          opacity: 0.05;
-          filter: blur(1px);
+          bottom: -25px;
+          right: -25px;
+          color: rgba(255, 255, 255, 0.04) !important;
+          opacity: 1 !important;
+          filter: none !important;
           z-index: 0;
-          transition: transform 0.3s ease, opacity 0.3s ease, color 0.3s ease, filter 0.3s ease;
+          transition: transform 0.4s ease, opacity 0.4s ease;
           pointer-events: none;
         }
         .lp-feat-card:hover .lp-feat-ghost {
-          color: #f97316;
-          opacity: 0.2;
-          transform: rotate(5deg) scale(1.05);
-          filter: blur(0px);
+          color: rgba(255, 255, 255, 0.08) !important;
+          transform: rotate(6deg) scale(1.05);
+          filter: none !important;
         }
         .lp-feat-deco {
           position: absolute;
           top: 32px;
           right: 28px;
-          color: #6b7280;
-          opacity: 0.06;
+          color: rgba(255, 255, 255, 0.05) !important;
+          opacity: 1 !important;
           z-index: 0;
-          transition: opacity 0.15s ease;
+          transition: opacity 0.2s ease;
           pointer-events: none;
         }
         .lp-feat-card:hover .lp-feat-deco {
-          opacity: 0.12;
+          color: rgba(255, 255, 255, 0.1) !important;
         }
         .lp-feat-ico {
-          width: 52px; height: 52px;
-          border-radius: 16px;
-          display: flex; align-items: center; justify-content: center;
-          background: #f9fafb;
-          border: 1px solid #e5e7eb;
-          font-size: 26px;
-          margin: 0 auto 24px;
-          position: relative; z-index: 1;
-          color: #4b5563;
-          transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(34, 197, 94, 0.10) !important;
+          border: 1.5px solid rgba(34, 197, 94, 0.35) !important;
+          font-size: 22px;
+          margin: 0 0 22px;
+          position: relative;
+          z-index: 1;
+          color: #22c55e !important;
+          box-shadow: 0 0 20px rgba(34, 197, 94, 0.18), inset 0 0 10px rgba(34, 197, 94, 0.1) !important;
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
+        }
+        .lp-feat-ico svg {
+          stroke: #22c55e !important;
+          color: #22c55e !important;
+          stroke-width: 2.2px !important;
         }
         .lp-feat-card:hover .lp-feat-ico {
-          transform: scale(1.05) translateY(-2px);
-          background: #f0fdf4;
-          color: #16a34a;
-          border-color: #bbf7d0;
-          box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08);
+          transform: scale(1.08) translateY(-2px) !important;
+          background: rgba(34, 197, 94, 0.20) !important;
+          border-color: #22c55e !important;
+          box-shadow: 0 0 28px rgba(34, 197, 94, 0.4), inset 0 0 12px rgba(34, 197, 94, 0.2) !important;
         }
-        .lp-feat-title { font-size: 17px; font-weight: 800; color: #111827; margin-bottom: 10px; position: relative; z-index: 1; }
-        .lp-feat-desc { font-size: 14px; color: #6b7280; line-height: 1.6; position: relative; z-index: 1; flex: 1; margin-bottom: 24px; }
+        .lp-feat-title { font-size: 18px; font-weight: 800; color: #ffffff; margin-bottom: 10px; position: relative; z-index: 1; letter-spacing: -0.2px; }
+        .lp-feat-desc { font-size: 14px; color: #9ca3af; line-height: 1.6; position: relative; z-index: 1; flex: 1; margin-bottom: 24px; }
 
 
         /* ── HOW IT WORKS ── */
@@ -1084,29 +1613,99 @@ export default function LandingPageTemplate({ config = {} }) {
         .lp-faq-item.open .lp-faq-a { max-height: 800px; padding-bottom: 20px; }
 
         /* ── FOOTER ── */
-        .lp-footer { background: #064e3b; padding: 60px 24px 36px; }
-        .lp-footer-inner { max-width: 1140px; margin: 0 auto; }
+        .lp-footer {
+          background: #111113 !important;
+          border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+          padding: 80px 24px 32px !important;
+          color: #9ca3af;
+          position: relative;
+          overflow: hidden;
+        }
+        .lp-footer-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
         .lp-footer-top {
           display: grid;
-          grid-template-columns: 2fr 1fr 1fr;
-          gap: 40px;
-          margin-bottom: 40px;
+          grid-template-columns: 2.2fr 1fr 1fr;
+          gap: 48px;
+          margin-bottom: 30px;
           align-items: start;
         }
-        .lp-footer-brand { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
-        .lp-footer-logo { height: 36px; width: auto; }
-        .lp-footer-tagline { color: rgba(255,255,255,0.7); font-size: 14.5px; line-height: 1.65; max-width: 280px; }
-        .lp-footer-links { display: flex; flex-direction: column; gap: 12px; }
-        .lp-footer-links-title { color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-        .lp-flink {
-          color: rgba(255,255,255,0.7);
-          font-size: 14px;
-          font-weight: 500;
-          text-decoration: none;
-          transition: color 0.15s;
+        .lp-footer-brand {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          align-items: flex-start;
         }
-        .lp-flink:hover { color: #6ee7b7; }
-        .lp-footer-divider { height: 1px; background: rgba(255,255,255,0.08); margin-bottom: 24px; }
+        .lp-footer-tagline {
+          color: #9ca3af !important;
+          font-size: 14.5px;
+          line-height: 1.6;
+          max-width: 320px;
+        }
+        .lp-footer-explore-btn {
+          background: #22c55e;
+          color: #0c0c0e;
+          padding: 10px 22px;
+          border-radius: 9999px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          font-family: inherit;
+        }
+        .lp-footer-explore-btn:hover {
+          background: #16a34a;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+        }
+        .lp-footer-links {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .lp-footer-links-title {
+          color: #6b7280 !important;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+        .lp-flink {
+          color: #9ca3af !important;
+          font-size: 14px;
+          font-weight: 400;
+          text-decoration: none;
+          transition: color 0.15s, transform 0.15s;
+        }
+        .lp-flink:hover {
+          color: #ffffff !important;
+          transform: none !important;
+        }
+        .lp-footer-big-text {
+          font-size: clamp(3.5rem, 15.5vw, 12rem);
+          font-weight: 900;
+          letter-spacing: 0.03em;
+          text-align: center;
+          margin: 30px 0 20px 0;
+          color: transparent;
+          -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.16);
+          user-select: none;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          line-height: 0.9;
+          text-transform: uppercase;
+        }
+        .lp-footer-divider {
+          height: 1px;
+          background: rgba(255, 255, 255, 0.08) !important;
+          margin-bottom: 24px;
+        }
         .lp-footer-bottom {
           display: flex;
           align-items: center;
@@ -1114,20 +1713,10 @@ export default function LandingPageTemplate({ config = {} }) {
           flex-wrap: wrap;
           gap: 12px;
         }
-        .lp-footer-copy { color: rgba(255,255,255,0.35); font-size: 13px; }
-        .lp-footer-cta {
-          background: #f97316;
-          color: #fff;
-          padding: 10px 22px;
-          border-radius: 10px;
+        .lp-footer-copy, .lp-footer-made {
+          color: #6b7280 !important;
           font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          border: none;
-          transition: background 0.15s, transform 0.15s;
-          font-family: inherit;
         }
-        .lp-footer-cta:hover { background: #ea6c0a; transform: translateY(-2px); }
 
         /* ── MODAL ── */
         .lp-modal-overlay {
@@ -1195,14 +1784,66 @@ export default function LandingPageTemplate({ config = {} }) {
           .lp-carousel-track > div { width: 78%; min-width: 78%; max-width: 78%; flex-shrink: 0; scroll-snap-align: center; white-space: normal; }
           .lp-carousel-track .lp-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
           
-          /* Features Grid */
+          /* Features Grid & Mobile Lucide Icon Glow */
           .lp-feat-grid { display: grid !important; grid-template-columns: 1fr; gap: 16px; }
-          .lp-feat-card { padding: 20px 16px 16px; border-radius: 16px; }
-          .lp-feat-ico { width: 36px; height: 36px; font-size: 20px !important; margin-bottom: 16px; border-radius: 12px; }
-          .lp-feat-title { font-size: 14px; margin-bottom: 6px; }
-          .lp-feat-desc { font-size: 12px; line-height: 1.45; margin-bottom: 0; }
-          .lp-feat-ghost { bottom: -20px; right: -20px; transform: scale(0.65); }
-          .lp-feat-deco { transform: scale(0.7); top: 16px; right: 12px; }
+          .lp-feat-card {
+            background: #141517 !important;
+            border: 1px solid rgba(255, 255, 255, 0.09) !important;
+            border-radius: 18px !important;
+            padding: 24px 20px !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+            position: relative !important;
+            overflow: hidden !important;
+          }
+          .lp-feat-ico {
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 12px !important;
+            background: rgba(34, 197, 94, 0.12) !important;
+            border: 1px solid rgba(34, 197, 94, 0.3) !important;
+            color: #22c55e !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-bottom: 16px !important;
+            box-shadow: 0 0 16px rgba(34, 197, 94, 0.22) !important;
+          }
+          .lp-feat-ico svg {
+            color: #22c55e !important;
+            stroke-width: 2.2px !important;
+            width: 22px !important;
+            height: 22px !important;
+          }
+          .lp-feat-title {
+            font-size: 17px !important;
+            font-weight: 600 !important;
+            color: #ffffff !important;
+            margin-bottom: 8px !important;
+          }
+          .lp-feat-desc {
+            font-size: 13.5px !important;
+            color: #9ca3af !important;
+            line-height: 1.55 !important;
+            margin-bottom: 0 !important;
+          }
+          .lp-feat-ghost {
+            color: rgba(255, 255, 255, 0.04) !important;
+            opacity: 1 !important;
+            bottom: -10px !important;
+            right: -10px !important;
+            transform: scale(0.85) !important;
+            filter: none !important;
+          }
+
+          /* Mobile Lighter Card Backgrounds & Panels */
+          .lp-pain-card,
+          .lp-who-card,
+          .lp-who-item,
+          .lp-feat-card,
+          .lp-vcard {
+            background: #161a22 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+          }
 
           /* Generic Mobile Fixes */
           .lp-sec { padding: 48px 20px; }
@@ -1226,8 +1867,21 @@ export default function LandingPageTemplate({ config = {} }) {
           .lp-pf { font-size: 13px; gap: 8px; }
 
           /* Nav & UI */
-          .lp-nav-links { display: none; }
-          .lp-hamburger { display: block; }
+          .lp-nav-center, .lp-nav-right, .lp-nav-links { display: none !important; }
+          .lp-hamburger {
+            display: flex !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 10px !important;
+            width: 40px !important;
+            height: 40px !important;
+            color: #ffffff !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            margin-left: auto !important;
+            padding: 0 !important;
+          }
           .lp-hero { padding: 60px 20px 48px; }
           .lp-midcta { padding: 60px 20px; }
           .lp-hero-h1 { letter-spacing: -1px; }
@@ -1259,14 +1913,25 @@ export default function LandingPageTemplate({ config = {} }) {
           --tint: ${config.theme?.tint || "rgba(255, 255, 255, 0.05)"};
         }
 
-        body {
+        body, .lp-template {
           font-family: 'Plus Jakarta Sans', sans-serif;
-          background: var(--bg-color);
+          background-color: #121315 !important;
+          background-image: radial-gradient(rgba(255, 255, 255, 0.08) 0.8px, transparent 0.8px) !important;
+          background-size: 16px 16px !important;
+          background-attachment: fixed !important;
           color: var(--text-main);
           overflow-x: hidden;
           -webkit-font-smoothing: antialiased;
           overflow-wrap: break-word;
           word-wrap: break-word;
+        }
+
+        .lp-hero::before,
+        .lp-hero::after,
+        .lp-hero-visual::before,
+        .lp-ghost-queue,
+        .lp-particles {
+          display: none !important;
         }
 
         /* ── ANIMATED QUEUE BACKGROUND ── */
@@ -1363,9 +2028,8 @@ export default function LandingPageTemplate({ config = {} }) {
         }
 
         /* ── THEMING OVERRIDES FOR SIGNAL FLOW ── */
-        .lp-topbar { background: #000; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .lp-topbar a { color: var(--primary-start); }
-        .lp-nav { background: rgba(0,0,0,0.8); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .lp-topbar { background: transparent !important; color: #d1d5db !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
+        .lp-topbar a { color: #22c55e !important; }
         .lp-nl { color: var(--text-muted); }
         .lp-nl:hover { 
           color: var(--text-main);
@@ -1534,8 +2198,115 @@ export default function LandingPageTemplate({ config = {} }) {
         .lp-modal tr { border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
         .lp-modal td { color: var(--text-muted) !important; }
         
-        .lp-mmenu { background: var(--bg-color); }
-        .lp-mmenu .lp-nl { color: var(--text-main); }
+        /* ── MOBILE MENU DROPDOWN (FIT HORIZONTALLY, BELOW NAV) ── */
+        .lp-mmenu {
+          position: fixed !important;
+          top: 68px !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: auto !important;
+          width: auto !important;
+          height: auto !important;
+          max-width: 100% !important;
+          max-height: calc(100vh - 72px) !important;
+          z-index: 998 !important;
+          background: rgba(18, 19, 21, 0.96) !important;
+          backdrop-filter: blur(24px) !important;
+          -webkit-backdrop-filter: blur(24px) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7) !important;
+          padding: 16px 20px 24px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 6px !important;
+          box-sizing: border-box !important;
+          overflow-x: hidden !important;
+          overflow-y: auto !important;
+          opacity: 0 !important;
+          transform: translateY(-12px) !important;
+          pointer-events: none !important;
+          visibility: hidden !important;
+          transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease !important;
+        }
+        .lp-mmenu.open {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+          pointer-events: auto !important;
+          visibility: visible !important;
+        }
+        .lp-mmenu-close-btn {
+          position: absolute !important;
+          top: 14px !important;
+          right: 16px !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          border: 1px solid rgba(255, 255, 255, 0.14) !important;
+          border-radius: 10px !important;
+          width: 34px !important;
+          height: 34px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          cursor: pointer !important;
+          padding: 0 !important;
+          transition: all 0.2s ease !important;
+        }
+        .lp-mmenu-close-btn:active {
+          background: rgba(255, 255, 255, 0.18) !important;
+          transform: scale(0.95) !important;
+        }
+        .lp-mlink {
+          color: #ffffff !important;
+          font-size: 16px !important;
+          font-weight: 500 !important;
+          font-family: 'Outfit', sans-serif !important;
+          padding: 14px 16px !important;
+          border-radius: 12px !important;
+          text-decoration: none !important;
+          display: block !important;
+          cursor: pointer !important;
+          transition: all 0.2s ease !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+        .lp-mlink:hover, .lp-mlink:active {
+          color: #22c55e !important;
+          background: rgba(255, 255, 255, 0.04) !important;
+          transform: translateX(4px) !important;
+        }
+        .lp-mfind {
+          color: #22c55e !important;
+          font-size: 15px !important;
+          font-weight: 600 !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          padding: 14px 16px !important;
+          text-decoration: none !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+        .lp-mcta {
+          background: #22c55e !important;
+          color: #0c0c0e !important;
+          font-family: 'Outfit', sans-serif !important;
+          font-size: 15px !important;
+          font-weight: 600 !important;
+          padding: 14px 28px !important;
+          border-radius: 9999px !important;
+          border: none !important;
+          width: 90% !important;
+          max-width: 320px !important;
+          margin: 12px auto 0 !important;
+          cursor: pointer !important;
+          box-shadow: 0 4px 20px rgba(34, 197, 94, 0.35) !important;
+          transition: all 0.2s ease !important;
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        .lp-mcta:active {
+          transform: scale(0.97) !important;
+          background: #16a34a !important;
+        }
         .lp-hamburger { color: var(--text-main); }
         
 
@@ -1553,60 +2324,106 @@ export default function LandingPageTemplate({ config = {} }) {
             radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.02) 0%, transparent 60%),
             url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1' height='1' fill='rgba(255,255,255,0.03)'/%3E%3C/svg%3E") repeat;
         }
+
+        /* ── MOBILE ONLY FLAT DARK GREY BACKGROUND WITH DESKTOP MATCHING TEXTURE (NO GLOWS) ── */
+        @media (max-width: 768px) {
+          body {
+            background: #14181f !important;
+          }
+          .lp-global-bg {
+            background: 
+              url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1' height='1' fill='rgba(255,255,255,0.05)'/%3E%3C/svg%3E") repeat,
+              #14181f !important;
+          }
+          .lp-global-bg::after {
+            display: none !important;
+          }
+          /* Completely remove all glow effects on mobile */
+          .lp-hero::before,
+          .lp-hero::after,
+          .lp-hero-visual::before {
+            display: none !important;
+            background: none !important;
+          }
+          .lp-ghost-queue {
+            opacity: 1 !important;
+          }
+        }
       `}
         </style>
 
       {/* ── GLOBAL BACKGROUND ── */}
       <div className="lp-global-bg" />
 
-      {/* ── TOP BAR ── */}
-      <div className="lp-topbar">
-        <Sparkles size={16} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "text-bottom" }} /> 7-Day Elite Trial — No credit card needed.
-        {!config.isRoot && <a href="#" onClick={(e) => { e.preventDefault(); router.push("/login"); }}>Start now →</a>}
-        {config.isRoot && <a href="#" onClick={(e) => { e.preventDefault(); go("industries"); }}>Start now →</a>}
-      </div>
-
-      {/* ── NAV ── */}
+      {/* ── FIXED NAV (CONTAINING TOPBAR & MAIN NAV INNER) ── */}
       <nav className={`lp-nav${scrolled ? " scrolled" : ""}`}>
+        {!scrolled && (
+          <div className="lp-topbar">
+            <Sparkles size={14} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "middle" }} /> 7-Day Elite Trial — No credit card needed.
+            {!config.isRoot && <a href="#" onClick={(e) => { e.preventDefault(); router.push("/login"); }}>Start now →</a>}
+            {config.isRoot && <a href="#" onClick={(e) => { e.preventDefault(); go("industries"); }}>Start now →</a>}
+          </div>
+        )}
         <div className="lp-nav-inner">
-          <img src="/logo.svg" alt="TokenPe" style={{ height: 38, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
-          <div className="lp-nav-links">
-            
-          {/* Explore Dropdown */}
-          {!config.isRoot && (
-            <Link href="/" className="lp-nl" style={{ display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
-              <MoreHorizontal size={16} /> Explore Industries
-            </Link>
-          )}
-          <span className="lp-nl" onClick={() => go("features")}>Features</span>
-          <span className="lp-nl" onClick={() => go("how")}>How it works</span>
+          <div className="lp-nav-left">
+            <img src="/logo-nav.svg" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
+          </div>
+
+          <div className="lp-nav-center">
+            {!config.isRoot && (
+              <Link href="/" className="lp-nl" style={{ display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                <MoreHorizontal size={16} /> Explore Industries
+              </Link>
+            )}
+            <span className="lp-nl" onClick={() => go("features")}>Features</span>
+            <span className="lp-nl" onClick={() => go("how")}>How it works</span>
             <span className="lp-nl" onClick={() => go("pricing")}>Pricing</span>
             <span className="lp-nl" onClick={() => go("faq")}>FAQ</span>
-            {config.find && <Link href={config.find.href} className="lp-nav-find"><Search size={16} strokeWidth={2.5} /> {config.find.text}</Link>}
-            {!config.isRoot && <button className="lp-nav-cta" onClick={() => router.push("/login")}>Get Started →</button>}
-            {config.isRoot && <button className="lp-nav-cta" onClick={() => go("industries")}>Get Started →</button>}
           </div>
+
+          <div className="lp-nav-right">
+            {config.find && <Link href={config.find.href} className="lp-nav-find"><Search size={16} strokeWidth={2.5} /> {config.find.text}</Link>}
+            {!config.isRoot && <button className="lp-nav-cta" onClick={() => router.push("/login")}>Get Started <span style={{ marginLeft: 2 }}>→</span></button>}
+            {config.isRoot && <button className="lp-nav-cta" onClick={() => go("industries")}>Get Started <span style={{ marginLeft: 2 }}>→</span></button>}
+          </div>
+
           <button className="lp-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
-            {menuOpen ? "✕" : "☰"}
+            {menuOpen ? <X size={20} color="#ffffff" /> : <Menu size={20} color="#ffffff" />}
           </button>
         </div>
       </nav>
+      {/* ── MOBILE MENU DROPDOWN ── */}
       <div className={`lp-mmenu${menuOpen ? " open" : ""}`}>
-        <span className="lp-mlink" onClick={() => go("features")}>Features</span>
-        <span className="lp-mlink" onClick={() => go("how")}>How it works</span>
-        <span className="lp-mlink" onClick={() => go("pricing")}>Pricing</span>
-        <span className="lp-mlink" onClick={() => go("faq")}>FAQ</span>
-        {config.find && <Link href={config.find.href} className="lp-mfind"><Search size={16} strokeWidth={2.5} /> {config.find.text}</Link>}
-        {!config.isRoot ? (
-          <>
-            <button className="lp-mcta" onClick={() => { router.push("/login"); setMenuOpen(false); }}>Start Free Trial →</button>
-            <span className="lp-mlink" style={{ textAlign: "center", marginTop: "4px", color: "#6b7280", fontSize: "14px" }} onClick={() => { router.push("/login"); setMenuOpen(false); }}>
-              Already registered? <strong style={{ color: "#16a34a" }}>Log in</strong>
-            </span>
-          </>
-        ) : (
-          <button className="lp-mcta" onClick={() => { go("industries"); setMenuOpen(false); }}>Explore Industries →</button>
+        <button className="lp-mmenu-close-btn" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+          <X size={18} color="#ffffff" />
+        </button>
+
+        {!config.isRoot && (
+          <Link href="/" className="lp-mlink" onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MoreHorizontal size={18} color="#22c55e" /> Explore Industries
+          </Link>
         )}
+        <span className="lp-mlink" onClick={() => { go("features"); setMenuOpen(false); }}>Features</span>
+        <span className="lp-mlink" onClick={() => { go("how"); setMenuOpen(false); }}>How it works</span>
+        <span className="lp-mlink" onClick={() => { go("pricing"); setMenuOpen(false); }}>Pricing</span>
+        <span className="lp-mlink" onClick={() => { go("faq"); setMenuOpen(false); }}>FAQ</span>
+        {config.find && (
+          <Link href={config.find.href} className="lp-mfind" onClick={() => setMenuOpen(false)}>
+            <Search size={16} strokeWidth={2.5} /> {config.find.text}
+          </Link>
+        )}
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <button
+            className="lp-mcta"
+            onClick={() => {
+              if (!config.isRoot) router.push("/login");
+              else go("industries");
+              setMenuOpen(false);
+            }}
+          >
+            Get Started <span style={{ marginLeft: 4 }}>→</span>
+          </button>
+        </div>
       </div>
 
       {/* ── HERO ── */}
@@ -1614,17 +2431,47 @@ export default function LandingPageTemplate({ config = {} }) {
         <div className="lp-particles">
           {dots.map((d, i) => <div key={i} className="lp-particle" style={{ top: d.top, left: d.left, animationDelay: d.delay, opacity: d.opacity }} />)}
         </div>
-        <div className="lp-ghost-queue" />
+        <div className="lp-ghost-queue">
+          <div className="lp-ghost-queue-track">
+            {[1, 2].map((s) => (
+              <svg key={s} className="lp-ghost-queue-svg" viewBox="0 0 1000 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <pattern id={`queue-pattern-${s}`} width="220" height="480" patternUnits="userSpaceOnUse">
+                  {/* Top Row Queue Silhouettes - Crisp White/Gray */}
+                  <g stroke="rgba(255, 255, 255, 0.35)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                    <path d="M60 210v-20a32 32 0 0 0-32-32H20a32 32 0 0 0-32 32v20" />
+                    <circle cx="20" cy="115" r="22" />
+                    <path d="M170 210v-20a32 32 0 0 0-32-32h-8a32 32 0 0 0-32 32v20" />
+                    <circle cx="130" cy="115" r="22" />
+                  </g>
+                  {/* Bottom Row Queue Silhouettes - Glowing Green Tint */}
+                  <g stroke="rgba(34, 197, 94, 0.40)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                    <path d="M115 440v-20a32 32 0 0 0-32-32H75a32 32 0 0 0-32 32v20" />
+                    <circle cx="75" cy="345" r="22" />
+                    <path d="M225 440v-20a32 32 0 0 0-32-32h-8a32 32 0 0 0-32 32v20" />
+                    <circle cx="185" cy="345" r="22" />
+                  </g>
+                </pattern>
+                <rect width="100%" height="100%" fill={`url(#queue-pattern-${s})`} />
+              </svg>
+            ))}
+          </div>
+        </div>
         <div className="lp-hero-inner">
           <div className="lp-hero-content">
             <div className="lp-hero-badge">
-              <span className="lp-badge-dot" />
-              {config.badge || "🇮🇳 Built for India's businesses"}
+              <span className="lp-badge-country">IN</span>
+              {config.badge || "Built for India's businesses"}
             </div>
-            <h1 className="lp-hero-h1">
-              No more waiting.<br />
-              <span className="lp-grad">Queue smarter.</span>
-            </h1>
+            {config.hero?.h1 ? (
+              <h1 className="lp-hero-h1 font-heading" dangerouslySetInnerHTML={{ __html: config.hero.h1 }} />
+            ) : (
+              <h1 className="lp-hero-h1 font-heading">
+                <span className="lp-h1-dim">Stop making</span><br />
+                <span className="lp-h1-white">people wait.</span><br />
+                <span className="lp-h1-green">Manage queues</span><br />
+                <span className="lp-h1-white">on WhatsApp.</span>
+              </h1>
+            )}
             <p className="lp-hero-sub">
               {config.hero?.sub || "Replace paper tokens and long lines with a digital WhatsApp queue. Customers wait anywhere. Zero apps needed."}
             </p>
@@ -1638,15 +2485,26 @@ export default function LandingPageTemplate({ config = {} }) {
               </button>
             </div>
             <div className="lp-hero-trust">
-              <span className="lp-hero-trust-item"><span style={{display: "flex", alignItems: "center"}}><Check size={16} strokeWidth={3} /> No app for patients</span></span>
-              <span className="lp-hero-trust-item"><span style={{display: "flex", alignItems: "center"}}><Check size={16} strokeWidth={3} /> Works on any phone</span></span>
-              <span className="lp-hero-trust-item"><span style={{display: "flex", alignItems: "center"}}><Check size={16} strokeWidth={3} /> 2-min setup</span></span>
-              <span className="lp-hero-trust-item"><span style={{display: "flex", alignItems: "center"}}><Check size={16} strokeWidth={3} /> 7-Day Elite Trial</span></span>
+              <span className="lp-hero-trust-item">
+                <Smartphone size={18} color="#22c55e" strokeWidth={2} />
+                <span>No app for patients</span>
+              </span>
+              <span className="lp-hero-trust-item">
+                <QrCode size={18} color="#22c55e" strokeWidth={2} />
+                <span>Works on any phone</span>
+              </span>
+              <span className="lp-hero-trust-item">
+                <Zap size={18} color="#22c55e" strokeWidth={2} />
+                <span>2-min setup</span>
+              </span>
             </div>
           </div>
+
+          {/* ── CURSOR INTERACTIVE FIELD ── */}
+          <HeroCursorField />
+
           <div className="lp-hero-visual">
             <WhatsAppDemo flow={config.waFlow} />
-            <span className="lp-demo-label"><Sparkles size={14} style={{ display: "inline-block", marginRight: "4px", verticalAlign: "text-bottom" }} /> Live WhatsApp Preview</span>
           </div>
         </div>
       </section>
@@ -1678,57 +2536,187 @@ export default function LandingPageTemplate({ config = {} }) {
       {/* ── PAIN POINTS ── */}
       <section className="lp-sec lp-pain-sec">
         <div className="lp-sec-inner">
-          <div className="lp-sec-tag lp-reveal">Sound Familiar?</div>
-          <h2 className="lp-sec-h2 lp-reveal lp-reveal-d1">{config.pain?.h2 || "These problems are costing you every day"}</h2>
-          <p className="lp-sec-sub lp-reveal lp-reveal-d2">{config.pain?.sub || "TokenPe fixes all three. In 2 minutes."}</p>
+          <div className="lp-pain-eyebrow">
+            <span className="lp-pain-eyebrow-dot" />
+            SOUND FAMILIAR?
+          </div>
+          <h2 className="lp-pain-h2 font-heading">
+            <span className="lp-h2-white">These problems are costing you</span><br />
+            <span className="lp-h2-dim">every single day.</span>
+          </h2>
+          <p className="lp-pain-sub">{config.pain?.sub || "TokenPe fixes all three. In 2 minutes."}</p>
           <MobileCarousel gridClass="lp-pain-grid">
-            {(config.pain?.list || [
-              { ico: <Users size="1em" color="#ef4444" />, tag: "Customer Problem", title: "Overcrowded Areas", desc: "Customers sit for hours in packed waiting areas. They leave frustrated — or worse, they leave and never come back." },
-              { ico: <Megaphone size="1em" color="#f97316" />, tag: "Staff Problem", title: "Missed Turns", desc: "Staff calls out names. Half the people step out. Chaos ensues. Turns are missed, slots are wasted." },
-              { ico: <ClipboardList size="1em" color="#374151" />, tag: "Business Problem", title: "Inefficient Queues", desc: "Paper tokens can\'t scale. No data, no history, no visibility. You don\'t know how busy you are until it\'s too late." },
-            ]).map((c, i) => (
-              <div key={c.title} className={`lp-pain-card lp-reveal lp-reveal-d${i + 1}`}>
-                <div className="lp-pain-ghost">{React.cloneElement(c.ico, { size: 140, color: "currentColor" })}</div>
-                <div className="lp-pain-badge">{c.tag}</div>
-                <div className="lp-pain-ico">{c.ico}</div>
-                <div className="lp-pain-title">{c.title}</div>
-                <div className="lp-pain-desc">{c.desc}</div>
+            {[
+              {
+                num: "01",
+                tag: "CUSTOMER PROBLEM",
+                icon: <Users size={22} color="#f87171" />,
+                title: "Overcrowded Areas",
+                desc: "Customers sit for hours in packed waiting areas. They leave frustrated — or worse, they leave and never come back."
+              },
+              {
+                num: "02",
+                tag: "STAFF PROBLEM",
+                icon: <PhoneOff size={22} color="#f87171" />,
+                title: "Missed Turns",
+                desc: "Staff calls out names. Half the people step out. Chaos ensues. Turns are missed, slots are wasted."
+              },
+              {
+                num: "03",
+                tag: "BUSINESS PROBLEM",
+                icon: <TrendingDown size={22} color="#f87171" />,
+                title: "Inefficient Queues",
+                desc: "Paper tokens can't scale. No data, no history, no visibility. You don't know how busy you are until it's too late."
+              }
+            ].map((c) => (
+              <div key={c.title} className="lp-pain-card">
+                <div className="lp-pain-num">{c.num}</div>
+                <div className="lp-pain-card-body">
+                  <div className="lp-pain-tag">{c.tag}</div>
+                  <div className="lp-pain-iconbox">{c.icon}</div>
+                  <div className="lp-pain-title font-heading">{c.title}</div>
+                  <div className="lp-pain-desc">{c.desc}</div>
+                </div>
               </div>
             ))}
           </MobileCarousel>
         </div>
       </section>
 
-      {/* ── WHO IS THIS FOR ── */}
+      {/* ── WHO IS THIS FOR (2-COLUMN SPLIT SHOWCASE) ── */}
       <section className="lp-sec lp-who-sec">
         <div className="lp-sec-inner">
-          <div className="lp-sec-tag lp-reveal">Who is this for?</div>
-          <h2 className="lp-sec-h2 lp-reveal lp-reveal-d1">{config.who?.h2 || "Built for every kind of business"}</h2>
-          <p className="lp-sec-sub lp-reveal lp-reveal-d2">{config.who?.sub || "If you have a waiting room or a queue, TokenPe is for you."}</p>
-          <MobileCarousel gridClass="lp-who-grid">
-            {(config.who?.list || [
-              { ico: <Building2 size="1em" color="#065f46" />, title: "Clinics & Hospitals", desc: "Manage high patient volumes effortlessly. Reduce no-shows, eliminate crowding." },
-              { ico: <Users size="1em" color="#065f46" />, title: "Restaurants", desc: "End the host-stand chaos. Diners join the waitlist and get notified when the table is ready." },
-              { ico: <Activity size="1em" color="#065f46" />, title: "Salons & Spas", desc: "Manage walk-ins and appointments seamlessly with automated WhatsApp alerts." },
-              { ico: <ClipboardList size="1em" color="#065f46" />, title: "Schools & Events", desc: "Organize admissions, interviews, or event entries without the long physical lines." },
-            ]).map((c, i) => (
-              <div key={c.title} className={`lp-who-card lp-reveal lp-reveal-d${i + 1}`}>
-                <div className="lp-who-ghost">{React.cloneElement(c.ico, { size: 140, color: "currentColor" })}</div>
-                <div className="lp-who-ico">{c.ico}</div>
-                <div className="lp-who-title">{c.title}</div>
-                <div className="lp-who-desc">{c.desc}</div>
-              </div>
-            ))}
-          </MobileCarousel>
+          <div className="lp-pain-eyebrow">
+            <span className="lp-pain-eyebrow-dot" />
+            WHO IS THIS FOR?
+          </div>
+          <h2 className="lp-pain-h2 font-heading">
+            <span className="lp-h2-white">{config.who?.h2 || "Built for every kind of business."}</span>
+          </h2>
+          <p className="lp-pain-sub">{config.who?.sub || "If you have a waiting room or a queue, TokenPe is for you."}</p>
+
+          <div className="lp-who-split">
+            {/* Left Column: 4 Interactive List Items */}
+            <div className="lp-who-list">
+              {[
+                {
+                  tag: "CLINICS",
+                  title: "Clinics & Hospitals",
+                  desc: "Manage high patient volumes effortlessly. Reduce no-shows, eliminate crowding.",
+                  ico: <Stethoscope size={20} />
+                },
+                {
+                  tag: "RESTAURANTS",
+                  title: "Restaurants",
+                  desc: "End the host-stand chaos. Diners join the waitlist and get notified when the table is ready.",
+                  ico: <UtensilsCrossed size={20} />
+                },
+                {
+                  tag: "SALONS",
+                  title: "Salons & Spas",
+                  desc: "Manage walk-ins and appointments seamlessly with automated WhatsApp alerts.",
+                  ico: <Scissors size={20} />
+                },
+                {
+                  tag: "SCHOOLS",
+                  title: "Schools & Events",
+                  desc: "Organize admissions, interviews, or event entries without the long physical lines.",
+                  ico: <GraduationCap size={20} />
+                }
+              ].map((item, idx) => (
+                <div
+                  key={item.title}
+                  className={`lp-who-item ${activeWho === idx ? 'active' : ''}`}
+                  onClick={() => setActiveWho(idx)}
+                  onMouseEnter={() => setActiveWho(idx)}
+                >
+                  <div className="lp-who-iconbox">{item.ico}</div>
+                  <div>
+                    <div className="lp-who-item-title font-heading">{item.title}</div>
+                    <div className="lp-who-item-desc">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Right Column: Featured Image Showcase with Smooth Cross-Fade */}
+            <div className="lp-who-showcase">
+              {[
+                {
+                  tag: "CLINICS",
+                  title: "Clinics & Hospitals",
+                  img: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1000&q=80"
+                },
+                {
+                  tag: "RESTAURANTS",
+                  title: "Restaurants",
+                  img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1000&q=80"
+                },
+                {
+                  tag: "SALONS",
+                  title: "Salons & Spas",
+                  img: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1000&q=80"
+                },
+                {
+                  tag: "SCHOOLS",
+                  title: "Schools & Events",
+                  img: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1000&q=80"
+                }
+              ].map((item, idx) => {
+                const isActive = activeWho === idx;
+                return (
+                  <div
+                    key={item.title}
+                    className="lp-who-showcase-slide"
+                    style={{
+                      opacity: isActive ? 1 : 0,
+                      visibility: isActive ? "visible" : "hidden",
+                      transition: "opacity 0.6s ease-in-out, visibility 0.6s ease-in-out",
+                      zIndex: isActive ? 2 : 1
+                    }}
+                  >
+                    <img
+                      src={item.img}
+                      alt={item.title}
+                      className="lp-who-showcase-img"
+                      style={{
+                        transform: isActive ? "scale(1)" : "scale(1.05)",
+                        transition: "transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease"
+                      }}
+                    />
+                    <div className="lp-who-showcase-overlay" />
+                    <div
+                      className="lp-who-showcase-content"
+                      style={{
+                        opacity: isActive ? 1 : 0,
+                        transform: isActive ? "translateY(0)" : "translateY(12px)",
+                        transition: "opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s"
+                      }}
+                    >
+                      <div className="lp-who-showcase-tag">{item.tag}</div>
+                      <h3 className="lp-who-showcase-title font-heading">{item.title}</h3>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ── COMPARISON ── */}
       <section className="lp-sec lp-cmp-sec">
-        <div className="lp-sec-inner">
-          <div className="lp-sec-tag lp-reveal lp-sec-centered" style={{ display: "table", margin: "0 auto 14px" }}>Comparison</div>
-          <h2 className="lp-sec-h2 lp-sec-centered lp-reveal lp-reveal-d1">The old way vs. the TokenPe way</h2>
-          <p className="lp-sec-sub lp-sec-centered lp-reveal lp-reveal-d2" style={{ marginBottom: 0 }}>See the difference at a glance.</p>
+        <div className="lp-sec-inner" style={{ textAlign: 'center' }}>
+          <div className="lp-pain-eyebrow centered" style={{ marginBottom: '14px' }}>
+            <span className="lp-pain-eyebrow-dot" />
+            COMPARISON
+          </div>
+          <h2 className="lp-pain-h2 font-heading" style={{ textAlign: 'center', margin: '0 auto 12px' }}>
+            <span className="lp-h2-white">The old way </span>
+            <span className="lp-h2-dim" style={{ color: '#64748b', fontWeight: 400 }}>vs. </span>
+            <span className="lp-h2-white">the TokenPe way.</span>
+          </h2>
+          <p className="lp-pain-sub" style={{ textAlign: 'center', margin: '0 auto 36px' }}>See the difference at a glance.</p>
           <div className="lp-cmp-wrap lp-reveal lp-reveal-d3">
             <div className="lp-cmp-grid">
               <div className="lp-cmp-col lp-cmp-old">
@@ -1793,9 +2781,16 @@ export default function LandingPageTemplate({ config = {} }) {
       {/* ── FEATURES ── */}
       <section id="features" className="lp-sec lp-feat-sec">
         <div className="lp-sec-inner">
-          <div className="lp-sec-tag lp-reveal">Features</div>
-          <h2 className="lp-sec-h2 lp-reveal lp-reveal-d1">{config.featuresData?.h2 || "Everything your business needs"}</h2>
-          <p className="lp-sec-sub lp-reveal lp-reveal-d2">One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.</p>
+          <div className="lp-pain-eyebrow" style={{ marginBottom: '14px' }}>
+            <span className="lp-pain-eyebrow-dot" />
+            FEATURES
+          </div>
+          <h2 className="lp-pain-h2 font-heading" style={{ marginBottom: '12px' }}>
+            <span className="lp-h2-white">{config.featuresData?.h2 || "Everything your business needs."}</span>
+          </h2>
+          <p className="lp-pain-sub" style={{ marginBottom: '40px' }}>
+            One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.
+          </p>
           <div className="lp-feat-grid">
             {(config.features || defaultFeatures).map((f, i) => (
               <div key={f.title} className={`lp-feat-card lp-reveal lp-reveal-d${(i % 3) + 1}`} style={{ '--feat-color': f.iconColor, '--feat-bloom': f.bloom }}>
@@ -1897,30 +2892,40 @@ export default function LandingPageTemplate({ config = {} }) {
         <div className="lp-footer-inner">
           <div className="lp-footer-top">
             <div className="lp-footer-brand">
-              <img src="/logo.svg" alt="TokenPe" className="lp-footer-logo" />
-              <p className="lp-footer-tagline">WhatsApp-based digital queue management for India's clinics. No apps. No fuss.</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", color: "#0c0c0e", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, fontFamily: "system-ui, sans-serif" }}>T</div>
+                <span style={{ fontSize: 22, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.3px", fontFamily: "system-ui, sans-serif" }}>TokenPe</span>
+              </div>
+              <p className="lp-footer-tagline">WhatsApp-based digital queue management for India's businesses. No apps. No fuss.</p>
+              <button className="lp-footer-explore-btn" onClick={() => go("industries")}>
+                Explore Industries <span style={{ marginLeft: 2 }}>→</span>
+              </button>
             </div>
+
             <div className="lp-footer-links">
-              <div className="lp-footer-links-title">Product</div>
+              <div className="lp-footer-links-title">PRODUCT</div>
               <span className="lp-flink" style={{ cursor: "pointer" }} onClick={() => go("features")}>Features</span>
               <span className="lp-flink" style={{ cursor: "pointer" }} onClick={() => go("how")}>How it works</span>
               <span className="lp-flink" style={{ cursor: "pointer" }} onClick={() => go("pricing")}>Pricing</span>
             </div>
+
             <div className="lp-footer-links">
-              <div className="lp-footer-links-title">Support & Legal</div>
-              <a href="mailto:tokenpe.online@gmail.com" className="lp-flink">✉ Contact Support</a>
+              <div className="lp-footer-links-title">SUPPORT & LEGAL</div>
+              <a href="mailto:tokenpe.online@gmail.com" className="lp-flink" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <Mail className="w-4 h-4" /> Contact Support
+              </a>
               <Link href="/privacy" className="lp-flink">Privacy Policy</Link>
               <Link href="/terms" className="lp-flink">Terms of Service</Link>
             </div>
           </div>
+
+          <div className="lp-footer-big-text">TOKENPE</div>
+
           <div className="lp-footer-divider" />
+
           <div className="lp-footer-bottom">
-            <p className="lp-footer-copy">© {new Date().getFullYear()} TokenPe. All rights reserved. Made with ❤️ in India.</p>
-            {!config.isRoot ? (
-              <button className="lp-footer-cta" onClick={() => router.push("/login")}>Start Free Trial →</button>
-            ) : (
-              <button className="lp-footer-cta" onClick={() => go("industries")}>Explore Industries →</button>
-            )}
+            <p className="lp-footer-copy">© {new Date().getFullYear()} TokenPe. All rights reserved.</p>
+            <p className="lp-footer-made">Made with <span style={{ color: "#ef4444", margin: "0 2px" }}>♥</span> in India</p>
           </div>
         </div>
       </footer>

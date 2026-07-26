@@ -1,23 +1,32 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import LandingPageTemplate from "@/components/LandingPageTemplate";
 import { Mic, MessageSquare, Zap, Bell, Calendar, QrCode } from "lucide-react";
 
 export default function RootLandingPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+      // Supabase fell back to the root Site URL. Forward it to the correct handler.
+      router.replace('/auth/callback' + window.location.search + window.location.hash);
+    }
+  }, [router]);
   const config = {
     isRoot: true, // Enables the Vertical Selector
     theme: {
-      bg: "#050506",
+      bg: "#121315",
       textMain: "#f9fafb",
       textMuted: "#9ca3af",
-      primaryStart: "#f5a623",
-      primaryEnd: "#e85d3f",
+      primaryStart: "#22c55e",
+      primaryEnd: "#16a34a",
       secondaryAccent: "#2dd4a7",
       tint: "rgba(255, 255, 255, 0.05)",
     },
     hero: {
       tag: "The Universal Queue Management Platform",
-      h1: "Stop making people wait.<br/>Start managing queues on WhatsApp.",
+      h1: "<span class=\"lp-h1-dim\">Stop making</span><br/><span class=\"lp-h1-white\">people wait.</span><br/><span class=\"lp-h1-green\">Manage queues</span><br/><span class=\"lp-h1-white\">on WhatsApp.</span>",
       sub: "Zero apps to download. Zero hardware. Just scan a QR code and let your customers wait comfortably anywhere while you manage the flow effortlessly."
     },
     compData: [
@@ -29,7 +38,7 @@ export default function RootLandingPage() {
     ],
     features: [
       { 
-        ico: <MessageSquare size="1em" color="#374151" />, color: "#e3f2fd", iconColor: "#0ea5e9", bloom: "rgba(156, 163, 175, 0.15)", title: "Zero App for Customers", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone.",
+        ico: <MessageSquare size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Zero App for Customers", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone.",
         GhostIco: MessageSquare,
         Deco: () => (
           <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -40,7 +49,7 @@ export default function RootLandingPage() {
         )
       },
       { 
-        ico: <Zap size="1em" color="#374151" />, color: "#f3e5f5", iconColor: "#8b5cf6", bloom: "rgba(156, 163, 175, 0.15)", title: "Live Dashboard", desc: "See who's waiting, who's currently being served, and who's done.",
+        ico: <Zap size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Live Dashboard", desc: "See who's waiting, who's currently being served, and who's done.",
         GhostIco: Zap,
         Deco: () => (
           <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -49,7 +58,7 @@ export default function RootLandingPage() {
         )
       },
       { 
-        ico: <Bell size="1em" color="#374151" />, color: "#fff3e0", iconColor: "#f59e0b", bloom: "rgba(156, 163, 175, 0.15)", title: "Smart Auto Alerts", desc: "Automatic notifications to keep customers informed of their queue position.",
+        ico: <Bell size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Smart Auto Alerts", desc: "Automatic notifications to keep customers informed of their queue position.",
         GhostIco: Bell,
         Deco: () => (
           <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">

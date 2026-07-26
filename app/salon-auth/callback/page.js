@@ -90,6 +90,7 @@ function SalonAuthCallbackContent() {
                 clinicName={celebration.clinicName}
                 trialEnd={celebration.trialEnd}
                 onDone={() => router.replace('/salon-dashboard')}
+                vertical="salon"
             />
         )
     }

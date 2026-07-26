@@ -293,6 +293,53 @@ export default function SalonDashboard() {
     } catch { showToast('Error updating code', 'error') }
   }
 
+  const handleSalonSubscribe = async () => {
+    if (!salon?.id) return
+    showToast('Opening payment gateway...')
+    try {
+      const res = await fetch('/api/razorpay/salon-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ salonId: salon.id })
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        showToast(data.error || 'Failed to initiate payment', 'error')
+        return
+      }
+      // Load Razorpay script dynamically if not already loaded
+      if (!window.Razorpay) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+          script.onload = resolve
+          script.onerror = reject
+          document.head.appendChild(script)
+        })
+      }
+      const rzp = new window.Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        subscription_id: data.subscriptionId,
+        name: 'TokenPe Salon',
+        description: 'Full Package – Monthly Subscription',
+        image: '/logo-nav.svg',
+        prefill: {
+          name: data.salonName,
+          email: data.salonEmail,
+          contact: data.salonPhone,
+        },
+        theme: { color: '#D14D72' },
+        handler: () => {
+          showToast('🎉 Subscribed! Welcome to the Full Package!')
+          setTimeout(() => window.location.reload(), 2000)
+        },
+      })
+      rzp.open()
+    } catch (e) {
+      showToast('Payment error: ' + e.message, 'error')
+    }
+  }
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' })
@@ -337,7 +384,8 @@ export default function SalonDashboard() {
     { id: 'staff', label: 'Staff & Commissions', icon: Award, roles: ['owner', 'stylist'] },
     { id: 'inventory', label: 'Stock & Inventory', icon: Package, roles: ['owner', 'manager'] },
     { id: 'crm', label: 'Client CRM & History', icon: UserCheck, roles: ['owner', 'manager', 'receptionist'] },
-    { id: 'services', label: 'Services Menu', icon: Scissors, roles: ['owner'] }
+    { id: 'services', label: 'Services Menu', icon: Scissors, roles: ['owner'] },
+    { id: 'billing', label: 'Billing & Plan', icon: CreditCard, roles: ['owner'] }
   ]
 
   return (
@@ -842,10 +890,72 @@ export default function SalonDashboard() {
                 <p className="text-sm" style={{color:'#6B7280'}}>This module is coming soon.</p>
               </div>
             )}
-
           </div>
+
+            {/* ─── TAB: BILLING & PLAN ─── */}
+            {activeTab === 'billing' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                
+                {/* Trial Banner */}
+                {salon?.subscription_status === 'trialing' && (
+                  <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-6" style={{border:'1px solid #EFEFEF', borderLeft:'4px solid #D14D72'}}>
+                    <div>
+                      <h3 className="text-xl font-bold flex items-center gap-2 mb-2" style={{color:'#1A1A1A'}}>
+                        <Sparkles className="w-5 h-5 text-yellow-500" />
+                        7-Day Free Trial Active
+                      </h3>
+                      <p className="text-sm" style={{color:'#6B7280'}}>
+                        You have full access to TokenPe Salon until {new Date(salon?.trial_ends_at).toLocaleDateString()}.
+                      </p>
+                    </div>
+                    <div className="text-center sm:text-right shrink-0">
+                      <div className="text-3xl font-extrabold" style={{color:'#D14D72'}}>
+                        {Math.max(0, Math.ceil((new Date(salon?.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24)))}
+                      </div>
+                      <div className="text-xs uppercase tracking-wider font-semibold" style={{color:'#9CA3AF'}}>Days Left</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Plan Card */}
+                <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{border:'1px solid #EFEFEF'}}>
+                  <div className="p-8 text-center" style={{background:'#FDF8F9', borderBottom:'1px solid #EFEFEF'}}>
+                    <h3 className="text-2xl font-extrabold mb-2" style={{color:'#1A1A1A'}}>Full Package</h3>
+                    <p className="text-sm mb-6" style={{color:'#6B7280'}}>Everything you need to manage your salon, in one simple plan.</p>
+                    <div className="flex items-center justify-center gap-1 mb-6">
+                      <span className="text-2xl font-bold" style={{color:'#1A1A1A'}}>₹</span>
+                      <span className="text-5xl font-extrabold" style={{color:'#D14D72'}}>999</span>
+                      <span className="text-sm font-medium" style={{color:'#6B7280'}}>/ month</span>
+                    </div>
+                    <button onClick={handleSalonSubscribe} className="px-8 py-3.5 text-white font-bold rounded-xl shadow-md transition-all w-full max-w-sm" style={{background:'#D14D72'}} onMouseEnter={e=>e.currentTarget.style.background='#C0405F'} onMouseLeave={e=>e.currentTarget.style.background='#D14D72'}>
+                      Subscribe Now
+                    </button>
+                  </div>
+                  <div className="p-8">
+                    <h4 className="text-sm font-bold uppercase tracking-wider mb-6 text-center" style={{color:'#6B7280'}}>What's included</h4>
+                    <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                      {[
+                        'Unlimited Clients & Walk-ins',
+                        'Live Queue Management',
+                        'WhatsApp CRM & Alerts',
+                        'Staff & Commission Tracking',
+                        'Inventory Management',
+                        'Priority Premium Support'
+                      ].map(feat => (
+                        <div key={feat} className="flex items-center gap-3 text-sm font-medium" style={{color:'#1A1A1A'}}>
+                          <CheckCircle className="w-5 h-5" style={{color:'#D14D72'}} /> {feat}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
         </main>
       </div>
+
+
 
       {/* ─── MODALS ─── */}
       <AnimatePresence>

@@ -9,7 +9,7 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { clinicId, name, welcomeMessage, address, specialty, city, area, isPublic, photoUrl, lat, lng, phone, smartRecallEnabled, smartMedsEnabled } = await req.json()
+    const { clinicId, name, welcomeMessage, address, specialty, city, area, isPublic, photoUrl, lat, lng, phone, smartRecallEnabled, smartMedsEnabled, upiId } = await req.json()
     
     if (!clinicId) {
       return NextResponse.json({ success: false, error: 'Clinic ID required' }, { status: 400 })
@@ -36,6 +36,7 @@ export async function POST(req) {
     if (photoUrl !== undefined) updates.photo_url = photoUrl
     if (smartRecallEnabled !== undefined) updates.smart_recall_enabled = smartRecallEnabled
     if (smartMedsEnabled !== undefined) updates.smart_meds_enabled = smartMedsEnabled
+    if (upiId !== undefined) updates.upi_id = upiId ? upiId.trim() : null
 
     if (lat !== undefined && lng !== undefined) {
       if (lat === null || lng === null) {

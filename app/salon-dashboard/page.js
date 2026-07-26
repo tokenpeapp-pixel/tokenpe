@@ -66,6 +66,7 @@ export default function SalonDashboard() {
   // Modals state
   const [showAddWalkin, setShowAddWalkin] = useState(false)
   const [showAddInvoice, setShowAddInvoice] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [showAddStaff, setShowAddStaff] = useState(false)
   const [showAddService, setShowAddService] = useState(false)
   const [showAddInventory, setShowAddInventory] = useState(false)
@@ -90,6 +91,7 @@ export default function SalonDashboard() {
   const [invServiceId, setInvServiceId] = useState(INITIAL_SERVICES[0].id)
   const [invPaymentMode, setInvPaymentMode] = useState('UPI')
   const [activeUpiQr, setActiveUpiQr] = useState(null)
+  const [settingsUpiId, setSettingsUpiId] = useState('')
 
   // Staff Form
   const [staffFormName, setStaffFormName] = useState('')
@@ -108,6 +110,7 @@ export default function SalonDashboard() {
         try {
           const parsed = JSON.parse(savedClinicStr)
           setSalon(parsed)
+          setSettingsUpiId(parsed.upi_id || '')
         } catch (e) {
           console.error('Failed to parse clinic data', e)
         }
@@ -198,8 +201,15 @@ export default function SalonDashboard() {
   // Generate UPI Invoice
   const handleGenerateInvoice = (e) => {
     e.preventDefault()
+    
+    if (!salon?.upi_id) {
+      showToast('⚠️ Owner needs to configure Salon UPI ID in Settings first!', 'error')
+      setShowAddInvoice(false)
+      return
+    }
+
     const svc = services.find(s => s.id === invServiceId) || services[0]
-    const upiDeepLink = `upi://pay?pa=tokenpe@upi&pn=${encodeURIComponent(salon?.name || 'Salon')}&am=${svc.price}&cu=INR`
+    const upiDeepLink = `upi://pay?pa=${salon.upi_id}&pn=${encodeURIComponent(salon?.name || 'Salon')}&am=${svc.price}&cu=INR`
     setActiveUpiQr({
       clientName: invClientName,
       serviceName: svc.name,
@@ -207,6 +217,39 @@ export default function SalonDashboard() {
       upiDeepLink
     })
     showToast(`Generated ₹${svc.price} UPI Invoice for ${invClientName}!`)
+  }
+
+  // Update Settings Handler
+  const handleSaveSettings = async (e) => {
+    e.preventDefault()
+    try {
+      const res = await fetch('/api/clinics/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clinicId: salon.id,
+          upiId: settingsUpiId
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        const updatedSalon = { ...salon, upi_id: settingsUpiId }
+        setSalon(updatedSalon)
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedSalon))
+        
+        // Also update the array if needed
+        const storedClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]')
+        const updatedClinics = storedClinics.map(c => c.id === updatedSalon.id ? updatedSalon : c)
+        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedClinics))
+
+        setShowSettings(false)
+        showToast('Settings saved successfully!')
+      } else {
+        showToast('Failed to save settings: ' + data.error, 'error')
+      }
+    } catch (err) {
+      showToast('Error saving settings', 'error')
+    }
   }
 
   // Add Staff Handler
@@ -298,6 +341,11 @@ export default function SalonDashboard() {
 
           {/* Quick Action Buttons */}
           <div className="flex items-center gap-1.5 shrink-0">
+            {userRole === 'owner' && (
+              <button onClick={() => setShowSettings(true)} className="p-2 sm:p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-rose-400 transition-colors" title="Settings">
+                <span className="text-lg">⚙️</span>
+              </button>
+            )}
             <button onClick={() => setShowQrModal(true)} className="p-2 sm:p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-rose-400 transition-colors" title="View Salon QR">
               <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
@@ -1062,29 +1110,88 @@ export default function SalonDashboard() {
         )}
       </AnimatePresence>
 
-      {/* ─── MODAL 4: SALON QR CODE ─── */}
+      {/* ─── MODAL 4: SETTINGS ─── */}
+      <AnimatePresence>
+        {showSettings && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-md bg-[#160f22] border border-rose-500/30 rounded-2xl p-6 shadow-2xl text-slate-100">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span className="text-xl">⚙️</span> Salon Settings
+                </h3>
+                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-white text-xl">✕</button>
+              </div>
+
+              <form onSubmit={handleSaveSettings} className="space-y-4 text-sm">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Direct UPI ID (for Counter Billing)</label>
+                  <input value={settingsUpiId} onChange={e => setSettingsUpiId(e.target.value)} placeholder="e.g. yourname@sbi" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
+                  <p className="text-[10px] text-slate-500 mt-1">Payments will go directly to your bank account with 0% commission.</p>
+                </div>
+
+                <button type="submit" className="w-full py-3 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg transition-all mt-4">
+                  Save Settings
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── MODAL 5: QR DISPLAY ─── */}
       <AnimatePresence>
         {showQrModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-sm bg-[#160f22] border border-rose-500/30 rounded-2xl p-6 shadow-2xl text-slate-100 text-center">
-              <h3 className="text-lg font-bold text-white mb-1">Client Digital Queue QR</h3>
-              <p className="text-xs text-slate-400 mb-4">Print & place this at your salon entrance desk</p>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-sm">
+              {/* Standee Banner Design */}
+              <div id="salon-qr-standee" className="bg-gradient-to-b from-rose-600 to-[#160f22] rounded-3xl p-6 shadow-2xl text-center border-4 border-[#160f22] overflow-hidden relative">
+                
+                {/* Decorative circles */}
+                <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-10 -translate-y-10" />
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full translate-x-10 translate-y-10" />
 
-              <div className="p-4 bg-white rounded-2xl shadow-xl border-4 border-rose-500 inline-block mb-4">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/919892875513?text=JOIN%20${encodeURIComponent(salon?.code || 'GLAM99')}`} 
-                  alt="Salon Queue QR" 
-                  className="w-44 h-44"
-                />
+                <div className="relative z-10">
+                  <h4 className="text-rose-200 text-xs font-bold uppercase tracking-widest mb-2">Welcome to</h4>
+                  <h3 className="text-2xl font-extrabold text-white mb-6 leading-tight drop-shadow-md">
+                    {salon?.name || 'Your Premium Salon'}
+                  </h3>
+
+                  <div className="bg-white p-5 rounded-3xl shadow-xl inline-block mb-6 relative">
+                    {/* Corner accents for QR */}
+                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-rose-500 rounded-tl-xl -translate-x-2 -translate-y-2" />
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-rose-500 rounded-tr-xl translate-x-2 -translate-y-2" />
+                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-rose-500 rounded-bl-xl -translate-x-2 translate-y-2" />
+                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-rose-500 rounded-br-xl translate-x-2 translate-y-2" />
+                    
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://wa.me/919892875513?text=JOIN%20${encodeURIComponent(salon?.code || 'GLAM99')}&bgcolor=ffffff&color=000000`} 
+                      alt="Salon Queue QR" 
+                      className="w-48 h-48"
+                      crossOrigin="anonymous"
+                    />
+                  </div>
+
+                  <p className="text-white font-bold text-sm mb-1">Scan to Join the Digital Queue</p>
+                  <p className="text-rose-200/80 text-[10px] mb-4">Powered by TokenPe Salon</p>
+
+                  <div className="text-xs font-mono bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 text-white shadow-inner">
+                    Manual Code: <strong className="text-rose-400 text-sm tracking-wider">{salon?.code || 'GLAM99'}</strong>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-xs font-mono bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-rose-300 mb-4">
-                Salon Code: <strong>{salon?.code || 'GLAM99'}</strong>
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-4">
+                <button onClick={() => {
+                  showToast('Printing QR Standee...')
+                  window.print()
+                }} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-700">
+                  <span className="text-lg">🖨️</span> Print QR
+                </button>
+                <button onClick={() => setShowQrModal(false)} className="flex-1 py-3 bg-white hover:bg-slate-200 text-slate-900 text-xs font-bold rounded-xl transition-all border border-transparent shadow-lg">
+                  Close
+                </button>
               </div>
-
-              <button onClick={() => setShowQrModal(false)} className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all">
-                Close Modal
-              </button>
             </motion.div>
           </div>
         )}

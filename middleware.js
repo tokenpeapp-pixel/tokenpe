@@ -10,7 +10,6 @@ export function middleware(request) {
 
     // The list of new industry vertical base paths that should be blocked
     const maintenancePaths = [
-        '/restaurant', 
         '/school', 
         '/business',
         '/other'

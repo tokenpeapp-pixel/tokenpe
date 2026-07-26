@@ -364,8 +364,8 @@ export default function LandingPageTemplate({ config = {} }) {
 
         /* ── TOPBAR ── */
         .lp-topbar {
-          background: transparent !important;
-          color: #d1d5db !important;
+          background: #f97316 !important;
+          color: #ffffff !important;
           text-align: center;
           padding: 10px 16px;
           font-size: 13px;
@@ -376,9 +376,9 @@ export default function LandingPageTemplate({ config = {} }) {
           display: block !important;
         }
         .lp-topbar a {
-          color: #22c55e !important;
-          font-weight: 600;
-          text-decoration: none;
+          color: #ffffff !important;
+          font-weight: 800;
+          text-decoration: underline;
           margin-left: 8px;
           white-space: nowrap;
           display: inline-flex;
@@ -2028,8 +2028,8 @@ export default function LandingPageTemplate({ config = {} }) {
         }
 
         /* ── THEMING OVERRIDES FOR SIGNAL FLOW ── */
-        .lp-topbar { background: transparent !important; color: #d1d5db !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
-        .lp-topbar a { color: #22c55e !important; }
+        .lp-topbar { background: #f97316 !important; color: #ffffff !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
+        .lp-topbar a { color: #ffffff !important; text-decoration: underline; }
         .lp-nl { color: var(--text-muted); }
         .lp-nl:hover { 
           color: var(--text-main);
@@ -2366,7 +2366,7 @@ export default function LandingPageTemplate({ config = {} }) {
         )}
         <div className="lp-nav-inner">
           <div className="lp-nav-left">
-            <img src="/logo-nav.svg" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
+            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
           </div>
 
           <div className="lp-nav-center">
@@ -2459,7 +2459,7 @@ export default function LandingPageTemplate({ config = {} }) {
         <div className="lp-hero-inner">
           <div className="lp-hero-content">
             <div className="lp-hero-badge">
-              <span className="lp-badge-country">IN</span>
+              <span className="lp-badge-country">🇮🇳</span>
               {config.badge || "Built for India's businesses"}
             </div>
             {config.hero?.h1 ? (
@@ -2893,8 +2893,7 @@ export default function LandingPageTemplate({ config = {} }) {
           <div className="lp-footer-top">
             <div className="lp-footer-brand">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", color: "#0c0c0e", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, fontFamily: "system-ui, sans-serif" }}>T</div>
-                <span style={{ fontSize: 22, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.3px", fontFamily: "system-ui, sans-serif" }}>TokenPe</span>
+                <img src="/logo-light.svg" alt="TokenPe" style={{ height: 36, width: "auto" }} />
               </div>
               <p className="lp-footer-tagline">WhatsApp-based digital queue management for India's businesses. No apps. No fuss.</p>
               <button className="lp-footer-explore-btn" onClick={() => go("industries")}>

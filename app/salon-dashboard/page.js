@@ -453,10 +453,11 @@ export default function SalonDashboard() {
             <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 rounded-lg lg:hidden transition-colors hover:bg-gray-100" style={{color:'#6B7280'}}>
               <Menu className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-bold hidden sm:flex items-center gap-2" style={{color:'#1A1A1A'}}>
-              {salon?.name ? `${salon.name} ` : 'TokenPe Salon '} 
-              <span style={{color:'#D14D72'}}>|</span> 
-              <span className="capitalize" style={{color:'#6B7280'}}>{SIDEBAR_NAV.find(n => n.id === activeTab)?.label}</span>
+            <h2 className="text-lg font-bold flex items-center gap-2" style={{color:'#1A1A1A'}}>
+              <Scissors className="w-5 h-5" style={{color:'#D14D72'}} />
+              <span className="truncate max-w-[140px] sm:max-w-none">{salon?.name || 'TokenPe Salon'}</span>
+              <span className="hidden sm:inline" style={{color:'#D14D72'}}>|</span> 
+              <span className="capitalize hidden sm:inline" style={{color:'#6B7280'}}>{SIDEBAR_NAV.find(n => n.id === activeTab)?.label}</span>
             </h2>
           </div>
 

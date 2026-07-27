@@ -41,7 +41,7 @@
 
   <!-- Wordmark — dark text for light backgrounds -->
   <text x="215" y="115" font-family="'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-size="100" font-weight="900" letter-spacing="-3">
-    <tspan fill="#111827">Token</tspan><tspan fill="#16a34a">Pe</tspan>
+    <tspan fill="#FFFFFF">Token</tspan><tspan fill="#16a34a">Pe</tspan>
   </text>
 
   <!-- Pulse Line -->

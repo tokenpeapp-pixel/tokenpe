@@ -7,8 +7,8 @@ import { Gift, AlertTriangle, Hourglass, RefreshCw, CheckCircle2 } from 'lucide-
 
 const PLAN_META = {
   starter:      { name: 'Starter', price: '₹499',   priceNum: 499,  limit: 50,       color: '#6B7280' },
-  pro:          { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#065F46' },
-  professional: { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#065F46' },
+  pro:          { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#fef3c7' },
+  professional: { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#fef3c7' },
   elite:        { name: 'Elite',   price: '₹1,999', priceNum: 1999, limit: Infinity, color: '#F59E0B' },
 }
 
@@ -92,7 +92,7 @@ export default function BillingPage() {
             if (isActivated) {
               const meta = PLAN_META[fresh.plan_id]
               setShowSuccessModal(meta?.name || fresh.plan_id)
-              confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#065F46', '#2DD4BF', '#059669', '#ffffff'], zIndex: 10000 })
+              confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#7f1d1d', '#2DD4BF', '#d97706', 'rgba(255, 255, 255, 0.03)'], zIndex: 10000 })
             }
             return
           }
@@ -123,7 +123,7 @@ export default function BillingPage() {
         description: `${PLAN_META[tier]?.name || tier} Plan Subscription`,
         image: `${window.location.origin}/logo-light.svg`,
         prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.clinicPhone },
-        theme: { color: '#065F46' },
+        theme: { color: '#fef3c7' },
         handler: () => pollForUpdate(clinic.id, tier),
         modal: { ondismiss: () => setUpgrading(null) }
       }
@@ -197,7 +197,7 @@ export default function BillingPage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAF8]">
-      <div className="w-10 h-10 border-4 border-[#E5E7EB] border-t-[#065F46] rounded-full animate-spin"></div>
+      <div className="w-10 h-10 border-4 border-[#E5E7EB] border-t-[#7f1d1d] rounded-full animate-spin"></div>
     </div>
   )
 
@@ -244,7 +244,7 @@ export default function BillingPage() {
     {
       tier: 'pro', label: 'Pro', price: '₹999',
       features: ['Up to 150 guests/day', 'Branded WhatsApp Identity', 'Multilingual AI Voice Alerts', 'Queue Pause & Smart Wait Time', '30-Day History & Heatmap'],
-      checkColor: '#065F46', accent: '#065F46', featured: true
+      checkColor: '#7f1d1d', accent: '#7f1d1d', featured: true
     },
     {
       tier: 'elite', label: 'Elite', price: '₹1,999',
@@ -272,7 +272,7 @@ export default function BillingPage() {
             {/* Top Bar */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
               <div>
-                <button onClick={() => router.push('/restaurant-dashboard')} className="mb-3 text-[#065F46] font-bold text-[13px] hover:underline flex items-center gap-1">
+                <button onClick={() => router.push('/restaurant-dashboard')} className="mb-3 text-[#fbbf24] font-bold text-[13px] hover:underline flex items-center gap-1">
                   ← Back to Dashboard
                 </button>
                 <h1 className="text-xl sm:text-2xl font-black text-[#111827]">Billing</h1>
@@ -282,7 +282,7 @@ export default function BillingPage() {
               {(planId !== 'elite' || isCanceled || isTrial) && (
                 <button
                   onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="bg-[#065F46] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-teal-900/10 hover:opacity-90 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+                  className="bg-[#7f1d1d] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-amber-900/10 hover:opacity-90 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   <span className="material-symbols-outlined text-[18px]">upgrade</span>
                   Upgrade Plan
@@ -291,7 +291,7 @@ export default function BillingPage() {
             </div>
 
             {/* ── Current Plan Card ── */}
-            <section className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 mb-8 shadow-sm">
+            <section className="bg-[#1a0505] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 mb-8 shadow-sm">
               {/* Label */}
               <p className="text-[11px] font-black text-[#9CA3AF] uppercase tracking-widest mb-3">Current Plan</p>
 
@@ -333,7 +333,7 @@ export default function BillingPage() {
                           : isCancelPending && clinic?.current_period_end
                             ? <span className="text-red-500 font-medium"><AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" /> Cancellation scheduled — full access until <strong>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. No further charges.</span>
                             : clinic?.current_period_end
-                              ? <>Next billing date: <strong className="text-indigo-600">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
+                              ? <>Next billing date: <strong className="text-red-600">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
                               : <span className="text-gray-500 text-xs"><Hourglass className="inline-block w-3 h-3 mr-1" /> Confirming billing date... (may take a few seconds)</span>}
                   </div>
                 </div>
@@ -352,12 +352,12 @@ export default function BillingPage() {
                       disabled={!!upgrading}
                       className="flex items-center sm:justify-center gap-2 group disabled:opacity-50 transition-opacity"
                     >
-                      <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!isCancelPending ? 'bg-[#065F46]' : 'bg-[#E5E7EB]'}`}>
-                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${!isCancelPending ? 'translate-x-[18px]' : 'translate-x-1'}`}></span>
+                      <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!isCancelPending ? 'bg-[#7f1d1d]' : 'bg-[#E5E7EB]'}`}>
+                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-[#1a0505] shadow transition-transform ${!isCancelPending ? 'translate-x-[18px]' : 'translate-x-1'}`}></span>
                       </div>
                       <span className="text-xs font-semibold text-[#6B7280] group-hover:text-[#111827] transition-colors flex items-center gap-1">
                         Auto renewal {!isCancelPending ? 'ON' : 'OFF'}
-                        {upgrading === 'resume' && <RefreshCw className="w-3 h-3 animate-spin text-[#065F46]" />}
+                        {upgrading === 'resume' && <RefreshCw className="w-3 h-3 animate-spin text-[#fbbf24]" />}
                       </span>
                     </button>
                   </div>
@@ -376,7 +376,7 @@ export default function BillingPage() {
                         <button
                           onClick={() => setShowCancelModal(true)}
                           disabled={!!upgrading}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#EF4444] hover:bg-red-50 transition-colors disabled:opacity-50"
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-[#1a0505] rounded-xl text-sm font-bold text-[#EF4444] hover:bg-red-50 transition-colors disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-base">cancel</span>
                           Cancel Plan
@@ -384,7 +384,7 @@ export default function BillingPage() {
                       )}
                       <button
                         onClick={() => setShowDetails(true)}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-[#1a0505] rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">description</span>
                         View Plan Details
@@ -399,15 +399,15 @@ export default function BillingPage() {
             {/* ── Usage Section ── */}
             <section className="mb-10">
               <h3 className="flex items-center gap-2 text-[15px] font-bold text-[#111827] mb-4">
-                <span className="material-symbols-outlined text-[#065F46]">bar_chart</span> Daily Usage
+                <span className="material-symbols-outlined text-[#fbbf24]">bar_chart</span> Daily Usage
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 {/* Guests Today */}
-                <div className="bg-white p-4 border border-[#E5E7EB] rounded-xl">
+                <div className="bg-[#1a0505] p-4 border border-[#E5E7EB] rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[#065F46] text-lg">person</span>
+                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[#fbbf24] text-lg">person</span>
                     </div>
                     <span className="text-xs font-bold text-[#6B7280]">Guests Today</span>
                   </div>
@@ -416,7 +416,7 @@ export default function BillingPage() {
                     <span className="text-[10px] text-[#9CA3AF]">/ {planLimit === Infinity ? '∞' : planLimit}</span>
                   </div>
                   <div className="w-full bg-[#F3F4F6] h-1.5 rounded-full overflow-hidden">
-                    <div className={`h-full transition-all ${percentage >= 100 ? 'bg-[#DC2626]' : percentage >= 80 ? 'bg-[#F59E0B]' : 'bg-[#065F46]'}`} style={{ width: `${percentage}%` }}></div>
+                    <div className={`h-full transition-all ${percentage >= 100 ? 'bg-[#DC2626]' : percentage >= 80 ? 'bg-[#F59E0B]' : 'bg-[#7f1d1d]'}`} style={{ width: `${percentage}%` }}></div>
                   </div>
                 </div>
 
@@ -426,7 +426,7 @@ export default function BillingPage() {
             {/* ── Plans Section ── */}
             <section className="mb-12" id="plans-section">
                 <h3 className="flex items-center gap-2 text-[16px] font-bold text-[#111827] mb-6">
-                <span className="material-symbols-outlined text-[#065F46]">inventory_2</span> Available plans
+                <span className="material-symbols-outlined text-[#fbbf24]">inventory_2</span> Available plans
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -449,17 +449,17 @@ export default function BillingPage() {
                   // isLower plans: no action button rendered
 
                   const cardBorder = plan.featured
-                    ? 'border-2 border-[#065F46]'
+                    ? 'border-2 border-[#7f1d1d]'
                     : plan.tier === 'elite'
                     ? 'border border-[#FDE68A]'
                     : 'border border-[#E5E7EB]'
 
-                  const cardBg = plan.tier === 'elite' ? 'bg-[#FFFDF7]' : 'bg-white'
+                  const cardBg = plan.tier === 'elite' ? 'bg-[#FFFDF7]' : 'bg-[#1a0505]'
 
                   const btnClass = btnActive
                     ? plan.tier === 'elite'
                       ? 'bg-[#F59E0B] text-[#111827] hover:opacity-90 shadow-lg shadow-amber-900/10'
-                      : 'bg-[#065F46] text-white hover:opacity-90 shadow-lg shadow-teal-900/10'
+                      : 'bg-[#7f1d1d] text-white hover:opacity-90 shadow-lg shadow-amber-900/10'
                     : 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
 
                   return (
@@ -467,13 +467,13 @@ export default function BillingPage() {
                       style={plan.featured ? { boxShadow: '0 0 0 4px rgba(6,95,70,0.06)' } : {}}>
 
                       {plan.featured && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#065F46] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#7f1d1d] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
                           Most Popular
                         </div>
                       )}
 
                       {isCurrent && !isCancelPending && (
-                        <div className="absolute top-3 right-3 px-2 py-0.5 bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] rounded-full text-[9px] font-black uppercase tracking-wider">
+                        <div className="absolute top-3 right-3 px-2 py-0.5 bg-[#ECFDF5] text-[#d97706] border border-[#A7F3D0] rounded-full text-[9px] font-black uppercase tracking-wider">
                           Current
                         </div>
                       )}
@@ -489,7 +489,7 @@ export default function BillingPage() {
                             {plan.tier === 'elite'
                               ? <span className="material-symbols-outlined text-[#F59E0B] text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span>
                               : plan.featured
-                              ? <span className="material-symbols-outlined text-[#065F46] text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                              ? <span className="material-symbols-outlined text-[#fbbf24] text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                               : <span className="material-symbols-outlined text-[#D1D5DB] text-lg">radio_button_unchecked</span>
                             }
                             {f}
@@ -517,7 +517,7 @@ export default function BillingPage() {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-[15px] font-bold text-[#111827]">Billing history</h3>
               </div>
-              <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden text-sm p-8 text-center text-[#6B7280]">
+              <div className="bg-[#1a0505] border border-[#E5E7EB] rounded-2xl overflow-hidden text-sm p-8 text-center text-[#6B7280]">
                 No billing history available yet.
               </div>
             </section>
@@ -528,11 +528,11 @@ export default function BillingPage() {
           <div className="lg:hidden px-4 sm:px-6 pb-8 space-y-6">
 
             {/* Billing Timeline */}
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-sm">
+            <div className="bg-[#1a0505] border border-[#E5E7EB] rounded-2xl p-5 shadow-sm">
               <h4 className="text-[15px] font-bold text-[#111827] mb-4">Billing Timeline</h4>
               <div className="relative pl-6 space-y-6 border-l-2 border-dashed border-[#E5E7EB]">
                 <div className="relative">
-                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#065F46] rounded-full"></div>
+                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#7f1d1d] rounded-full"></div>
                   <p className="text-xs font-bold text-[#111827]">{planName} {isTrial ? 'Trial' : isActive ? 'Active' : isCancelPending ? 'Ending' : 'Inactive'}</p>
                   <p className="text-[10px] text-[#6B7280]">
                     {clinic?.created_at ? new Date(clinic.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
@@ -540,7 +540,7 @@ export default function BillingPage() {
                 </div>
                 {clinic?.current_period_end && (
                   <div className="relative">
-                    <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-white border-2 border-[#E5E7EB] rounded-full"></div>
+                    <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#1a0505] border-2 border-[#E5E7EB] rounded-full"></div>
                     <p className="text-xs font-bold text-[#6B7280]">{isCancelPending ? 'Access Ends' : 'Upcoming Renewal'}</p>
                     <p className="text-[10px] text-[#9CA3AF]">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                   </div>
@@ -569,7 +569,7 @@ export default function BillingPage() {
                   </div>
                 ))}
               </div>
-              <a href="mailto:tokenpe.online@gmail.com" className="mt-4 flex items-center gap-2 p-4 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#065F46] hover:bg-teal-50 transition-colors">
+              <a href="mailto:tokenpe.online@gmail.com" className="mt-4 flex items-center gap-2 p-4 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#fbbf24] hover:bg-amber-50 transition-colors">
                 <span className="material-symbols-outlined text-base">headset_mic</span>
                 Contact Support
               </a>
@@ -578,15 +578,15 @@ export default function BillingPage() {
 
         </main>
 
-        <aside className="hidden lg:flex w-[280px] bg-white border-l border-[#E5E7EB] h-screen overflow-y-auto flex-shrink-0 flex-col">
+        <aside className="hidden lg:flex w-[280px] bg-[#1a0505] border-l border-[#E5E7EB] h-screen overflow-y-auto flex-shrink-0 flex-col">
           <div className="p-6 flex-grow">
 
             {/* Billing Timeline */}
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 mb-6 shadow-sm">
+            <div className="bg-[#1a0505] border border-[#E5E7EB] rounded-2xl p-5 mb-6 shadow-sm">
               <h4 className="text-[15px] font-bold text-[#111827] mb-4">Billing Timeline</h4>
               <div className="relative pl-6 space-y-6 border-l-2 border-dashed border-[#E5E7EB]">
                 <div className="relative">
-                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#065F46] rounded-full"></div>
+                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#7f1d1d] rounded-full"></div>
                   <p className="text-xs font-bold text-[#111827]">{planName} {isTrial ? 'Trial' : isActive ? 'Active' : isCancelPending ? 'Ending' : 'Inactive'}</p>
                   <p className="text-[10px] text-[#6B7280]">
                     {clinic?.created_at ? new Date(clinic.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
@@ -594,7 +594,7 @@ export default function BillingPage() {
                 </div>
                 {clinic?.current_period_end && (
                   <div className="relative">
-                    <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-white border-2 border-[#E5E7EB] rounded-full"></div>
+                    <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#1a0505] border-2 border-[#E5E7EB] rounded-full"></div>
                     <p className="text-xs font-bold text-[#6B7280]">{isCancelPending ? 'Access Ends' : 'Upcoming Renewal'}</p>
                     <p className="text-[10px] text-[#9CA3AF]">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                   </div>
@@ -628,7 +628,7 @@ export default function BillingPage() {
               </div>
 
               {/* Contact Support */}
-              <a href="mailto:tokenpe.online@gmail.com" className="mt-6 flex items-center gap-2 p-3 border border-[#E5E7EB] rounded-xl text-[11px] font-bold text-[#065F46] hover:bg-teal-50 transition-colors">
+              <a href="mailto:tokenpe.online@gmail.com" className="mt-6 flex items-center gap-2 p-3 border border-[#E5E7EB] rounded-xl text-[11px] font-bold text-[#fbbf24] hover:bg-amber-50 transition-colors">
                 <span className="material-symbols-outlined text-base">headset_mic</span>
                 Contact Support
               </a>
@@ -642,7 +642,7 @@ export default function BillingPage() {
       {/* Details Modal */}
       {showDetails && (
         <div onClick={() => setShowDetails(false)} className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div onClick={e => e.stopPropagation()} className="bg-white w-full max-w-[800px] max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-10 relative shadow-2xl">
+          <div onClick={e => e.stopPropagation()} className="bg-[#1a0505] w-full max-w-[800px] max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-10 relative shadow-2xl">
             <button onClick={() => setShowDetails(false)} className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors">
               <span className="material-symbols-outlined text-xl">close</span>
             </button>
@@ -655,7 +655,7 @@ export default function BillingPage() {
                   <tr>
                     <th className="px-6 py-4 w-2/5">Feature</th>
                     <th className="px-4 py-4 text-center">Starter</th>
-                    <th className="px-4 py-4 text-center text-[#065F46]">Pro</th>
+                    <th className="px-4 py-4 text-center text-[#fbbf24]">Pro</th>
                     <th className="px-4 py-4 text-center text-[#F59E0B]">Elite</th>
                   </tr>
                 </thead>
@@ -673,7 +673,7 @@ export default function BillingPage() {
                     <tr key={feature}>
                       <td className="px-6 py-4 font-bold">{feature}</td>
                       <td className="px-4 py-4 text-center text-[#6B7280]">{s}</td>
-                      <td className="px-4 py-4 text-center font-bold text-[#065F46]">{p}</td>
+                      <td className="px-4 py-4 text-center font-bold text-[#fbbf24]">{p}</td>
                       <td className="px-4 py-4 text-center font-bold text-[#F59E0B]">{e}</td>
                     </tr>
                   ))}
@@ -687,14 +687,14 @@ export default function BillingPage() {
       {/* Cancel Modal */}
       {showCancelModal && (
         <div onClick={() => setShowCancelModal(false)} className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div onClick={e => e.stopPropagation()} className="bg-white w-full max-w-[400px] rounded-3xl p-8 relative shadow-2xl">
+          <div onClick={e => e.stopPropagation()} className="bg-[#1a0505] w-full max-w-[400px] rounded-3xl p-8 relative shadow-2xl">
             <h3 className="text-xl font-black text-[#111827] mb-2">Cancel Subscription?</h3>
             <p className="text-sm text-[#6B7280] mb-6">We&apos;re sorry to see you go. You will retain full access until <strong>{clinic?.current_period_end ? new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'end of billing period'}</strong>.</p>
 
             <select
               value={cancelReason}
               onChange={e => setCancelReason(e.target.value)}
-              className="w-full mb-6 p-3 border border-[#E5E7EB] rounded-xl text-sm bg-gray-50 outline-none focus:border-[#065F46]"
+              className="w-full mb-6 p-3 border border-[#E5E7EB] rounded-xl text-sm bg-gray-50 outline-none focus:border-[#7f1d1d]"
             >
               <option value="">Select a reason... (Optional)</option>
               <option value="too_expensive">Too expensive</option>
@@ -705,7 +705,7 @@ export default function BillingPage() {
             </select>
 
             <div className="flex flex-col gap-3">
-              <button onClick={() => setShowCancelModal(false)} disabled={isCanceling} className="w-full py-3 bg-[#065F46] text-white rounded-xl font-bold shadow-sm hover:bg-[#064E3B] transition-colors disabled:opacity-60">
+              <button onClick={() => setShowCancelModal(false)} disabled={isCanceling} className="w-full py-3 bg-[#7f1d1d] text-white rounded-xl font-bold shadow-sm hover:bg-[#4a0a0a] transition-colors disabled:opacity-60">
                 Keep my plan
               </button>
               <button onClick={executeCancel} disabled={isCanceling} className="w-full py-3 bg-transparent text-[#EF4444] border border-[#FECACA] rounded-xl font-bold hover:bg-[#FEF2F2] transition-colors disabled:opacity-60">
@@ -719,15 +719,15 @@ export default function BillingPage() {
       {/* Success Modal */}
       {showSuccessModal && (
         <div onClick={() => setShowSuccessModal(null)} className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div onClick={e => e.stopPropagation()} className="bg-white w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl border border-[#065F46]/20" style={{ background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)' }}>
-            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg text-[#065F46]">
+          <div onClick={e => e.stopPropagation()} className="bg-[#1a0505] w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl border border-[#7f1d1d]/20" style={{ background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)' }}>
+            <div className="w-20 h-20 bg-[#1a0505] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg text-[#fbbf24]">
               <span className="material-symbols-outlined text-[48px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             </div>
-            <h3 className="text-2xl font-extrabold text-[#065F46] mb-2">You&apos;re all set!</h3>
-            <p className="text-sm text-[#065F46]/80 mb-8">
+            <h3 className="text-2xl font-extrabold text-[#fbbf24] mb-2">You&apos;re all set!</h3>
+            <p className="text-sm text-[#fbbf24]/80 mb-8">
               Your <strong>{showSuccessModal}</strong> plan is now active. All features are unlocked.
             </p>
-            <button onClick={() => router.push('/restaurant-dashboard')} className="w-full py-3 bg-[#065F46] text-white rounded-xl font-bold shadow-lg shadow-teal-900/20 hover:opacity-90 transition-all">
+            <button onClick={() => router.push('/restaurant-dashboard')} className="w-full py-3 bg-[#7f1d1d] text-white rounded-xl font-bold shadow-lg shadow-amber-900/20 hover:opacity-90 transition-all">
               Continue to Dashboard
             </button>
           </div>

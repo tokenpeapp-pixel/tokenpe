@@ -22,13 +22,13 @@ export default function LoginPage() {
                 .then(res => res.json())
                 .then(data => {
                     if (data.authenticated && data.clinic) {
-                        localStorage.setItem('tokenpe_restaurant', JSON.stringify(data.restaurant))
-                        localStorage.setItem('restaurantCode', data.restaurant.code)
-                        localStorage.setItem('restaurantPhone', data.restaurant.phone)
+                        localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
+                        localStorage.setItem('clinicCode', data.clinic.code)
+                        localStorage.setItem('clinicPhone', data.clinic.phone)
                         router.replace('/restaurant-dashboard')
                     } else {
-                        localStorage.removeItem('tokenpe_restaurant')
-                        localStorage.removeItem('tokenpe_user_restaurants')
+                        localStorage.removeItem('tokenpe_clinic')
+                        localStorage.removeItem('tokenpe_user_clinics')
                     }
                 })
                 .catch(() => {})
@@ -128,10 +128,10 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/restaurants/auth/login', {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin })
+                body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin, vertical: 'restaurant' })
             })
             const result = await res.json()
 
@@ -141,10 +141,10 @@ export default function LoginPage() {
                 return
             }
 
-            localStorage.setItem('tokenpe_restaurant', JSON.stringify(result.restaurant))
-            localStorage.setItem('restaurantCode', result.restaurant.code)
-            localStorage.setItem('restaurantPhone', result.restaurant.phone)
-            localStorage.setItem('tokenpe_user_restaurants', JSON.stringify([result.restaurant]))
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
+            localStorage.setItem('clinicCode', result.clinic.code)
+            localStorage.setItem('clinicPhone', result.clinic.phone)
+            localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
             router.push('/restaurant-dashboard')
         } catch (err) {
             setError('Something went wrong. Please try again.')
@@ -170,7 +170,7 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/restaurants/auth/register', {
+            const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -181,7 +181,8 @@ export default function LoginPage() {
                     specialty: 'Restaurant',
                     city: regCity,
                     lat: regLat,
-                    lng: regLng
+                    lng: regLng,
+                    vertical: 'restaurant'
                 })
             })
             const result = await res.json()
@@ -195,13 +196,13 @@ export default function LoginPage() {
             setLoading(false)
             
             // Set localStorage 
-            localStorage.setItem('tokenpe_restaurant', JSON.stringify(result.restaurant))
-            localStorage.setItem('restaurantCode', result.restaurant.code)
-            localStorage.setItem('restaurantPhone', result.restaurant.phone)
-            localStorage.setItem('tokenpe_user_restaurants', JSON.stringify([result.restaurant]))
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
+            localStorage.setItem('clinicCode', result.clinic.code)
+            localStorage.setItem('clinicPhone', result.clinic.phone)
+            localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
             
             // Trigger celebration pop-up!
-            setCelebration({ clinicName: result.restaurant.name, trialEnd: result.restaurant.trial_ends_at })
+            setCelebration({ clinicName: result.clinic.name, trialEnd: result.clinic.trial_ends_at })
             
         } catch (err) {
             setError('Something went wrong. Please try again.')
@@ -215,7 +216,7 @@ export default function LoginPage() {
         setSuccess('')
         setLoading(true)
         try {
-            const res = await fetch('/api/restaurants/auth/send-otp', {
+            const res = await fetch('/api/auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: loginEmail, phone: loginPhone })
@@ -248,7 +249,7 @@ export default function LoginPage() {
         }
         setLoading(true)
         try {
-            const res = await fetch('/api/restaurants/auth/reset-pin', {
+            const res = await fetch('/api/auth/reset-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ otpToken, otp: otpCode, newPin })

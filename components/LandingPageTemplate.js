@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, UtensilsCrossed, GraduationCap, Scissors, MoreHorizontal, Search, Check, Users, Megaphone, ClipboardList, Stethoscope, Activity, Building2, Smile, Mic, MessageSquare, Zap, Bell, Calendar, QrCode, FileSignature, BellRing, FileText, CheckCircle2, XCircle, ChevronRight, Mail, PhoneOff, TrendingDown, Menu, X, Smartphone } from "lucide-react";
+import { Sparkles, UtensilsCrossed, GraduationCap, Scissors, MoreHorizontal, Search, Check, Users, Megaphone, ClipboardList, Stethoscope, Activity, Building2, Smile, Mic, MessageSquare, Zap, Bell, Calendar, QrCode, FileSignature, BellRing, FileText, CheckCircle2, XCircle, ChevronRight, Mail, PhoneOff, TrendingDown, Menu, X, Smartphone, CreditCard, Bot, Star, PhoneCall, Languages, BarChart3 } from "lucide-react";
 
 import WhatsAppDemo from "../app/components/WhatsAppDemo";
 import Lenis from "lenis";
@@ -249,16 +249,7 @@ export default function LandingPageTemplate({ config = {} }) {
 
   const defaultFeatures = [
     { 
-      ico: <Mic size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Voice in 10 Languages", desc: "Patients get WhatsApp voice alerts in Hindi, Tamil, Telugu, Marathi, Gujarati & 5 more.",
-      GhostIco: Mic,
-      Deco: () => (
-        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 20L15 10L20 30L25 15L30 25L35 5L40 35L45 15L50 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )
-    },
-    { 
-      ico: <MessageSquare size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Zero App for Patients", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone.",
+      ico: <MessageSquare size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Zero App for Customers", desc: "Scan QR → join queue. No downloads, no logins. Works on any phone.",
       GhostIco: MessageSquare,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -269,7 +260,7 @@ export default function LandingPageTemplate({ config = {} }) {
       )
     },
     { 
-      ico: <Zap size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Live Dashboard", desc: "See who's waiting, with doctor, and done — updating in real-time.",
+      ico: <Zap size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Live Dashboard", desc: "See who's waiting, who's currently being served, and who's done.",
       GhostIco: Zap,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -278,7 +269,7 @@ export default function LandingPageTemplate({ config = {} }) {
       )
     },
     { 
-      ico: <Bell size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Smart Auto Alerts", desc: "10-away, 5-away, and your-turn notifications sent automatically.",
+      ico: <Bell size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Smart Auto Alerts", desc: "Automatic notifications to keep customers informed of their queue position.",
       GhostIco: Bell,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -288,8 +279,56 @@ export default function LandingPageTemplate({ config = {} }) {
       )
     },
     { 
-      ico: <Calendar size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "Date-wise History", desc: "Complete patient records for any past date. Daily volumes at a glance.",
-      GhostIco: Calendar,
+      ico: <CreditCard size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Built-in POS Billing", desc: "Bill customers directly from the same dashboard — no separate POS software needed.",
+      GhostIco: CreditCard,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="10" width="50" height="20" rx="3" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+          <line x1="5" y1="16" x2="55" y2="16" stroke="currentColor" strokeWidth="1.5"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <Bot size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "WhatsApp Chatbot", desc: "Auto-reply to customer queries, bookings & FAQs on WhatsApp — 24/7, no manual typing.",
+      GhostIco: Bot,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="15" cy="20" r="4" fill="currentColor"/>
+          <circle cx="45" cy="20" r="4" fill="currentColor"/>
+          <circle cx="30" cy="30" r="4" fill="currentColor"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <Star size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Google Review Sync", desc: "Auto-request ratings after each visit and grow your Google reviews on autopilot.",
+      GhostIco: Star,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 5L36 18L50 20L40 30L42 44L30 37L18 44L20 30L10 20L24 18Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <PhoneCall size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "AI Voice Agent", desc: "Never miss a call — our voice agent answers, books slots & handles queries for you.",
+      GhostIco: PhoneCall,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 20C10 12 18 5 30 5C42 5 50 12 50 20C50 28 42 35 30 35" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <Languages size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Voice Notes, 10 Languages", desc: "Customers get spoken alerts in their own language — Hindi, Tamil, Bengali & more.",
+      GhostIco: Languages,
+      Deco: () => (
+        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 20L15 10L20 30L25 15L30 25L35 5L40 35L45 15L50 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    { 
+      ico: <BarChart3 size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Analytics & Reports", desc: "Complete queue data, peak hour trends & revenue insights for any past date at a glance.",
+      GhostIco: BarChart3,
       Deco: () => (
         <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="5" y="25" width="8" height="15" rx="2" fill="currentColor"/>
@@ -298,16 +337,7 @@ export default function LandingPageTemplate({ config = {} }) {
           <rect x="50" y="20" width="8" height="20" rx="2" fill="currentColor"/>
         </svg>
       )
-    },
-    { 
-      ico: <QrCode size="1.3em" color="#22c55e" />, color: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e", bloom: "rgba(34, 197, 94, 0.25)", title: "QR Code & Print Card", desc: "Generate your clinic QR. Download PNG or print a display-ready card.",
-      GhostIco: QrCode,
-      Deco: () => (
-        <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M5 15V5H15M45 5H55V15M55 25V35H45M15 35H5V25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )
-    },
+    }
   ];
 
   return (
@@ -364,8 +394,8 @@ export default function LandingPageTemplate({ config = {} }) {
 
         /* ── TOPBAR ── */
         .lp-topbar {
-          background: #f97316 !important;
-          color: #ffffff !important;
+          background: transparent !important;
+          color: #d1d5db !important;
           text-align: center;
           padding: 10px 16px;
           font-size: 13px;
@@ -376,9 +406,9 @@ export default function LandingPageTemplate({ config = {} }) {
           display: block !important;
         }
         .lp-topbar a {
-          color: #ffffff !important;
-          font-weight: 800;
-          text-decoration: underline;
+          color: #22c55e !important;
+          font-weight: 600;
+          text-decoration: none;
           margin-left: 8px;
           white-space: nowrap;
           display: inline-flex;
@@ -567,7 +597,7 @@ export default function LandingPageTemplate({ config = {} }) {
 
         /* ── HERO ── */
         .lp-hero {
-          padding: 125px 24px 60px;
+          padding: 140px 24px 60px !important;
           position: relative;
           overflow: hidden;
         }
@@ -982,16 +1012,17 @@ export default function LandingPageTemplate({ config = {} }) {
           left: auto !important;
           font-size: 96px !important;
           font-weight: 800 !important;
-          color: rgba(255, 255, 255, 0.05) !important;
+          color: rgba(255, 255, 255, 0.06) !important;
           line-height: 0.85 !important;
           pointer-events: none !important;
           font-family: 'Outfit', sans-serif !important;
           user-select: none !important;
           z-index: 0 !important;
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease !important;
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease, text-shadow 0.3s ease !important;
         }
         .lp-pain-card:hover .lp-pain-num {
-          color: rgba(255, 255, 255, 0.10) !important;
+          color: rgba(249, 115, 22, 0.22) !important;
+          text-shadow: 0 0 16px rgba(249, 115, 22, 0.22) !important;
           transform: scale(1.04) translateY(-2px) !important;
         }
         .lp-pain-card-body {
@@ -1392,13 +1423,13 @@ export default function LandingPageTemplate({ config = {} }) {
           opacity: 1 !important;
           filter: none !important;
           z-index: 0;
-          transition: transform 0.4s ease, opacity 0.4s ease;
+          transition: transform 0.4s ease, opacity 0.4s ease, color 0.3s ease, filter 0.3s ease !important;
           pointer-events: none;
         }
         .lp-feat-card:hover .lp-feat-ghost {
-          color: rgba(255, 255, 255, 0.08) !important;
+          color: rgba(249, 115, 22, 0.25) !important;
           transform: rotate(6deg) scale(1.05);
-          filter: none !important;
+          filter: drop-shadow(0 0 16px rgba(249, 115, 22, 0.3)) !important;
         }
         .lp-feat-deco {
           position: absolute;
@@ -1407,11 +1438,12 @@ export default function LandingPageTemplate({ config = {} }) {
           color: rgba(255, 255, 255, 0.05) !important;
           opacity: 1 !important;
           z-index: 0;
-          transition: opacity 0.2s ease;
+          transition: opacity 0.2s ease, color 0.3s ease, filter 0.3s ease !important;
           pointer-events: none;
         }
         .lp-feat-card:hover .lp-feat-deco {
-          color: rgba(255, 255, 255, 0.1) !important;
+          color: rgba(249, 115, 22, 0.25) !important;
+          filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.25)) !important;
         }
         .lp-feat-ico {
           width: 48px;
@@ -1882,14 +1914,26 @@ export default function LandingPageTemplate({ config = {} }) {
             margin-left: auto !important;
             padding: 0 !important;
           }
-          .lp-hero { padding: 60px 20px 48px; }
+          .lp-hero { padding: 135px 20px 48px !important; }
           .lp-midcta { padding: 60px 20px; }
           .lp-hero-h1 { letter-spacing: -1px; }
           .lp-hero-btns { flex-direction: column; width: 100%; }
           .lp-btn-primary, .lp-btn-secondary { width: 100%; justify-content: center; }
           .lp-footer-top { grid-template-columns: 1fr; gap: 32px; }
           .lp-footer-links { align-items: flex-start; flex-direction: column; gap: 12px; }
-          .lp-topbar { font-size: 12px; padding: 8px 12px; }
+          .lp-topbar {
+            font-size: 12px !important;
+            padding: 8px 12px !important;
+            background: linear-gradient(135deg, #f97316, #ea580c) !important;
+            color: #ffffff !important;
+            border-bottom: none !important;
+            font-weight: 600 !important;
+          }
+          .lp-topbar a {
+            color: #ffffff !important;
+            text-decoration: underline !important;
+            font-weight: 700 !important;
+          }
           .lp-modal { padding: 28px 18px; border-radius: 16px; }
           .lp-cmp-table th, .lp-cmp-table td { padding: 12px 10px; font-size: 12px; }
           .lp-step-num { width: 44px; height: 44px; font-size: 17px; }
@@ -2028,8 +2072,8 @@ export default function LandingPageTemplate({ config = {} }) {
         }
 
         /* ── THEMING OVERRIDES FOR SIGNAL FLOW ── */
-        .lp-topbar { background: #f97316 !important; color: #ffffff !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
-        .lp-topbar a { color: #ffffff !important; text-decoration: underline; }
+        .lp-topbar { background: transparent !important; color: #d1d5db !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
+        .lp-topbar a { color: #22c55e !important; }
         .lp-nl { color: var(--text-muted); }
         .lp-nl:hover { 
           color: var(--text-main);
@@ -2198,23 +2242,23 @@ export default function LandingPageTemplate({ config = {} }) {
         .lp-modal tr { border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
         .lp-modal td { color: var(--text-muted) !important; }
         
-        /* ── MOBILE MENU DROPDOWN (FIT HORIZONTALLY, BELOW NAV) ── */
+        /* ── MOBILE MENU DROPDOWN (FIT HORIZONTALLY, DIRECTLY BELOW NAV AT ALL TIMES) ── */
         .lp-mmenu {
-          position: fixed !important;
-          top: 68px !important;
+          position: absolute !important;
+          top: 100% !important;
           left: 0 !important;
           right: 0 !important;
           bottom: auto !important;
-          width: auto !important;
+          width: 100% !important;
           height: auto !important;
           max-width: 100% !important;
-          max-height: calc(100vh - 72px) !important;
-          z-index: 998 !important;
-          background: rgba(18, 19, 21, 0.96) !important;
+          max-height: calc(100vh - 100%) !important;
+          z-index: 999 !important;
+          background: #14181f !important;
           backdrop-filter: blur(24px) !important;
           -webkit-backdrop-filter: blur(24px) !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8) !important;
           padding: 16px 20px 24px !important;
           display: flex !important;
           flex-direction: column !important;
@@ -2223,10 +2267,10 @@ export default function LandingPageTemplate({ config = {} }) {
           overflow-x: hidden !important;
           overflow-y: auto !important;
           opacity: 0 !important;
-          transform: translateY(-12px) !important;
+          transform: translateY(-8px) !important;
           pointer-events: none !important;
           visibility: hidden !important;
-          transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease !important;
+          transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s ease !important;
         }
         .lp-mmenu.open {
           opacity: 1 !important;
@@ -2348,6 +2392,20 @@ export default function LandingPageTemplate({ config = {} }) {
           .lp-ghost-queue {
             opacity: 1 !important;
           }
+          /* Mobile Vibrant Orange Announcement Topbar */
+          .lp-topbar {
+            background: linear-gradient(135deg, #f97316, #ea580c) !important;
+            color: #ffffff !important;
+            border-bottom: none !important;
+            font-weight: 600 !important;
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+          }
+          .lp-topbar a {
+            color: #ffffff !important;
+            text-decoration: underline !important;
+            font-weight: 700 !important;
+          }
         }
       `}
         </style>
@@ -2366,7 +2424,7 @@ export default function LandingPageTemplate({ config = {} }) {
         )}
         <div className="lp-nav-inner">
           <div className="lp-nav-left">
-            <img src="/logo.png" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
+            <img src="/logo-nav.svg" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />
           </div>
 
           <div className="lp-nav-center">
@@ -2376,55 +2434,54 @@ export default function LandingPageTemplate({ config = {} }) {
               </Link>
             )}
             <span className="lp-nl" onClick={() => go("features")}>Features</span>
+            <span className="lp-nl" onClick={() => go("who")}>Who It's For</span>
             <span className="lp-nl" onClick={() => go("how")}>How it works</span>
-            <span className="lp-nl" onClick={() => go("pricing")}>Pricing</span>
+            {!config.isRoot && <span className="lp-nl" onClick={() => go("pricing")}>Pricing</span>}
             <span className="lp-nl" onClick={() => go("faq")}>FAQ</span>
           </div>
 
           <div className="lp-nav-right">
             {config.find && <Link href={config.find.href} className="lp-nav-find"><Search size={16} strokeWidth={2.5} /> {config.find.text}</Link>}
             {!config.isRoot && <button className="lp-nav-cta" onClick={() => router.push("/login")}>Get Started <span style={{ marginLeft: 2 }}>→</span></button>}
-            {config.isRoot && <button className="lp-nav-cta" onClick={() => go("industries")}>Get Started <span style={{ marginLeft: 2 }}>→</span></button>}
+            {config.isRoot && <button className="lp-nav-cta" onClick={() => go("industries")}>Choose Industry <span style={{ marginLeft: 2 }}>→</span></button>}
           </div>
 
           <button className="lp-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
             {menuOpen ? <X size={20} color="#ffffff" /> : <Menu size={20} color="#ffffff" />}
           </button>
         </div>
-      </nav>
-      {/* ── MOBILE MENU DROPDOWN ── */}
-      <div className={`lp-mmenu${menuOpen ? " open" : ""}`}>
-        <button className="lp-mmenu-close-btn" onClick={() => setMenuOpen(false)} aria-label="Close menu">
-          <X size={18} color="#ffffff" />
-        </button>
 
-        {!config.isRoot && (
-          <Link href="/" className="lp-mlink" onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MoreHorizontal size={18} color="#22c55e" /> Explore Industries
-          </Link>
-        )}
-        <span className="lp-mlink" onClick={() => { go("features"); setMenuOpen(false); }}>Features</span>
-        <span className="lp-mlink" onClick={() => { go("how"); setMenuOpen(false); }}>How it works</span>
-        <span className="lp-mlink" onClick={() => { go("pricing"); setMenuOpen(false); }}>Pricing</span>
-        <span className="lp-mlink" onClick={() => { go("faq"); setMenuOpen(false); }}>FAQ</span>
-        {config.find && (
-          <Link href={config.find.href} className="lp-mfind" onClick={() => setMenuOpen(false)}>
-            <Search size={16} strokeWidth={2.5} /> {config.find.text}
-          </Link>
-        )}
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-          <button
-            className="lp-mcta"
-            onClick={() => {
-              if (!config.isRoot) router.push("/login");
-              else go("industries");
-              setMenuOpen(false);
-            }}
-          >
-            Get Started <span style={{ marginLeft: 4 }}>→</span>
-          </button>
+        {/* ── MOBILE MENU DROPDOWN (INSIDE NAV FOR PERFECT AUTOMATIC POSITIONING) ── */}
+        <div className={`lp-mmenu${menuOpen ? " open" : ""}`}>
+          {!config.isRoot && (
+            <Link href="/" className="lp-mlink" onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MoreHorizontal size={18} color="#22c55e" /> Explore Industries
+            </Link>
+          )}
+          <span className="lp-mlink" onClick={() => { go("features"); setMenuOpen(false); }}>Features</span>
+          <span className="lp-mlink" onClick={() => { go("who"); setMenuOpen(false); }}>Who It's For</span>
+          <span className="lp-mlink" onClick={() => { go("how"); setMenuOpen(false); }}>How it works</span>
+          {!config.isRoot && <span className="lp-mlink" onClick={() => { go("pricing"); setMenuOpen(false); }}>Pricing</span>}
+          <span className="lp-mlink" onClick={() => { go("faq"); setMenuOpen(false); }}>FAQ</span>
+          {config.find && (
+            <Link href={config.find.href} className="lp-mfind" onClick={() => setMenuOpen(false)}>
+              <Search size={16} strokeWidth={2.5} /> {config.find.text}
+            </Link>
+          )}
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <button
+              className="lp-mcta"
+              onClick={() => {
+                if (!config.isRoot) router.push("/login");
+                else go("industries");
+                setMenuOpen(false);
+              }}
+            >
+              Choose Industry <span style={{ marginLeft: 4 }}>→</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
 
       {/* ── HERO ── */}
       <section className="lp-hero">
@@ -2459,7 +2516,7 @@ export default function LandingPageTemplate({ config = {} }) {
         <div className="lp-hero-inner">
           <div className="lp-hero-content">
             <div className="lp-hero-badge">
-              <span className="lp-badge-country">🇮🇳</span>
+              <span className="lp-badge-country">IN</span>
               {config.badge || "Built for India's businesses"}
             </div>
             {config.hero?.h1 ? (
@@ -2477,7 +2534,7 @@ export default function LandingPageTemplate({ config = {} }) {
             </p>
             <div className="lp-hero-btns">
               <button className="lp-btn-primary" onClick={() => !config.isRoot ? router.push("/login") : go("industries")}>
-                {!config.isRoot ? "Start Free Trial" : "Explore Industries"}
+                {!config.isRoot ? "Start Free Trial" : "Choose Industry"}
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
               </button>
               <button className="lp-btn-secondary" onClick={() => go("how")}>
@@ -2584,7 +2641,7 @@ export default function LandingPageTemplate({ config = {} }) {
       </section>
 
       {/* ── WHO IS THIS FOR (2-COLUMN SPLIT SHOWCASE) ── */}
-      <section className="lp-sec lp-who-sec">
+      <section id="who" className="lp-sec lp-who-sec">
         <div className="lp-sec-inner">
           <div className="lp-pain-eyebrow">
             <span className="lp-pain-eyebrow-dot" />
@@ -2766,7 +2823,7 @@ export default function LandingPageTemplate({ config = {} }) {
           <h2 className="lp-reveal lp-reveal-d1">Claim Your <span className="lp-midcta-hl">7-Day Free Trial</span><br />with Zero Risk</h2>
           <p className="lp-reveal lp-reveal-d2">Get full Elite Plan access — our most powerful tier — completely free. No credit card. No hidden charges. Cancel anytime.</p>
           <button className="lp-midcta-btn lp-reveal lp-reveal-d3" onClick={() => !config.isRoot ? router.push("/login") : go("industries")}>
-            {!config.isRoot ? "Start My Free Trial" : "Explore Industries"}
+            {!config.isRoot ? "Start My Free Trial" : "Choose Industry"}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
           </button>
           <div className="lp-midcta-notes lp-reveal lp-reveal-d4">
@@ -2788,11 +2845,8 @@ export default function LandingPageTemplate({ config = {} }) {
           <h2 className="lp-pain-h2 font-heading" style={{ marginBottom: '12px' }}>
             <span className="lp-h2-white">{config.featuresData?.h2 || "Everything your business needs."}</span>
           </h2>
-          <p className="lp-pain-sub" style={{ marginBottom: '8px' }}>
-            One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.
-          </p>
           <p className="lp-pain-sub" style={{ marginBottom: '40px' }}>
-            We operate as a full-service agency, supplying and managing all of this end-to-end for your business.
+            One tool that replaces paper tokens, crowded waiting rooms, and manual calling — forever.
           </p>
           <div className="lp-feat-grid">
             {(config.features || defaultFeatures).map((f, i) => (
@@ -2832,52 +2886,47 @@ export default function LandingPageTemplate({ config = {} }) {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="lp-sec lp-price-sec">
-        <div className="lp-sec-inner">
-          <div className="lp-sec-tag lp-reveal lp-sec-centered" style={{ display: "table", margin: "0 auto 14px" }}>Pricing</div>
-          <h2 className="lp-sec-h2 lp-sec-centered lp-reveal lp-reveal-d1">Simple. Affordable.</h2>
-          <p className="lp-sec-sub lp-sec-centered lp-reveal lp-reveal-d2" style={{ marginBottom: 0 }}>{config.pricing?.sub || "Choose the plan that fits your business. Start free, upgrade anytime."}</p>
-          <div className="lp-plans">
-            {(config.pricing?.plans || [
-              { name: "Starter", desc: "Perfect for small businesses", price: "₹499", per: "/mo", feats: ["50 customers/day", "Standard WhatsApp Alerts", "Basic 7-day Analytics", "Auto-Generated Code"], hot: false },
-              { name: "Pro", desc: "For busy businesses that want to look professional", price: "₹999", per: "/mo", feats: ["150 customers/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "Queue Pause & Smart Wait Time", "30-Day History & Heatmap"], hot: true },
-              { name: "Elite", desc: "For enterprise & multi-branch", price: "₹1999", per: "/mo", feats: ["Unlimited customers", "Multi-Branch Management", "Report Download (PDF/CSV)", "VIP WhatsApp Support", "CRM Broadcasts", "All-Time History"], hot: false },
-            ]).map((p, i) => (
-              <div key={p.name} className={`lp-plan${p.hot ? " lp-plan-hot" : ""} lp-reveal lp-reveal-d${i + 1}`}>
-                {p.hot && <div className="lp-plan-badge">✦ Most Popular</div>}
-                <div>
-                  <div className="lp-plan-name">{p.name}</div>
-                  <div className="lp-plan-desc">{p.desc}</div>
-                </div>
-                <div className="lp-plan-price">{p.price}<span>{p.per}</span></div>
-                <div className="lp-plan-feats">
-                  {p.feats.map((f) => (
-                    <div key={f} className="lp-pf"><span className="lp-pf-check"><Check size={16} strokeWidth={3} /></span>{f}</div>
-                  ))}
-                </div>
-                {!config.isRoot && (
+      {!config.isRoot && (
+        <section id="pricing" className="lp-sec lp-price-sec">
+          <div className="lp-sec-inner">
+            <div className="lp-sec-tag lp-reveal lp-sec-centered" style={{ display: "table", margin: "0 auto 14px" }}>Pricing</div>
+            <h2 className="lp-sec-h2 lp-sec-centered lp-reveal lp-reveal-d1">Simple. Affordable.</h2>
+            <p className="lp-sec-sub lp-sec-centered lp-reveal lp-reveal-d2" style={{ marginBottom: 0 }}>{config.pricing?.sub || "Choose the plan that fits your business. Start free, upgrade anytime."}</p>
+            <div className="lp-plans">
+              {(config.pricing?.plans || [
+                { name: "Starter", desc: "Perfect for small businesses", price: "₹499", per: "/mo", feats: ["50 customers/day", "Standard WhatsApp Alerts", "Basic 7-day Analytics", "Auto-Generated Code"], hot: false },
+                { name: "Pro", desc: "For busy businesses that want to look professional", price: "₹999", per: "/mo", feats: ["150 customers/day", "Branded WhatsApp Identity", "Multilingual Voice Alerts", "Queue Pause & Smart Wait Time", "30-Day History & Heatmap"], hot: true },
+                { name: "Elite", desc: "For enterprise & multi-branch", price: "₹1999", per: "/mo", feats: ["Unlimited customers", "Multi-Branch Management", "Report Download (PDF/CSV)", "VIP WhatsApp Support", "CRM Broadcasts", "All-Time History"], hot: false },
+              ]).map((p, i) => (
+                <div key={p.name} className={`lp-plan${p.hot ? " lp-plan-hot" : ""} lp-reveal lp-reveal-d${i + 1}`}>
+                  {p.hot && <div className="lp-plan-badge">✦ Most Popular</div>}
+                  <div>
+                    <div className="lp-plan-name">{p.name}</div>
+                    <div className="lp-plan-desc">{p.desc}</div>
+                  </div>
+                  <div className="lp-plan-price">{p.price}<span>{p.per}</span></div>
+                  <div className="lp-plan-feats">
+                    {p.feats.map((f) => (
+                      <div key={f} className="lp-pf"><span className="lp-pf-check"><Check size={16} strokeWidth={3} /></span>{f}</div>
+                    ))}
+                  </div>
                   <button className="lp-plan-btn lp-ghost" onClick={() => router.push("/login")}>
                     Get started
                   </button>
-                )}
-                {config.isRoot && (
-                  <button className="lp-plan-btn lp-ghost" onClick={() => go("industries")}>
-                    Explore
-                  </button>
-                )}
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: "center", marginTop: 32 }}>
+              <button
+                onClick={() => setShowDetails(true)}
+                style={{ background: "none", border: "none", color: "#16a34a", fontSize: "14px", fontWeight: 700, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 4, fontFamily: "inherit" }}
+              >
+                <FileText size={16} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "text-bottom" }} /> View full feature comparison & terms
+              </button>
+            </div>
           </div>
-          <div style={{ textAlign: "center", marginTop: 32 }}>
-            <button
-              onClick={() => setShowDetails(true)}
-              style={{ background: "none", border: "none", color: "#16a34a", fontSize: "14px", fontWeight: 700, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 4, fontFamily: "inherit" }}
-            >
-              <FileText size={16} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "text-bottom" }} /> View full feature comparison & terms
-            </button>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── FAQ ── */}
       <section id="faq" className="lp-sec lp-faq-sec">
@@ -2896,7 +2945,8 @@ export default function LandingPageTemplate({ config = {} }) {
           <div className="lp-footer-top">
             <div className="lp-footer-brand">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <img src="/logo.png" alt="TokenPe" style={{ height: 36, width: "auto" }} />
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#22c55e", color: "#0c0c0e", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, fontFamily: "system-ui, sans-serif" }}>T</div>
+                <span style={{ fontSize: 22, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.3px", fontFamily: "system-ui, sans-serif" }}>TokenPe</span>
               </div>
               <p className="lp-footer-tagline">WhatsApp-based digital queue management for India's businesses. No apps. No fuss.</p>
               <button className="lp-footer-explore-btn" onClick={() => go("industries")}>
@@ -2920,6 +2970,8 @@ export default function LandingPageTemplate({ config = {} }) {
               <Link href="/terms" className="lp-flink">Terms of Service</Link>
             </div>
           </div>
+
+          <div className="lp-footer-big-text">TOKENPE</div>
 
           <div className="lp-footer-divider" />
 

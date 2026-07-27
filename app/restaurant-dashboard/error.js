@@ -15,8 +15,8 @@ export default function Error({ error, reset }) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#065F46',
-      color: '#fff',
+      backgroundColor: '#7f1d1d',
+      color: '#fef3c7',
       padding: '24px',
       fontFamily: "'Inter', sans-serif"
     }}>
@@ -25,7 +25,7 @@ export default function Error({ error, reset }) {
       `}</style>
       
       <div style={{
-        background: '#064E3B',
+        background: '#4a0a0a',
         padding: '40px',
         borderRadius: '24px',
         maxWidth: '500px',
@@ -35,13 +35,13 @@ export default function Error({ error, reset }) {
       }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
         <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '12px' }}>Something went wrong!</h2>
-        <p style={{ color: '#94a3b8', fontSize: '15px', lineHeight: 1.6, marginBottom: '32px' }}>
+        <p style={{ color: '#fbbf24', fontSize: '15px', lineHeight: 1.6, marginBottom: '32px' }}>
           We encountered an unexpected error while loading your dashboard. Please try reloading the page.
         </p>
         <button
           onClick={() => reset()}
           style={{
-            background: 'linear-gradient(135deg, #065F46, #4F46E5)',
+            background: 'linear-gradient(135deg, #7f1d1d, #b91c1c)',
             color: 'white',
             border: 'none',
             padding: '14px 28px',

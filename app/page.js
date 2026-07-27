@@ -2,7 +2,8 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import LandingPageTemplate from "@/components/LandingPageTemplate";
-import { Mic, MessageSquare, Zap, Bell, Calendar, QrCode, Bot, CreditCard, Star, PhoneCall, Languages } from "lucide-react";
+import { MessageSquare, Zap, Bell, CreditCard, Bot, Star, PhoneCall, Languages, BarChart3 } from "lucide-react";
+
 export default function RootLandingPage() {
   const router = useRouter();
 
@@ -66,57 +67,63 @@ export default function RootLandingPage() {
           </svg>
         )
       },
-      {
-        ico: <CreditCard size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent",
-        title: "Built-in POS Billing", desc: "Bill customers directly from the same dashboard — no separate POS software needed.",
+      { 
+        ico: <CreditCard size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Built-in POS Billing", desc: "Bill customers directly from the same dashboard — no separate POS software needed.",
         GhostIco: CreditCard,
         Deco: () => (
           <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="8" y="10" width="44" height="20" rx="3" stroke="currentColor" strokeWidth="1.5"/>
-            <line x1="8" y1="18" x2="52" y2="18" stroke="currentColor" strokeWidth="1.5"/>
+            <rect x="5" y="10" width="50" height="20" rx="3" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+            <line x1="5" y1="16" x2="55" y2="16" stroke="currentColor" strokeWidth="1.5"/>
           </svg>
         )
       },
-      {
-        ico: <Bot size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent",
-        title: "WhatsApp Chatbot", desc: "Auto-reply to customer queries, bookings & FAQs on WhatsApp — 24/7, no manual typing.",
+      { 
+        ico: <Bot size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "WhatsApp Chatbot", desc: "Auto-reply to customer queries, bookings & FAQs on WhatsApp — 24/7, no manual typing.",
         GhostIco: Bot,
         Deco: () => (
           <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="15" cy="20" r="4" stroke="currentColor" strokeWidth="1.5"/>
-            <circle cx="35" cy="12" r="4" stroke="currentColor" strokeWidth="1.5"/>
-            <circle cx="45" cy="28" r="4" stroke="currentColor" strokeWidth="1.5"/>
+            <circle cx="15" cy="20" r="4" fill="currentColor"/>
+            <circle cx="45" cy="20" r="4" fill="currentColor"/>
+            <circle cx="30" cy="30" r="4" fill="currentColor"/>
           </svg>
         )
       },
-      {
-        ico: <Star size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent",
-        title: "Google Review Sync", desc: "Auto-request ratings after each visit and grow your Google reviews on autopilot.",
+      { 
+        ico: <Star size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Google Review Sync", desc: "Auto-request ratings after each visit and grow your Google reviews on autopilot.",
         GhostIco: Star,
         Deco: () => (
           <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 25l5-15 5 15-13-9h16z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+            <path d="M30 5L36 18L50 20L40 30L42 44L30 37L18 44L20 30L10 20L24 18Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         )
       },
-      {
-        ico: <PhoneCall size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent",
-        title: "AI Voice Agent", desc: "Never miss a call — our voice agent answers, books slots & handles queries for you.",
+      { 
+        ico: <PhoneCall size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "AI Voice Agent", desc: "Never miss a call — our voice agent answers, books slots & handles queries for you.",
         GhostIco: PhoneCall,
         Deco: () => (
           <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 10 Q30 5 50 10 M10 30 Q30 35 50 30" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+            <path d="M10 20C10 12 18 5 30 5C42 5 50 12 50 20C50 28 42 35 30 35" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
         )
       },
-      {
-        ico: <Languages size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent",
-        title: "Voice Notes, 10 Languages", desc: "Customers get spoken alerts in their own language — Hindi, Tamil, Bengali & more.",
+      { 
+        ico: <Languages size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Voice Notes, 10 Languages", desc: "Customers get spoken alerts in their own language — Hindi, Tamil, Bengali & more.",
         GhostIco: Languages,
         Deco: () => (
           <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 20h6l8-8v16l-8-8H5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-            <path d="M28 14a8 8 0 010 12" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M10 20L15 10L20 30L25 15L30 25L35 5L40 35L45 15L50 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )
+      },
+      { 
+        ico: <BarChart3 size="22" color="#22c55e" strokeWidth={2.2} />, color: "transparent", iconColor: "#22c55e", bloom: "transparent", title: "Analytics & Reports", desc: "Complete queue data, peak hour trends & revenue insights for any past date at a glance.",
+        GhostIco: BarChart3,
+        Deco: () => (
+          <svg width="60" height="40" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="25" width="8" height="15" rx="2" fill="currentColor"/>
+            <rect x="20" y="15" width="8" height="25" rx="2" fill="currentColor"/>
+            <rect x="35" y="5" width="8" height="35" rx="2" fill="currentColor"/>
+            <rect x="50" y="20" width="8" height="20" rx="2" fill="currentColor"/>
           </svg>
         )
       }

@@ -891,10 +891,13 @@ export default function SalonLandingPage() {
         @media (max-width: 768px) {
           .pg-nav-links  { display: none; }
           .pg-burger     { display: block; }
+          .pg-nav-inner  { padding: 12px 16px; }
           .hero-outer    { overflow-x: hidden; }
-          .hero-wrap     { padding: 40px 16px 24px; }
-          .hero-h1       { font-size: 36px; }
-          .hero-sub      { font-size: 15px; }
+          .hero-wrap     { padding: 32px 16px 20px; }
+          .hero-grid     { gap: 28px; }
+          .hero-h1       { font-size: 34px; line-height: 1.2; margin-bottom: 18px; }
+          .tw-wrap       { min-width: 180px; }
+          .hero-sub      { font-size: 14.5px; margin-bottom: 24px; }
           .sec, .sec-sm  { padding: 56px 16px; }
           .compare-wrap  { padding: 0 16px 56px; }
           .sec-title     { font-size: 28px; }
@@ -908,9 +911,12 @@ export default function SalonLandingPage() {
           .cta-h2        { font-size: 30px; }
           .cta-p         { font-size: 16px; }
           .cta-btn       { padding: 16px 28px; font-size: 15px; }
-          .hero-cta      { flex-direction: column; align-items: stretch; }
-          .hero-cta .btn { justify-content: center; }
+          .hero-cta      { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 28px; }
+          .hero-cta .btn { justify-content: center; width: 100%; }
           .hd-wrap       { min-height: auto; margin-bottom: 8px; overflow: visible; }
+          .hd-phone      { width: 220px; }
+          .hd-screen     { min-height: 340px; padding: 14px 12px 18px; }
+          .hd-glow       { width: 260px; height: 260px; }
           .chip-a,.chip-b{ display: none; }
           .hero-floating { display: none; }
           .power-grid    { grid-template-columns: 1fr; }
@@ -920,19 +926,26 @@ export default function SalonLandingPage() {
           .feat-card     { padding: 24px 20px; }
           .power-card    { padding: 28px 22px; }
           .search-box    { max-width: 100%; }
+          .search-inp    { font-size: 14px; }
           .test-card     { padding: 24px 20px; }
           .stats-band    { border-radius: 24px; padding: 48px 20px; }
-          .hero-badge    { font-size: 12px; padding: 8px 14px; }
+          .hero-badge    { font-size: 12px; padding: 8px 14px; margin-bottom: 20px; }
+          .trust-row     { flex-wrap: wrap; }
         }
         @media (max-width: 480px) {
-          .hero-h1       { font-size: 30px; }
+          .pg-nav-inner  { padding: 10px 14px; }
+          .hero-h1       { font-size: 28px; }
+          .hero-sub      { font-size: 13.5px; }
+          .hd-phone      { width: 200px; }
+          .hd-screen     { min-height: 300px; }
           .stats-grid    { grid-template-columns: 1fr; row-gap: 24px; }
           .sec-title     { font-size: 24px; }
-          .hero-sub      { font-size: 14px; }
           .cta-h2        { font-size: 26px; }
           .cta-btn       { width: 100%; justify-content: center; }
           .footer-links  { gap: 16px; font-size: 13px; }
           .cta-outer     { padding: 0 12px 48px; }
+          .search-box    { border-radius: 14px; }
+          .search-go     { padding: 0 16px; font-size: 13.5px; }
         }
       `}</style>
 
@@ -950,7 +963,7 @@ export default function SalonLandingPage() {
         {/* ── NAV ── */}
         <nav className={`pg-nav${scrolled ? " scrolled" : ""}`}>
           <div className="pg-nav-inner">
-            <img src="/logo-nav.svg" alt="TokenPe" style={{ height: 38, cursor: "pointer" }} onClick={() => router.push("/")} />
+            <img src="/logo-dark.svg" alt="TokenPe" style={{ height: 38, cursor: "pointer" }} onClick={() => router.push("/")} />
             <div className="pg-nav-links">
               <button className="pg-nl" onClick={() => go("features")}>Features</button>
               <button className="pg-nl" onClick={() => go("how")}>How it works</button>
@@ -974,7 +987,7 @@ export default function SalonLandingPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="pg-mobile-top">
-                <img src="/logo-nav.svg" alt="TokenPe" style={{ height: 34 }} />
+                <img src="/logo-dark.svg" alt="TokenPe" style={{ height: 34 }} />
                 <button className="pg-burger" onClick={() => setMenuOpen(false)} aria-label="Close"><X size={30} /></button>
               </div>
               <button className="mm-link" onClick={() => go("features")}>Features</button>

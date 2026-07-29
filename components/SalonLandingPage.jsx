@@ -225,10 +225,10 @@ function SvgHaircut() {
       <circle cx="34" cy="40" r="14" fill="#FBEAEF" stroke="#D14D72" strokeWidth="2" />
       {/* Shoulders */}
       <path d="M14 68 Q34 45 54 68" fill="#F5D6E2" stroke="#D14D72" strokeWidth="2" />
-      
+
       {/* Hair outline */}
       <path d="M22 40 Q34 15 46 40" fill="#D14D72" opacity="0.1" stroke="#D14D72" strokeWidth="2" />
-      
+
       {/* Scissors cutting near top */}
       <path d="M30 18 L44 10 M30 10 L44 18" stroke="#D14D72" strokeWidth="2" strokeLinecap="round" />
       <circle cx="28" cy="8" r="2.5" fill="#D14D72" />
@@ -238,15 +238,15 @@ function SvgHaircut() {
 }
 
 const FLOAT_OBJECTS = [
-  { Comp: SvgScissors,  pos: { top: "7%",  left: "2.5%" },  anim: { y: [-14, 12, -14], rotate: [-18, 10, -18] }, dur: 5.4, delay: 0   },
-  { Comp: SvgComb,      pos: { top: "13%", right: "3%"   },  anim: { y: [8,  -12, 8],  rotate: [4,  -7,  4]   }, dur: 4.9, delay: 0.5 },
-  { Comp: SvgHairDryer, pos: { top: "52%", left: "1%"    },  anim: { y: [-9, 13, -9],  rotate: [0,   7,  0]   }, dur: 6.2, delay: 1.0 },
-  { Comp: SvgRazor,     pos: { top: "70%", right: "2.5%" },  anim: { y: [11, -13, 11], rotate: [14, -9, 14]   }, dur: 5.6, delay: 0.3 },
-  { Comp: SvgBarberPole,pos: { top: "33%", right: "1.5%" },  anim: { y: [-10, 9, -10], rotate: [0,   3,  0]   }, dur: 7.1, delay: 0.8 },
-  { Comp: SvgMirror,    pos: { top: "36%", left: "1.5%"  },  anim: { y: [7,  -11, 7],  rotate: [-6,  6, -6]   }, dur: 6.4, delay: 1.3 },
-  { Comp: SvgNailPolish,pos: { top: "80%", left: "3.5%"  },  anim: { y: [-7, 11, -7],  rotate: [8,  -6,  8]   }, dur: 5.1, delay: 0.6 },
-  { Comp: SvgBrush,     pos: { top: "85%", right: "3.5%" },  anim: { y: [9,  -9,  9],  rotate: [-12, 10,-12]  }, dur: 4.7, delay: 0.2 },
-  { Comp: SvgHaircut,   pos: { top: "10%", left: "45%"   },  anim: { y: [-15, 10, -15], rotate: [-5, 5, -5]   }, dur: 6.5, delay: 0.4 },
+  { Comp: SvgScissors, pos: { top: "7%", left: "2.5%" }, anim: { y: [-14, 12, -14], rotate: [-18, 10, -18] }, dur: 5.4, delay: 0 },
+  { Comp: SvgComb, pos: { top: "13%", right: "3%" }, anim: { y: [8, -12, 8], rotate: [4, -7, 4] }, dur: 4.9, delay: 0.5 },
+  { Comp: SvgHairDryer, pos: { top: "52%", left: "1%" }, anim: { y: [-9, 13, -9], rotate: [0, 7, 0] }, dur: 6.2, delay: 1.0 },
+  { Comp: SvgRazor, pos: { top: "70%", right: "2.5%" }, anim: { y: [11, -13, 11], rotate: [14, -9, 14] }, dur: 5.6, delay: 0.3 },
+  { Comp: SvgBarberPole, pos: { top: "33%", right: "1.5%" }, anim: { y: [-10, 9, -10], rotate: [0, 3, 0] }, dur: 7.1, delay: 0.8 },
+  { Comp: SvgMirror, pos: { top: "36%", left: "1.5%" }, anim: { y: [7, -11, 7], rotate: [-6, 6, -6] }, dur: 6.4, delay: 1.3 },
+  { Comp: SvgNailPolish, pos: { top: "80%", left: "3.5%" }, anim: { y: [-7, 11, -7], rotate: [8, -6, 8] }, dur: 5.1, delay: 0.6 },
+  { Comp: SvgBrush, pos: { top: "85%", right: "3.5%" }, anim: { y: [9, -9, 9], rotate: [-12, 10, -12] }, dur: 4.7, delay: 0.2 },
+  { Comp: SvgHaircut, pos: { top: "10%", left: "45%" }, anim: { y: [-15, 10, -15], rotate: [-5, 5, -5] }, dur: 6.5, delay: 0.4 },
 ];
 
 function FloatingObjects() {
@@ -339,9 +339,9 @@ function Waveform() {
 ═══════════════════════════════════════════════════════════════ */
 const CHAT = [
   { from: "client", text: "Hey! Looking for a haircut around 4 PM today. 💇‍♂️", time: "10:14 AM" },
-  { from: "bot",    text: "Hi! 👋 We have a slot at 4:00 PM. Reply 'YES' to confirm.", time: "10:14 AM" },
+  { from: "bot", text: "Hi! 👋 We have a slot at 4:00 PM. Reply 'YES' to confirm.", time: "10:14 AM" },
   { from: "client", text: "YES", time: "10:15 AM" },
-  { from: "bot",    text: "✅ Booked! Your Token is S-07. See you at 4:00 PM! 🎉", time: "10:15 AM" },
+  { from: "bot", text: "✅ Booked! Your Token is S-07. See you at 4:00 PM! 🎉", time: "10:15 AM" },
 ];
 function WhatsAppChat() {
   return (
@@ -443,7 +443,7 @@ function LogoMarquee() {
             letterSpacing: "0.03em", flexShrink: 0, boxShadow: "0 4px 15px rgba(209,77,114,0.08)",
             transition: "transform 0.3s"
           }}
-          className="marquee-logo-card"
+            className="marquee-logo-card"
           >
             {s}
           </div>
@@ -495,24 +495,24 @@ export default function SalonLandingPage() {
   };
 
   const FEATURES = [
-    { icon: QrCode,       tag: "Queue",     title: "Smart digital queue",         desc: "Clients scan a QR, join instantly, and are called in order — no shouting names, no crowded waiting area." },
-    { icon: Bell,         tag: "Alerts",    title: "Real-time WhatsApp alerts",   desc: "Automatic 'you're next' pings on WhatsApp so clients wait wherever they like." },
-    { icon: Users,        tag: "CRM",       title: "Client history & notes",      desc: "Preferences, allergies, past visits and ratings — all in one profile your whole team can see." },
-    { icon: BarChart3,    tag: "Team",      title: "Staff & commission tracking", desc: "Log every service per stylist, auto-calculate commissions — payroll day made painless." },
-    { icon: Package,      tag: "Inventory", title: "Stock & inventory alerts",    desc: "Track product usage and get notified before you run out of essentials." },
-    { icon: TrendingUp,   tag: "Insights",  title: "Revenue analytics",           desc: "Live dashboards on revenue, peak hours, and top services — backed by real numbers." },
+    { icon: QrCode, tag: "Queue", title: "Smart digital queue", desc: "Clients scan a QR, join instantly, and are called in order — no shouting names, no crowded waiting area." },
+    { icon: Bell, tag: "Alerts", title: "Real-time WhatsApp alerts", desc: "Automatic 'you're next' pings on WhatsApp so clients wait wherever they like." },
+    { icon: Users, tag: "CRM", title: "Client history & notes", desc: "Preferences, allergies, past visits and ratings — all in one profile your whole team can see." },
+    { icon: BarChart3, tag: "Team", title: "Staff & commission tracking", desc: "Log every service per stylist, auto-calculate commissions — payroll day made painless." },
+    { icon: Package, tag: "Inventory", title: "Stock & inventory alerts", desc: "Track product usage and get notified before you run out of essentials." },
+    { icon: TrendingUp, tag: "Insights", title: "Revenue analytics", desc: "Live dashboards on revenue, peak hours, and top services — backed by real numbers." },
   ];
 
   const STEPS = [
-    { n: "01", title: "Print your QR codes",   desc: "Generate one per service — haircuts, spa, nails — in a few clicks." },
-    { n: "02", title: "Clients scan & join",   desc: "They join the WhatsApp queue instantly from their own phone." },
-    { n: "03", title: "Call next, get paid",   desc: "Staff tap 'Call Next'; billing and commissions update automatically." },
+    { n: "01", title: "Print your QR codes", desc: "Generate one per service — haircuts, spa, nails — in a few clicks." },
+    { n: "02", title: "Clients scan & join", desc: "They join the WhatsApp queue instantly from their own phone." },
+    { n: "03", title: "Call next, get paid", desc: "Staff tap 'Call Next'; billing and commissions update automatically." },
   ];
 
   const TESTIMONIALS = [
-    { q: "Our Saturday rush used to feel like chaos. Now clients wait comfortably and we've cut walk-outs by half.", n: "Ritika Shah",  r: "Owner, Glow Studio, Mumbai" },
-    { q: "Commission tracking alone paid for itself. Payroll used to take me a whole evening — now it's instant.", n: "Arjun Nair",   r: "Owner, The Fade Room, Bengaluru" },
-    { q: "Clients love getting a WhatsApp instead of waiting inside. It genuinely feels premium now.",              n: "Meera Kapoor", r: "Manager, Bloom Salon, Delhi" },
+    { q: "Our Saturday rush used to feel like chaos. Now clients wait comfortably and we've cut walk-outs by half.", n: "Ritika Shah", r: "Owner, Glow Studio, Mumbai" },
+    { q: "Commission tracking alone paid for itself. Payroll used to take me a whole evening — now it's instant.", n: "Arjun Nair", r: "Owner, The Fade Room, Bengaluru" },
+    { q: "Clients love getting a WhatsApp instead of waiting inside. It genuinely feels premium now.", n: "Meera Kapoor", r: "Manager, Bloom Salon, Delhi" },
   ];
 
   const BEFORE = [
@@ -891,13 +891,10 @@ export default function SalonLandingPage() {
         @media (max-width: 768px) {
           .pg-nav-links  { display: none; }
           .pg-burger     { display: block; }
-          .pg-nav-inner  { padding: 12px 16px; }
           .hero-outer    { overflow-x: hidden; }
-          .hero-wrap     { padding: 32px 16px 20px; }
-          .hero-grid     { gap: 28px; }
-          .hero-h1       { font-size: 34px; line-height: 1.2; margin-bottom: 18px; }
-          .tw-wrap       { min-width: 180px; }
-          .hero-sub      { font-size: 14.5px; margin-bottom: 24px; }
+          .hero-wrap     { padding: 40px 16px 24px; }
+          .hero-h1       { font-size: 36px; }
+          .hero-sub      { font-size: 15px; }
           .sec, .sec-sm  { padding: 56px 16px; }
           .compare-wrap  { padding: 0 16px 56px; }
           .sec-title     { font-size: 28px; }
@@ -911,14 +908,13 @@ export default function SalonLandingPage() {
           .cta-h2        { font-size: 30px; }
           .cta-p         { font-size: 16px; }
           .cta-btn       { padding: 16px 28px; font-size: 15px; }
-          .hero-cta      { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 28px; }
-          .hero-cta .btn { justify-content: center; width: 100%; }
+          .hero-cta      { flex-direction: column; align-items: stretch; }
+          .hero-cta .btn { justify-content: center; }
           .hd-wrap       { min-height: auto; margin-bottom: 8px; overflow: visible; }
           .hd-phone      { width: 220px; }
           .hd-screen     { min-height: 340px; padding: 14px 12px 18px; }
           .hd-glow       { width: 260px; height: 260px; }
           .chip-a,.chip-b{ display: none; }
-          .hero-floating { display: none; }
           .power-grid    { grid-template-columns: 1fr; }
           .cta-outer     { padding: 0 16px 56px; }
           .compare-card  { padding: 24px 18px; }
@@ -926,26 +922,21 @@ export default function SalonLandingPage() {
           .feat-card     { padding: 24px 20px; }
           .power-card    { padding: 28px 22px; }
           .search-box    { max-width: 100%; }
-          .search-inp    { font-size: 14px; }
           .test-card     { padding: 24px 20px; }
           .stats-band    { border-radius: 24px; padding: 48px 20px; }
-          .hero-badge    { font-size: 12px; padding: 8px 14px; margin-bottom: 20px; }
-          .trust-row     { flex-wrap: wrap; }
+          .hero-badge    { font-size: 12px; padding: 8px 14px; }
         }
         @media (max-width: 480px) {
-          .pg-nav-inner  { padding: 10px 14px; }
-          .hero-h1       { font-size: 28px; }
-          .hero-sub      { font-size: 13.5px; }
+          .hero-h1       { font-size: 30px; }
           .hd-phone      { width: 200px; }
           .hd-screen     { min-height: 300px; }
           .stats-grid    { grid-template-columns: 1fr; row-gap: 24px; }
           .sec-title     { font-size: 24px; }
+          .hero-sub      { font-size: 14px; }
           .cta-h2        { font-size: 26px; }
           .cta-btn       { width: 100%; justify-content: center; }
           .footer-links  { gap: 16px; font-size: 13px; }
           .cta-outer     { padding: 0 12px 48px; }
-          .search-box    { border-radius: 14px; }
-          .search-go     { padding: 0 16px; font-size: 13.5px; }
         }
       `}</style>
 
@@ -963,7 +954,7 @@ export default function SalonLandingPage() {
         {/* ── NAV ── */}
         <nav className={`pg-nav${scrolled ? " scrolled" : ""}`}>
           <div className="pg-nav-inner">
-            <img src="/logo-dark.svg" alt="TokenPe" style={{ height: 38, cursor: "pointer" }} onClick={() => router.push("/")} />
+            <img src="/logo-light.png" alt="TokenPe" style={{ height: 38, cursor: "pointer" }} onClick={() => router.push("/")} />
             <div className="pg-nav-links">
               <button className="pg-nl" onClick={() => go("features")}>Features</button>
               <button className="pg-nl" onClick={() => go("how")}>How it works</button>
@@ -987,7 +978,7 @@ export default function SalonLandingPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="pg-mobile-top">
-                <img src="/logo-dark.svg" alt="TokenPe" style={{ height: 34 }} />
+                <img src="/logo-light.png" alt="TokenPe" style={{ height: 34 }} />
                 <button className="pg-burger" onClick={() => setMenuOpen(false)} aria-label="Close"><X size={30} /></button>
               </div>
               <button className="mm-link" onClick={() => go("features")}>Features</button>
@@ -1044,7 +1035,7 @@ export default function SalonLandingPage() {
 
                 <motion.div className="trust-row" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.9, delay: 0.4 }}>
                   <div className="trust-avatars">
-                    {["R","A","M","S","K"].map((l) => <div key={l} className="trust-av">{l}</div>)}
+                    {["R", "A", "M", "S", "K"].map((l) => <div key={l} className="trust-av">{l}</div>)}
                   </div>
                   <div>
                     <div className="stars">{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={14} fill="#D14D72" stroke="none" />)}</div>
@@ -1069,10 +1060,10 @@ export default function SalonLandingPage() {
           <Reveal className="stats-band">
             <div className="stats-grid">
               {[
-                { t: 500,     s: "+",  d: 0, l: "Salons onboarded"    },
-                { t: 1200000, s: "+",  d: 0, l: "Tokens served"       },
-                { t: 32,      s: "%",  d: 0, l: "Avg. wait time cut"  },
-                { t: 4.8,     s: "/5", d: 1, l: "Average salon rating"},
+                { t: 500, s: "+", d: 0, l: "Salons onboarded" },
+                { t: 1200000, s: "+", d: 0, l: "Tokens served" },
+                { t: 32, s: "%", d: 0, l: "Avg. wait time cut" },
+                { t: 4.8, s: "/5", d: 1, l: "Average salon rating" },
               ].map((st, i) => (
                 <div key={i}>
                   <div className="stat-num"><CountUp target={st.t} suffix={st.s} decimals={st.d} /></div>

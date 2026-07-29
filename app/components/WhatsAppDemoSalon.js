@@ -8,22 +8,22 @@ const DEFAULT_FLOW = [
   { side: "bot", type: "join-card", time: "9:56 AM", msg: { title: "✂️ Welcome to Belle Salon & Spa!", body: "You are about to join the digital queue.\n\nTap the button below to confirm your spot 👇", button: "Join Queue" }, delay: 1200 },
   { side: "pat", type: "join-reply", time: "9:56 AM", msg: { title: "✂️ Welcome to Belle Salon & Spa!", quoteBody: "You are about to join the digital queue...", button: "Join Queue" }, delay: 1000 },
   { side: "bot", type: "text", time: "9:57 AM", text: "👤 Please enter your full name 👇", delay: 1500 },
-  { side: "pat", type: "text", time: "9:57 AM", text: "Sneha", delay: 1000 },
+  { side: "pat", type: "text", time: "9:57 AM", text: "Dipak Shah", delay: 1000 },
   { side: "bot", type: "lang-card", time: "9:57 AM", msg: { body: "🌐 Choose your preferred language for updates:" }, delay: 1500 },
   { side: "pat", type: "lang-reply", time: "9:57 AM", msg: { text: "English" }, delay: 1000 },
-  { side: "bot", type: "text", time: "9:58 AM", text: "✅ *Queue Confirmed, Sneha!*\n\n🏢 Business: Belle Salon & Spa\n🎟 Your Token:  *S-04*\n👥 People ahead: *2*\n⏳ Est. wait: ~6 mins\n\nWe'll alert you when you're close! 🔔\nSit back and relax 😊\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "text", time: "9:58 AM", text: "✅ *Queue Confirmed, Dipak Shah!*\n\n🏢 Business: Belle Salon & Spa\n🎟 Your Token:  *S-04*\n👥 People ahead: *2*\n⏳ Est. wait: ~6 mins\n\nWe'll alert you when you're close! 🔔\nSit back and relax 😊\n\n_Powered by TokenPe_", delay: 2500 },
   { side: "bot", type: "voice", time: "9:58 AM", lang: "English", dur: "0:12", delay: 1500 },
-  { side: "bot", type: "text", time: "10:02 AM", text: "🔔 *Heads up, Sneha!*\n\n📍 Now Serving: *S-03*\n🎟 Your Token: *S-04*\n🏢 Belle Salon & Spa\n\nPriya is finishing up soon. Start making your way over! 🏃\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "text", time: "10:02 AM", text: "🔔 *Heads up, Dipak Shah!*\n\n📍 Now Serving: *S-03*\n🎟 Your Token: *S-04*\n🏢 Belle Salon & Spa\n\nPriya is finishing up soon. Start making your way over! 🏃\n\n_Powered by TokenPe_", delay: 2500 },
   { side: "bot", type: "voice", time: "10:02 AM", lang: "English", dur: "0:09", delay: 1500 },
-  { side: "bot", type: "text", time: "10:04 AM", text: "⚡ *Almost your turn, Sneha!*\n\n📍 Now Serving: *S-03*\n🎟 Your Token: *S-04*\n🏢 Belle Salon & Spa\n\nOnly *1 token* away — please be ready nearby! 🙏\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "text", time: "10:04 AM", text: "⚡ *Almost your turn, Dipak Shah!*\n\n📍 Now Serving: *S-03*\n🎟 Your Token: *S-04*\n🏢 Belle Salon & Spa\n\nOnly *1 token* away — please be ready nearby! 🙏\n\n_Powered by TokenPe_", delay: 2500 },
   { side: "bot", type: "voice", time: "10:04 AM", lang: "English", dur: "0:08", delay: 1500 },
-  { side: "bot", type: "text", time: "10:05 AM", text: "🚨 *It's YOUR turn, Sneha!*\n\n🎟 Token *S-04* — Please head to Chair #2!\n🏢 Belle Salon & Spa\n\nYour stylist Priya is ready! ✂️\nThank you for your patience 🙏\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "text", time: "10:05 AM", text: "🚨 *It's YOUR turn, Dipak Shah!*\n\n🎟 Token *S-04* — Please head to Chair #2!\n🏢 Belle Salon & Spa\n\nYour stylist Priya is ready! ✂️\nThank you for your patience 🙏\n\n_Powered by TokenPe_", delay: 2500 },
   { side: "bot", type: "voice", time: "10:05 AM", lang: "English", dur: "0:08", delay: 1500 },
-  { side: "bot", type: "text", time: "10:45 AM", text: "✅ *Service Completed, Sneha!*\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_", delay: 2500 },
+  { side: "bot", type: "text", time: "10:45 AM", text: "✅ *Service Completed, Dipak Shah!*\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_", delay: 2500 },
   { side: "bot", type: "voice", time: "10:45 AM", lang: "English", dur: "0:11", delay: 1500 },
   { side: "bot", type: "rating", time: "10:46 AM", msg: { title: "Rate Your Haircut", body: "How was your visit at Belle Salon & Spa?\nYour feedback helps us improve! 🙏", button: "Tap to Rate" }, delay: 2000 },
   { side: "pat", type: "rating-reply", time: "10:46 AM", msg: { title: "Rate Your Haircut", quoteBody: "How was your visit at Belle Salon & Spa?...", text: "⭐⭐⭐⭐⭐ Excellent" }, delay: 1500 },
-  { side: "bot", type: "text", time: "10:46 AM", text: "🙏 *Thank You, Sneha!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!\n\nThank you for visiting *Belle Salon & Spa*. Have a great day! 🌟", delay: 3500 },
+  { side: "bot", type: "text", time: "10:46 AM", text: "🙏 *Thank You, Dipak Shah!*\n\nWe have recorded your ⭐⭐⭐⭐⭐ rating.\nWe appreciate your feedback!\n\nThank you for visiting *Belle Salon & Spa*. Have a great day! 🌟", delay: 3500 },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -305,10 +305,14 @@ export default function WhatsAppDemoSalon({ flow }) {
           border-radius: 50%;
           pointer-events: none;
         }
-        .wa-phone-outer { width: 290px; max-width: calc(100vw - 40px); flex-shrink: 0; position: relative; transition:transform 0.5s cubic-bezier(0.16,1,0.3,1); transform:perspective(900px) rotateY(-5deg) rotateX(2deg); }
+        .wa-phone-outer { width: 290px; height: 620px; flex-shrink: 0; position: relative; transition:transform 0.5s cubic-bezier(0.16,1,0.3,1); transform:perspective(900px) rotateY(-5deg) rotateX(2deg); transform-origin: center top; }
         .wa-phone-outer:hover { transform:perspective(900px) rotateY(0deg) rotateX(0deg) translateY(-6px); }
         @media (max-width: 768px) {
-          .wa-phone-outer { transform: none !important; max-width: min(290px, calc(100vw - 32px)); }
+          .wa-phone-outer { transform: scale(0.88); transform-origin: top center; }
+          .wa-wrapper     { padding-bottom: 8px; }
+        }
+        @media (max-width: 420px) {
+          .wa-phone-outer { transform: scale(0.75); }
         }
         .wa-bot-tail::before   { content:''; position:absolute; top:0; left:-6px;  border:6px solid transparent; border-top-color:#fff;    border-right-color:#fff;    }
         .wa-green-tail::before { content:''; position:absolute; top:0; left:-6px;  border:6px solid transparent; border-top-color:#d9f5c8; border-right-color:#d9f5c8; }
@@ -317,7 +321,7 @@ export default function WhatsAppDemoSalon({ flow }) {
       `}</style>
 
       <div className="wa-wrapper">
-        <div className="wa-phone-outer" style={{ background: "#1a1a1a", borderRadius: "40px", padding: "10px", boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 0 6px #1a1a1a, 0 40px 100px rgba(0,0,0,0.35), 0 15px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)", aspectRatio: "290 / 620" }}>
+        <div className="wa-phone-outer" style={{ background: "#1a1a1a", borderRadius: "40px", padding: "10px", boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 0 6px #1a1a1a, 0 40px 100px rgba(0,0,0,0.35), 0 15px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)", width: "290px", height: "620px" }}>
           {/* Notch */}
           <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", width: "90px", height: "22px", background: "#1a1a1a", borderBottomLeftRadius: "12px", borderBottomRightRadius: "12px", zIndex: 10 }} />
 

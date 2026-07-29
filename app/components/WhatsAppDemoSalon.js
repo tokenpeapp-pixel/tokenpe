@@ -305,14 +305,10 @@ export default function WhatsAppDemoSalon({ flow }) {
           border-radius: 50%;
           pointer-events: none;
         }
-        .wa-phone-outer { width: 290px; height: 620px; flex-shrink: 0; position: relative; transition:transform 0.5s cubic-bezier(0.16,1,0.3,1); transform:perspective(900px) rotateY(-5deg) rotateX(2deg); transform-origin: center top; }
+        .wa-phone-outer { width: clamp(220px, 78vw, 290px); height: clamp(470px, 166vw, 620px); flex-shrink: 0; position: relative; transition:transform 0.5s cubic-bezier(0.16,1,0.3,1); transform:perspective(900px) rotateY(-5deg) rotateX(2deg); transform-origin: center top; }
         .wa-phone-outer:hover { transform:perspective(900px) rotateY(0deg) rotateX(0deg) translateY(-6px); }
         @media (max-width: 768px) {
-          .wa-phone-outer { transform: scale(0.88); transform-origin: top center; }
           .wa-wrapper     { padding-bottom: 8px; }
-        }
-        @media (max-width: 420px) {
-          .wa-phone-outer { transform: scale(0.75); }
         }
         .wa-bot-tail::before   { content:''; position:absolute; top:0; left:-6px;  border:6px solid transparent; border-top-color:#fff;    border-right-color:#fff;    }
         .wa-green-tail::before { content:''; position:absolute; top:0; left:-6px;  border:6px solid transparent; border-top-color:#d9f5c8; border-right-color:#d9f5c8; }
@@ -321,7 +317,7 @@ export default function WhatsAppDemoSalon({ flow }) {
       `}</style>
 
       <div className="wa-wrapper">
-        <div className="wa-phone-outer" style={{ background: "#1a1a1a", borderRadius: "40px", padding: "10px", boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 0 6px #1a1a1a, 0 40px 100px rgba(0,0,0,0.35), 0 15px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)", width: "290px", height: "620px" }}>
+        <div className="wa-phone-outer" style={{ background: "#1a1a1a", borderRadius: "40px", padding: "10px", boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 0 6px #1a1a1a, 0 40px 100px rgba(0,0,0,0.35), 0 15px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)" }}>
           {/* Notch */}
           <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", width: "90px", height: "22px", background: "#1a1a1a", borderBottomLeftRadius: "12px", borderBottomRightRadius: "12px", zIndex: 10 }} />
 

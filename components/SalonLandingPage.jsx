@@ -544,7 +544,7 @@ export default function SalonLandingPage() {
           font-family: 'Plus Jakarta Sans', sans-serif;
           background: #FDF8F9;
           color: #1A1A1A;
-          overflow-x: hidden;
+          overflow-x: clip;
           -webkit-font-smoothing: antialiased;
         }
 
@@ -633,7 +633,7 @@ export default function SalonLandingPage() {
         .btn-ghost:hover { border-color: #D14D72; color: #D14D72; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(209,77,114,0.15); }
         .btn-lg { padding: 16px 36px !important; font-size: 15.5px !important; border-radius: 16px !important; }
 
-        .pg-burger { display: none; background: none; border: none; cursor: pointer; color: #1A1A1A; transition: transform 0.2s; }
+        .pg-burger { display: none; background: none; border: none; cursor: pointer; color: #1A1A1A; transition: transform 0.2s; padding: 8px; }
         .pg-burger:hover { transform: scale(1.1); color: #D14D72; }
 
         /* ── MOBILE MENU ── */
@@ -915,6 +915,7 @@ export default function SalonLandingPage() {
           .hd-screen     { min-height: 340px; padding: 14px 12px 18px; }
           .hd-glow       { width: 260px; height: 260px; }
           .chip-a,.chip-b{ display: none; }
+          .hero-floating { display: none; }
           .power-grid    { grid-template-columns: 1fr; }
           .cta-outer     { padding: 0 16px 56px; }
           .compare-card  { padding: 24px 18px; }
@@ -964,7 +965,7 @@ export default function SalonLandingPage() {
                 Start 7-day free trial
               </button>
             </div>
-            <button className="pg-burger" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={30} /></button>
+            <button className="pg-burger" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={26} /></button>
           </div>
         </nav>
 
@@ -979,7 +980,7 @@ export default function SalonLandingPage() {
             >
               <div className="pg-mobile-top">
                 <img src="/logo-light.png" alt="TokenPe" style={{ height: 34 }} />
-                <button className="pg-burger" onClick={() => setMenuOpen(false)} aria-label="Close"><X size={30} /></button>
+                <button className="pg-burger" onClick={() => setMenuOpen(false)} aria-label="Close"><X size={26} /></button>
               </div>
               <button className="mm-link" onClick={() => go("features")}>Features</button>
               <button className="mm-link" onClick={() => go("how")}>How it works</button>

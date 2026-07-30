@@ -1,8 +1,8 @@
-import { supabaseAdmin } from '../../../../../lib/supabase'
-import { signToken } from '../../../../../lib/auth'
+import { supabaseAdmin } from '../../../../lib/supabase'
+import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
-import { sanitizeName, validatePhone, validatePin } from '../../../../../lib/validate'
-import { sendWelcomeEmail } from '../../../../../lib/messaging'
+import { sanitizeName, validatePhone, validatePin } from '../../../../lib/validate'
+import { sendWelcomeEmail } from '../../../../lib/messaging'
 import { after } from 'next/server'
 
 export async function POST(req) {

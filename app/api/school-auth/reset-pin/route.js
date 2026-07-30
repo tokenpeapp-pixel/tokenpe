@@ -1,7 +1,7 @@
-import { supabaseAdmin } from '../../../../../lib/supabase'
+import { supabaseAdmin } from '../../../../lib/supabase'
 import { jwtVerify } from 'jose'
-import { validatePin } from '../../../../../lib/validate'
-import { rateLimit } from '../../../../../lib/rateLimit'
+import { validatePin } from '../../../../lib/validate'
+import { rateLimit } from '../../../../lib/rateLimit'
 
 const resetLimiter = rateLimit({ maxAttempts: 5, windowMs: 15 * 60 * 1000 })
 const getSecret = () => new TextEncoder().encode(process.env.JWT_SECRET || 'tokenpe_super_secret_fallback_2026')

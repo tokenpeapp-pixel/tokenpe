@@ -1,5 +1,5 @@
-import { getSchoolSession } from '../../../../../lib/auth'
-import { supabaseAdmin } from '../../../../../lib/supabase'
+import { getSchoolSession } from '../../../../lib/auth'
+import { supabaseAdmin } from '../../../../lib/supabase'
 
 export async function GET(req) {
     try {

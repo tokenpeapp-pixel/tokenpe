@@ -1,7 +1,7 @@
-import { signToken } from '../../../../../lib/auth'
+import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
-import { supabaseAdmin, supabase, getISTDateString } from '../../../../../lib/supabase'
-import { sendWelcomeEmail } from '../../../../../lib/messaging'
+import { supabaseAdmin, supabase, getISTDateString } from '../../../../lib/supabase'
+import { sendWelcomeEmail } from '../../../../lib/messaging'
 import { after } from 'next/server'
 
 export async function POST(req) {

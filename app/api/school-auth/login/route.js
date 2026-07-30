@@ -1,8 +1,8 @@
-import { supabaseAdmin as supabase } from '../../../../../lib/supabase'
-import { signToken } from '../../../../../lib/auth'
+import { supabaseAdmin as supabase } from '../../../../lib/supabase'
+import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
-import { rateLimit } from '../../../../../lib/rateLimit'
-import { validatePin, validatePhone } from '../../../../../lib/validate'
+import { rateLimit } from '../../../../lib/rateLimit'
+import { validatePin, validatePhone } from '../../../../lib/validate'
 
 const loginLimiter = rateLimit({ maxAttempts: 5, windowMs: 15 * 60 * 1000 })
 

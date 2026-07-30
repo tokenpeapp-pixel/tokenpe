@@ -1,7 +1,7 @@
-import { supabaseAdmin as supabase } from '../../../../../lib/supabase'
+import { supabaseAdmin as supabase } from '../../../../lib/supabase'
 import { SignJWT } from 'jose'
 import { Resend } from 'resend'
-import { rateLimit } from '../../../../../lib/rateLimit'
+import { rateLimit } from '../../../../lib/rateLimit'
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 const otpLimiter = rateLimit({ maxAttempts: 3, windowMs: 15 * 60 * 1000 })

@@ -10,7 +10,7 @@ export function middleware(request) {
 
     // The list of new industry vertical base paths that should be blocked
     const maintenancePaths = [
-        '/school', 
+        '/school',
         '/business',
         '/other'
     ];
@@ -19,7 +19,7 @@ export function middleware(request) {
     if (maintenancePaths.some(path => url.startsWith(path))) {
         return NextResponse.rewrite(new URL('/maintenance', request.url));
     }
-    
+
 
 
     // Allow everything else (e.g., /, /login, /dashboard, /api, /find) to pass through to the live functionality

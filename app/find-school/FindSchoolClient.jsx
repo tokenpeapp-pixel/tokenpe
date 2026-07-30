@@ -199,7 +199,7 @@ export default function FindSchoolClient({ initialSchools, initialQ, initialCity
 
   const fetchNearby = useCallback(async (lat, lng) => {
     try {
-      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=50000&vertical=school`)
+      const res = await fetch(`/api/schools/nearby?lat=${lat}&lng=${lng}&radius=50000`)
       const json = await res.json()
       setNearbySchools(json.clinics || [])
       setIsNearbyMode(true)

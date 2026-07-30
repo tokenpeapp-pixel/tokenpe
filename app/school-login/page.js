@@ -18,7 +18,7 @@ export default function LoginPage() {
         if (typeof window !== 'undefined') {
             localStorage.setItem('tokenpe_vertical', 'school')
             // Check session via API instead of localStorage directly to be secure
-            fetch('/api/auth/me')
+            fetch('/api/school-auth/me')
                 .then(res => res.json())
                 .then(data => {
                     if (data.authenticated && data.clinic) {
@@ -106,7 +106,7 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { 
-                redirectTo: `${window.location.origin}/auth/callback?intent=${mode}`,
+                redirectTo: `${window.location.origin}/school-auth/callback?intent=${mode}`,
                 queryParams: {
                     prompt: 'select_account'
                 }
@@ -130,7 +130,7 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/auth/login', {
+            const res = await fetch('/api/school-auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin })
@@ -172,7 +172,7 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/auth/register', {
+            const res = await fetch('/api/school-auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -217,7 +217,7 @@ export default function LoginPage() {
         setSuccess('')
         setLoading(true)
         try {
-            const res = await fetch('/api/auth/send-otp', {
+            const res = await fetch('/api/school-auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: loginEmail, phone: loginPhone })
@@ -250,7 +250,7 @@ export default function LoginPage() {
         }
         setLoading(true)
         try {
-            const res = await fetch('/api/auth/reset-pin', {
+            const res = await fetch('/api/school-auth/reset-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ otpToken, otp: otpCode, newPin })

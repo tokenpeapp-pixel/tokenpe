@@ -53,15 +53,15 @@ export async function GET(req) {
       }))
     }
 
-    // Since we don't have a PostGIS RPC specifically for schools yet, we use the fallback method.
-    // Query the public_schools view
+    // Query the base schools table
     const { data: allSchools, error: dbError } = await supabaseAdmin
-      .from('public_schools')
-      .select('id, name, institution_type, city, area, code, avg_rating, photo_url, queue_paused, waiting_count, lat, lng')
+      .from('schools')
+      .select('id, name, specialty, city, code, avg_rating, photo_url, queue_paused, waiting_count, location')
+      .eq('is_public', true)
 
     if (dbError) {
       console.error('[Schools Nearby API] DB error:', dbError)
-      return Response.json({ schools: [] }, { status: 200 })
+      return Response.json({ clinics: [] }, { status: 200 })
     }
 
     const schoolsList = (allSchools || [])

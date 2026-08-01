@@ -52,10 +52,10 @@ export async function GET(req) {
     async function enrichWithClosedStatus(clinics) {
       if (!clinics.length) return clinics
       const ids = clinics.map(c => c.id)
+      const tableName = vertical === 'salon' ? 'salons' : vertical === 'restaurant' ? 'restaurants' : vertical === 'school' ? 'schools' : vertical === 'clinic' ? 'clinics' : 'clinics';
       const { data: closedData } = await supabaseAdmin
-        .from('clinics')
+        .from(tableName)
         .select('id, closed_today_date')
-        .eq('vertical', vertical)
         .in('id', ids)
       const closedMap = {}
       for (const c of (closedData || [])) {
@@ -102,11 +102,13 @@ export async function GET(req) {
       console.log(`[Nearby API] RPC exception: ${rpcErr.message}`)
     }
 
-    // Strategy 2: Fallback — query public_clinics view filtered by vertical
+    // Strategy 2: Fallback — query the specific table for the vertical
+    const tableName = vertical === 'salon' ? 'salons' : vertical === 'restaurant' ? 'restaurants' : vertical === 'school' ? 'schools' : vertical === 'clinic' ? 'clinics' : 'clinics';
+
     const { data: allClinics, error: dbError } = await supabaseAdmin
-      .from('public_clinics')
+      .from(tableName)
       .select('id, name, specialty, city, area, code, avg_rating, photo_url, queue_paused, waiting_count, lat, lng')
-      .eq('vertical', vertical)   // ← enforces isolation
+      .eq('is_public', true)
 
     if (dbError) {
       console.error('[Nearby API] DB error:', dbError)

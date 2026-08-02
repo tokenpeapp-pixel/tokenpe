@@ -1,50 +1,79 @@
 'use client'
-import { useEffect, useState, useRef, Suspense, useCallback } from 'react'
-import { CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, Bell, Camera, MapPin, Pencil, Lock, Download, Printer, Star, Smartphone, Mic, Gift, AlertTriangle, Hourglass, RefreshCw, Sparkles, Plus, Copy, LogOut, Check, ChevronLeft, ChevronRight, Menu, Play, CheckCircle, Search, Edit2, X, PlusSquare, Settings, History, BarChart2, Headset, CreditCard, DoorOpen, DoorClosed, List, Pause, QrCode, Clock, Calendar, CalendarX, CalendarCheck, UserCheck, ChevronDown } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { 
+  GraduationCap, Phone, CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, 
+  Bell, Download, Printer, Star, Mic, AlertTriangle, Hourglass, RefreshCw, Sparkles, 
+  Plus, LogOut, Check, ChevronRight, Search, X, Settings, History, BarChart2, 
+  CreditCard, DoorOpen, QrCode, Clock, Calendar, UserCheck, ChevronDown,
+  Building, ShieldCheck, UserPlus, Layers, Users, Activity, ArrowRight, MapPin, Pencil, Menu, Camera, Upload, Image as ImageIcon, Smartphone, Pause, Play, User, HelpCircle, Hash
+} from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
+import { supabase, getISTDateString } from '../../lib/supabase'
 import confetti from 'canvas-confetti'
-import CallNextButton from '../../components/CallNextButton'
+import QRCode from 'qrcode'
+import { motion, AnimatePresence } from 'framer-motion'
 
-// ─── UPGRADE BANNER (Suspense wrapped to prevent Next.js build errors) ────────
-function UpgradeBanner() {
-  const searchParams = useSearchParams()
-  const [show, setShow] = useState(false)
+// ─── ANIMATED COUNTER NUMBER ───
+function AnimatedNumber({ value }) {
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', overflow: 'hidden', verticalAlign: 'middle' }}>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={String(value)}
+          initial={{ y: 24, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -24, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 450, damping: 28 }}
+          style={{ display: 'inline-block' }}
+        >
+          {String(value).padStart(2, '0')}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  )
+}
+
+// ─── ANIMATED CLOCK WITH SECONDS & SMOOTH TRANSITIONS ───
+function AnimatedClock() {
+  const [time, setTime] = useState(null)
 
   useEffect(() => {
-    if (searchParams.get('upgraded') === 'true') {
-      setShow(true)
-      setTimeout(() => setShow(false), 6000)
-    }
-  }, [searchParams])
+    setTime(new Date())
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
 
-  if (!show) return null
+  if (!time) return <span style={{ opacity: 0 }}>00:00:00 AM</span>
+
+  const formatted = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+  const parts = formatted.split(' ')
+  const timeDigits = parts[0] || '00:00:00'
+  const ampm = parts[1] || 'AM'
+  const [h, m, s] = timeDigits.split(':')
 
   return (
-    <div style={{ background: '#052e16', borderBottom: '1px solid #16a34a', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-      <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 14 }}><CheckCircle2 className="inline-block w-4 h-4" /> Plan activated! Your clinic is now upgraded. All features are unlocked.</span>
-      <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
+    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontFamily: "'Playfair Display', serif", fontSize: '1.9rem', fontWeight: 700, color: '#1B2A4A', lineHeight: 1 }}>
+      <AnimatedNumber value={h || '00'} />
+      <span style={{ margin: '0 1px', opacity: 0.6 }}>:</span>
+      <AnimatedNumber value={m || '00'} />
+      <span style={{ margin: '0 1px', opacity: 0.6 }}>:</span>
+      <AnimatedNumber value={s || '00'} />
+      <span style={{ fontSize: '0.85rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 6, color: '#0284C7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {ampm}
+      </span>
     </div>
   )
 }
 
-// ─── PHONE MASKING (Privacy) ────────────────────────────────────────────────
-function maskPhone(phone) {
-  if (!phone) return ''
-  const p = String(phone).replace(/\D/g, '')
-  if (p.length <= 4) return '****'
-  return p.slice(0, 2) + '****' + p.slice(-4)
-}
-
-// ─── SOUNDS ────────────────────────────────────────────────────────────────
+// ─── SOUND EFFECTS ───
 function useSounds() {
   const audioCtx = useRef(null)
   function getCtx() {
-    if (!audioCtx.current)
+    if (!audioCtx.current && typeof window !== 'undefined')
       audioCtx.current = new (window.AudioContext || window.webkitAudioContext)()
     return audioCtx.current
   }
-  function playTone(frequencies, type = 'sine', volume = 0.4) {
+  function playTone(frequencies, type = 'sine', volume = 0.3) {
     try {
       if (typeof window === 'undefined') return
       const ctx = getCtx()
@@ -56,65 +85,57 @@ function useSounds() {
         gain.connect(ctx.destination)
         osc.frequency.value = freq
         osc.type = type
-        const t = ctx.currentTime + i * 0.18
+        const t = ctx.currentTime + i * 0.16
         gain.gain.setValueAtTime(0, t)
         gain.gain.linearRampToValueAtTime(volume, t + 0.02)
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4)
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35)
         osc.start(t)
-        osc.stop(t + 0.4)
+        osc.stop(t + 0.35)
       })
-    } catch (e) {
-      console.warn("AudioContext tone playback failed:", e)
-    }
+    } catch (e) {}
   }
   return {
-    newPatient: () => playTone([523.25, 659.25]),
-    callNext: () => playTone([880, 1100], 'sine', 0.3),
-    done: () => playTone([659.25, 523.25], 'sine', 0.25),
-    skip: () => playTone([440], 'sine', 0.2),
-    notify: () => playTone([700, 900], 'sine', 0.2),
+    admit: () => playTone([659.25, 880], 'sine', 0.25),
+    call: () => playTone([880, 1100], 'sine', 0.3),
+    dismiss: () => playTone([523.25, 440], 'sine', 0.2),
   }
 }
 
-// ─── CONSTANTS ─────────────────────────────────────────────────────────────
-const STATUS = { WAITING: 'waiting', CALLED: 'called', DONE: 'done', SKIPPED: 'skipped' }
-
-const LANG_NAMES = {
-  hi: 'हिंदी', ta: 'தமிழ்', te: 'తెలుగు', mr: 'मराठी',
-  bn: 'বাংলা', gu: 'ગુજરાતી', kn: 'ಕನ್ನಡ', ml: 'മലയാളം',
-  pa: 'ਪੰਜਾਬੀ', en: 'English'
-}
-
-const TOAST_TYPES = {
-  new: { bg: '#0F4C75', icon: <PlusCircle className="inline-block w-4 h-4" /> },
-  call: { bg: '#1E40AF', icon: <Megaphone className="inline-block w-4 h-4" /> },
-  done: { bg: '#1E40AF', icon: <CheckCircle2 className="inline-block w-4 h-4" /> },
-  skip: { bg: '#92400E', icon: <SkipForward className="inline-block w-4 h-4" /> },
-  notify: { bg: '#1E40AF', icon: <Bell className="inline-block w-4 h-4" /> },
-  error: { bg: '#9F1239', icon: <XCircle className="inline-block w-4 h-4" /> },
-}
-
-// ─── QR MODAL ──────────────────────────────────────────────────────────────────────
-function QRModal({ clinic, onClose, onCodeUpdate, router }) {
+// ─── FULL FEATURED QR POSTER MODAL (RESTAURANT GENERATOR LOGIC + SCHOOL NAVY THEME) ───
+function QRModal({ clinic, onClose, onCodeUpdate }) {
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
   const [editingCode, setEditingCode] = useState(false)
   const [codeInput, setCodeInput] = useState(clinic?.code || '')
-  const [addressInput, setAddressInput] = useState(clinic?.address || '')
+  
+  const [locationInput, setLocationInput] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('tokenpe_active_room')
+      if (saved) return saved
+    }
+    const raw = clinic?.location || ''
+    if (raw.length > 25 && /^[0-9A-F]+$/i.test(raw)) return 'Main Gate / Reception'
+    return raw || 'Main Gate / Reception'
+  })
+
   const [codeError, setCodeError] = useState('')
   const [codeSaving, setCodeSaving] = useState(false)
   const [codeSuccess, setCodeSuccess] = useState(false)
-  const [uploadingLogo, setUploadingLogo] = useState(false)
-  const [savingAddress, setSavingAddress] = useState(false)
-  const [addressSuccess, setAddressSuccess] = useState(false)
 
-  const planId = clinic?.plan_id || 'starter'
-  const canEditCode = planId === 'pro' || planId === 'elite' || planId === 'trialing' || clinic?.subscription_status === 'trialing'
+  const [qrDataUrl, setQrDataUrl] = useState('')
+  const rawNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919969701706'
+  const waNumber = String(rawNumber).replace(/[^0-9]/g, '')
+  const validWaNumber = waNumber.length >= 10 ? waNumber : '919969701706'
+  const liveCode = codeSuccess ? codeInput : (clinic?.code || 'SCHOOL')
+  const waLink = `https://wa.me/${validWaNumber}?text=JOIN%20${liveCode}`
 
-  // QR reflects the live code (updates after save)
-  const liveCode = codeSuccess ? codeInput : (clinic?.code || '')
-  const waLink = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=JOIN%20${liveCode}`
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=H&data=${encodeURIComponent(waLink)}&color=7C3AED&bgcolor=ffffff&margin=24`
+  useEffect(() => {
+    if (waLink) {
+      QRCode.toDataURL(waLink, { width: 400, margin: 2, color: { dark: '#1B2A4A', light: '#FFFFFF' } })
+        .then(url => setQrDataUrl(url))
+        .catch(() => setQrDataUrl(`https://quickchart.io/qr?size=400&text=${encodeURIComponent(waLink)}`))
+    }
+  }, [waLink])
 
   async function saveCode() {
     const clean = codeInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -123,3200 +144,2501 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
       return
     }
 
-    const codeChanged = clean !== clinic?.code
-    const addressChanged = addressInput !== clinic?.address
-
-    if (!codeChanged && !addressChanged) {
-      setEditingCode(false)
-      return
-    }
-
     setCodeSaving(true)
     setCodeError('')
 
-    if (codeChanged) {
-      // Check uniqueness via API
-      const res = await fetch('/api/clinics/code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic?.id, newCode: clean })
-      })
-      const result = await res.json()
-      if (!res.ok || !result.success) {
-        setCodeError(result.message || 'Failed to save. You might not have permission.')
-        setCodeSaving(false)
-        return
-      }
-      localStorage.setItem('clinicCode', clean)
-      onCodeUpdate(clean)
-    }
-
-    if (addressChanged) {
-      // Save address via API
-      await fetch('/api/clinics/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, address: addressInput })
-      })
-      clinic.address = addressInput
-    }
-
-    // Update localStorage
-    const stored = localStorage.getItem('tokenpe_clinic')
-    if (stored) {
-      try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean, address: addressInput })) } catch (_) { }
-    }
-
-    setCodeSaving(false)
-    setCodeSuccess(true)
-    setEditingCode(false)
-    setTimeout(() => setCodeSuccess(false), 4000)
-  }
-
-  async function handleLogoUpload(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    setUploadingLogo(true)
     try {
-      const fileName = `logos/${clinic.id}_${Date.now()}.png`
-      // Re-using voice-notes bucket since it exists
-      const { data, error } = await supabase.storage.from('voice-notes').upload(fileName, file, { upsert: true })
-      if (error) throw error
+      if (clinic?.id && clinic.id !== 'demo-school-id') {
+        await supabase.from('schools').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
+        await supabase.from('public_schools').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
+      }
+    } catch (_) {}
 
-      const { data: { publicUrl } } = supabase.storage.from('voice-notes').getPublicUrl(fileName)
-      await fetch('/api/clinics/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, logo_url: publicUrl })
-      })
-
-      clinic.logo_url = publicUrl // mutate locally for immediate render
+    try {
+      localStorage.setItem('tokenpe_active_room', locationInput)
       const stored = localStorage.getItem('tokenpe_clinic')
       if (stored) {
-        localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), logo_url: publicUrl }))
+        try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean, location: locationInput })) } catch (_) {}
       }
-    } catch (err) {
-      alert('Error uploading logo: ' + err.message)
+      if (onCodeUpdate) onCodeUpdate(clean)
+      setCodeSuccess(true)
+      setEditingCode(false)
+      setTimeout(() => setCodeSuccess(false), 3000)
+    } catch (e) {
+      setCodeError('Failed to save locally.')
     }
-    setUploadingLogo(false)
-  }
-
-  async function saveAddress() {
-    setSavingAddress(true)
-    try {
-      const res = await fetch('/api/clinics/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, address: addressInput })
-      })
-      if (res.ok) {
-        setAddressSuccess(true)
-        setTimeout(() => setAddressSuccess(false), 3000)
-        clinic.address = addressInput
-        const stored = localStorage.getItem('tokenpe_clinic')
-        if (stored) {
-          localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), address: addressInput }))
-        }
-      }
-    } catch (e) { }
-    setSavingAddress(false)
+    setCodeSaving(false)
   }
 
   async function download() {
     setDownloading(true)
     try {
-      const res = await fetch(qrUrl)
-      const blob = await res.blob()
+      const canvas = document.createElement('canvas')
+      canvas.width = 800
+      canvas.height = 1000
+      const ctx = canvas.getContext('2d')
 
-      if (!clinic?.logo_url) {
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `TokenPe-QR-${liveCode}.png`
-        a.click()
-        URL.revokeObjectURL(url)
+      // 1. Background gradient (Navy Academic Theme)
+      const grad = ctx.createLinearGradient(0, 0, 800, 1000)
+      grad.addColorStop(0, '#1B2A4A')
+      grad.addColorStop(1, '#24365C')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, 800, 1000)
+
+      // Outer gold/light frame line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)'
+      ctx.lineWidth = 6
+      ctx.strokeRect(30, 30, 740, 940)
+
+      // 2. School / Institute Name (Top)
+      ctx.fillStyle = '#7FA8D9'
+      ctx.font = '800 24px "Plus Jakarta Sans", sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText((clinic?.name || 'ASHBOURNE ACADEMY').toUpperCase(), 400, 110)
+
+      // Headline Text
+      ctx.fillStyle = '#FFFFFF'
+      ctx.font = '700 42px "Playfair Display", Georgia, serif'
+      ctx.fillText('Scan QR Code for Campus Check-in', 400, 175)
+
+      // 3. Draw White Rounded Card Box for QR Code
+      const qrBoxSize = 420
+      const qrBoxX = 400 - qrBoxSize / 2
+      const qrBoxY = 220
+      ctx.fillStyle = '#FFFFFF'
+      if (ctx.roundRect) {
+        ctx.beginPath()
+        ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 24)
+        ctx.fill()
       } else {
-        const img = new Image()
-        img.crossOrigin = 'Anonymous'
-        const imgUrl = URL.createObjectURL(blob)
-        await new Promise(r => { img.onload = r; img.src = imgUrl })
-
-        // Fetch logo as blob to bypass cross-origin canvas tainting issues
-        const logoRes = await fetch(clinic.logo_url)
-        const logoBlob = await logoRes.blob()
-        const logoLocalUrl = URL.createObjectURL(logoBlob)
-
-        const logo = new Image()
-        logo.crossOrigin = 'Anonymous'
-        await new Promise(r => { logo.onload = r; logo.src = logoLocalUrl })
-
-        const canvas = document.createElement('canvas')
-        canvas.width = img.width
-        canvas.height = img.height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0)
-
-        const logoSize = img.width * 0.22
-        const x = (img.width - logoSize) / 2
-        const y = (img.height - logoSize) / 2
-
-        ctx.fillStyle = 'white'
-        ctx.fillRect(x - 8, y - 8, logoSize + 16, logoSize + 16)
-        ctx.drawImage(logo, x, y, logoSize, logoSize)
-
-        const finalUrl = canvas.toDataURL('image/png')
-        const a = document.createElement('a')
-        a.href = finalUrl
-        a.download = `TokenPe-QR-${liveCode}.png`
-        a.click()
-        URL.revokeObjectURL(imgUrl)
+        ctx.fillRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize)
       }
+
+      // Draw Base QR Code
+      if (qrDataUrl) {
+        const qrImg = new window.Image()
+        qrImg.crossOrigin = 'anonymous'
+        await new Promise((resolve) => {
+          qrImg.onload = resolve
+          qrImg.onerror = resolve
+          qrImg.src = qrDataUrl
+        })
+        ctx.drawImage(qrImg, qrBoxX + 24, qrBoxY + 24, qrBoxSize - 48, qrBoxSize - 48)
+
+        // Draw Center Logo Crest Overlaid on QR Code
+        const logoUrl = clinic?.logo_url
+        if (logoUrl) {
+          const logoImg = new window.Image()
+          logoImg.crossOrigin = 'anonymous'
+          await new Promise((resolve) => {
+            logoImg.onload = resolve
+            logoImg.onerror = resolve
+            logoImg.src = logoUrl
+          })
+          const logoSize = 90
+          const logoX = 400 - logoSize / 2
+          const logoY = qrBoxY + qrBoxSize / 2 - logoSize / 2
+
+          // White Border Frame around Center Crest Logo
+          ctx.fillStyle = '#FFFFFF'
+          if (ctx.roundRect) {
+            ctx.beginPath()
+            ctx.roundRect(logoX - 8, logoY - 8, logoSize + 16, logoSize + 16, 14)
+            ctx.fill()
+            ctx.strokeStyle = '#1B2A4A'
+            ctx.lineWidth = 3
+            ctx.stroke()
+          } else {
+            ctx.fillRect(logoX - 8, logoY - 8, logoSize + 16, logoSize + 16)
+          }
+
+          ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize)
+        }
+      }
+
+      // 4. WhatsApp JOIN Text
+      ctx.fillStyle = '#A8C5E8'
+      ctx.font = '500 24px "Plus Jakarta Sans", sans-serif'
+      ctx.fillText(`Or WhatsApp JOIN ${liveCode} to +${validWaNumber}`, 400, 680)
+
+      // 5. "How Students & Visitors Join Queue" Instruction Card Box
+      const boxWidth = 680
+      const boxX = 400 - boxWidth / 2
+      const boxY = 720
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'
+      if (ctx.roundRect) {
+        ctx.beginPath()
+        ctx.roundRect(boxX, boxY, boxWidth, 140, 16)
+        ctx.fill()
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)'
+        ctx.lineWidth = 2
+        ctx.stroke()
+      } else {
+        ctx.fillRect(boxX, boxY, boxWidth, 140)
+      }
+
+      ctx.fillStyle = '#38BDF8'
+      ctx.font = '800 22px "Plus Jakarta Sans", sans-serif'
+      ctx.textAlign = 'left'
+      ctx.fillText('HOW STUDENTS & VISITORS JOIN QUEUE', boxX + 30, boxY + 42)
+
+      ctx.fillStyle = '#FFFFFF'
+      ctx.font = '500 20px "Plus Jakarta Sans", sans-serif'
+      ctx.fillText('1. Open WhatsApp or Camera on mobile device', boxX + 30, boxY + 78)
+      ctx.fillText('2. Scan QR code to join live queue instantly', boxX + 30, boxY + 110)
+
+      // 6. Bottom Campus Code Badge
+      ctx.textAlign = 'center'
+      ctx.fillStyle = '#38BDF8'
+      ctx.font = '900 28px monospace'
+      ctx.fillText(`CAMPUS CODE: ${liveCode}`, 400, 920)
+
+      // Trigger Download of Full Poster PNG Image
+      const posterDataUrl = canvas.toDataURL('image/png')
+      const link = document.createElement('a')
+      link.href = posterDataUrl
+      link.download = `Gate-Pass-Poster-${liveCode}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setDownloaded(true)
+      setTimeout(() => setDownloaded(false), 2500)
+    } catch (e) {
+      console.error('Poster generation error:', e)
+    }
+    setDownloading(false)
+  }
+
+  function printPoster() {
+    try {
+      const win = window.open('', '_blank')
+      if (!win) {
+        alert('Please allow popups to print gate poster.')
+        return
+      }
+      const logoUrl = clinic?.logo_url
+      win.document.write(`
+        <!DOCTYPE html><html><head>
+        <title>Gate Pass QR — ${clinic?.name || 'School'}</title>
+        <style>
+          body { font-family: 'Plus Jakarta Sans', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #F4F7FB; }
+          .poster { background: #FFFFFF; border: 2px solid #1B2A4A; border-radius: 16px; width: 340px; padding: 32px 24px; text-align: center; box-shadow: 0 10px 30px rgba(27,42,74,0.1); }
+          .logo-box { width: 52px; height: 52px; border: 1.5px solid #1B2A4A; border-radius: 10px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: #1B2A4A; overflow: hidden; background: #FFFFFF; }
+          .name { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: #1B2A4A; margin-bottom: 4px; }
+          .sub { font-size: 0.8rem; color: #5A6E85; margin-bottom: 20px; font-weight: 600; }
+          .qr-wrap { position: relative; display: inline-block; padding: 12px; background: #FFFFFF; border: 1.5px solid #1B2A4A; border-radius: 12px; margin-bottom: 20px; }
+          .how { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #1B2A4A; margin-bottom: 8px; letter-spacing: 0.08em; }
+          .steps { font-size: 0.75rem; color: #5A6E85; line-height: 1.8; margin-bottom: 20px; }
+          .code-box { background: #EFF4FA; border: 1.5px dashed #1B2A4A; border-radius: 8px; padding: 8px; font-family: monospace; font-size: 1rem; font-weight: 800; color: #1B2A4A; }
+        </style>
+        </head><body>
+        <div class="poster">
+          <div class="logo-box">
+            ${logoUrl ? `<img src="${logoUrl}" style="width:100%;height:100%;object-fit:cover;display:block" />` : (clinic?.name || 'A').charAt(0).toUpperCase()}
+          </div>
+          <div class="name">${clinic?.name || 'Ashbourne Academy'}</div>
+          <div class="sub">Digital Campus Check-in & Gate Pass</div>
+          <div class="qr-wrap">
+            <img src="${qrDataUrl}" style="width:200px;height:200px;display:block" />
+            ${logoUrl ? `
+              <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:#FFFFFF; padding:3px; border-radius:8px; border:1.5px solid #1B2A4A; box-shadow:0 4px 10px rgba(0,0,0,0.15)">
+                <img src="${logoUrl}" style="width:44px; height:44px; border-radius:6px; object-fit:cover; display:block" />
+              </div>
+            ` : ''}
+          </div>
+          <div class="how">How to Join Queue</div>
+          <div class="steps">
+            1. Open camera or WhatsApp<br/>
+            2. Scan QR code to join live queue<br/>
+            3. Get instant digital check-in token
+          </div>
+          <div class="code-box">CAMPUS CODE: ${liveCode}</div>
+        </div>
+        </body></html>
+      `)
+      win.document.close()
+      setTimeout(() => win.print(), 400)
     } catch (e) {
       console.error(e)
     }
-    setDownloading(false)
-    setDownloaded(true)
-    setTimeout(() => setDownloaded(false), 2500)
-  }
-
-  function print() {
-    const win = window.open('', '_blank')
-    win.document.write(`
-      <!DOCTYPE html><html><head>
-      <title>TokenPe QR — ${clinic?.name}</title>
-      <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;
-             justify-content:center;min-height:100vh;background:#fff}
-        .card{width:320px;border:2.5px solid #065F46;border-radius:22px;
-              padding:32px 24px;text-align:center}
-        .logo{font-size:22px;font-weight:900;color:#065F46}
-        .tag{font-size:10px;color:#94a3b8;margin-bottom:20px;letter-spacing:.5px}
-        .name{font-size:17px;font-weight:800;color:#064E3B;margin-bottom:4px}
-        .sub{font-size:12px;color:#64748b;margin-bottom:22px}
-        img{width:220px;height:220px;border-radius:12px;border:1px solid #e2e8f0}
-        hr{border:none;border-top:1px solid #f1f5f9;margin:18px 0}
-        .how{font-size:13px;font-weight:700;color:#064E3B}
-        .steps{font-size:11px;color:#64748b;margin-top:8px;line-height:2}
-        .code-box{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#F0FDFA;border:1.5px dashed #5EEAD4;border-radius:10px;padding:8px 16px;margin-top:16px}
-        .code-label{font-size:10px;font-weight:700;color:#065F46;text-transform:uppercase;letter-spacing:0.5px}
-        .code-val{font-size:15px;font-weight:800;color:#064E3B;font-family:monospace;letter-spacing:1px}
-      </style>
-      </head><body>
-      <div class="card">
-        <div style="margin-bottom:12px;display:flex;justify-content:center">
-          <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-light.svg" style="height:44px;width:auto" />
-        </div>
-        <div class="name">${clinic?.name}</div>
-        ${clinic?.address ? `<div style="font-size:11.5px;color:#64748b;margin-top:-2px;margin-bottom:8px;padding:0 10px;word-break:break-word;white-space:pre-wrap;line-height:1.4">${clinic.address}</div>` : ''}
-        <div class="sub">Scan to join the OPD queue</div>
-        <div style="position:relative; display:inline-block">
-          <img src="${qrUrl}" />
-          ${clinic?.logo_url ? `<img src="${clinic.logo_url}" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:50px; height:50px; border:none; border-radius:8px; padding:4px; background:white;" />` : ''}
-        </div>
-        <hr/>
-        <div class="how"><Smartphone className="inline-block w-4 h-4" /> How to join</div>
-        <div class="steps">
-          1. Open WhatsApp on your phone<br/>
-          2. Scan this QR code with camera<br/>
-          3. Tap Send — get your token instantly
-        </div>
-        <div class="code-box">
-          <span class="code-label">Clinic Code:</span>
-          <span class="code-val">${liveCode}</span>
-        </div>
-      </div>
-      </body></html>
-    `)
-    win.document.close()
-    setTimeout(() => win.print(), 400)
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 600, padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 24, padding: '32px 28px', width: '100%', maxWidth: 400, textAlign: 'center', position: 'relative', boxShadow: '0 32px 80px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
-        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: '50%', fontSize: 18, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-        <div style={{ marginBottom: '14px', display: 'flex', justifyContent: 'center' }}>
-          <img src="/logo-light.svg" alt="TokenPe Logo" style={{ height: '44px', width: 'auto' }} />
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+      <motion.div initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={e => e.stopPropagation()} style={{ background: '#FFFFFF', border: '1.5px solid #1B2A4A', borderRadius: 16, padding: '22px 24px', maxWidth: 440, width: '100%', boxShadow: '0 25px 60px rgba(27, 42, 74, 0.35)', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: '#EFF4FA', border: 'none', width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', color: '#1B2A4A', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+          <X style={{ width: 16, height: 16 }} />
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, borderBottom: '1px solid #E2E8F0', paddingBottom: 10 }}>
+          <div style={{ width: 34, height: 34, border: '1.5px solid #1B2A4A', borderRadius: 6, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', overflow: 'hidden' }}>
+            {clinic?.logo_url ? <img src={clinic.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (clinic?.name || 'A').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, fontFamily: 'Playfair Display, serif', color: '#1B2A4A', lineHeight: 1.2 }}>Digital Gate QR Poster</h3>
+            <div style={{ fontSize: '0.74rem', color: '#5A6E85', fontWeight: 600 }}>Campus Entry & Gate Control</div>
+          </div>
         </div>
-        <div style={{ fontSize: 17, fontWeight: 800, color: '#064E3B' }}>{clinic?.name}</div>
-        {clinic?.address && <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2, marginBottom: 4, padding: '0 10px', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{clinic.address}</div>}
-        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>Scan to join the OPD queue</div>
-        <div style={{ background: '#f8fafc', borderRadius: 16, padding: 14, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 14, position: 'relative' }}>
-          <img src={qrUrl} alt="QR Code" style={{ width: 190, height: 190, borderRadius: 10, display: 'block' }} />
-          {clinic?.logo_url && (
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', padding: 4, borderRadius: 8 }}>
-              <img src={clinic.logo_url} alt="Logo" style={{ width: 44, height: 44, borderRadius: 6, display: 'block' }} />
+
+        {/* Poster Navy Card */}
+        <div style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #24365C 100%)', color: '#FFFFFF', borderRadius: 12, padding: '16px 18px', textAlign: 'center', marginBottom: 14, boxShadow: '0 6px 20px rgba(27, 42, 74, 0.18)' }}>
+          <div style={{ fontSize: '0.64rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7FA8D9', marginBottom: 4 }}>
+            {clinic?.name || 'ASHBOURNE ACADEMY'}
+          </div>
+          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', fontWeight: 700, marginBottom: 12, color: '#FFFFFF' }}>
+            Scan QR Code for Campus Check-in
+          </div>
+
+          <div style={{ background: '#FFFFFF', padding: 10, borderRadius: 10, display: 'inline-block', marginBottom: 10, position: 'relative', border: '1.5px solid rgba(255,255,255,0.2)' }}>
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="Gate QR Code" style={{ width: 155, height: 155, display: 'block', borderRadius: 6 }} />
+            ) : (
+              <div style={{ width: 155, height: 155, background: '#EFF4FA', borderRadius: 6 }} />
+            )}
+            {clinic?.logo_url && (
+              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#FFFFFF', padding: 3, borderRadius: 6, border: '1.5px solid #1B2A4A', boxShadow: '0 3px 10px rgba(0,0,0,0.18)' }}>
+                <img src={clinic.logo_url} alt="Logo Crest" style={{ width: 38, height: 38, borderRadius: 4, objectFit: 'cover', display: 'block' }} />
+              </div>
+            )}
+          </div>
+
+          <div style={{ fontSize: '0.78rem', color: '#A8C5E8', fontWeight: 500 }}>
+            Or WhatsApp <span style={{ fontFamily: 'monospace', color: '#38BDF8', fontWeight: 800 }}>JOIN {liveCode}</span> to <span style={{ fontFamily: 'monospace', color: '#FFFFFF', fontWeight: 800 }}>+{validWaNumber}</span>
+          </div>
+        </div>
+
+        {/* How to Join Instructions */}
+        <div style={{ background: '#F4F7FB', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 14px', textAlign: 'left', marginBottom: 14 }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1B2A4A', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Smartphone style={{ width: 14, height: 14, color: '#0284C7' }} />
+            <span>How Students & Visitors Join Queue</span>
+          </div>
+          <div style={{ fontSize: '0.74rem', color: '#5A6E85', lineHeight: 1.7, fontWeight: 500 }}>
+            1. Open WhatsApp or Camera on mobile device<br />
+            2. Scan this QR code to register arrival<br />
+            3. Receive instant queue token + live gate updates
+          </div>
+        </div>
+
+        {/* Campus Code Badge & Edit Section */}
+        <div style={{ marginBottom: 14, textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#EFF4FA', border: '1.5px dashed #1B2A4A', borderRadius: 8, padding: '7px 16px', marginBottom: 6 }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1B2A4A', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Campus Code:</span>
+            <span style={{ fontSize: '1rem', fontWeight: 900, color: '#0284C7', fontFamily: 'monospace', letterSpacing: '0.1em' }}>{liveCode}</span>
+          </div>
+
+          {codeSuccess && (
+            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginBottom: 6 }}>
+              ✓ Code updated! New QR generated.
             </div>
           )}
-        </div>
 
-        {planId === 'elite' && (
-          <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ display: 'inline-block', background: '#F0FDFA', color: '#065F46', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: uploadingLogo ? 'wait' : 'pointer', border: '1px dashed #5EEAD4' }}>
-              {uploadingLogo ? 'Uploading...' : <><Camera className="inline-block w-4 h-4" /> Upload Center Logo</>}
-              <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={handleLogoUpload} disabled={uploadingLogo} />
-            </label>
-          </div>
-        )}
-
-        <div style={{ background: '#f0f9ff', borderRadius: 12, padding: '10px 14px', textAlign: 'left', marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#0F4C75', marginBottom: 5 }}><Smartphone className="inline-block w-4 h-4" /> How patients join</div>
-          <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.9 }}>
-            1. Open WhatsApp → scan this QR<br />
-            2. Tap Send — no typing needed<br />
-            3. Pick language → get token + voice note <Mic className="inline-block w-4 h-4" />
-          </div>
-        </div>
-
-        {/* ── Clinic Code Section ── */}
-        <div style={{ marginBottom: 14 }}>
-          {/* Code badge — always visible */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#F0FDFA', border: '1.5px dashed #5EEAD4', borderRadius: 10, padding: '8px 16px', marginBottom: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#065F46', textTransform: 'uppercase', letterSpacing: 0.5 }}>Clinic Code:</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: '#064E3B', fontFamily: 'monospace', letterSpacing: 2 }}>{liveCode}</span>
-          </div>
-          {codeSuccess && <div style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginBottom: 4 }}><CheckCircle2 className="inline-block w-4 h-4" /> Code updated! Your new QR is ready.</div>}
-
-          {/* Plan-gated edit section */}
-          {canEditCode ? (
-            editingCode ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+          {editingCode ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#1B2A4A', marginBottom: 2, textAlign: 'left' }}>Custom Campus Code</label>
                 <input
                   value={codeInput}
                   onChange={e => { setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')); setCodeError('') }}
                   maxLength={12}
-                  placeholder="e.g. DRSHARMA"
-                  style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 700, letterSpacing: 2, color: '#064E3B', border: '2px solid #065F46', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#faf5ff' }}
+                  placeholder="Campus Code (e.g. ASHBOURNE)"
+                  style={{ fontFamily: 'monospace', fontSize: '0.92rem', fontWeight: 700, letterSpacing: '0.08em', color: '#1B2A4A', border: '1.5px solid #1B2A4A', borderRadius: 6, padding: '8px 12px', width: '100%', outline: 'none', textAlign: 'center', background: '#F4F7FB' }}
                 />
-                <input
-                  value={addressInput}
-                  onChange={e => setAddressInput(e.target.value)}
-                  maxLength={100}
-                  placeholder="Clinic Address (Optional)"
-                  style={{ fontSize: 13, color: '#064E3B', border: '2px solid #CCFBF1', borderRadius: 9, padding: '9px 14px', width: '100%', outline: 'none', textAlign: 'center', background: '#fff' }}
-                />
-                {codeError && <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600 }}>{codeError}</div>}
-                <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                  <button onClick={saveCode} disabled={codeSaving} style={{ flex: 1, padding: '9px 0', background: 'linear-gradient(135deg,#065F46,#4F46E5)', color: 'white', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: codeSaving ? 0.7 : 1 }}>
-                    {codeSaving ? 'Saving...' : '✓ Save'}
-                  </button>
-                  <button onClick={() => { setEditingCode(false); setCodeInput(clinic?.code || ''); setAddressInput(clinic?.address || ''); setCodeError('') }} style={{ flex: 1, padding: '9px 0', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    Cancel
-                  </button>
-                </div>
               </div>
-            ) : (
-              <button onClick={() => setEditingCode(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F0FDFA', border: '1px solid #CCFBF1', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#065F46', cursor: 'pointer', margin: '0 auto' }}>
-                <Pencil className="inline-block w-4 h-4" /> Edit Code
-              </button>
-            )
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#1B2A4A', marginBottom: 2, textAlign: 'left' }}>Active Room / Location</label>
+                <input
+                  value={locationInput}
+                  onChange={e => setLocationInput(e.target.value)}
+                  maxLength={100}
+                  placeholder="Active Class / Room / Cell (e.g. Room 101, Science Cell A)"
+                  style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1B2A4A', border: '1.5px solid #CBD5E1', borderRadius: 6, padding: '8px 12px', width: '100%', outline: 'none', textAlign: 'center', background: '#F4F7FB' }}
+                />
+              </div>
+
+              {codeError && <div style={{ fontSize: '0.72rem', color: '#DC2626', fontWeight: 700 }}>{codeError}</div>}
+              
+              <div style={{ display: 'flex', gap: 8, width: '100%', marginTop: 2 }}>
+                <button type="button" onClick={saveCode} disabled={codeSaving} style={{ flex: 1, padding: '9px 0', background: '#1B2A4A', color: '#FFFFFF', border: 'none', borderRadius: 6, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', opacity: codeSaving ? 0.7 : 1 }}>
+                  {codeSaving ? 'Saving...' : '✓ Save Code'}
+                </button>
+                <button type="button" onClick={() => { setEditingCode(false); setCodeInput(clinic?.code || ''); setCodeError('') }} style={{ flex: 1, padding: '9px 0', background: 'transparent', color: '#1B2A4A', border: '1px solid #1B2A4A', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
           ) : (
-            <button
-              onClick={() => router.push('/dashboard/billing')}
-              style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, color: '#92400e', cursor: 'pointer', margin: '0 auto', textAlign: 'center' }}
-            >
-              <Lock className="inline-block w-4 h-4" /> Custom Code — Upgrade to Pro
+            <button type="button" onClick={() => setEditingCode(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F4F7FB', border: '1px solid #CBD5E1', borderRadius: 6, padding: '6px 14px', fontSize: '0.75rem', fontWeight: 700, color: '#1B2A4A', cursor: 'pointer', margin: '4px auto 0' }}>
+              <Pencil style={{ width: 13, height: 13, color: '#0284C7' }} /> Edit Code & Location
             </button>
           )}
         </div>
 
+        {/* Action Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={download} disabled={downloading} style={{ flex: 1, padding: '11px 0', background: 'linear-gradient(135deg,#065F46,#4F46E5)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
-            {downloaded ? <><CheckCircle2 className="inline-block w-4 h-4" /> Saved!</> : downloading ? 'Saving...' : <><Download className="inline-block w-4 h-4" /> Download PNG</>}
+          <button 
+            type="button"
+            onClick={download} 
+            disabled={downloading} 
+            style={{ flex: 1, padding: '11px 0', background: '#1B2A4A', color: '#FFFFFF', border: 'none', borderRadius: 8, fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 4px 12px rgba(27, 42, 74, 0.15)', opacity: downloading ? 0.7 : 1 }}
+          >
+            {downloaded ? (
+              <><CheckCircle2 style={{ width: 16, height: 16, color: '#34D399' }} /> Saved!</>
+            ) : downloading ? (
+              'Generating...'
+            ) : (
+              <><Download style={{ width: 16, height: 16 }} /> Download Poster PNG</>
+            )}
           </button>
-          <button onClick={print} style={{ flex: 1, padding: '11px 0', background: 'white', color: '#065F46', border: '2px solid #065F46', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            <Printer className="inline-block w-4 h-4" /> Print Card
+          <button 
+            type="button"
+            onClick={printPoster} 
+            style={{ flex: 1, padding: '11px 0', background: '#EFF4FA', color: '#1B2A4A', border: '1.5px solid #1B2A4A', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          >
+            <Printer style={{ width: 16, height: 16 }} /> Print Card
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
 
-// ─── DISCOVERY PROFILE MODAL ─────────────────────────────────────────────────────────
-function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
-  const [saving, setSaving] = useState(false)
-  const [clinicName, setClinicName] = useState(clinic?.name || '')
-  const [specialty, setSpecialty] = useState(clinic?.specialty || 'General Physician')
-  const [customSpecialty, setCustomSpecialty] = useState('')
-  const [city, setCity] = useState(clinic?.city || '')
-  const [area, setArea] = useState(clinic?.area || '')
-  const [phone, setPhone] = useState(clinic?.phone === '0000000000' ? '' : clinic?.phone || '')
-  const [gpsStatus, setGpsStatus] = useState('')
-  const [lat, setLat] = useState(null)
-  const [lng, setLng] = useState(null)
+// ─── MAIN SCHOOL COMMAND CENTER PAGE ───
+export default function SchoolCommandCenter() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeTabFromUrl = searchParams.get('tab') || 'arrivals'
 
-  useEffect(() => {
-    if (!navigator.geolocation) return
-    setGpsStatus('loading')
-    navigator.geolocation.getCurrentPosition(
-      pos => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); setGpsStatus('success') },
-      err => { console.error(err); setGpsStatus('error') },
-      { timeout: 10000, maximumAge: 60000 }
-    )
-  }, [])
+  const [tab, setTab] = useState(activeTabFromUrl)
+  const [clinic, setSchool] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [showQR, setShowQR] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [queuePaused, setQueuePaused] = useState(false)
 
-  async function handleSave() {
-    const finalSpecialty = specialty === 'Other' ? (customSpecialty || 'Other') : specialty
-    if (!clinicName || !city || !finalSpecialty) return alert("Clinic Name, City and Specialty are required to be visible to patients.")
-    if (!phone || phone.length < 10) return alert("A valid 10-digit WhatsApp number is required.")
-    
-    setSaving(true)
-    try {
-      const res = await fetch('/api/clinics/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, name: clinicName, specialty: finalSpecialty, city, area, phone, lat, lng })
-      })
-      if (res.ok) {
-        onSuccess({ name: clinicName, specialty: finalSpecialty, city, area, phone, lat, lng })
-        onClose()
-      } else {
-        alert("Failed to save profile.")
+  async function togglePauseQueue() {
+    const nextState = !queuePaused
+    setQueuePaused(nextState)
+    if (clinic?.id && clinic.id !== 'demo-school-id') {
+      try {
+        await supabase.from('schools').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
+        await supabase.from('public_schools').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
+      } catch (err) {
+        console.warn('Toggle pause queue error:', err)
       }
-    } catch (e) {
-      alert("Error: " + e.message)
     }
-    setSaving(false)
   }
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-      <div className="discovery-modal-container" style={{ backgroundColor: '#09090b', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.15), transparent 70%)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 440, maxHeight: '90vh', color: 'white', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', overflowY: 'auto', fontFamily: "'Inter', sans-serif" }}>
-        
-        
+  // Form input states
+  const [studentName, setStudentName] = useState('')
+  const [gradeClass, setGradeClass] = useState('')
+  const [reason, setReason] = useState('')
+  const [guardianName, setGuardianName] = useState('')
+  const [activeRoom, setActiveRoom] = useState('Room 101 / Main Gate')
 
-        {clinic?.phone !== '0000000000' && clinic?.specialty && clinic?.city && (
-          <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 32, height: 32, borderRadius: 16, cursor: 'pointer', zIndex: 10 }}>✕</button>
-        )}
-        <div style={{ textAlign: 'center', marginBottom: 24, position: 'relative', zIndex: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><UserCheck size={48} color="#10b981" style={{ filter: 'drop-shadow(0 0 10px rgba(16,185,129,0.3))' }} /></div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 8px 0' }}>Complete Your Profile</h2>
-          <p style={{ color: '#94A3B8', fontSize: 14, margin: 0, lineHeight: 1.5 }}>Fill in your details so patients can find you easily on the TokenPe clinic finder.</p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', zIndex: 10 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Clinic's Name *</label>
-            <input value={clinicName} onChange={e => setClinicName(e.target.value)} placeholder="e.g. Apollo Clinic" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Specialty *</label>
-            <div style={{ position: 'relative' }}>
-              <select value={specialty} onChange={e => setSpecialty(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15, appearance: 'none', cursor: 'pointer' }}>
-                <option value="General Physician">General Physician</option>
-                <option value="Pediatrician">Pediatrician</option>
-                <option value="Gynecologist">Gynecologist</option>
-                <option value="Dermatologist">Dermatologist</option>
-                <option value="Dentist">Dentist</option>
-                <option value="Orthopedic">Orthopedic</option>
-                <option value="Eye Specialist">Eye Specialist</option>
-                <option value="ENT Specialist">ENT Specialist</option>
-                <option value="Cardiologist">Cardiologist</option>
-                <option value="Physiotherapist">Physiotherapist</option>
-                <option value="Other">Other (Type your own)</option>
-              </select>
-              <ChevronDown size={18} color="#64748b" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-            </div>
-            {specialty === 'Other' && (
-              <input 
-                autoFocus
-                value={customSpecialty} 
-                onChange={e => setCustomSpecialty(e.target.value)} 
-                placeholder="Type your specialty..." 
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15, marginTop: 10 }} 
-              />
-            )}
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>City *</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>Local Area</label>
-            <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Andheri West, Bandra" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
-            <div style={{ marginTop: 6, fontSize: 13, color: '#10b981', display: 'flex', alignItems: 'center', gap: 6 }}>
-              {gpsStatus === 'loading' ? <span style={{ color: '#94a3b8' }}>Getting location...</span> : gpsStatus === 'success' ? <><CheckCircle2 size={14} /> <span>Location secured</span></> : <span style={{ color: '#94a3b8' }}>Location failed (Optional)</span>}
-            </div>
-          </div>
-
-          {clinic?.phone === '0000000000' && (
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#CBD5E1', marginBottom: 6 }}>WhatsApp Number * (required for Queue)</label>
-              <input type="tel" maxLength={10} value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="10-digit number" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', outline: 'none', fontSize: 15 }} />
-            </div>
-          )}
-
-          <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: 14, borderRadius: 12, background: '#059669', color: 'white', fontWeight: 800, fontSize: 16, border: 'none', cursor: saving ? 'wait' : 'pointer', marginTop: 8, boxShadow: '0 4px 14px rgba(5, 150, 105, 0.4)', transition: 'background 0.2s ease' }} onMouseOver={(e) => e.currentTarget.style.background = '#10b981'} onMouseOut={(e) => e.currentTarget.style.background = '#059669'}>
-            {saving ? 'Saving Profile...' : 'Save & Continue'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── HEADER CLOCK (Isolated to prevent root re-renders) ────────────────────
-function HeaderClock() {
-  const [time, setTime] = useState(new Date())
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  return <div className="header-clock">{time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
-}
-
-// ─── MAIN DASHBOARD ────────────────────────────────────────────────────────
-export default function Dashboard() {
-  const router = useRouter()
-  const [patients, setPatients] = useState([])
-  const [clinic, setClinic] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [toasts, setToasts] = useState([])
-  const [newPatientAlert, setNewPatientAlert] = useState(null)
-  const newPatientAlertTimeoutRef = useRef(null)
-  const localAddedPatientIdsRef = useRef(new Set())
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [upgrading, setUpgrading] = useState(null)
-  const [showSuccessModal, setShowSuccessModal] = useState(null)
-
-  useEffect(() => {
-    if (!document.getElementById('razorpay-checkout-js')) {
-      const script = document.createElement('script')
-      script.id = 'razorpay-checkout-js'
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-      script.async = true
-      document.head.appendChild(script)
-    }
-    return () => {
-      if (newPatientAlertTimeoutRef.current) {
-        clearTimeout(newPatientAlertTimeoutRef.current)
+  function handleRoomChange(e) {
+    const val = e.target.value
+    setActiveRoom(val)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tokenpe_active_room', val)
+      if (clinic?.id && clinic.id !== 'demo-school-id') {
+        supabase.from('schools').update({ location: val }).eq('id', clinic.id).then(() => {}).catch(() => {})
+        supabase.from('public_schools').update({ location: val }).eq('id', clinic.id).then(() => {}).catch(() => {})
       }
     }
-  }, [])
-  const [activeTab, setActiveTab] = useState('active')
-  const [currentDate, setCurrentDate] = useState(() => getISTDateString())
-  const [historyDate, setHistoryDate] = useState(() => getISTYesterdayDateString())
-  const [historyPatients, setHistoryPatients] = useState([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
-  const [historySearch, setHistorySearch] = useState('')
-  const [historyFilter, setHistoryFilter] = useState('all')
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newPhone, setNewPhone] = useState('')
-  const [newLang, setNewLang] = useState('hi')
-  const [showQR, setShowQR] = useState(false)
-  const [showDiscovery, setShowDiscovery] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [userClinics, setUserClinics] = useState([])
-  const [showAddBranch, setShowAddBranch] = useState(false)
-  const [newBranchName, setNewBranchName] = useState('')
-  const [addingBranch, setAddingBranch] = useState(false)
-  const [showManageBranches, setShowManageBranches] = useState(false)
-  const [editingBranchId, setEditingBranchId] = useState(null)
-  const [editingBranchName, setEditingBranchName] = useState('')
-  const [managingBranch, setManagingBranch] = useState(false)
-  const [closingClinic, setClosingClinic] = useState(false)
+  }
+
+  // Edit School Name, Subtitle & Logo states
+  const [showEditSchoolModal, setShowEditSchoolModal] = useState(false)
+  const [newSchoolNameInput, setNewSchoolNameInput] = useState('')
+  const [schoolSubtitle, setSchoolSubtitle] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('tokenpe_school_subtitle') || 'Campus Operations & Gate Control Console'
+    }
+    return 'Campus Operations & Gate Control Console'
+  })
+  const [schoolCity, setSchoolCity] = useState('')
+  const [showNavMenu, setShowNavMenu] = useState(false)
+  const fileInputRef = useRef(null)
+  const modalFileInputRef = useRef(null)
+  const [schoolLogo, setSchoolLogo] = useState(null)
+
+  // Broadcast Notice to All Queue States
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false)
+  const [broadcastMsgText, setBroadcastMsgText] = useState('')
+  const [activeNotice, setActiveNotice] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('tokenpe_active_notice') || ''
+    return ''
+  })
+
+  // Skip / Remove Confirmation Modal State
+  const [skipTarget, setSkipTarget] = useState(null)
+
+  async function confirmRemoveFromQueue(id) {
+    if (!id) return
+    try { if (sounds?.admit) sounds.admit() } catch (e) {}
+    const updatedQueue = arrivals.filter(a => a.id !== id)
+    const reRanked = updatedQueue.map((item, idx) => ({ ...item, rank: String(idx + 1).padStart(2, '0') }))
+    setArrivals(reRanked)
+    try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(reRanked)) } catch (e) {}
+    try {
+      const schoolId = await getRealSchoolId()
+      if (schoolId && schoolId !== 'demo-school-id') {
+        await supabase.from('school_queue').update({ status: 'cancelled' }).eq('id', id).catch(() => {})
+      }
+    } catch (e) {}
+    setSkipTarget(null)
+  }
+
+  async function handleSendBroadcastNotice(e) {
+    e.preventDefault()
+    if (!broadcastMsgText.trim()) return
+    const msg = broadcastMsgText.trim()
+    setActiveNotice(msg)
+    try {
+      if (sounds?.call) sounds.call()
+      confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } })
+      localStorage.setItem('tokenpe_active_notice', msg)
+      if (clinic?.id && clinic.id !== 'demo-school-id') {
+        await supabase.from('schools').update({ active_notice: msg }).eq('id', clinic.id).catch(() => {})
+        await supabase.from('public_schools').update({ active_notice: msg }).eq('id', clinic.id).catch(() => {})
+      }
+    } catch (err) {}
+    setShowBroadcastModal(false)
+    setBroadcastMsgText('')
+    alert(`📢 Notice Broadcast Sent to Queue:\n\n"${msg}"`)
+  }
+
+  function handleLogoUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Logo image size must be under 5MB.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = async (evt) => {
+      const base64Logo = evt.target.result
+      setSchoolLogo(base64Logo)
+      const updatedClinic = { ...clinic, logo_url: base64Logo }
+      setSchool(updatedClinic)
+      try {
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+        if (clinic?.id && clinic.id !== 'demo-school-id') {
+          await supabase.from('schools').update({ logo_url: base64Logo }).eq('id', clinic.id).catch(() => {})
+          await supabase.from('public_schools').update({ logo_url: base64Logo }).eq('id', clinic.id).catch(() => {})
+        }
+      } catch (err) {}
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function saveSchoolName(e) {
+    e.preventDefault()
+    if (!newSchoolNameInput.trim()) return
+    const updatedName = newSchoolNameInput.trim()
+    const updatedCity = schoolCity.trim()
+    const updatedClinic = { ...clinic, name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }
+    setSchool(updatedClinic)
+    try {
+      localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+      localStorage.setItem('tokenpe_school_subtitle', schoolSubtitle)
+      if (clinic?.id && clinic.id !== 'demo-school-id') {
+        await supabase.from('schools').update({ name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }).eq('id', clinic.id).catch(() => {})
+        await supabase.from('public_schools').update({ name: updatedName, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }).eq('id', clinic.id).catch(() => {})
+      }
+    } catch (err) {}
+    setShowEditSchoolModal(false)
+  }
+
+  async function handleLogout() {
+    try {
+      localStorage.clear()
+      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+      await supabase.auth.signOut().catch(() => {})
+    } catch (e) {}
+    window.location.href = '/school-login?logged_out=true'
+  }
+
   const sounds = useSounds()
 
-  // ── Load clinic from session (multi-clinic support) ─────────────────────
-  useEffect(() => {
-    async function loadClinic() {
-      // ── Step 1: Paint UI instantly from localStorage cache ──────────────
-      const cachedClinic = localStorage.getItem('tokenpe_clinic')
-
+  // State Definitions (100% Real Database Driven)
+  const [arrivals, setArrivals] = useState([])
+  const [classrooms, setClassrooms] = useState([])
+  const [dismissals, setDismissals] = useState([])
+  const [studentDirectory, setStudentDirectory] = useState([])
+  const [withStaff, setWithStaff] = useState(() => {
+    if (typeof window !== 'undefined') {
       try {
-        const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics')) || []
-        setUserClinics(storedUserClinics)
-      } catch (e) { }
+        const stored = localStorage.getItem('tokenpe_with_staff_queue')
+        return stored ? JSON.parse(stored) : []
+      } catch (e) { return [] }
+    }
+    return []
+  })
 
-      let parsedCache = null
-      if (cachedClinic) {
-        try {
-          parsedCache = JSON.parse(cachedClinic)
-          setClinic(parsedCache) // paint UI instantly from cache
-          setLoading(false)     // skip loading spinner if we have cache
-        } catch (e) { }
+  // Helper to ensure we have a valid real Supabase school ID for all DB operations
+  async function getRealSchoolId() {
+    if (clinic?.id && clinic.id !== 'demo-school-id') return clinic.id
+    try {
+      const stored = localStorage.getItem('tokenpe_clinic')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed?.id && parsed.id !== 'demo-school-id') {
+          setSchool(parsed)
+          return parsed.id
+        }
       }
+    } catch (_) {}
 
-      // ── Step 2: Refresh clinic from Supabase in background ──────────────
+    try {
+      const { data: dbSchool } = await supabase.from('schools').select('*').limit(1).maybeSingle()
+      if (dbSchool) {
+        setSchool(dbSchool)
+        try { localStorage.setItem('tokenpe_clinic', JSON.stringify(dbSchool)) } catch (_) {}
+        return dbSchool.id
+      }
+    } catch (e) {}
+
+    try {
+      const { data: dbPub } = await supabase.from('public_schools').select('*').limit(1).maybeSingle()
+      if (dbPub) {
+        setSchool(dbPub)
+        try { localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub)) } catch (_) {}
+        return dbPub.id
+      }
+    } catch (e) {}
+
+    return clinic?.id
+  }
+
+  // ── 1. DYNAMIC INITIALIZATION & REAL DB FETCH ──
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const savedRoom = localStorage.getItem('tokenpe_active_room')
+    if (savedRoom) setActiveRoom(savedRoom)
+
+    const stored = localStorage.getItem('tokenpe_clinic')
+    let currentSchool = null
+
+    if (stored) {
       try {
-        const res = await fetch('/api/dashboard/init')
-        if (!res.ok) throw new Error('Init failed')
-        const data = await res.json()
-        if (data.success && data.clinic) {
-          localStorage.setItem('clinicCode', data.clinic.code)
-          localStorage.setItem('clinicPhone', data.clinic.phone)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
+        currentSchool = JSON.parse(stored)
+        setSchool(currentSchool)
+      } catch (e) {}
+    } else {
+      currentSchool = { id: 'demo-school-id', name: 'Ashbourne Academy', code: 'ASHBOURNE', city: 'Karnataka' }
+      setSchool(currentSchool)
+    }
 
-          // Only trigger a re-render if something actually changed
-          if (JSON.stringify(data.clinic) !== JSON.stringify(parsedCache)) {
-            setClinic(data.clinic)
+    if (currentSchool?.logo_url) setSchoolLogo(currentSchool.logo_url)
+
+    // Real DB fetch from Supabase
+    async function loadDynamicData() {
+      try {
+        let targetId = currentSchool?.id
+        if (!targetId || targetId === 'demo-school-id') {
+          const { data: dbSchool } = await supabase.from('schools').select('*').limit(1).maybeSingle()
+          if (dbSchool) {
+            currentSchool = dbSchool
+            targetId = dbSchool.id
+            setSchool(dbSchool)
+            if (dbSchool.logo_url) setSchoolLogo(dbSchool.logo_url)
+            if (dbSchool.location && !localStorage.getItem('tokenpe_active_room')) {
+              setActiveRoom(dbSchool.location)
+              localStorage.setItem('tokenpe_active_room', dbSchool.location)
+            }
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(dbSchool))
+          } else {
+            const { data: dbPub } = await supabase.from('public_schools').select('*').limit(1).maybeSingle()
+            if (dbPub) {
+              currentSchool = dbPub
+              targetId = dbPub.id
+              setSchool(dbPub)
+              if (dbPub.logo_url) setSchoolLogo(dbPub.logo_url)
+              if (dbPub.location && !localStorage.getItem('tokenpe_active_room')) {
+                setActiveRoom(dbPub.location)
+                localStorage.setItem('tokenpe_active_room', dbPub.location)
+              }
+              localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub))
+            }
           }
-
-          if (data.userClinics) {
-            localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
-            setUserClinics(data.userClinics)
-          }
-
-          if (!data.clinic.specialty || !data.clinic.city || data.clinic.phone === '0000000000') {
-            setShowDiscovery(true)
+        } else {
+          const { data: dbSchool } = await supabase.from('schools').select('*').eq('id', targetId).maybeSingle()
+          if (dbSchool) {
+            setSchool(dbSchool)
+            currentSchool = dbSchool
+            if (dbSchool.logo_url) setSchoolLogo(dbSchool.logo_url)
+            if (dbSchool.location && !localStorage.getItem('tokenpe_active_room')) {
+              setActiveRoom(dbSchool.location)
+              localStorage.setItem('tokenpe_active_room', dbSchool.location)
+            }
+            localStorage.setItem('tokenpe_clinic', JSON.stringify(dbSchool))
+          } else {
+            const { data: dbPub } = await supabase.from('public_schools').select('*').eq('id', targetId).maybeSingle()
+            if (dbPub) {
+              setSchool(dbPub)
+              currentSchool = dbPub
+              if (dbPub.logo_url) setSchoolLogo(dbPub.logo_url)
+              if (dbPub.location && !localStorage.getItem('tokenpe_active_room')) {
+                setActiveRoom(dbPub.location)
+                localStorage.setItem('tokenpe_active_room', dbPub.location)
+              }
+              localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub))
+            }
           }
         }
-      } catch (e) {
-        if (!parsedCache) {
-          localStorage.removeItem('clinicCode')
-          localStorage.removeItem('clinicPhone')
-          localStorage.removeItem('tokenpe_clinic')
-          const vertical = localStorage.getItem('tokenpe_vertical')
-          if (vertical === 'salon') router.push('/salon-login')
-          else if (vertical === 'restaurant') router.push('/restaurant-login')
-          else if (vertical === 'school') router.push('/school-login')
-          else if (vertical === 'other') router.push('/business-login')
-          else router.push('/school-login')
+
+        if (targetId && targetId !== 'demo-school-id') {
+          // Fetch Live Queue from school_queue or queues
+          const { data: queueData } = await supabase
+            .from('school_queue')
+            .select('*')
+            .eq('school_id', targetId)
+            .eq('status', 'waiting')
+            .order('created_at', { ascending: true })
+
+          let fetchedQueue = []
+          if (queueData && queueData.length > 0) {
+            fetchedQueue = queueData.map((q, i) => ({
+              id: q.id,
+              rank: q.token || String(i + 1).padStart(2, '0'),
+              name: q.student_name,
+              grade: q.grade_class || 'General',
+              reason: q.reason || 'Arrival',
+              guardian: q.guardian_name || '',
+              wait: q.wait_time || "1'",
+              status: q.status || 'waiting',
+              time: q.joined_at ? new Date(q.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00'
+            }))
+          } else {
+            // Check unified queues table
+            const { data: unifiedData } = await supabase
+              .from('queues')
+              .select('*')
+              .eq('clinic_id', targetId)
+              .eq('status', 'waiting')
+              .order('created_at', { ascending: true })
+
+            if (unifiedData && unifiedData.length > 0) {
+              fetchedQueue = unifiedData.map((q, i) => ({
+                id: q.id,
+                rank: String(i + 1).padStart(2, '0'),
+                name: q.name,
+                grade: q.notes ? q.notes.split('|')[0]?.trim() : 'General',
+                reason: q.notes ? q.notes.split('|')[1]?.trim() : 'Arrival',
+                guardian: q.phone || '',
+                wait: "1'",
+                status: 'waiting',
+                time: q.created_at ? new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00'
+              }))
+            }
+          }
+
+          let localSaved = []
+          try {
+            const storedQ = localStorage.getItem('tokenpe_school_queue')
+            if (storedQ) localSaved = JSON.parse(storedQ)
+          } catch (e) {}
+
+          if (fetchedQueue.length > 0) {
+            setArrivals(fetchedQueue)
+            try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(fetchedQueue)) } catch (e) {}
+          } else if (localSaved.length > 0) {
+            setArrivals(localSaved)
+          } else {
+            setArrivals([])
+          }
+
+          // Fetch Dismissal History
+          const { data: historyData } = await supabase
+            .from('school_history')
+            .select('*')
+            .eq('school_id', targetId)
+            .order('completed_at', { descending: true })
+            .limit(20)
+
+          if (historyData && historyData.length > 0) {
+            const mappedHistory = historyData.map(h => ({
+              id: h.id,
+              name: h.student_name,
+              grade: h.grade_class,
+              guardian: `Guardian: ${h.guardian_name || 'Parent'}`,
+              time: h.time_label || '12:15'
+            }))
+            setDismissals(mappedHistory)
+          }
+
+          // Fetch Classrooms
+          const { data: classData } = await supabase
+            .from('school_classrooms')
+            .select('*')
+            .eq('school_id', targetId)
+
+          if (classData && classData.length > 0) {
+            const mappedClasses = classData.map(c => ({
+              code: c.code,
+              title: c.subject_title,
+              teacher: c.teacher_name,
+              grade: c.grade,
+              count: c.student_count || 0,
+              capacity: c.capacity || 30,
+              pct: c.occupancy_pct || Math.round(((c.student_count || 0) / (c.capacity || 30)) * 100)
+            }))
+            setClassrooms(mappedClasses)
+          }
+
+          // Fetch Student Directory
+          const { data: studentsData } = await supabase
+            .from('school_students')
+            .select('*')
+            .eq('school_id', targetId)
+
+          if (studentsData) setStudentDirectory(studentsData)
         }
+      } catch (err) {
+        console.warn('Supabase real DB load:', err)
+      } finally {
+        setLoading(false)
       }
     }
-    loadClinic()
+
+    loadDynamicData()
+
+    // ── Real-time polling every 4s for queue updates ──
+    const interval = setInterval(loadDynamicData, 4000)
+    return () => clearInterval(interval)
   }, [])
 
+  // ── 2. DYNAMIC ADMIT FUNCTION (MOVES TO WITH STAFF SECTION) ──
+  async function handleAdmit(id) {
+    try { sounds.admit() } catch (e) {}
+    confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } })
+    const target = arrivals.find(a => a.id === id) || (nextInQueue && nextInQueue.id === id ? nextInQueue : null)
+    if (target) {
+      const updatedArrivals = arrivals.filter(a => a.id !== target.id)
+      setArrivals(updatedArrivals)
+      try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(updatedArrivals)) } catch (e) {}
 
-  // ── Load patients when clinic ID or currentDate changes ─────────────────
-  // Using clinic.id (not the whole clinic object) to avoid reloading on every
-  // minor clinic state update (e.g. queue_paused toggle)
-  const clinicId = clinic?.id
-  useEffect(() => {
-    if (!clinicId) return
-    async function loadPatients() {
-      setLoading(true)
+      // Move student into WITH STAFF section
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      const staffEntry = { ...target, admitTime: timeStr, status: 'with_staff' }
+      const updatedWithStaff = [staffEntry, ...withStaff.filter(s => s.id !== target.id)]
+      setWithStaff(updatedWithStaff)
+      try { localStorage.setItem('tokenpe_with_staff_queue', JSON.stringify(updatedWithStaff)) } catch (e) {}
+
+      // DB Dynamic Updates
       try {
-        const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.success) setPatients(data.patients || [])
+        const schoolId = await getRealSchoolId()
+        if (schoolId && schoolId !== 'demo-school-id') {
+          await supabase.from('school_queue').update({ status: 'with_staff' }).eq('id', target.id).catch(() => {})
         }
       } catch (e) {
-        console.error('Failed to fetch patients', e)
+        console.warn('DB Admit Error:', e)
       }
-      setLoading(false)
     }
-    loadPatients()
-  }, [clinicId, currentDate])
+  }
 
-  // ── Polling ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!clinicId) return
-    const interval = setInterval(async () => {
+  // ── 2a2. COMPLETE CONSULTATION (MOVES FROM WITH STAFF TO DISMISSED) ──
+  async function handleCompleteStaff(id) {
+    try { sounds.admit() } catch (e) {}
+    confetti({ particleCount: 25, spread: 45, origin: { y: 0.7 } })
+    const target = withStaff.find(s => s.id === id)
+    if (target) {
+      const updatedWithStaff = withStaff.filter(s => s.id !== id)
+      setWithStaff(updatedWithStaff)
+      try { localStorage.setItem('tokenpe_with_staff_queue', JSON.stringify(updatedWithStaff)) } catch (e) {}
+
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      setDismissals(prev => [{ name: target.name, grade: target.grade, guardian: `Guardian: ${target.guardian || 'N/A'}`, time: timeStr }, ...prev])
+
+      // DB Dynamic Updates
       try {
-        const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.success) {
-            setPatients(prev => {
-              const newPatients = data.patients || []
-              // Find newly inserted patients for the notification
-              const newAdds = newPatients.filter(np => {
-                const isNew = !prev.some(p => p.id === np.id)
-                const isLocal = localAddedPatientIdsRef.current.has(np.id)
-                return isNew && !isLocal
-              })
-              if (newAdds.length > 0) {
-                 sounds.newPatient()
-                 setNewPatientAlert(newAdds[0])
-                 if (newPatientAlertTimeoutRef.current) {
-                   clearTimeout(newPatientAlertTimeoutRef.current)
-                 }
-                 newPatientAlertTimeoutRef.current = setTimeout(() => {
-                   setNewPatientAlert(null)
-                   newPatientAlertTimeoutRef.current = null
-                 }, 5000)
-                 addToast(`New patient joined: ${newAdds[0].name || maskPhone(newAdds[0].phone)} — ${newAdds[0].token}`, 'new')
-              }
-              return newPatients
-            })
-          }
+        const schoolId = await getRealSchoolId()
+        if (schoolId && schoolId !== 'demo-school-id') {
+          await supabase.from('school_queue').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', id).catch(() => {})
+          await supabase.from('queues').update({ status: 'done' }).eq('clinic_id', schoolId).eq('name', target.name).catch(() => {})
+          await supabase.from('school_history').insert({
+            school_id: schoolId,
+            student_name: target.name,
+            grade_class: target.grade,
+            guardian_name: target.guardian,
+            time_label: timeStr,
+            status: 'done'
+          }).catch(() => {})
         }
-      } catch (e) { }
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [clinicId, currentDate])
-
-  // ── Date Check ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const t = setInterval(() => {
-      const todayStr = getISTDateString()
-      if (todayStr !== currentDate) {
-        setCurrentDate(todayStr)
+      } catch (e) {
+        console.warn('DB Complete Staff Error:', e)
       }
-    }, 60000) // Check once a minute
-    return () => clearInterval(t)
-  }, [currentDate])
-
-  // ── Fetch History ───────────────────────────────────────────────────────
-  useEffect(() => {
-    if (activeTab === 'history' && clinic) {
-      async function fetchHistory() {
-        setLoadingHistory(true)
-        try {
-          const res = await fetch(`/api/dashboard/get?date=${historyDate}`)
-          if (res.ok) {
-            const data = await res.json()
-            if (data.success) setHistoryPatients(data.patients || [])
-          }
-        } catch (e) { }
-        setLoadingHistory(false)
-      }
-      fetchHistory()
-    }
-  }, [activeTab, historyDate, clinic])
-
-  // ── Toast system ────────────────────────────────────────────────────────
-  function addToast(msg, type = 'done') {
-    const id = `${Date.now()}-${Math.random()}`
-    setToasts(prev => [...prev, { id, msg, type }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
-  }
-
-  // ── Code Update Callback ─────────────────────────────────────
-  function handleCodeUpdate(newCode) {
-    setClinic(prev => ({ ...prev, code: newCode }))
-
-    // Sync the new code into the userClinics array for the branch switcher
-    setUserClinics(prevClinics => {
-      const updated = prevClinics.map(c => c.id === clinic.id ? { ...c, code: newCode } : c)
-      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updated))
-      return updated
-    })
-
-    addToast(`Clinic code updated to ${newCode}! Share it with your patients.`, 'done')
-  }
-
-  // ── Smooth Branch Switcher (no reload) ─────────────────────────────────
-  async function switchToBranch(targetClinic) {
-    setMenuOpen(false)
-    setShowAddBranch(false)
-    if (targetClinic.id === clinic?.id) return
-
-    // Optimistically switch UI immediately — no flash, no reload
-    setClinic(targetClinic)
-    setPatients([])
-    setLoading(true)
-    localStorage.setItem('clinicCode', targetClinic.code)
-    localStorage.setItem('clinicPhone', targetClinic.phone)
-    localStorage.setItem('tokenpe_clinic', JSON.stringify(targetClinic))
-    addToast(`Switched to ${targetClinic.name}`, 'done')
-
-    // Update session cookie and wait for it
-    await fetch('/api/auth/switch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetClinicId: targetClinic.id })
-    })
-
-    // Fetch fresh patients for the new branch securely
-    try {
-      const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
-      if (res.ok) {
-        const data = await res.json()
-        if (data.success) setPatients(data.patients || [])
-      }
-    } catch (e) { }
-    setLoading(false)
-
-    // Show Discovery Profile if the new branch is missing details
-    if (!targetClinic.specialty || !targetClinic.city || targetClinic.phone === '0000000000') {
-      setShowDiscovery(true)
     }
   }
 
-  async function handleSaveBranchEdit(branchId) {
-    if (!editingBranchName.trim()) return
-    setManagingBranch(true)
-    try {
-      const res = await fetch('/api/clinics/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: branchId, name: editingBranchName })
-      })
-      const data = await res.json()
-      if (data.success) {
-        const updatedUserClinics = userClinics.map(c => c.id === branchId ? { ...c, name: editingBranchName } : c)
-        setUserClinics(updatedUserClinics)
-        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
-        if (clinic?.id === branchId) {
-          const updatedClinic = { ...clinic, name: editingBranchName }
-          setClinic(updatedClinic)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
-        }
-        setEditingBranchId(null)
-      } else {
-        alert(data.error || 'Failed to update branch')
-      }
-    } catch (e) {
-      alert('Error updating branch')
-    }
-    setManagingBranch(false)
-  }
+  // ── 2b. DYNAMIC NOTIFY FUNCTION (NO REDIRECT, SHOW TOAST POPUP) ──
+  const [notifyToast, setNotifyToast] = useState(null)
 
-  async function handleDeleteBranch(branchId) {
-    // Use a toast-based confirmation instead of a browser confirm dialog
-    addToast('Deleting branch...', 'notify')
-    setManagingBranch(true)
-    try {
-      const res = await fetch('/api/clinics/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: branchId })
-      })
-      const data = await res.json()
-      if (data.success) {
-        const updatedUserClinics = userClinics.filter(c => c.id !== branchId)
-        setUserClinics(updatedUserClinics)
-        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
-        addToast('Branch deleted successfully', 'done')
-        if (clinic?.id === branchId) {
-          await switchToBranch(updatedUserClinics[0])
-        }
-      } else {
-        addToast(data.error || 'Failed to delete branch', 'error')
-      }
-    } catch (e) {
-      addToast('Error deleting branch', 'error')
-    }
-    setManagingBranch(false)
-  }
-
-  // ── Logout ──────────────────────────────────────────────────────────────
-  async function logout() {
-    const vertical = localStorage.getItem('tokenpe_vertical')
-    localStorage.removeItem('clinicCode')
-    localStorage.removeItem('clinicPhone')
-    localStorage.removeItem('tokenpe_clinic')
-    localStorage.removeItem('tokenpe_user_clinics')
-    await fetch('/api/auth/logout', { method: 'POST' })
-    await supabase.auth.signOut()
+  function handleNotify(idOrObj) {
+    const target = (typeof idOrObj === 'object' && idOrObj !== null) 
+      ? idOrObj 
+      : (arrivals.find(a => a.id === idOrObj) || (nextInQueue && nextInQueue.id === idOrObj ? nextInQueue : null))
     
-    if (vertical === 'salon') router.push('/salon-login')
-    else if (vertical === 'restaurant') router.push('/restaurant-login')
-    else if (vertical === 'school') router.push('/school-login')
-    else if (vertical === 'other') router.push('/business-login')
-    else router.push('/school-login')
-  }
-
-  // ── Toggle Pause ────────────────────────────────────────────────────────
-  async function togglePause() {
-    if (clinic.plan_id === 'starter') {
-      addToast('Queue pause is a Pro feature. Please upgrade.', 'error')
-      return
-    }
-    const newStatus = !clinic.queue_paused
-    // Optimistic UI update for instant feedback
-    setClinic(prev => ({ ...prev, queue_paused: newStatus }))
-    addToast(newStatus ? 'Queue is now PAUSED' : 'Queue is now ACTIVE', newStatus ? 'notify' : 'done')
-
-    // Attempt DB update in background via backend API
-    try {
-      const res = await fetch('/api/clinic/pause', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, queuePaused: newStatus })
-      })
-
-      if (!res.ok) {
-        throw new Error('Failed to toggle pause')
-      }
-    } catch (error) {
-      console.error('Failed to toggle pause:', error)
-      // Revert the state if the API call fails
-      setClinic(prev => ({ ...prev, queue_paused: !newStatus }))
-      addToast('Failed to pause queue. Reverted state.', 'error')
+    if (target) {
+      try { if (sounds?.call) sounds.call() } catch (e) {}
+      setNotifyToast(`Member notified to be ready! (${target.name} • ${target.grade || 'General'})`)
+      setTimeout(() => setNotifyToast(null), 3500)
     }
   }
 
-  // ── Close Clinic for Today ─────────────────────────────────────────────
-  async function closeClinicForToday() {
+  // ── 2c. DYNAMIC SKIP FUNCTION (TRIGGER CONFIRMATION MODAL TO REMOVE) ──
+  function handleSkip(idOrObj) {
+    if (typeof idOrObj === 'object' && idOrObj !== null) {
+      setSkipTarget(idOrObj)
+    } else {
+      const target = arrivals.find(a => a.id === idOrObj)
+      if (target) setSkipTarget(target)
+    }
+  }
 
-    setMenuOpen(false)
-    const previousDate = clinic.closed_today_date
-    const today = getISTDateString()
-    
-    // OPTIMISTIC UI: Instantly switch state so there is no loading blink
-    setClinic(prev => ({ ...prev, closed_today_date: today }))
-    
+  // ── 3. DYNAMIC MANUAL CHECK-IN ──
+  async function handleManualCheckIn(e) {
+    e.preventDefault()
+    if (!studentName.trim()) return
+    sounds.call()
+
+    const currentLocal = (() => {
+      try {
+        const storedQ = localStorage.getItem('tokenpe_school_queue')
+        return storedQ ? JSON.parse(storedQ) : arrivals
+      } catch (e) { return arrivals }
+    })()
+
+    const rankStr = String(currentLocal.length + 1).padStart(2, '0')
+    const savedName = studentName.trim()
+    const savedGrade = gradeClass.trim() || 'General'
+    const savedReason = reason.trim() || 'Arrival'
+    const savedGuardian = guardianName.trim()
+
+    const newEntry = {
+      id: String(Date.now()),
+      rank: rankStr,
+      name: savedName,
+      grade: savedGrade,
+      reason: savedReason,
+      guardian: savedGuardian,
+      wait: "1'",
+      status: 'waiting',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+
+    const updatedQueue = [newEntry, ...currentLocal]
+    setArrivals(updatedQueue)
+    try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(updatedQueue)) } catch (e) {}
+
+    setStudentName('')
+    setGradeClass('')
+    setReason('')
+    setGuardianName('')
+    setShowAddModal(false)
+
+    // DB Dynamic Insert into Supabase
     try {
-      const res = await fetch('/api/clinic/close', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id })
-      })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        const stored = localStorage.getItem('tokenpe_clinic')
-        if (stored) {
-          try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: today })) } catch (_) {}
-        }
-        addToast('🔴 Clinic closed for today.', 'notify')
-      } else {
-        // REVERT ON FAILURE
-        setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
-        addToast(data.message || 'Failed to close clinic.', 'error')
+      const realId = await getRealSchoolId()
+      if (realId && realId !== 'demo-school-id') {
+        // 1. Insert into school_queue
+        await supabase.from('school_queue').insert({
+          school_id: realId,
+          clinic_id: realId,
+          token: rankStr,
+          student_name: savedName,
+          grade_class: savedGrade,
+          reason: savedReason,
+          guardian_name: savedGuardian,
+          wait_time: "1'",
+          status: 'waiting',
+          joined_at: new Date().toISOString()
+        }).catch(() => {})
+
+        // 2. Also insert into unified queues table for universal compatibility
+        await supabase.from('queues').insert({
+          clinic_id: realId,
+          name: savedName,
+          phone: savedGuardian || '',
+          party_size: 1,
+          status: 'waiting',
+          notes: `${savedGrade} | ${savedReason}`
+        }).catch(() => {})
       }
     } catch (err) {
-      setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
-      addToast('Error closing clinic. Please try again.', 'error')
+      console.warn('DB Insert Error:', err)
     }
   }
 
-  // ── Re-open Clinic ────────────────────────────────────────────────────────
-  async function reopenClinic() {
-    setMenuOpen(false)
-    const previousDate = clinic.closed_today_date
-    
-    // OPTIMISTIC UI: Instantly switch state so there is no delay
-    setClinic(prev => ({ ...prev, closed_today_date: null }))
-    
-    try {
-      const res = await fetch('/api/clinic/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id })
-      })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        const stored = localStorage.getItem('tokenpe_clinic')
-        if (stored) {
-          try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: null })) } catch (_) {}
-        }
-        addToast(<><CheckCircle2 className="inline-block w-4 h-4" /> Clinic is now Open again!</>, 'done')
-      } else {
-        // REVERT ON FAILURE
-        setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
-        addToast(data.message || 'Failed to re-open clinic.', 'error')
-      }
-    } catch (err) {
-      setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
-      addToast('Error re-opening clinic. Please try again.', 'error')
-    }
-  }
+  const nextInQueue = arrivals[0]
 
-  // ── Actions ─────────────────────────────────────────────────────────────
-  async function onUpdatePayment(patientId, updates) {
-    // 1. Optimistic UI update: Find the patient in local state and apply updates
-    setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p))
-    
-    // 2. Persist update in database via API
-    try {
-      const res = await fetch('/api/queue/update-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId, updates })
-      })
-      if (!res.ok) {
-        throw new Error('API request failed')
-      }
-    } catch (e) {
-      console.error('[onUpdatePayment Error]', e)
-      addToast('Failed to save payment changes. Reverting...', 'error')
-      
-      // Revert local state by refetching patients
-      const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
-      if (res.ok) {
-        const data = await res.json()
-        if (data.success) setPatients(data.patients || [])
-      }
-    }
-  }
-
-  async function callNext() {
-    const next = patients.find(p => p.status === STATUS.WAITING)
-    if (!next) return
-
-    // Optimistic UI Update
-    setPatients(prev => prev.map(p => p.id === next.id ? { ...p, status: STATUS.CALLED } : p))
-    sounds.callNext()
-    addToast(`Calling ${next.name || next.token} — notifications & queue alerts sent!`, 'call')
-
-    // Call unified backend queue next API to process turn notifications and relative queue alerts!
-    const res = await fetch('/api/queue/next', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clinicId: clinic.id,
-        clinicName: clinic.name,
-        patientId: next.id,
-        patientPhone: next.phone,
-        patientName: next.name || 'Patient',
-        token: next.token,
-        language: next.language || 'en'
-      })
-    })
-
-    if (!res.ok) {
-      addToast('Error calling next patient', 'error')
-    }
-  }
-
-  async function markDone(patient) {
-    // Optimistic UI Update
-    setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.DONE, completed_at: new Date().toISOString() } : p))
-    sounds.done()
-    addToast(`${patient.name || patient.token} consultation done`, 'done')
-
-    const res = await fetch('/api/queue/done', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clinicId: clinic.id,
-        clinicName: clinic.name,
-        patientId: patient.id,
-        patientPhone: patient.phone,
-        patientName: patient.name || 'Patient',
-        token: patient.token,
-        language: patient.language || 'en'
-      })
-    })
-
-    if (!res.ok) {
-      addToast('Error marking consultation done', 'error')
-    }
-  }
-
-  async function skipPatient(patient) {
-    // Optimistic UI Update
-    setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.SKIPPED } : p))
-    sounds.skip()
-    addToast(`${patient.name || patient.token} skipped`, 'skip')
-
-    const res = await fetch('/api/queue/skip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ patientId: patient.id })
-    })
-
-    if (!res.ok) {
-      addToast('Error skipping patient', 'error')
-      // Revert optimistic update
-      setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.WAITING } : p))
-    }
-  }
-
-  async function priorityCall(patient) {
-    if (!patient) return
-
-    // Optimistic UI Update
-    setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.CALLED } : p))
-    sounds.callNext()
-    addToast(`🚨 Emergency Call: ${patient.name || patient.token} called next!`, 'call')
-
-    try {
-      const res = await fetch('/api/queue/next', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clinicId: clinic.id,
-          clinicName: clinic.name,
-          patientId: patient.id,
-          patientPhone: patient.phone,
-          patientName: patient.name || 'Patient',
-          token: patient.token,
-          language: patient.language || 'en'
-        })
-      })
-
-      if (!res.ok) {
-        throw new Error('API failed')
-      }
-    } catch (e) {
-      console.error(e)
-      addToast('Error calling priority patient', 'error')
-      // Revert optimistic update
-      setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.WAITING } : p))
-    }
-  }
-
-  async function notifyPatient(patient) {
-    // Optimistic UI Update
-    sounds.notify()
-    addToast(`Manual text & voice note alert sent to ${patient.name || patient.token}`, 'notify')
-
-    const res = await fetch('/api/queue/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clinicId: clinic.id,
-        clinicName: clinic.name,
-        patientPhone: patient.phone,
-        patientName: patient.name || 'Patient',
-        token: patient.token,
-        language: patient.language || 'en'
-      })
-    })
-
-    if (!res.ok) {
-      addToast('Error sending manual alert', 'error')
-    }
-  }
-
-  const handleUpgrade = useCallback(async (tier) => {
-    if (!clinic || upgrading) return
-    setUpgrading(tier)
-
-    try {
-      const res = await fetch('/api/razorpay/create-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, planTier: tier })
-      })
-      const data = await res.json()
-      if (!res.ok || !data.subscriptionId) throw new Error(data.error || 'Failed to create subscription')
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        subscription_id: data.subscriptionId,
-        name: 'TokenPe',
-        description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan Subscription`,
-        image: `${window.location.origin}/logo-light.svg`,
-        prefill: {
-          name: data.clinicName,
-          email: data.clinicEmail,
-          contact: data.clinicPhone,
-        },
-        theme: { color: '#065F46' },
-        handler: async function (response) {
-          const maxAttempts = 5
-          let attempts = 0
-          const poll = async () => {
-            attempts++
-            const res = await fetch(`/api/clinics/get?id=${clinic.id}`)
-            let fresh = null
-            if (res.ok) {
-              const data = await res.json()
-              if (data.success) fresh = data.clinic
-            }
-            if (fresh) {
-              setClinic(fresh)
-              localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
-              if (fresh.current_period_end || attempts >= maxAttempts) {
-                setUpgrading(null)
-                setShowUpgradeModal(false)
-                if (fresh.current_period_end && fresh.plan_id !== 'starter' && fresh.plan_id !== 'canceled') {
-                  setShowSuccessModal(fresh.plan_id.toUpperCase())
-                  confetti({
-                    particleCount: 150,
-                    spread: 80,
-                    origin: { y: 0.6 },
-                    colors: ['#065F46', '#10b981', '#f59e0b', '#3b82f6'],
-                    zIndex: 10000
-                  })
-                }
-                return
-              }
-            }
-            if (attempts < maxAttempts) setTimeout(poll, 2000)
-            else {
-              setUpgrading(null)
-              setShowUpgradeModal(false)
-            }
-          }
-          setTimeout(poll, 2000)
-        },
-        modal: { ondismiss: () => setUpgrading(null) }
-      }
-
-      const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', (resp) => {
-        addToast(`Payment failed: ${resp.error.description}`, 'error')
-        setUpgrading(null)
-      })
-      rzp.open()
-
-    } catch (err) {
-      addToast(`Error: ${err.message}`, 'error')
-      setUpgrading(null)
-    }
-  }, [clinic, upgrading])
-
-  async function addWalkIn() {
-    if (!newPhone.trim()) return
-
-    if (isClosedToday) {
-      addToast('Clinic is closed for today. No new patients can be added.', 'error')
-      return
-    }
-
-    if (clinic?.queue_paused) {
-      addToast('Queue is currently paused. Please unpause to add patients.', 'error')
-      return
-    }
-
-    const planId = clinic?.plan_id || 'starter'
-    const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
-    if (patients.length >= limit) {
-      setShowUpgradeModal(true)
-      return
-    }
-
-    const token = `T${String(patients.length + 1).padStart(3, '0')}`
-
-    try {
-      const res = await fetch('/api/queue/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clinicId: clinic.id,
-          name: newName.trim() || null,
-          phone: newPhone.trim(),
-          token: token,
-          language: newLang || 'hi'
-        })
-      })
-
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.message || 'Failed to add walk-in')
-
-      if (result.patient?.id) {
-        localAddedPatientIdsRef.current.add(result.patient.id)
-      }
-
-      setNewName(''); setNewPhone(''); setNewLang('hi')
-      setShowAddForm(false)
-      addToast(`${newName || newPhone} added as ${token}`, 'new')
-
-      // Note: Supabase realtime subscription will pick up the new patient 
-      // and update the patients list automatically, just like it did before.
-    } catch (err) {
-      console.error(err)
-      addToast('Error adding walk-in patient', 'error')
-    }
-  }
-
-  // ── Computed ────────────────────────────────────────────────────────────
-  const isClosedToday = !!clinic?.closed_today_date
-  const waiting = patients.filter(p => p.status === STATUS.WAITING)
-  const called = patients.filter(p => p.status === STATUS.CALLED)
-  const done = patients.filter(p => p.status === STATUS.DONE)
-  const activePatients = [...called, ...waiting]
-  const displayPatients = activeTab === 'active' ? activePatients : done
-
-  // ── Limits ──
-  const planId = clinic?.plan_id || 'starter'
-  const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
-  const isLimitReached = patients.length >= limit
-  const oldestClinic = userClinics?.length > 0
-    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0])
-    : clinic
-
-  const trialEnd = oldestClinic?.trial_ends_at ? new Date(oldestClinic.trial_ends_at) : null
-  const daysLeft = trialEnd ? Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)) : 0
-  const showTrialWarning = oldestClinic?.subscription_status === 'trialing' && trialEnd && daysLeft <= 3 && daysLeft >= 0
-  const isTrialExpired = oldestClinic?.subscription_status === 'trialing' && trialEnd && daysLeft < 0
-
-  // Only show full-screen loader if we have no cached clinic to show
-  if (loading && !clinic) return (
-    <div style={s.loadingScreen}>
-      <div className="spinner" style={s.spinner} />
-      <p style={{ color: '#64748B', marginTop: 16 }}>Loading TokenPe...</p>
-    </div>
-  )
-
-  // ── Trial Expired Lockout ───────────────────────────────────────────────
-  if (isTrialExpired) return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#09090b', backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15), transparent 60%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #10b981, #059669)' }} />
-        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}><Hourglass size={56} color="#10b981" style={{ filter: 'drop-shadow(0 0 15px rgba(16,185,129,0.3))' }} /></div>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Free Trial Ended</h1>
-        <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-          We hope you loved TokenPe! Your 7-day Elite trial has expired. To continue using the dashboard and keep your clinic data safe, please choose a plan.
-        </p>
-        <button
-          onClick={() => router.push('/dashboard/billing')}
-          style={{ width: '100%', padding: '16px 24px', background: '#059669', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', marginBottom: 16, boxShadow: '0 4px 14px 0 rgba(5, 150, 105, 0.4)', transition: 'all 0.2s ease' }}
-          onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.6)'; e.currentTarget.style.background = '#10b981' }}
-          onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(5, 150, 105, 0.4)'; e.currentTarget.style.background = '#059669' }}
-        >
-          View Plans & Upgrade →
-        </button>
-        <button
-          onClick={logout}
-          style={{ width: '100%', padding: '12px 24px', background: 'transparent', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, fontWeight: 600, fontSize: 14, cursor: 'pointer', transition: 'background 0.2s ease' }}
-          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-          onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-        >
-          Sign Out
-        </button>
-        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Need help? Email <a href="mailto:tokenpe.online@gmail.com" style={{ color: '#10b981', fontWeight: 500 }}>tokenpe.online@gmail.com</a></p>
+  if (loading) {
+    return (
+      <div style={{ background: '#EFF4FA', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid #1B2A4A', borderTopColor: '#7FA8D9', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </div>
-    </div>
-  )
-
-  // ── Subscription Canceled / Account Locked ──────────────────────────────
-  const isAccountLocked = clinic?.subscription_status === 'canceled' || clinic?.plan_id === 'canceled'
-  if (isAccountLocked) return (
-    <div style={{ minHeight: '100vh', background: '#0a0514', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 56, marginBottom: 24 }}><Lock className="inline-block w-4 h-4" /></div>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Account Paused</h1>
-        <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-          Your subscription has ended. Your patient data is safe — reactivate any plan to continue using TokenPe.
-        </p>
-        <button
-          onClick={() => router.push('/dashboard/billing')}
-          style={{ width: '100%', padding: '16px 24px', background: 'linear-gradient(135deg,#065F46,#4f46e5)', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', marginBottom: 16, boxShadow: '0 8px 24px rgba(6,95,70,0.4)' }}
-        >
-          Reactivate Plan →
-        </button>
-        <button
-          onClick={logout}
-          style={{ width: '100%', padding: '12px 24px', background: 'transparent', color: '#64748b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
-        >
-          Sign Out
-        </button>
-        <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Questions? Email <a href="mailto:support@tokenpe.online" style={{ color: '#a78bfa' }}>support@tokenpe.online</a></p>
-      </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div style={s.root}>
-      {/* ── Upgrade Success Banner ── */}
-      <Suspense fallback={null}>
-        <UpgradeBanner />
-      </Suspense>
+    <>
       <style>{`
-        .dash-header {
-          background: linear-gradient(135deg,#065F46 0%,#064E3B 50%,#09524f 100%);
-          padding: 0 24px;
-          height: 72px;
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        :root {
+          --acc-bg: #DCEBFE;
+          --acc-surface: #FFFFFF;
+          --acc-navy: #1B2A4A;
+          --acc-navy-light: #24365C;
+          --acc-sky: #3B82F6;
+          --acc-sky-light: #93C5FD;
+          --acc-border: rgba(27, 42, 74, 0.14);
+          --acc-line: rgba(27, 42, 74, 0.08);
+          --acc-muted: #475569;
+        }
+
+        .cmd-root {
+          background-color: #DCEBFE !important;
+          color: var(--acc-navy);
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          min-height: 100vh;
+          padding: 24px 40px 48px;
+          box-sizing: border-box;
+        }
+
+        /* ── TOP METADATA CONTROL STRIP ── */
+        .cmd-meta-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #FFFFFF;
+          border: 1px solid var(--acc-border);
+          border-radius: 8px;
+          padding: 12px 24px;
+          margin-bottom: 28px;
+          box-shadow: 0 2px 8px rgba(27, 42, 74, 0.06), 0 1px 2px rgba(27, 42, 74, 0.04);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          -webkit-font-smoothing: antialiased;
+        }
+        .cmd-meta-bar:hover {
+          box-shadow: 0 4px 14px rgba(27, 42, 74, 0.09);
+          border-color: rgba(127, 168, 217, 0.45);
+        }
+        .cmd-meta-group {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+        .cmd-meta-label {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 0.68rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--acc-navy);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .cmd-meta-school-btn {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          padding: 4px 12px;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+        }
+        .cmd-meta-school-btn:hover {
+          background: #F4F7FB;
+        }
+        .cmd-meta-school-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: var(--acc-navy);
+          line-height: 1;
+          letter-spacing: -0.01em;
+        }
+        .cmd-meta-pill-input {
+          background: #F4F7FB;
+          border: 1.5px solid rgba(27, 42, 74, 0.18);
+          border-radius: 6px;
+          padding: 6px 14px 6px 32px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--acc-navy);
+          outline: none;
+          min-width: 220px;
+          box-shadow: inset 0 1px 2px rgba(27, 42, 74, 0.03);
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cmd-meta-pill-input:focus {
+          background: #FFFFFF;
+          border-color: var(--acc-navy);
+          box-shadow: 0 0 0 3px rgba(27, 42, 74, 0.08);
+        }
+
+        /* ── HEADER ── */
+        .cmd-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-bottom: 28px;
+        }
+        .cmd-brand {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .cmd-logo-box {
+          width: 56px;
+          height: 56px;
+          border: 1.5px solid var(--acc-navy);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Playfair Display', serif;
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: var(--acc-navy);
+          background: #FFFFFF;
+          box-shadow: 0 2px 8px rgba(27, 42, 74, 0.08);
+          position: relative;
+          cursor: pointer;
+          overflow: hidden;
+          flex-shrink: 0;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cmd-logo-box:hover {
+          border-color: #0284C7;
+          box-shadow: 0 6px 18px rgba(27, 42, 74, 0.15);
+          transform: translateY(-1px);
+        }
+        .cmd-logo-box img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+          display: block;
+        }
+        .cmd-logo-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(27, 42, 74, 0.75);
+          backdrop-filter: blur(2px);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          border-radius: 10px;
+          color: #FFFFFF;
+        }
+        .cmd-logo-box:hover .cmd-logo-overlay {
+          opacity: 1;
+        }
+        .cmd-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 2.3rem;
+          font-weight: 700;
+          margin: 0;
+          color: var(--acc-navy);
+          line-height: 1.1;
+        }
+        .cmd-clock {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.9rem;
+          font-weight: 700;
+          color: var(--acc-navy);
+          text-align: right;
+          line-height: 1;
+        }
+        .cmd-clock-sub {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 0.6rem;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--acc-sky);
+          margin-top: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 6px;
+        }
+
+        /* Live dot pulse */
+        .live-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #7FA8D9;
+          box-shadow: 0 0 8px #7FA8D9;
+          animation: pulse-live 1.8s infinite;
+        }
+        @keyframes pulse-live {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.6); opacity: 0.5; }
+        }
+
+        /* ── STATS ROW (ELEVATED HERO NUMBERS) ── */
+        .cmd-stats-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+          margin-bottom: 32px;
+        }
+        .cmd-stat-card {
+          background: #FFFFFF;
+          border: 1px solid var(--acc-border);
+          border-radius: 8px;
+          padding: 20px 24px;
+          box-shadow: 0 2px 8px rgba(27, 42, 74, 0.06), 0 1px 2px rgba(27, 42, 74, 0.04);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cmd-stat-card:hover {
+          transform: translateY(-2px) scale(1.005);
+          box-shadow: 0 8px 24px rgba(27, 42, 74, 0.1);
+          border-color: rgba(127, 168, 217, 0.5);
+        }
+        
+        .cmd-stat-tag {
+          font-size: 0.65rem;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--acc-navy);
+          margin-bottom: 10px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          box-shadow: 0 4px 32px rgba(6,95,70,0.25);
-          position: sticky;
-          top: 0;
-          z-index: 50;
-          gap: 12px;
+        }
+        .cmd-stat-tag span {
+          font-family: 'Playfair Display', serif;
+          font-style: italic;
+          color: var(--acc-sky);
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+        .cmd-stat-val {
+          font-family: 'Playfair Display', serif;
+          font-size: 3.2rem;
+          font-weight: 700;
+          line-height: 1;
+          color: var(--acc-navy);
+          margin-bottom: 6px;
+        }
+        .cmd-stat-underline {
+          height: 2.5px;
+          width: 36px;
+          background: linear-gradient(90deg, #1B2A4A 0%, #7FA8D9 100%);
+          border-radius: 2px;
+          margin-top: 6px;
+          margin-bottom: 8px;
+        }
+        .cmd-stat-sub {
+          font-size: 0.74rem;
+          color: var(--acc-muted);
+          font-style: italic;
         }
 
-        .header-top-row {
+        /* ── ADMISSIONS & NEXT QUEUE HERO CARDS ── */
+        .cmd-hero-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 0.8fr;
+          gap: 24px;
+          margin-bottom: 36px;
+        }
+        .cmd-card {
+          background: #FFFFFF;
+          border: 1px solid var(--acc-border);
+          border-radius: 8px;
+          padding: 26px;
+          box-shadow: 0 2px 8px rgba(27, 42, 74, 0.06), 0 1px 2px rgba(27, 42, 74, 0.04);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cmd-card:hover {
+          transform: translateY(-2px) scale(1.005);
+          box-shadow: 0 8px 24px rgba(27, 42, 74, 0.1);
+        }
+        .cmd-card-next {
+          background: linear-gradient(135deg, #FFFFFF 0%, #F4F7FB 100%);
+          border: 1.5px solid #7FA8D9;
+          box-shadow: 0 6px 20px rgba(27, 42, 74, 0.08), 0 0 15px rgba(127, 168, 217, 0.2);
+        }
+
+        .cmd-card-tag {
+          font-size: 0.65rem;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--acc-navy);
+          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .cmd-card-desc {
+          font-size: 0.88rem;
+          color: var(--acc-navy);
+          line-height: 1.55;
+          margin-bottom: 24px;
+          font-weight: 500;
+        }
+        .cmd-btn-group {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .cmd-btn-solid {
+          background: linear-gradient(135deg, #1B2A4A 0%, #24365C 100%);
+          color: #FFFFFF;
+          border: none;
+          border-radius: 6px;
+          padding: 11px 20px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 4px 14px rgba(27, 42, 74, 0.25);
+        }
+        .cmd-btn-solid:hover {
+          transform: translateY(-1.5px);
+          box-shadow: 0 6px 18px rgba(27, 42, 74, 0.35);
+          filter: brightness(1.1);
+        }
+        .cmd-btn-solid:active {
+          transform: translateY(0) scale(0.98);
+        }
+
+        .cmd-btn-outline {
+          background: #FFFFFF;
+          color: var(--acc-navy);
+          border: 1px solid rgba(27, 42, 74, 0.22);
+          border-radius: 6px;
+          padding: 11px 20px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cmd-btn-outline:hover {
+          background: rgba(127, 168, 217, 0.12);
+          border-color: var(--acc-navy);
+          transform: translateY(-1.5px);
+        }
+        .cmd-btn-outline:active {
+          transform: translateY(0) scale(0.98);
+        }
+
+        /* ── TABS ── */
+        .cmd-tabs {
+          display: flex;
+          gap: 28px;
+          border-bottom: 1.5px solid var(--acc-border);
+          margin-bottom: 28px;
+        }
+        .cmd-tab {
+          background: none;
+          border: none;
+          padding: 0 4px 12px 4px;
+          font-size: 0.75rem;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--acc-muted);
+          cursor: pointer;
+          border-bottom: 2.5px solid transparent;
+          transition: all 0.2s ease;
+        }
+        .cmd-tab:hover {
+          color: var(--acc-navy);
+          border-bottom-color: var(--acc-sky);
+        }
+        .cmd-tab.active {
+          color: var(--acc-navy);
+          border-bottom-color: var(--acc-navy);
+        }
+
+        /* ── DUAL SECTION GRID ── */
+        .cmd-split-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 28px;
+          margin-bottom: 40px;
+        }
+        .cmd-sec-card {
+          background: #FFFFFF;
+          border: 1px solid var(--acc-border);
+          border-radius: 8px;
+          padding: 24px;
+          box-shadow: 0 2px 8px rgba(27, 42, 74, 0.06);
+        }
+        .cmd-sec-title {
+          font-size: 0.65rem;
+          font-weight: 800;
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          color: var(--acc-navy);
+          margin-bottom: 16px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid var(--acc-line);
+        }
+
+        /* Table Arrivals */
+        .cmd-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.82rem;
+        }
+        .cmd-table th {
+          font-size: 0.6rem;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--acc-muted);
+          text-align: left;
+          padding-bottom: 10px;
+          border-bottom: 1px solid var(--acc-line);
+        }
+        .cmd-table td {
+          padding: 12px 6px;
+          border-bottom: 1px solid var(--acc-line);
+          vertical-align: middle;
+          transition: background 0.18s;
+        }
+        .cmd-table tr:hover td {
+          background: rgba(127, 168, 217, 0.08);
+        }
+
+        /* Classroom list */
+        .cmd-class-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 8px;
+          border-bottom: 1px solid var(--acc-line);
+          transition: background 0.18s;
+          border-radius: 6px;
+        }
+        .cmd-class-row:hover {
+          background: rgba(127, 168, 217, 0.08);
+        }
+        .cmd-class-code {
+          font-family: monospace;
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: var(--acc-navy);
+          width: 65px;
+        }
+        .cmd-class-name {
+          font-family: 'Playfair Display', serif;
+          font-size: 0.98rem;
+          font-weight: 700;
+          color: var(--acc-navy);
+        }
+        .cmd-class-sub {
+          font-size: 0.72rem;
+          color: var(--acc-muted);
+        }
+        .cmd-progress-bg {
+          width: 110px;
+          height: 6px;
+          background: #E2E8F0;
+          border-radius: 3px;
+          overflow: hidden;
+          margin-top: 6px;
+        }
+        .cmd-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #1B2A4A 0%, #7FA8D9 100%);
+          border-radius: 3px;
+          transition: width 0.8s ease-out;
+        }
+
+        /* Bottom Section Grid */
+        .cmd-bottom-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 28px;
+          margin-top: 12px;
+        }
+
+        /* Footer */
+        .cmd-footer {
+          margin-top: 40px;
+          border-top: 1px solid var(--acc-line);
+          padding-top: 20px;
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.72rem;
+          color: var(--acc-muted);
+          font-style: italic;
+        }
+
+        .cmd-brand-info {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          flex: 1;
+        }
+        .cmd-subtitle-line {
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: #5A6E85;
+          margin-top: 4px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          flex-wrap: wrap;
+        }
+        .cmd-header-right {
           display: flex;
           align-items: center;
           gap: 14px;
         }
 
-        .header-mobile-right {
-          display: none;
+        @media (max-width: 900px) {
+          .cmd-root { padding: 16px 12px; }
+          .cmd-stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+          .cmd-hero-grid, .cmd-split-grid, .cmd-bottom-grid { grid-template-columns: 1fr; gap: 16px; }
         }
 
-        .header-mid-row {
+        @media (max-width: 640px) {
+          .cmd-desktop-only { display: none !important; }
+          .cmd-root { padding: 12px 10px; }
+          .cmd-meta-bar {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+          }
+          .cmd-meta-pill-input {
+            min-width: 120px;
+            max-width: 155px;
+            padding: 5px 8px 5px 26px;
+            font-size: 0.72rem;
+          }
+          .cmd-header {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            margin-bottom: 20px;
+          }
+          .cmd-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+          }
+          .cmd-logo-box {
+            width: 44px;
+            height: 44px;
+            font-size: 1.4rem;
+            border-radius: 9px;
+            flex-shrink: 0;
+          }
+          .cmd-title {
+            font-size: 1.18rem !important;
+            line-height: 1.25 !important;
+          }
+          .cmd-subtitle-line {
+            font-size: 0.72rem;
+            margin-top: 2px;
+          }
+          .cmd-header-right {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding-top: 10px;
+            border-top: 1px solid rgba(27, 42, 74, 0.08);
+          }
+          .cmd-clock {
+            font-size: 1.35rem;
+            text-align: left;
+          }
+          .cmd-clock-sub {
+            justify-content: flex-start;
+          }
+          .cmd-stats-row { grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-bottom: 16px !important; }
+          .cmd-stat-card { padding: 10px 10px !important; }
+          .cmd-stat-tag { font-size: 0.56rem !important; letter-spacing: 0.05em !important; margin-bottom: 4px !important; }
+          .cmd-stat-val { font-size: 1.45rem !important; margin-bottom: 2px !important; }
+          .cmd-stat-underline { margin-top: 2px !important; margin-bottom: 4px !important; width: 28px !important; }
+          .cmd-stat-sub { font-size: 0.65rem !important; }
+          .cmd-hero-grid { margin-bottom: 18px !important; gap: 12px !important; }
+          .cmd-card { padding: 14px 14px !important; }
+          .cmd-card-desc { font-size: 0.78rem !important; margin-bottom: 10px !important; line-height: 1.4 !important; }
+          .cmd-card-tag { margin-bottom: 8px !important; font-size: 0.6rem !important; }
+          .cmd-sec-card { padding: 14px 14px !important; margin-bottom: 16px !important; }
+          .cmd-btn-group { flex-direction: column; width: 100%; gap: 6px !important; }
+          .cmd-btn-group button, .cmd-btn-solid, .cmd-btn-outline { width: 100%; justify-content: center; text-align: center; padding: 9px 12px !important; }
+          .cmd-card-actions { flex-direction: row; gap: 6px !important; }
+          .btn-admit, .btn-notify, .btn-skip { flex: 1; padding: 8px 6px !important; font-size: 0.68rem !important; }
+          .cmd-tabs { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; width: 100% !important; gap: 6px !important; margin-bottom: 16px !important; overflow: hidden !important; border-bottom: 1.5px solid var(--acc-border) !important; }
+          .cmd-tab { padding: 6px 4px !important; text-align: center !important; justify-content: center !important; display: flex !important; flex-direction: column !important; align-items: center !important; }
+          .cmd-tab-title { font-size: 0.68rem !important; letter-spacing: 0.03em !important; line-height: 1.15 !important; }
+          .cmd-tab-sub { font-size: 0.6rem !important; margin-top: 2px !important; }
+        }
+
+        /* ── 3 ACTION BUTTON SYSTEM (ADMIT, NOTIFY, SKIP) ── */
+        .cmd-card-actions {
           display: flex;
           gap: 10px;
+          margin-top: 14px;
+        }
+        .btn-admit {
+          flex: 1;
+          display: inline-flex;
           align-items: center;
-        }
-
-        .header-bottom-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .stat-num {
-          color: #fff;
-          font-weight: 800;
-          font-size: 1rem;
-        }
-
-        .stat-label {
-          color: rgba(255,255,255,0.45);
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-
-        .stat-chip {
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.08);
-          padding: 6px 14px;
-          border-radius: 24px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1) inset;
-        }
-
-        .stat-top {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .desktop-only-logout {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .mobile-only-live {
-          display: none;
-        }
-
-        .header-clock {
-          color: rgba(255,255,255,0.6);
-          font-weight: 600;
-          font-size: 0.88rem;
-          font-variant-numeric: tabular-nums;
-        }
-
-        /* RESPONSIVE DESIGN FOR TABLET & MOBILE */
-        @media (max-width: 960px) {
-          .dash-header {
-            height: auto !important;
-            flex-direction: column;
-            padding: 16px 24px !important;
-            align-items: stretch;
-            gap: 14px;
-          }
-          
-          .header-top-row {
-            width: 100%;
-            justify-content: space-between;
-            align-items: center;
-          }
-          
-          .header-mobile-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-          }
-          
-          .header-mid-row {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            padding: 0 12px;
-          }
-          
-          .header-bottom-row {
-            width: 100%;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            padding-top: 12px;
-            justify-content: space-between;
-          }
-          
-          .stat-chip {
-            flex: 1;
-            max-width: 140px;
-            padding: 8px 4px !important;
-            flex-direction: column !important;
-            justify-content: center;
-            gap: 2px !important;
-          }
-          
-          .stat-top {
-            gap: 6px !important;
-          }
-          
-          .stat-label {
-            font-size: 0.65rem !important;
-            line-height: 1;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
-          }
-          
-          .mobile-only-live {
-            display: block;
-          }
-          
-          .desktop-only-logout {
-            display: none;
-          }
-        }
-
-        /* PATIENT CARD MOBILE TWEAKS */
-        @media (max-width: 600px) {
-          .patient-card {
-            padding: 14px 16px !important;
-          }
-          .patient-card-actions {
-            width: 100%;
-            justify-content: flex-end;
-            margin-top: 4px;
-            padding-top: 14px;
-            border-top: 1px solid #F1F5F9;
-          }
-          .action-bar-responsive {
-            display: flex !important;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px !important;
-            padding: 16px 24px !important;
-          }
-          .action-bar-responsive button {
-            flex: 1;
-            min-width: 130px;
-            font-size: 0.78rem !important;
-            padding: 10px 10px !important;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          .action-bar-responsive .qr-hint-mobile {
-            grid-column: 1 / -1;
-            text-align: center;
-          }
-        }
-
-        /* ── SMOOTH BUTTON PHYSICS (Dashboard-wide) ── */
-        button {
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-                      box-shadow 0.3s ease,
-                      opacity 0.25s ease,
-                      background 0.25s ease,
-                      filter 0.25s ease !important;
-          will-change: transform, box-shadow, filter;
-        }
-        button:hover:not(:disabled) {
-          transform: translateY(-2px);
-          filter: brightness(1.08);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-        }
-        button:active:not(:disabled) {
-          transform: scale(0.92) translateY(0) !important;
-          filter: brightness(0.95);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .hamburger-btn:active {
-          transform: scale(0.88) !important;
-        }
-        .dropdown-item {
-          transition: background 0.14s ease, color 0.14s ease, transform 0.18s cubic-bezier(0.16,1,0.3,1) !important;
-        }
-        .dropdown-item:active {
-          transform: scale(0.96) !important;
-        }
-
-        /* DROPDOWN MENU STYLES */
-        .dropdown-menu {
-          position: fixed;
-          top: 72px;
-          right: 16px;
-          background: #0f172a; /* Dark Navy Background */
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border: 1px solid #1e293b;
-          border-radius: 14px;
-          padding: 16px;
-          width: 300px;
-          max-height: calc(100vh - 90px);
-          overflow-y: auto;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-          z-index: 9999;
-          display: flex;
-          flex-direction: column;
+          justify-content: center;
           gap: 6px;
-          animation: slideDown 0.18s ease-out forwards;
-          transform-origin: top right;
-        }
-
-        .dropdown-menu::-webkit-scrollbar {
-          width: 6px;
-        }
-        .dropdown-menu::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .dropdown-menu::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.15);
-          border-radius: 10px;
-        }
-        .dropdown-menu::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.25);
-        }
-
-        @keyframes slideDown {
-          from { opacity: 0; transform: scale(0.92) translateY(-8px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        .dropdown-item {
-          background: transparent;
-          color: #f1f5f9;
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          color: #FFFFFF;
           border: none;
-          padding: 8px 12px;
-          border-radius: 10px;
-          text-align: left;
-          font-size: 0.95rem;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          transition: all 0.2s ease;
-          width: 100%;
-          font-family: inherit;
-          position: relative;
-        }
-
-        .dropdown-item:hover, .dropdown-item:active {
-          background: #1e293b;
-          color: #fff;
-        }
-
-        .dropdown-item.active {
-          background: #1e293b;
-          color: #eab308;
-          position: relative;
-        }
-
-        .dropdown-item.active::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 3px;
-          height: 20px;
-          background: #eab308;
-          border-radius: 0 4px 4px 0;
-        }
-
-        .menu-icon-wrapper {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #1e293b;
-          flex-shrink: 0;
-        }
-
-        .dropdown-item:hover .menu-icon-wrapper {
-          background: #334155;
-        }
-
-        .dropdown-item.active .menu-icon-wrapper {
-          background: rgba(234, 179, 8, 0.15);
-          color: #eab308;
-        }
-
-        .dropdown-item.primary-action .menu-icon-wrapper {
-          background: rgba(16, 185, 129, 0.15);
-          color: #10b981;
-        }
-        .dropdown-item.primary-action {
-          background: #162842;
-          margin-bottom: 4px;
-        }
-
-        .dropdown-item.danger-action {
-          background: #162032;
-          margin-top: 4px;
-        }
-        .dropdown-item.danger-action .menu-icon-wrapper {
-          background: rgba(239, 68, 68, 0.15);
-          color: #ef4444;
-        }
-
-        .elite-badge {
-          font-size: 0.65rem;
-          font-weight: 700;
-          padding: 2px 6px;
-          border-radius: 4px;
-          border: 1px solid rgba(234, 179, 8, 0.5);
-          color: #eab308;
-          margin-left: auto;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .menu-chevron {
-          margin-left: auto;
-          color: #94a3b8;
-          opacity: 0.7;
-        }
-
-        .dropdown-divider {
-          height: 1px;
-          background: rgba(255, 255, 255, 0.08);
-          margin: 4px 8px;
-        }
-
-        .hamburger-btn {
-          background: rgba(255, 255, 255, 0.07);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          color: white;
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-          flex-shrink: 0;
-        }
-
-        .hamburger-btn:hover, .hamburger-btn:active {
-          background: rgba(6,95,70, 0.3);
-          border-color: rgba(6,95,70, 0.5);
-        }
-
-        @media (max-width: 960px) {
-          .dropdown-menu {
-            top: auto;
-            bottom: auto;
-            right: 12px;
-          }
-        }
-
-        .reopen-banner-btn {
-          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-          color: #fff;
-          border: 1px solid rgba(16,185,129,0.5);
-          padding: 6px 18px;
-          border-radius: 20px;
-          font-size: 13.5px;
+          border-radius: 6px;
+          padding: 10px 14px;
+          font-size: 0.74rem;
           font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
           cursor: pointer;
-          white-space: nowrap;
-          box-shadow: 0 4px 12px rgba(16,185,129,0.3);
-          text-shadow: 0 1px 2px rgba(0,0,0,0.2);
           transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+        }
+        .btn-admit:hover {
+          transform: translateY(-1.5px);
+          box-shadow: 0 6px 18px rgba(5, 150, 105, 0.38);
+          filter: brightness(1.08);
+        }
+        .btn-admit:active {
+          transform: translateY(0) scale(0.97);
+        }
+
+        .btn-notify {
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: #FEF3C7;
+          color: #D97706;
+          border: 1.5px solid #F59E0B;
+          border-radius: 6px;
+          padding: 10px 14px;
+          font-size: 0.74rem;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .btn-notify:hover {
+          background: #FDE68A;
+          border-color: #D97706;
+          transform: translateY(-1.5px);
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        }
+        .btn-notify:active {
+          transform: translateY(0) scale(0.97);
+        }
+
+        .btn-skip {
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: #F1F5F9;
+          color: #475569;
+          border: 1.5px solid #CBD5E1;
+          border-radius: 6px;
+          padding: 10px 14px;
+          font-size: 0.74rem;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .btn-skip:hover {
+          background: #FEE2E2 !important;
+          color: #DC2626 !important;
+          border-color: #FCA5A5 !important;
+          transform: translateY(-1.5px);
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+        }
+        .btn-skip:active {
+          transform: translateY(0) scale(0.97);
+        }
+
+        /* Bigger Table Action Buttons */
+        .btn-admit-sm {
+          padding: 8px 16px !important;
+          font-size: 0.78rem !important;
+          font-weight: 800 !important;
+          background: #059669 !important;
+          color: #FFF !important;
+          border: none !important;
+          border-radius: 6px !important;
+          cursor: pointer !important;
+          transition: all 0.18s ease !important;
+          letter-spacing: 0.02em !important;
+          box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25) !important;
+        }
+        .btn-admit-sm:hover { background: #047857 !important; transform: translateY(-1.5px) !important; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.38) !important; }
+        .btn-admit-sm:active { transform: scale(0.97) !important; }
+
+        .btn-notify-sm {
+          padding: 8px 16px !important;
+          font-size: 0.78rem !important;
+          font-weight: 800 !important;
+          background: #FEF3C7 !important;
+          color: #D97706 !important;
+          border: 1.5px solid #F59E0B !important;
+          border-radius: 6px !important;
+          cursor: pointer !important;
+          transition: all 0.18s ease !important;
+          letter-spacing: 0.02em !important;
+        }
+        .btn-notify-sm:hover { background: #FDE68A !important; border-color: #D97706 !important; transform: translateY(-1.5px) !important; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25) !important; }
+        .btn-notify-sm:active { transform: scale(0.97) !important; }
+
+        .btn-skip-sm {
+          padding: 8px 16px !important;
+          font-size: 0.78rem !important;
+          font-weight: 800 !important;
+          background: #F1F5F9 !important;
+          color: #475569 !important;
+          border: 1.5px solid #CBD5E1 !important;
+          border-radius: 6px !important;
+          cursor: pointer !important;
+          transition: all 0.18s ease !important;
+          letter-spacing: 0.02em !important;
+        }
+        .btn-skip-sm:hover { background: #FEE2E2 !important; color: #DC2626 !important; border-color: #FCA5A5 !important; transform: translateY(-1.5px) !important; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2) !important; }
+        .btn-skip-sm:active { transform: scale(0.97) !important; }
+      `}</style>
+
+      {/* ── MODAL: MANUAL CHECK-IN ── */}
+      <AnimatePresence>
+        {showAddModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }} style={{ background: '#FFFFFF', border: '1.5px solid #1B2A4A', borderRadius: 8, padding: 26, maxWidth: 440, width: '100%', boxShadow: '0 20px 50px rgba(27, 42, 74, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #E2E8F0', paddingBottom: 10 }}>
+                <h3 style={{ margin: 0, fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', fontWeight: 700, color: '#1B2A4A' }}>Manual Student Check-in</h3>
+                <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5A6E85' }}><X style={{ width: 18, height: 18 }} /></button>
+              </div>
+
+              <form onSubmit={handleManualCheckIn} style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.8rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 4, color: '#1B2A4A' }}>Student Name *</label>
+                  <input type="text" required value={studentName} onChange={e => setStudentName(e.target.value)} placeholder="e.g. Arush Kshatriya" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 4, color: '#1B2A4A' }}>Grade/Section/Branch</label>
+                  <input type="text" value={gradeClass} onChange={e => setGradeClass(e.target.value)} placeholder="e.g. Grade 8-B / FY-CS" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 4, color: '#1B2A4A' }}>Check-in Reason</label>
+                  <input type="text" value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Admission / Fee / PTM" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 4, color: '#1B2A4A' }}>WhatsApp Number</label>
+                  <input type="tel" maxLength={10} value={guardianName} onChange={e => setGuardianName(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="e.g. 9876543210" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB' }} />
+                </div>
+                <button type="submit" className="cmd-btn-solid" style={{ marginTop: 8, padding: '12px 20px' }}>Confirm Check-in →</button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODAL: EDIT SCHOOL NAME & LOGO ── */}
+      <AnimatePresence>
+        {showEditSchoolModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }} style={{ background: '#FFFFFF', border: '1.5px solid #1B2A4A', borderRadius: 8, padding: 26, maxWidth: 440, width: '100%', boxShadow: '0 20px 50px rgba(27, 42, 74, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #E2E8F0', paddingBottom: 10 }}>
+                <h3 style={{ margin: 0, fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', fontWeight: 700, color: '#1B2A4A' }}>School Identity & Crest</h3>
+                <button onClick={() => setShowEditSchoolModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5A6E85' }}><X style={{ width: 18, height: 18 }} /></button>
+              </div>
+
+              <form onSubmit={saveSchoolName} style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: '0.8rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 6, color: '#1B2A4A' }}>Official School Name *</label>
+                  <input type="text" required value={newSchoolNameInput} onChange={e => setNewSchoolNameInput(e.target.value)} placeholder="e.g. Ashbourne Academy, Delhi Public School" style={{ width: '100%', padding: '10px 14px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB', fontSize: '0.9rem', fontWeight: 700, color: '#1B2A4A' }} />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 6, color: '#1B2A4A' }}>School Tagline / Subtitle Description</label>
+                  <input type="text" value={schoolSubtitle} onChange={e => setSchoolSubtitle(e.target.value)} placeholder="e.g. Campus Operations & Gate Control Console" style={{ width: '100%', padding: '10px 14px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB', fontSize: '0.85rem', color: '#1B2A4A' }} />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 6, color: '#1B2A4A' }}>City / Campus Location</label>
+                  <input type="text" value={schoolCity} onChange={e => setSchoolCity(e.target.value)} placeholder="e.g. Mumbai, New Delhi, Bengaluru" style={{ width: '100%', padding: '10px 14px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB', fontSize: '0.85rem', color: '#1B2A4A' }} />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 6, color: '#1B2A4A' }}>School / Institute Crest Logo</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#F4F7FB', border: '1px solid #CBD5E1', borderRadius: 8, padding: 12 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 6, border: '1.5px solid #1B2A4A', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      {schoolLogo || clinic?.logo_url ? (
+                        <img src={schoolLogo || clinic.logo_url} alt="Crest Preview" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
+                      ) : (
+                        <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: '#1B2A4A' }}>{(newSchoolNameInput || 'A').charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <button type="button" onClick={() => modalFileInputRef.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#FFFFFF', border: '1px solid #1B2A4A', color: '#1B2A4A', borderRadius: 6, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
+                        <Upload style={{ width: 14, height: 14, color: '#0284C7' }} />
+                        <span>Upload Crest Image</span>
+                      </button>
+                      <input type="file" ref={modalFileInputRef} onChange={handleLogoUpload} accept="image/*" style={{ display: 'none' }} />
+                      <div style={{ fontSize: '0.65rem', color: '#64748B', marginTop: 4 }}>PNG, JPG, SVG or WebP up to 5MB</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" className="cmd-btn-solid" style={{ padding: '12px 20px', marginTop: 4 }}>Save Changes →</button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODAL: BROADCAST NOTICE TO QUEUE ── */}
+      <AnimatePresence>
+        {showBroadcastModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }} style={{ background: '#FFFFFF', border: '1.5px solid #1B2A4A', borderRadius: 8, padding: 26, maxWidth: 460, width: '100%', boxShadow: '0 20px 50px rgba(27, 42, 74, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #E2E8F0', paddingBottom: 10 }}>
+                <h3 style={{ margin: 0, fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', fontWeight: 700, color: '#1B2A4A', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Megaphone style={{ width: 18, height: 18, color: '#3B82F6' }} />
+                  <span>Broadcast Notice to Queue</span>
+                </h3>
+                <button onClick={() => setShowBroadcastModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5A6E85' }}><X style={{ width: 18, height: 18 }} /></button>
+              </div>
+
+              <form onSubmit={handleSendBroadcastNotice} style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.8rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 6, color: '#1B2A4A' }}>Announcement Message / Public Notice *</label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={broadcastMsgText}
+                    onChange={e => setBroadcastMsgText(e.target.value)}
+                    placeholder="e.g. Campus gates are open for Grade 8 PTM. Please have your student tokens ready..."
+                    style={{ width: '100%', padding: '10px 14px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB', fontSize: '0.88rem', color: '#1B2A4A', fontFamily: 'inherit', resize: 'vertical' }}
+                  />
+                </div>
+                {activeNotice && (
+                  <div style={{ padding: '8px 12px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, fontSize: '0.75rem', color: '#1E40AF' }}>
+                    <strong>Active Live Notice:</strong> "{activeNotice}"
+                  </div>
+                )}
+                <button type="submit" className="cmd-btn-solid" style={{ padding: '12px 20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' }}>
+                  <Megaphone style={{ width: 16, height: 16 }} />
+                  <span>Broadcast Notice Now →</span>
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODAL: CONFIRM SKIP / REMOVE FROM QUEUE ── */}
+      <AnimatePresence>
+        {skipTarget && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 110, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }} style={{ background: '#FFFFFF', border: '1.5px solid #1B2A4A', borderRadius: 10, padding: 24, maxWidth: 420, width: '100%', boxShadow: '0 20px 50px rgba(27, 42, 74, 0.3)', textAlign: 'center' }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#FEF2F2', border: '1.5px solid #FCA5A5', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                <AlertTriangle style={{ width: 26, height: 26 }} />
+              </div>
+              <h3 style={{ margin: '0 0 8px', fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', fontWeight: 700, color: '#1B2A4A' }}>
+                Skip & Remove from Queue?
+              </h3>
+              <p style={{ fontSize: '0.86rem', color: '#5A6E85', margin: '0 0 20px', lineHeight: 1.45 }}>
+                Are you sure you want to remove <strong>"{skipTarget.name}"</strong> ({skipTarget.grade}) from the active queue? This will cancel their token.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" onClick={() => setSkipTarget(null)} className="cmd-btn-outline" style={{ flex: 1, padding: '10px 14px', fontSize: '0.8rem', fontWeight: 700 }}>
+                  Cancel
+                </button>
+                <button type="button" onClick={() => confirmRemoveFromQueue(skipTarget.id)} className="cmd-btn-solid" style={{ flex: 1, padding: '10px 14px', fontSize: '0.8rem', fontWeight: 800, background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)', color: '#FFF', border: 'none' }}>
+                  Yes, Remove →
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── NOTIFICATION TOAST BANNER (MEMBER NOTIFIED TO BE READY) ── */}
+      <AnimatePresence>
+        {notifyToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            style={{
+              position: 'fixed',
+              top: 24,
+              right: 24,
+              zIndex: 9999,
+              background: '#FFFFFF',
+              color: '#1B2A4A',
+              border: '1.5px solid #F59E0B',
+              borderRadius: 8,
+              padding: '12px 18px',
+              boxShadow: '0 12px 36px rgba(27, 42, 74, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              fontSize: '0.85rem',
+              fontWeight: 700
+            }}
+          >
+            <div style={{ background: '#FEF3C7', color: '#D97706', borderRadius: '50%', padding: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bell style={{ width: 18, height: 18 }} />
+            </div>
+            <div>
+              <div style={{ color: '#D97706', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800 }}>Notification Alert</div>
+              <div style={{ color: '#1B2A4A', fontSize: '0.86rem', fontWeight: 700 }}>{notifyToast}</div>
+            </div>
+            <button onClick={() => setNotifyToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', marginLeft: 8 }}><X style={{ width: 16, height: 16 }} /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style jsx global>{`
+        .drawer-nav-item {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 12px;
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: transparent;
+          border-left: 3.5px solid transparent;
+          color: #1B2A4A;
+          font-weight: 600;
+          font-size: 0.86rem;
+          cursor: pointer;
+          text-align: left;
+          width: 100%;
+          transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .reopen-banner-btn:hover {
-          transform: scale(1.03);
-          box-shadow: 0 6px 16px rgba(16,185,129,0.5);
-          border-color: rgba(255,255,255,0.4);
+        .drawer-nav-item:hover {
+          background: #F4F7FB;
+          border-left-color: #CBD5E1;
         }
-        .reopen-banner-btn:active {
-          transform: scale(0.97);
+        .drawer-nav-item.active {
+          background: #EFF4FA;
+          border-left-color: #1B2A4A;
+          color: #1B2A4A;
+          font-weight: 700;
+        }
+        .drawer-icon-badge {
+          width: 32px;
+          height: 32px;
+          border-radius: 7px;
+          background: #EFF4FA;
+          color: #1B2A4A;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: transform 150ms ease;
+        }
+        .drawer-nav-item:hover .drawer-icon-badge {
+          transform: scale(1.04);
         }
 
-        /* SPIN ANIMATION */
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        .drawer-logout-btn {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          background: #FEF2F2;
+          border: 1px solid #FECACA;
+          color: #DC2626;
+          font-weight: 700;
+          font-size: 0.85rem;
+          cursor: pointer;
+          flex-shrink: 0;
+          margin-top: 10px;
+          transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .spinner {
-          animation: spin 0.8s linear infinite;
+        .drawer-logout-btn:hover {
+          background: #FEE2E2;
+          border-color: #FCA5A5;
         }
 
-        /* PAYMENTS VIEW TWEAKS */
-        .payment-card {
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+        .cmd-btn-solid, .cmd-btn-outline, .cmd-tab, .cmd-stat-card, .cmd-card {
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
-        .payment-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0,0,0,0.06) !important;
+        .cmd-btn-solid:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(27, 42, 74, 0.25);
         }
-        @media (max-width: 600px) {
-          .payment-card {
-            padding: 14px 16px !important;
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 12px !important;
-          }
-          .payment-card > div {
-            width: 100% !important;
-            align-items: flex-start !important;
-            text-align: left !important;
-          }
+        .cmd-btn-outline:hover {
+          background: #F8FAFC;
+          border-color: #1B2A4A;
+          transform: translateY(-1px);
         }
       `}</style>
 
-      {/* ── Menu Overlay + Dropdown (fixed portal, outside header) ── */}
-      {menuOpen && (
-        <>
-          {/* Click-away overlay - z-index BELOW dropdown */}
-          <div
-            onClick={() => setMenuOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
-          />
-          {/* Dropdown - z-index ABOVE overlay */}
-          <div className="dropdown-menu">
-            {userClinics.length > 1 && (
-              <>
-                <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 }}>Switch Clinic</div>
-                {userClinics.map(uc => (
-                  <button key={uc.id} className="dropdown-item" style={{ background: uc.id === clinic?.id ? '#1e293b' : 'transparent', color: uc.id === clinic?.id ? '#6EE7B7' : '#94A3B8' }} onClick={() => switchToBranch(uc)}>
-                    <div className="menu-icon-wrapper" style={{ background: uc.id === clinic?.id ? 'rgba(16, 185, 129, 0.15)' : 'transparent', color: uc.id === clinic?.id ? '#10b981' : '#64748b' }}>
-                      {uc.id === clinic?.id ? '✓' : '○'}
-                    </div>
-                    {uc.name}
-                  </button>
-                ))}
-                <div className="dropdown-divider" />
-              </>
-            )}
-
-            {(clinic?.plan_id === 'elite' || clinic?.subscription_status === 'trialing') && userClinics.length < 3 && (
-              <button className="dropdown-item primary-action" onClick={() => { setShowAddBranch(true); setMenuOpen(false); }}>
-                <div className="menu-icon-wrapper">
-                  <Plus className="w-5 h-5" />
-                </div>
-                Add New Branch
-              </button>
-            )}
-
-            <button className="dropdown-item active" onClick={() => { setShowManageBranches(true); setMenuOpen(false); }}>
-              <div className="menu-icon-wrapper">
-                <Settings className="w-5 h-5" />
-              </div>
-              Manage Branches
-              <span className="menu-chevron">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-              </span>
-            </button>
-
-            <div className="dropdown-divider" style={{ margin: '8px 0' }} />
-
-            <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
-              <div className="menu-icon-wrapper">
-                <History className="w-5 h-5" />
-              </div>
-              History
-            </button>
-            
-            <button className="dropdown-item" onClick={() => { router.push('/dashboard/analytics'); setMenuOpen(false); }}>
-              <div className="menu-icon-wrapper">
-                <BarChart2 className="w-5 h-5" />
-              </div>
-              Analytics
-              <span className="elite-badge">Elite</span>
-            </button>
-            
-            <button className="dropdown-item" onClick={() => { router.push('/dashboard/crm'); setMenuOpen(false); }}>
-              <div className="menu-icon-wrapper">
-                <Megaphone className="w-5 h-5" />
-              </div>
-              CRM & Broadcasts
-              <span className="elite-badge">Elite</span>
-            </button>
-
-            {clinic?.plan_id === 'elite' ? (
-              <button className="dropdown-item" onClick={() => { window.open(`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=Hi%20VIP%20Support!`, '_blank'); setMenuOpen(false); }}>
-                <div className="menu-icon-wrapper">
-                  <Headset className="w-5 h-5" />
-                </div>
-                VIP Support
-                <span className="elite-badge">Elite</span>
-              </button>
-            ) : clinic?.plan_id === 'pro' ? (
-              <button className="dropdown-item" onClick={() => { window.open('mailto:tokenpe.online@gmail.com', '_blank'); setMenuOpen(false); }}>
-                <div className="menu-icon-wrapper">
-                  <span style={{ fontSize: '1.2rem' }}>⭐</span>
-                </div>
-                Priority Support
-              </button>
-            ) : (
-              <button className="dropdown-item" onClick={() => { window.open('mailto:tokenpe.online@gmail.com', '_blank'); setMenuOpen(false); }}>
-                <div className="menu-icon-wrapper">
-                  <span style={{ fontSize: '1.2rem' }}>✉️</span>
-                </div>
-                Standard Support
-              </button>
-            )}
-            
-            <button className="dropdown-item" onClick={() => { router.push('/dashboard/billing'); setMenuOpen(false); }}>
-              <div className="menu-icon-wrapper">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              Billing & Plan
-            </button>
-
-            <div className="dropdown-divider" style={{ margin: '8px 0' }} />
-
-            {/* ── Close / Re-open Clinic — ALL plans ── */}
-            {isClosedToday ? (
-              <button
-                className="dropdown-item danger-action"
-                onClick={reopenClinic}
-              >
-                <div className="menu-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
-                  <CalendarCheck className="w-5 h-5" />
-                </div>
-                <span style={{ color: '#10b981' }}>Re-open Clinic Today</span>
-                <span className="menu-chevron">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </span>
-              </button>
-            ) : (
-              <button
-                className="dropdown-item danger-action"
-                onClick={closeClinicForToday}
-              >
-                <div className="menu-icon-wrapper">
-                  <CalendarX className="w-5 h-5" />
-                </div>
-                <span style={{ color: '#f87171' }}>Close Clinic for Today</span>
-                <span className="menu-chevron">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </span>
-              </button>
-            )}
-            
-            <div className="dropdown-divider" />
-            
-            <button className="dropdown-item" onClick={() => { logout(); setMenuOpen(false); }}>
-              <div className="menu-icon-wrapper">
-                <LogOut className="w-5 h-5" />
-              </div>
-              Logout
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* ── Manage Branches Modal ── */}
-      {showManageBranches && (
-        <div onClick={() => setShowManageBranches(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#065F46', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 500, border: '1px solid rgba(255,255,255,0.1)', maxHeight: '80vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800 }}>Manage Branches</h2>
-              <button onClick={() => setShowManageBranches(false)} style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '1.5rem' }}>×</button>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {userClinics.map(uc => (
-                <div key={uc.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {editingBranchId === uc.id ? (
-                    <>
-                      <input
-                        autoFocus
-                        value={editingBranchName}
-                        onChange={e => setEditingBranchName(e.target.value)}
-                        style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }}
-                      />
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button disabled={managingBranch} onClick={() => handleSaveBranchEdit(uc.id)} style={{ background: '#10B981', color: '#000', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', opacity: managingBranch ? 0.7 : 1 }}>Save</button>
-                        <button disabled={managingBranch} onClick={() => setEditingBranchId(null)} style={{ background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'white', fontWeight: 600 }}>{uc.name} {clinic?.id === uc.id ? <span style={{ fontSize: '0.75rem', color: '#10B981', marginLeft: 8 }}>(Active)</span> : ''}</span>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => { setEditingBranchId(uc.id); setEditingBranchName(uc.name); }} style={{ background: 'transparent', border: 'none', color: '#3B82F6', cursor: 'pointer', fontSize: '0.9rem' }}>Edit</button>
-                        {userClinics.length > 1 && (
-                          <button onClick={() => handleDeleteBranch(uc.id)} disabled={managingBranch} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: managingBranch ? 'not-allowed' : 'pointer', fontSize: '0.9rem', opacity: managingBranch ? 0.5 : 1 }}>Delete</button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+      <div className="cmd-root">
+        {/* ── TOP CONTROL STRIP ── */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="cmd-meta-bar">
+          {/* Left Group: Live Date */}
+          <div className="cmd-meta-group">
+            <div className="cmd-meta-label">
+              <Calendar style={{ width: 14, height: 14, color: '#3B82F6' }} />
+              <span>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}</span>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* ── Add New Branch Modal ── */}
-      {showAddBranch && (
-        <div onClick={() => setShowAddBranch(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#065F46', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)' }}>
-            <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Add New Branch</h2>
-            <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: 20 }}>As an Elite user, you can manage up to 3 clinics under one login.</p>
-            <input
-              autoFocus
-              placeholder="E.g. City Hospital - South Branch"
-              value={newBranchName}
-              onChange={e => setNewBranchName(e.target.value)}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none', marginBottom: 16 }}
-            />
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                onClick={async () => {
-                  if (!newBranchName.trim()) return
-                  setAddingBranch(true)
-                  try {
-                    const res = await fetch('/api/clinics/create', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ clinicName: newBranchName, email: clinic.email, phone: clinic.phone })
-                    })
-                    const data = await res.json()
-                    if (data.success) {
-                      const updatedClinics = [...userClinics, data.clinic]
-                      setUserClinics(updatedClinics)
-                      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedClinics))
-                      setAddingBranch(false)
-                      // Smooth switch to new branch — no reload
-                      await switchToBranch(data.clinic)
-                    } else {
-                      alert(data.error || 'Failed to create branch')
-                      setAddingBranch(false)
-                    }
-                  } catch (e) {
-                    alert('Error creating branch')
-                    setAddingBranch(false)
-                  }
-                }}
-                disabled={addingBranch}
-                style={{ flex: 1, background: '#10B981', color: '#000', border: 'none', padding: '12px', borderRadius: 12, fontWeight: 700, cursor: addingBranch ? 'not-allowed' : 'pointer', opacity: addingBranch ? 0.7 : 1 }}
-              >
-                {addingBranch ? 'Creating...' : 'Create Branch'}
-              </button>
-              <button onClick={() => setShowAddBranch(false)} style={{ flex: 1, background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.2)', padding: '12px', borderRadius: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Toasts ── */}
-      <div style={s.toastContainer}>
-        {toasts.map(t => (
+          {/* Center Group: Serif Identity Anchor (Desktop Only to prevent mobile duplicate repeat) */}
           <div 
-            key={t.id} 
-            style={{ 
-              ...s.toast, 
-              background: TOAST_TYPES[t.type]?.bg || '#064E3B',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12
-            }}
+            onClick={() => { setNewSchoolNameInput(clinic?.name || 'Ashbourne Academy'); setShowEditSchoolModal(true); }}
+            className="cmd-meta-school-btn cmd-desktop-only"
+            title="Click to edit official school name & logo"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>{TOAST_TYPES[t.type]?.icon}</span>
-              <span>{t.msg}</span>
-            </div>
-            <button 
-              onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
-              style={{ 
-                background: 'none', 
-                border: 'none', 
-                color: 'rgba(255,255,255,0.7)', 
-                cursor: 'pointer', 
-                fontSize: 18,
-                fontWeight: 'bold',
-                padding: '0 4px',
-                lineHeight: 1
-              }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* ── New Patient Banner ── */}
-      {newPatientAlert && (
-        <div style={{ ...s.banner, justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={s.bannerDot} />
-            <span><PlusCircle className="inline-block w-4 h-4" /> New patient joined!&nbsp;</span>
-            <strong>{newPatientAlert.name || maskPhone(newPatientAlert.phone)} — {newPatientAlert.token}</strong>
-          </div>
-          <button 
-            onClick={() => {
-              setNewPatientAlert(null)
-              if (newPatientAlertTimeoutRef.current) {
-                clearTimeout(newPatientAlertTimeoutRef.current)
-                newPatientAlertTimeoutRef.current = null
-              }
-            }}
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: '#4F46E5', 
-              cursor: 'pointer', 
-              fontSize: 18, 
-              fontWeight: 'bold',
-              lineHeight: 1,
-              padding: '0 4px',
-              marginLeft: '12px'
-            }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* ── QR Modal ── */}
-      {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} onCodeUpdate={handleCodeUpdate} router={router} />}
-
-      {/* ── Discovery Profile Modal ── */}
-      {showDiscovery && (
-        <DiscoveryProfileModal 
-          clinic={clinic} 
-          onClose={() => setShowDiscovery(false)}
-          onSuccess={(updates) => {
-            const updatedClinic = { ...clinic, ...updates }
-            setClinic(updatedClinic)
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
-            localStorage.setItem('clinicPhone', updatedClinic.phone)
-            addToast('Profile completed! You are now visible to patients.', 'done')
-          }}
-        />
-      )}
-
-      {/* ── Trial Warning Banner ── */}
-      {showTrialWarning && (
-        <div style={{ background: daysLeft <= 3 ? '#DC2626' : 'rgba(6,95,70,0.15)', color: daysLeft <= 3 ? 'white' : '#5EEAD4', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative', borderBottom: daysLeft <= 3 ? 'none' : '1px solid rgba(6,95,70,0.3)' }}>
-          {daysLeft <= 3 ? <><AlertTriangle className="inline-block w-4 h-4" /> Your</> : <><Sparkles className="inline-block w-4 h-4" /> You are on the</>} Elite Free Trial. Ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'} on {trialEnd?.toLocaleDateString('en-IN')}. <button onClick={() => router.push('/dashboard/billing')} style={{ background: daysLeft <= 3 ? 'white' : 'rgba(6,95,70,0.2)', color: daysLeft <= 3 ? '#DC2626' : '#fff', border: daysLeft <= 3 ? 'none' : '1px solid rgba(6,95,70,0.4)', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Choose a Plan</button>
-        </div>
-      )}
-
-      {/* ── Closed Today Banner ── */}
-      {isClosedToday && (
-        <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 700, zIndex: 60, position: 'relative', borderBottom: '1px solid rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', letterSpacing: '0.2px' }}>
-          <span>🔴 Clinic is Closed for Today — No new patients will be accepted.</span>
-          <button
-            onClick={reopenClinic}
-            className="reopen-banner-btn"
-          >
-            <span style={{ fontSize: '15px' }}><Sparkles className="inline-block w-4 h-4" /></span> Re-open Now
-          </button>
-        </div>
-      )}
-
-      {/* ── Header ── */}
-      <header className="dash-header">
-        <div className="header-top-row">
-          <div style={{ ...s.headerLeft, flex: 1, minWidth: 0 }}>
-            <img src="/logo.svg" alt="TokenPe" style={{ height: '36px', width: 'auto', flexShrink: 0 }} />
-            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px', overflow: 'hidden', flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.45)', letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Clinic Console</div>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{clinic?.name}</div>
-            </div>
+            <Building style={{ width: 15, height: 15, color: '#3B82F6' }} />
+            <span className="cmd-meta-school-title">{clinic?.name || 'Ashbourne Academy'}</span>
+            <Pencil style={{ width: 12, height: 12, color: '#3B82F6', marginLeft: 2 }} />
           </div>
 
-          {/* Mobile Right (only Hamburger) */}
-          <div className="header-mobile-right">
-            <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="header-mid-row">
-          <div className="stat-chip">
-            <div className="stat-top">
-              <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#f97316,#fb923c)', boxShadow: '0 0 8px rgba(249,115,22,0.6)' }} />
-              <span className="stat-num">{waiting.length}</span>
-            </div>
-            <span className="stat-label">Waiting</span>
-          </div>
-          <div className="stat-chip">
-            <div className="stat-top">
-              <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#10b981,#34d399)', boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
-              <span className="stat-num">{called.length}</span>
-            </div>
-            <span className="stat-label">With Doctor</span>
-          </div>
-          <div className="stat-chip">
-            <div className="stat-top">
-              <div style={{ ...s.chipDot, background: 'linear-gradient(135deg,#6366f1,#818cf8)', boxShadow: '0 0 8px rgba(99,102,241,0.6)' }} />
-              <span className="stat-num">{done.length}</span>
-            </div>
-            <span className="stat-label">Done</span>
-          </div>
-        </div>
-
-        <div className="header-bottom-row">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <HeaderClock />
-            <div className="mobile-only-live"><div style={s.liveBadge}><span style={s.liveDot} />LIVE</div></div>
-          </div>
-          <div className="desktop-only-logout">
-            <div style={s.liveBadge}><span style={s.liveDot} />LIVE</div>
-            <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-      </header>
-
-      {/* ── Action Bar ── */}
-      <div className="action-bar-responsive" style={s.actionBar}>
-        <button style={s.btnQR} onClick={() => setShowQR(true)}><QrCode className="inline-block w-4 h-4 mr-1 mb-0.5" /> Generate QR</button>
-        <button
-          style={{ ...s.btnGhost, color: clinic?.queue_paused ? '#EF4444' : '#10B981', borderColor: clinic?.queue_paused ? '#FECACA' : '#A7F3D0', fontWeight: 700 }}
-          onClick={togglePause}
-        >
-          {clinic?.queue_paused ? <><Pause className="inline-block w-4 h-4 mr-1 mb-0.5" /> Paused</> : <><Play className="inline-block w-4 h-4 mr-1 mb-0.5" /> Active</>}
-        </button>
-        <button
-          style={{ ...s.btnAdd, opacity: isLimitReached || clinic?.queue_paused ? 0.5 : 1, cursor: isLimitReached || clinic?.queue_paused ? 'not-allowed' : 'pointer' }}
-          onClick={() => {
-            if (clinic?.queue_paused) {
-              addToast('Queue is currently paused. Please unpause to add walk-ins.', 'error')
-              return
-            }
-            if (isLimitReached) {
-              addToast(`Daily limit of ${limit} reached. Upgrade to add more!`, 'error')
-              return
-            }
-            setShowAddForm(!showAddForm)
-          }}
-        >
-          {clinic?.queue_paused ? <><Pause className="inline-block w-4 h-4 mr-1 mb-0.5" /> Queue Paused</> : isLimitReached ? <><Lock className="inline-block w-4 h-4 mr-1 mb-0.5" /> Limit (${limit})</> : <><PlusCircle className="inline-block w-4 h-4 mr-1 mb-0.5" /> Walk-in</>}
-        </button>
-        <div className="flex-1 max-w-[200px]">
-          <CallNextButton 
-            onCall={callNext} 
-            disabled={waiting.length === 0} 
-            nextToken={waiting[0]?.token} 
-          />
-        </div>
-        <div className="qr-hint-mobile" style={s.qrHint}><Smartphone className="inline-block w-4 h-4" /> Patients scan QR → WhatsApp → Auto joins queue</div>
-      </div>
-
-      {/* ── Add Walk-in Form ── */}
-      {showAddForm && (
-        <div style={s.addForm}>
-          <div style={s.addFormTitle}><Plus className="inline-block w-4 h-4" /> Add Walk-in Patient</div>
-          <div style={s.addFormRow}>
-            <input style={s.input} placeholder="Patient Name (optional)" value={newName} onChange={e => setNewName(e.target.value)} />
-            <input style={s.input} placeholder="WhatsApp Number *" value={newPhone} maxLength={10} onChange={e => setNewPhone(e.target.value.replace(/\D/g, ''))} />
-            <select style={s.select} value={newLang} onChange={e => setNewLang(e.target.value)}>
-              {Object.entries(LANG_NAMES).map(([code, name]) => (
-                <option key={code} value={code}>{name}</option>
-              ))}
-            </select>
-            <button style={s.btnAdd} onClick={addWalkIn}>Add to Queue</button>
-            <button style={s.btnGhost} onClick={() => setShowAddForm(false)}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Tabs ── */}
-      <div style={s.tabs}>
-        <button style={{ ...s.tab, ...(activeTab === 'active' ? s.tabActive : {}) }} onClick={() => setActiveTab('active')}>
-          <List className="inline-block w-4 h-4 mr-1 mb-0.5" /> Active Queue ({activePatients.length})
-        </button>
-        <button style={{ ...s.tab, ...(activeTab === 'done' ? s.tabActive : {}) }} onClick={() => setActiveTab('done')}>
-          <CheckCircle2 className="inline-block w-4 h-4 mr-1 mb-0.5" /> Completed ({done.length})
-        </button>
-        <button style={{ ...s.tab, ...(activeTab === 'payments' ? s.tabActive : {}) }} onClick={() => setActiveTab('payments')}>
-          <CreditCard className="inline-block w-4 h-4 mr-1 mb-0.5" /> Payments
-        </button>
-      </div>
-
-      {/* ── Patient List ── */}
-      <div style={s.list}>
-        {activeTab !== 'history' && activeTab !== 'payments' && displayPatients.length === 0 && (
-          <div style={s.empty}>
-            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>{activeTab === 'active' ? <Sparkles className="w-12 h-12 text-[#065F46]" /> : <CheckCircle className="w-12 h-12 text-[#94A3B8]" />}</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#065F46' }}>
-              {activeTab === 'active' ? 'Queue is clear!' : 'No completed patients yet'}
-            </div>
-            <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: 6 }}>
-              {activeTab === 'active' ? 'Add a walk-in or wait for WhatsApp joins' : ''}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'history' && (
-          <div style={{ marginBottom: 16, background: 'white', padding: '16px 20px', borderRadius: 16, boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
-            {/* Row 1: Date picker */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#064E3B', whiteSpace: 'nowrap' }}>📅 Date:</label>
+          {/* Right Group: Active Queue Location Refined Input Pill */}
+          <div className="cmd-meta-group">
+            <span className="cmd-meta-label" style={{ color: '#5A6E85' }}>LOCATION:</span>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <MapPin style={{ width: 14, height: 14, color: '#3B82F6', position: 'absolute', left: 10, pointerEvents: 'none' }} />
               <input
-                type="date"
-                value={historyDate}
-                max={new Date().toISOString().split('T')[0]}
-                min={
-                  clinic?.plan_id === 'starter'
-                    ? (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })()
-                    : clinic?.plan_id === 'pro'
-                      ? (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })()
-                      : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d.toISOString().split('T')[0] })()
-                }
-                onChange={e => setHistoryDate(e.target.value)}
-                style={{ flex: 1, padding: '8px 12px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#065F46', fontWeight: 500 }}
+                type="text"
+                value={activeRoom}
+                onChange={handleRoomChange}
+                placeholder="Active room / Gate..."
+                className="cmd-meta-pill-input"
               />
             </div>
-            {/* Row 2: Search + Filter */}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ flex: 1, position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem', color: '#94A3B8' }}>🔍</span>
-                <input
-                  type="text"
-                  placeholder="Search name, phone, token..."
-                  value={historySearch}
-                  onChange={e => setHistorySearch(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px 9px 36px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#065F46', fontWeight: 500, boxSizing: 'border-box' }}
-                />
-              </div>
-              <select
-                value={historyFilter}
-                onChange={e => setHistoryFilter(e.target.value)}
-                style={{ padding: '9px 12px', borderRadius: 10, border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', background: '#F8FAFC', color: '#065F46', fontWeight: 600, cursor: 'pointer', minWidth: 100 }}
-              >
-                <option value="all">All</option>
-                <option value="done"><CheckCircle2 className="inline-block w-4 h-4" /> Done</option>
-                <option value="waiting">🟡 Waiting</option>
-                <option value="called">🟢 Called</option>
-                <option value="skipped"><SkipForward className="inline-block w-4 h-4" /> Skipped</option>
-              </select>
-            </div>
           </div>
-        )}
+        </motion.div>
 
-        {activeTab === 'history' && loadingHistory && (
-          <div style={{ textAlign: 'center', padding: '60px 24px', color: '#64748b', fontWeight: 600 }}>Loading history...</div>
-        )}
-
-        {activeTab === 'history' && !loadingHistory && historyPatients.length === 0 && (
-          <div style={s.empty}>
-            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
-              <History className="w-12 h-12 text-[#94A3B8]" />
-            </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#065F46' }}>No records found</div>
-            <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: 6 }}>Try selecting a different date</div>
-          </div>
-        )}
-
-        {activeTab === 'history' && !loadingHistory && (() => {
-          const q = historySearch.toLowerCase().trim()
-          const filtered = historyPatients.filter(p => {
-            const matchesFilter = historyFilter === 'all' || p.status === historyFilter
-            const matchesSearch = !q ||
-              (p.name || '').toLowerCase().includes(q) ||
-              (p.phone || '').includes(q) ||
-              (p.token || '').toLowerCase().includes(q)
-            return matchesFilter && matchesSearch
-          })
-          if (filtered.length === 0 && historyPatients.length > 0) {
-            return (
-              <div style={{ textAlign: 'center', padding: '40px 24px', color: '#94A3B8' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Search className="w-10 h-10 text-[#94A3B8]" /></div>
-                <div style={{ fontWeight: 600, color: '#64748B' }}>No matching patients</div>
-                <div style={{ fontSize: '0.8rem', marginTop: 4 }}>Try a different search or filter</div>
-              </div>
-            )
-          }
-          return filtered.map(p => (
-            <PatientCard key={p.id} patient={p} position={null} />
-          ))
-        })()}
-
-        {activeTab === 'active' && called.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 20px 2px', margin: '8px 0 0' }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 0 3px rgba(16,185,129,0.2)', animation: 'pulse 1.5s infinite' }} />
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10B981', letterSpacing: '1.5px', textTransform: 'uppercase' }}>With Doctor Now</span>
-          </div>
-        )}
-        {activeTab === 'active' && called.map(p => (
-          <PatientCard key={p.id} patient={p} position={null}
-            onDone={() => markDone(p)} onSkip={() => skipPatient(p)} onNotify={() => notifyPatient(p)}
-          />
-        ))}
-
-        {activeTab === 'active' && waiting.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 20px 2px', margin: '16px 0 0' }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#F97316', boxShadow: '0 0 0 3px rgba(249,115,22,0.2)' }} />
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#F97316', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Waiting — {waiting.length} patient{waiting.length !== 1 ? 's' : ''}</span>
-          </div>
-        )}
-        {activeTab === 'active' && waiting.map((p, idx) => (
-          <PatientCard key={p.id} patient={p} position={idx + 1}
-            onDone={() => markDone(p)} onSkip={() => skipPatient(p)} onNotify={() => notifyPatient(p)}
-            onPriorityCall={() => priorityCall(p)}
-          />
-        ))}
-
-        {activeTab === 'done' && done.map(p => (
-          <PatientCard key={p.id} patient={p} position={null} />
-        ))}
-
-        {activeTab === 'payments' && (
-          <PaymentsView
-            patients={patients}
-            onUpdatePayment={onUpdatePayment}
-            addToast={addToast}
-          />
-        )}
-      </div>
-
-      {/* ── UPGRADE MODAL ── */}
-      {showUpgradeModal && (
-        <div onClick={() => setShowUpgradeModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#0a0514', width: '100%', maxWidth: 700, borderRadius: 24, padding: '32px 24px', position: 'relative', border: '1px solid rgba(6,95,70,0.3)', color: '#fff' }}>
-            <button onClick={() => setShowUpgradeModal(false)} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', width: 32, height: 32, borderRadius: '50%', color: '#94a3b8', cursor: 'pointer', fontSize: 18 }}>×</button>
-            <div style={{ textAlign: 'center', marginBottom: 32 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}><AlertTriangle className="w-16 h-16 text-[#F87171] mx-auto" /></div>
-              <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8, color: '#f87171' }}>Daily Limit Reached!</h2>
-              <p style={{ color: '#94a3b8', fontSize: 15 }}>You have reached the maximum number of patients allowed for your current plan today. Upgrade to instantly add more patients.</p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
-              {clinic?.plan_id === 'starter' && (
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '2px solid #065F46', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontSize: 20 }}>🥈</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: '#a78bfa' }}>Pro Plan</span>
-                  </div>
-                  <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 16 }}>₹999 <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>/mo</span></div>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, flex: 1 }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 className="w-4 h-4 text-[#065F46]" /> Up to 150 patients/day</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 className="w-4 h-4 text-[#065F46]" /> AI Voice Alerts</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 className="w-4 h-4 text-[#065F46]" /> Queue Pause feature</li>
-                  </ul>
-                  <button 
-                    onClick={() => handleUpgrade('pro')}
-                    disabled={!!upgrading}
-                    style={{ width: '100%', padding: '12px', background: '#065F46', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 800, cursor: !!upgrading ? 'default' : 'pointer', opacity: upgrading ? 0.5 : 1 }}
-                  >
-                    {upgrading === 'pro' ? <><Hourglass className="inline-block w-4 h-4" /> Opening...</> : 'Upgrade to Pro'}
-                  </button>
-                </div>
-              )}
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 20 }}>🥇</span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: '#fbbf24' }}>Elite Plan</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 16 }}>₹1999 <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>/mo</span></div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, flex: 1 }}>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Star className="w-4 h-4 text-[#F59E0B]" /> Unlimited patients</li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Star className="w-4 h-4 text-[#F59E0B]" /> WhatsApp CRM Broadcasts</li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Star className="w-4 h-4 text-[#F59E0B]" /> VIP Support</li>
-                </ul>
-                <button 
-                  onClick={() => handleUpgrade('elite')}
-                  disabled={!!upgrading}
-                  style={{ width: '100%', padding: '12px', background: '#f59e0b', color: '#000', border: 'none', borderRadius: 12, fontWeight: 800, cursor: !!upgrading ? 'default' : 'pointer', opacity: upgrading ? 0.5 : 1 }}
-                >
-                  {upgrading === 'elite' ? <><Hourglass className="inline-block w-4 h-4" /> Opening...</> : 'Upgrade to Elite'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── SUCCESS MODAL ── */}
-      {showSuccessModal && (
-        <div onClick={() => setShowSuccessModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg, #065F46, #1e1b4b)', width: '100%', maxWidth: 440, borderRadius: 24, padding: '40px 32px', position: 'relative', border: '1px solid rgba(6,95,70,0.3)', color: '#fff', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(6,95,70,0.3)' }}>
-            <div style={{ marginBottom: 16, animation: 'bounce 1s ease infinite', display: 'flex', justifyContent: 'center' }}><Sparkles className="w-16 h-16 text-[#065F46]" /></div>
-            <style>{`@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`}</style>
-            <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12, background: 'linear-gradient(to right, #10b981, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Payment Successful!</h2>
-            <p style={{ color: '#cbd5e1', marginBottom: 24, fontSize: 16, lineHeight: 1.6 }}>Your clinic has been upgraded to the <strong>{showSuccessModal} Plan</strong>! You can now resume adding patients to your queue.</p>
-            <button
-              onClick={() => setShowSuccessModal(null)}
-              style={{ width: '100%', padding: '14px', background: '#065F46', color: 'white', border: 'none', borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: '0 8px 24px rgba(6,95,70,0.4)' }}
+        {/* ── HEADER ── */}
+        <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="cmd-header">
+          <div className="cmd-brand">
+            <div 
+              className="cmd-logo-box" 
+              onClick={() => fileInputRef.current?.click()}
+              title="Click to upload School Crest / Logo"
             >
-              Continue to Dashboard
+              {schoolLogo || clinic?.logo_url ? (
+                <img 
+                  src={schoolLogo || clinic.logo_url} 
+                  alt="School Crest Logo" 
+                />
+              ) : (
+                <span>{(clinic?.name || 'A').charAt(0).toUpperCase()}</span>
+              )}
+              <div className="cmd-logo-overlay">
+                <Camera style={{ width: 15, height: 15, color: '#FFFFFF' }} />
+                <span style={{ fontSize: '0.5rem', fontWeight: 800, textTransform: 'uppercase' }}>LOGO</span>
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleLogoUpload} 
+                accept="image/*" 
+                style={{ display: 'none' }} 
+              />
+            </div>
+            <div className="cmd-brand-info">
+              <h1 
+                className="cmd-title" 
+                onClick={() => { setNewSchoolNameInput(clinic?.name || 'Ashbourne Academy'); setSchoolCity(clinic?.city || ''); setShowEditSchoolModal(true); }}
+                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
+                title="Click to edit school name & city"
+              >
+                <span>{clinic?.name || 'Ashbourne Academy'}</span>
+                <Pencil style={{ width: 15, height: 15, color: '#7FA8D9', display: 'inline-block' }} />
+              </h1>
+              <div 
+                className="cmd-subtitle-line"
+                onClick={() => { setNewSchoolNameInput(clinic?.name || 'Ashbourne Academy'); setSchoolCity(clinic?.city || ''); setShowEditSchoolModal(true); }}
+                title="Click to edit description tagline & city"
+              >
+                <span>{schoolSubtitle || clinic?.specialty || 'Campus Operations & Gate Control Console'}</span>
+                {clinic?.city && <><span style={{ opacity: 0.45 }}>•</span><span style={{ fontWeight: 700, color: '#1B2A4A' }}>{clinic.city}</span></>}
+              </div>
+            </div>
+          </div>
+
+          <div className="cmd-header-right">
+            <div className="cmd-clock">
+              <AnimatedClock />
+              <div className="cmd-clock-sub">
+                <span className="live-dot" /> SESSION ACTIVE • TERM II
+              </div>
+            </div>
+            <button 
+              className="hamburger-btn" 
+              onClick={() => setShowNavMenu(!showNavMenu)}
+              title="Open Navigation Menu"
+              style={{ background: '#FFFFFF', border: '1.5px solid #1B2A4A', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.2s ease', boxShadow: '0 2px 8px rgba(27,42,74,0.06)' }}
+            >
+              <Menu style={{ width: 22, height: 22, color: '#1B2A4A' }} />
             </button>
           </div>
-        </div>
-      )}
-    </div>
-  )
-}
+        </motion.header>
 
-// ─── PATIENT CARD ──────────────────────────────────────────────────────────
-function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCall }) {
-  const isWaiting = patient.status === STATUS.WAITING
-  const isCalled = patient.status === STATUS.CALLED
-  const isDone = patient.status === STATUS.DONE
-  const isSkipped = patient.status === STATUS.SKIPPED
-  const waitMins = Math.floor((new Date() - new Date(patient.joined_at)) / 60000)
-  const joinedTime = new Date(patient.joined_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
-  const completedTime = patient.completed_at ? new Date(patient.completed_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : null
-  
-  const statusConfig = {
-    waiting: { color: '#F97316', bg: '#FFF7ED', border: '#FDBA74', label: 'Waiting' },
-    called:  { color: '#10B981', bg: '#F0FDF4', border: '#6EE7B7', label: 'With Doctor' },
-    done:    { color: '#6366F1', bg: '#EEF2FF', border: '#A5B4FC', label: 'Done' },
-    skipped: { color: '#FB7185', bg: '#FFF1F2', border: '#FECDD3', label: 'Skipped' },
-  }[patient.status] || { color: '#64748b', bg: '#F8FAFC', border: '#CBD5E1', label: patient.status }
-
-  return (
-    <div style={{
-      background: 'white',
-      borderRadius: 16,
-      marginBottom: 10,
-      border: `1px solid ${statusConfig.border}`,
-      boxShadow: isCalled ? '0 4px 20px rgba(16,185,129,0.12)' : '0 2px 8px rgba(0,0,0,0.04)',
-      overflow: 'hidden',
-      opacity: isDone || isSkipped ? 0.72 : 1,
-    }}>
-      {/* Main info row */}
-      <div style={{ display: 'flex', alignItems: 'stretch' }}>
-        {/* Left: Token + Status */}
-        <div style={{
-          background: statusConfig.bg,
-          borderRight: `1px solid ${statusConfig.border}`,
-          minWidth: 68,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '14px 6px',
-          gap: 3,
-          flexShrink: 0,
-        }}>
-          <div style={{ fontSize: '1.05rem', fontWeight: 900, color: statusConfig.color, letterSpacing: '-0.5px' }}>{patient.token}</div>
-          {position && <div style={{ fontSize: '0.6rem', fontWeight: 700, color: statusConfig.color, opacity: 0.75, textTransform: 'uppercase' }}>#{position}</div>}
-          <div style={{
-            fontSize: '0.58rem', fontWeight: 700, color: statusConfig.color,
-            background: `${statusConfig.color}18`, border: `1px solid ${statusConfig.border}`,
-            borderRadius: 20, padding: '2px 6px', marginTop: 3, textAlign: 'center', letterSpacing: 0.2,
-          }}>{statusConfig.label}</div>
-        </div>
-
-        {/* Right: Info */}
-        <div style={{ flex: 1, padding: '12px 14px', minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#065F46', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
-              {patient.name || 'Walk-in Patient'}
-            </span>
-            <span style={{ fontSize: '0.63rem', fontWeight: 700, color: '#065F46', background: '#F0FDFA', border: '1px solid #DDD6FE', borderRadius: 20, padding: '1px 7px', flexShrink: 0 }}>
-              {LANG_NAMES[patient.language] || 'हिंदी'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 10px', fontSize: '0.75rem', color: '#64748B' }}>
-            <span><Smartphone className="inline-block w-4 h-4" /> +91 {maskPhone(patient.phone)}</span>
-            <span><Clock className="inline-block w-4 h-4" /> {joinedTime}</span>
-            {isWaiting && waitMins > 0 && <span style={{ color: waitMins > 20 ? '#EF4444' : '#F97316', fontWeight: 700 }}><Hourglass className="inline-block w-4 h-4" /> {waitMins}m</span>}
-            {completedTime && <span><CheckCircle2 className="inline-block w-4 h-4" /> {completedTime}</span>}
-            {position && <span style={{ color: '#065F46', fontWeight: 600 }}>~{position * 7}min est.</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Action buttons */}
-      {(isWaiting || isCalled) && (
-        <div style={{
-          borderTop: `1px solid ${statusConfig.border}`,
-          background: statusConfig.bg,
-          display: 'flex', gap: 8, padding: '10px 12px', flexWrap: 'wrap',
-        }}>
-          {isCalled && (
-            <button onClick={onDone} style={{ flex: 1, minWidth: 90, padding: '9px 12px', background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Check className="w-4 h-4" /> Done</button>
-          )}
-          {isWaiting && onPriorityCall && (
-            <button onClick={onPriorityCall} style={{ flex: 1, minWidth: 100, padding: '9px 12px', background: 'linear-gradient(135deg,#EF4444,#DC2626)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Megaphone className="w-4 h-4" /> Call Now</button>
-          )}
-          {isWaiting && (
-            <button onClick={onNotify} style={{ flex: 1, minWidth: 80, padding: '9px 12px', background: 'white', color: '#1D4ED8', border: '1.5px solid #BFDBFE', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}><Bell className="inline-block w-4 h-4" /> Notify</button>
-          )}
-          {isWaiting && (
-            <button onClick={onSkip} style={{ padding: '9px 14px', background: 'white', color: '#94A3B8', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}><SkipForward className="inline-block w-4 h-4" /> Skip</button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── PAYMENTS VIEW ──────────────────────────────────────────────────────────
-function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addToast }) {
-  const [globalPatients, setGlobalPatients] = useState([])
-  const [loadingGlobal, setLoadingGlobal] = useState(true)
-  const [paymentSubTab, setPaymentSubTab] = useState('pending')
-  const [paymentSearch, setPaymentSearch] = useState('')
-  const [editingFeeId, setEditingFeeId] = useState(null)
-  const [tempFeeTotal, setTempFeeTotal] = useState('')
-  const [tempFeePaid, setTempFeePaid] = useState('')
-  const [remindingId, setRemindingId] = useState(null)
-
-  async function handleSendReminder(patient) {
-    const billTotal = parseFloat(patient.fee_total) || 0
-    if (billTotal <= 0) {
-      addToast('Please set a Total Bill greater than 0 first', 'error')
-      setEditingFeeId(patient.id)
-      setTempFeeTotal('500')
-      setTempFeePaid('0')
-      return
-    }
-
-    if (!patient.phone || patient.phone === '0000000000') {
-      addToast('Cannot send reminder: invalid phone number', 'error')
-      return
-    }
-
-    setRemindingId(patient.id)
-    try {
-      const res = await fetch('/api/queue/remind-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId: patient.id })
-      })
-
-      const data = await res.json()
-      if (res.ok && data.success) {
-        addToast(`Reminder sent to ${patient.name || patient.token}`, 'done')
-      } else {
-        throw new Error(data.message || 'Failed to send reminder')
-      }
-    } catch (err) {
-      console.error(err)
-      addToast(err.message || 'Error sending reminder', 'error')
-    } finally {
-      setRemindingId(null)
-    }
-  }
-
-  const fetchPayments = async (query = '') => {
-    setLoadingGlobal(true)
-    try {
-      const url = query ? `/api/dashboard/payments?search=${encodeURIComponent(query)}` : '/api/dashboard/payments'
-      const res = await fetch(url)
-      const data = await res.json()
-      if (data.success) {
-        setGlobalPatients(data.patients || [])
-      }
-    } catch (e) {
-      console.error(e)
-    }
-    setLoadingGlobal(false)
-  }
-
-  useEffect(() => {
-    fetchPayments()
-  }, [])
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (paymentSearch.trim().length >= 3) {
-        fetchPayments(paymentSearch)
-      } else if (paymentSearch.trim() === '') {
-        fetchPayments()
-      }
-    }, 500)
-    return () => clearTimeout(delayDebounceFn)
-  }, [paymentSearch])
-
-  const onUpdatePayment = async (id, updates) => {
-    // Optimistically update local state immediately
-    setGlobalPatients(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
-
-    // Call the API directly — do NOT delegate to parent's onUpdatePayment
-    // which is tied to today's queue state and would cause a revert error
-    try {
-      const res = await fetch('/api/queue/update-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId: id, updates })
-      })
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.message || 'API request failed')
-      }
-    } catch (e) {
-      console.error('[PaymentsView onUpdatePayment Error]', e)
-      addToast('Failed to save payment changes. Please try again.', 'error')
-      // Revert optimistic update by re-fetching global data
-      fetchPayments()
-    }
-  }
-
-  // Sub-tab counters
-  const pendingCount = globalPatients.filter(p => p.payment_status !== 'completed').length
-  const completedCount = globalPatients.filter(p => p.payment_status === 'completed').length
-
-  // Metrics (calculated dynamically from fetched records)
-  const pendingAmountCompleted = globalPatients
-    .filter(p => p.payment_status !== 'completed')
-    .reduce((sum, p) => sum + (parseFloat(p.fee_paid) || 0), 0)
-
-  const pendingRemainingBalance = globalPatients
-    .filter(p => p.payment_status !== 'completed')
-    .reduce((sum, p) => sum + ((parseFloat(p.fee_total) || 0) - (parseFloat(p.fee_paid) || 0)), 0)
-
-  const completedTransactionsDone = globalPatients
-    .filter(p => p.payment_status === 'completed')
-    .reduce((sum, p) => sum + (parseFloat(p.fee_paid) || 0), 0)
-
-  // Real-time Search & Filter
-  const filtered = globalPatients.filter(p => {
-    const matchesSubTab = paymentSubTab === 'pending'
-      ? p.payment_status !== 'completed'
-      : p.payment_status === 'completed'
-
-    const q = paymentSearch.toLowerCase().trim()
-    const matchesSearch = !q ||
-      (p.name || '').toLowerCase().includes(q) ||
-      (p.phone || '').includes(q) ||
-      (p.token || '').toLowerCase().includes(q)
-
-    return matchesSubTab && matchesSearch
-  })
-
-  return (
-    <div style={ps.container}>
-      {/* ── Search Bar ── */}
-      <div style={ps.searchContainer}>
-        <span style={ps.searchIcon}><Search className="w-4 h-4 text-[#94A3B8]" /></span>
-        <input
-          type="text"
-          placeholder="Search patient by name, phone, or token..."
-          value={paymentSearch}
-          onChange={e => setPaymentSearch(e.target.value)}
-          style={ps.searchInput}
-        />
-      </div>
-
-      {/* ── Sub-Tabs Navigation ── */}
-      <div style={ps.subTabs}>
-        <button
-          onClick={() => { setPaymentSubTab('pending'); setEditingFeeId(null); }}
-          style={{
-            ...ps.subTab,
-            ...(paymentSubTab === 'pending' ? ps.subTabActivePending : {})
-          }}
-        >
-          <AlertTriangle className="inline-block w-4 h-4" /> Pending Payments ({pendingCount})
-        </button>
-        <button
-          onClick={() => { setPaymentSubTab('completed'); setEditingFeeId(null); }}
-          style={{
-            ...ps.subTab,
-            ...(paymentSubTab === 'completed' ? ps.subTabActiveCompleted : {})
-          }}
-        >
-          <CheckCircle2 className="inline-block w-4 h-4" /> Completed Receipts ({completedCount})
-        </button>
-      </div>
-
-      {/* ── Metric Cards ── */}
-      <div style={ps.metricsRow}>
-        {paymentSubTab === 'pending' ? (
-          <>
-            <div style={ps.metricCard}>
-              <div style={ps.metricTitle}>Pending: Amount Completed</div>
-              <div style={{ ...ps.metricValue, color: '#10B981' }}>₹{pendingAmountCompleted.toFixed(2)}</div>
+        {/* ── STATS ROW (ELEVATED HERO CARDS) ── */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="cmd-stats-row">
+          {/* Card 1 */}
+          <div className="cmd-stat-card">
+            <div className="cmd-stat-tag">
+              AWAITING CHECK-IN
+              <Users className="w-3.5 h-3.5 text-[#7FA8D9]" />
             </div>
-            <div style={ps.metricCard}>
-              <div style={ps.metricTitle}>Pending: Remaining Balance</div>
-              <div style={{ ...ps.metricValue, color: '#F43F5E' }}>₹{pendingRemainingBalance.toFixed(2)}</div>
-            </div>
-          </>
-        ) : (
-          <div style={{ ...ps.metricCard, flex: 1 }}>
-            <div style={ps.metricTitle}>Total Transactions Done</div>
-            <div style={{ ...ps.metricValue, color: '#10B981' }}>₹{completedTransactionsDone.toFixed(2)}</div>
+            <div className="cmd-stat-val"><AnimatedNumber value={arrivals.length} /></div>
+            <div className="cmd-stat-underline" />
+            <div className="cmd-stat-sub">at the front desk</div>
           </div>
+
+          {/* Card 2 */}
+          <div className="cmd-stat-card">
+            <div className="cmd-stat-tag">
+              WITH STAFF
+              <UserCheck className="w-3.5 h-3.5 text-[#7FA8D9]" />
+            </div>
+            <div className="cmd-stat-val">
+              <AnimatedNumber value={withStaff.length} />
+            </div>
+            <div className="cmd-stat-underline" />
+            <div className="cmd-stat-sub">
+              {withStaff.length > 0 ? `${withStaff.length} active consultation${withStaff.length > 1 ? 's' : ''}` : 'no active consultations'}
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="cmd-stat-card">
+            <div className="cmd-stat-tag">
+              COMPLETED TODAY
+              <UserCheck className="w-3.5 h-3.5 text-[#7FA8D9]" />
+            </div>
+            <div className="cmd-stat-val"><AnimatedNumber value={dismissals.length} /></div>
+            <div className="cmd-stat-underline" />
+            <div className="cmd-stat-sub">consultations completed</div>
+          </div>
+
+          {/* Card 4 */}
+          <div className="cmd-stat-card">
+            <div className="cmd-stat-tag">
+              PEOPLE IN QUEUE
+              <Clock className="w-3.5 h-3.5 text-[#7FA8D9]" />
+            </div>
+            <div className="cmd-stat-val">
+              <AnimatedNumber value={arrivals.length} />
+            </div>
+            <div className="cmd-stat-underline" />
+            <div className="cmd-stat-sub">{arrivals.length > 0 ? `${arrivals.length} student${arrivals.length > 1 ? 's' : ''} in queue` : 'queue is clear'}</div>
+          </div>
+        </motion.div>
+
+        {/* ── LIVE QUEUE CONTROL (FULL WIDTH HERO CARD) ── */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} style={{ marginBottom: 24 }}>
+          <div className="cmd-card" style={{ width: '100%' }}>
+            <div className="cmd-card-tag">
+              <span>LIVE QUEUE CONTROL & BROADCAST CONSOLE</span>
+              <ShieldCheck className="w-4 h-4 text-[#7FA8D9]" />
+            </div>
+            <div className="cmd-card-desc" style={{ marginBottom: 16 }}>
+              Scan the campus QR code to instantly join the live queue. Broadcast live public notices to all queued students & parents or manually manage check-in records.
+            </div>
+            {activeNotice && (
+              <div style={{ padding: '10px 14px', background: '#EFF6FF', border: '1.5px solid #93C5FD', borderRadius: 8, marginBottom: 16, fontSize: '0.8rem', color: '#1E40AF', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Megaphone style={{ width: 16, height: 16, color: '#2563EB', flexShrink: 0 }} />
+                  <span><strong>Active Notice:</strong> "{activeNotice}"</span>
+                </div>
+                <button onClick={() => { setActiveNotice(''); localStorage.removeItem('tokenpe_active_notice'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', fontSize: '0.72rem', fontWeight: 700 }}>Clear Notice</button>
+              </div>
+            )}
+            <div className="cmd-btn-group">
+              <button className="cmd-btn-solid" onClick={() => setShowQR(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <QrCode style={{ width: 15, height: 15 }} />
+                <span>Display Campus QR Code</span>
+              </button>
+              <button className="cmd-btn-outline" onClick={() => setShowAddModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <UserPlus style={{ width: 14, height: 14 }} />
+                <span>Manual Check-in</span>
+              </button>
+              <button className="cmd-btn-outline" onClick={() => setShowBroadcastModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: '#3B82F6', color: '#1D4ED8', background: '#EFF6FF', fontWeight: 700 }}>
+                <Megaphone style={{ width: 15, height: 15, color: '#2563EB' }} />
+                <span>Broadcast Notice to Queue</span>
+              </button>
+              {queuePaused ? (
+                <button className="cmd-btn-outline" onClick={togglePauseQueue} title="Click to resume queue" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: '#EF4444', color: '#DC2626', background: '#FEF2F2', fontWeight: 700 }}>
+                  <Pause style={{ width: 14, height: 14, color: '#EF4444' }} />
+                  <span>Queue is paused</span>
+                </button>
+              ) : (
+                <button className="cmd-btn-outline" onClick={togglePauseQueue} title="Click to pause queue" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: '#10B981', color: '#059669', background: '#ECFDF5', fontWeight: 700 }}>
+                  <Play style={{ width: 14, height: 14, color: '#10B981' }} />
+                  <span>Queue is active</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── TABS (ARRIVALS & COMPLETED ONLY) ── */}
+        <div className="cmd-tabs">
+          <button className={`cmd-tab ${tab === 'arrivals' ? 'active' : ''}`} onClick={() => setTab('arrivals')}>
+            <span className="cmd-tab-title">ARRIVALS</span>
+            <span className="cmd-tab-sub">({arrivals.length})</span>
+          </button>
+          <button className={`cmd-tab ${tab === 'dismissals' ? 'active' : ''}`} onClick={() => setTab('dismissals')}>
+            <span className="cmd-tab-title">COMPLETED</span>
+            <span className="cmd-tab-sub">({dismissals.length})</span>
+          </button>
+        </div>
+
+        {/* ── AWAITING CHECK-IN & ACTIVE CONSULTATION HERO ROW (ARRIVALS TAB ONLY) ── */}
+        {tab === 'arrivals' && <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+          {/* 2-Column Split: Left = WITH STAFF, Right = NEXT IN QUEUE */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 20 }}>
+            
+            {/* Left Half: WITH STAFF SECTION */}
+            <div className="cmd-card" style={{ border: '2.5px solid #059669', background: 'linear-gradient(135deg, #FFFFFF 0%, #ECFDF5 100%)', boxShadow: '0 10px 30px rgba(5, 150, 105, 0.12)', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div className="cmd-card-tag" style={{ marginBottom: 12 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, color: '#047857', fontSize: '0.75rem' }}>
+                    <span className="live-dot" style={{ background: '#10B981', boxShadow: '0 0 8px #10B981' }} /> ACTIVE CONSULTATION • WITH STAFF
+                  </span>
+                  <span style={{ fontSize: '0.6rem', background: '#059669', color: '#FFF', padding: '3px 8px', borderRadius: 4, fontWeight: 800 }}>({withStaff.length}) ACTIVE</span>
+                </div>
+
+                {withStaff.length === 0 ? (
+                  <div style={{ color: '#059669', fontSize: '0.85rem', padding: '24px 16px', fontWeight: 600, textAlign: 'center', background: '#FFFFFF', borderRadius: 8, border: '1px dashed #A7F3D0' }}>
+                    No members currently in consultation with staff
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 220, overflowY: 'auto' }}>
+                    {withStaff.map((s) => (
+                      <div key={s.id} style={{ background: '#FFFFFF', border: '1.5px solid #A7F3D0', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                        <div>
+                          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: 700, color: '#1B2A4A' }}>{s.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#047857', fontWeight: 600, marginTop: 2 }}>{s.grade || 'General'} • {s.reason || 'Consultation'}</div>
+                        </div>
+                        <button
+                          onClick={() => handleCompleteStaff(s.id)}
+                          className="btn-admit-sm"
+                          style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#FFF', border: 'none', borderRadius: 6, fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)' }}
+                          title="Mark session complete and send to Dismissed"
+                        >
+                          <CheckCircle2 style={{ width: 15, height: 15 }} />
+                          <span>Done</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Half: NEXT IN QUEUE CARD */}
+            <div className="cmd-card cmd-card-next" style={{ border: '2.5px solid #1B2A4A', background: 'linear-gradient(135deg, #FFFFFF 0%, #EFF4FA 100%)', boxShadow: '0 10px 30px rgba(27, 42, 74, 0.12), 0 0 0 1px rgba(127, 168, 217, 0.4)', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div className="cmd-card-tag" style={{ marginBottom: 12 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, color: '#1B2A4A', fontSize: '0.75rem' }}>
+                    <span className="live-dot" /> 1ST IN LINE • IMMEDIATE ADMIT
+                  </span>
+                  <span style={{ fontSize: '0.6rem', background: '#1B2A4A', color: '#FFF', padding: '3px 8px', borderRadius: 4, fontWeight: 800 }}>NEXT IN QUEUE</span>
+                </div>
+                {nextInQueue ? (
+                  <div>
+                    {/* Clean 3-Field Grid: Name, Class, Reason */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.12)', borderRadius: 8, padding: '12px 14px', marginBottom: 14, alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>STUDENT NAME</span>
+                        <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: 700, color: '#1B2A4A' }}>{nextInQueue.name}</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>CLASS / GRADE</span>
+                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontSize: '0.88rem' }}>{nextInQueue.grade || '—'}</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>REASON</span>
+                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontSize: '0.88rem' }}>{nextInQueue.reason || 'Arrival'}</span>
+                      </div>
+                    </div>
+
+                    <div className="cmd-card-actions">
+                      <button className="btn-admit" onClick={() => handleAdmit(nextInQueue.id)} title="Admit Student to Staff Consultation">
+                        <CheckCircle2 style={{ width: 14, height: 14 }} />
+                        <span>Admit</span>
+                      </button>
+                      <button className="btn-notify" onClick={() => handleNotify(nextInQueue)} title="Notify Guardian via In-App Alert">
+                        <Bell style={{ width: 14, height: 14 }} />
+                        <span>Notify</span>
+                      </button>
+                      <button className="btn-skip" onClick={() => handleSkip(nextInQueue)} title="Remove student from queue">
+                        <XCircle style={{ width: 14, height: 14 }} />
+                        <span>Skip</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ color: '#5A6E85', fontSize: '0.85rem', padding: '24px 16px', fontWeight: 600, textAlign: 'center', background: '#FFFFFF', borderRadius: 8, border: '1px dashed #CBD5E1' }}>No students currently awaiting admission in queue</div>
+                )}
+              </div>
+            </div>
+
+          </div>
+          <div className="cmd-sec-card" style={{ marginBottom: 28 }}>
+            <div className="cmd-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <span>AWAITING CHECK-IN ({arrivals.length} STUDENTS)</span>
+              <span style={{ fontSize: '0.72rem', color: '#5A6E85', textTransform: 'none', fontWeight: 600 }}>Active Queue Records</span>
+            </div>
+
+            {arrivals.length === 0 ? (
+              <div style={{ padding: 32, textAlign: 'center', color: '#5A6E85', background: '#F8FAFC', borderRadius: 8, border: '1px dashed #CBD5E1' }}>
+                No students currently awaiting check-in
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {arrivals.map((a, idx) => (
+                  <div
+                    key={a.id}
+                    className="cmd-card"
+                    style={{
+                      background: '#FFFFFF',
+                      border: '1.5px solid rgba(27, 42, 74, 0.12)',
+                      borderRadius: 10,
+                      padding: '14px 16px',
+                      boxShadow: '0 4px 14px rgba(27, 42, 74, 0.05)',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {/* Info Grid with Labeled Headings & Lucide Icons */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px 14px', marginBottom: 14, background: '#F8FAFC', padding: '12px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                          <Hash style={{ width: 11, height: 11, color: '#3B82F6' }} /> S.NO.
+                        </span>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#1B2A4A', fontSize: '0.92rem', background: '#E2E8F0', padding: '2px 8px', borderRadius: 4, display: 'inline-block' }}>
+                          #{a.rank}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                          <User style={{ width: 11, height: 11, color: '#3B82F6' }} /> STUDENT NAME
+                        </span>
+                        <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: 700, color: '#1B2A4A' }}>{a.name}</span>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                          <GraduationCap style={{ width: 11, height: 11, color: '#3B82F6' }} /> CLASS / GRADE
+                        </span>
+                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontSize: '0.88rem' }}>{a.grade || '—'}</span>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                          <HelpCircle style={{ width: 11, height: 11, color: '#3B82F6' }} /> REASON
+                        </span>
+                        <span style={{ fontWeight: 700, color: '#0284C7', fontSize: '0.88rem' }}>{a.reason || 'Arrival'}</span>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                          <Phone style={{ width: 11, height: 11, color: '#3B82F6' }} /> CONTACT NUMBER
+                        </span>
+                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontFamily: 'monospace', fontSize: '0.85rem' }}>{a.guardian || '—'}</span>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                          <Clock style={{ width: 11, height: 11, color: '#3B82F6' }} /> JOIN TIME
+                        </span>
+                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontFamily: 'monospace', fontSize: '0.85rem' }}>{a.time || 'Just now'}</span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons with Lucide Icons */}
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                      <button onClick={() => handleAdmit(a.id)} className="btn-admit-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Admit Student">
+                        <CheckCircle2 style={{ width: 15, height: 15 }} />
+                        <span>Admit</span>
+                      </button>
+                      <button onClick={() => handleNotify(a.id)} className="btn-notify-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Notify Guardian via WhatsApp/SMS">
+                        <Bell style={{ width: 15, height: 15 }} />
+                        <span>Notify</span>
+                      </button>
+                      <button onClick={() => handleSkip(a)} className="btn-skip-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Remove from Queue">
+                        <XCircle style={{ width: 15, height: 15 }} />
+                        <span>Skip</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>}
+
+        {/* ── COMPLETED TAB VIEW ── */}
+        {tab === 'dismissals' && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} style={{ marginBottom: 28 }}>
+            <div className="cmd-sec-card">
+              <div className="cmd-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span>COMPLETED RECORDS ({dismissals.length} STUDENTS)</span>
+                <span style={{ fontSize: '0.72rem', color: '#5A6E85', textTransform: 'none', fontWeight: 600 }}>Completed Consultations Today</span>
+              </div>
+              {dismissals.length === 0 ? (
+                <div style={{ padding: 32, textAlign: 'center', color: '#5A6E85', background: '#F8FAFC', borderRadius: 8, border: '1px dashed #CBD5E1' }}>
+                  No completed records logged today
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+                  {dismissals.map((d, idx) => (
+                    <div key={idx} style={{ padding: '12px 16px', background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 8px rgba(27,42,74,0.04)' }}>
+                      <div>
+                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: 700, color: '#1B2A4A' }}>{d.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#5A6E85', marginTop: 2 }}>{d.grade || 'General'} • {d.guardian || 'N/A'}</div>
+                      </div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', fontWeight: 800, color: '#059669', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '4px 8px', borderRadius: 6 }}>
+                        {d.time}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
         )}
       </div>
 
-      {/* ── Payments List ── */}
-      <div style={ps.list}>
-        {loadingGlobal ? (
-          <div style={{ textAlign: 'center', padding: '60px 24px', color: '#64748b', fontWeight: 600 }}>Loading ledger...</div>
-        ) : filtered.length === 0 ? (
-          <div style={ps.emptyState}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>
-              {paymentSubTab === 'pending' ? <Sparkles className="w-10 h-10 text-[#065F46] mx-auto" /> : <CheckCircle className="w-10 h-10 text-[#065F46] mx-auto" />}
-            </div>
-            <div style={{ fontWeight: 700, color: '#064E3B' }}>
-              {paymentSubTab === 'pending' ? 'No pending payments!' : 'No completed receipts yet.'}
-            </div>
-            {paymentSearch && <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: 4 }}>Try clearing your search query.</div>}
-          </div>
-        ) : (
-          filtered.map(p => {
-            const isEditing = editingFeeId === p.id
-            const feeTotal = parseFloat(p.fee_total) || 0
-            const feePaid = parseFloat(p.fee_paid) || 0
-            const remaining = feeTotal - feePaid
+      {/* QR MODAL */}
+      {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} />}
 
-            return (
-              <div key={p.id} className="payment-card" style={ps.card}>
-                <div style={{ ...ps.token, color: paymentSubTab === 'pending' ? '#F43F5E' : '#10B981' }}>
-                  {p.token}
-                </div>
-                
-                <div style={ps.cardInfo}>
-                  <div style={ps.patientName}>
-                    {p.name || 'Walk-in Patient'}
-                    <span style={ps.langBadge}>{LANG_NAMES[p.language] || 'हिंदी'}</span>
-                  </div>
-                  <div style={ps.patientMeta}>
-                    <Smartphone className="inline-block w-4 h-4" /> +91 {maskPhone(p.phone)} &nbsp;·&nbsp; 📅 {p.date}
-                  </div>
-
-                  {/* Fee Details Area */}
-                  {isEditing ? (
-                    <div style={ps.editRow} onClick={e => e.stopPropagation()}>
-                      <div style={ps.inputGroup}>
-                        <label style={ps.inputLabel}>Total Bill (₹)</label>
-                        <input
-                          type="number"
-                          value={tempFeeTotal}
-                          onChange={e => setTempFeeTotal(e.target.value)}
-                          style={ps.editInput}
-                          placeholder="e.g. 500"
-                        />
-                      </div>
-                      <div style={ps.inputGroup}>
-                        <label style={ps.inputLabel}>Paid So Far (₹)</label>
-                        <input
-                          type="number"
-                          value={tempFeePaid}
-                          onChange={e => setTempFeePaid(e.target.value)}
-                          style={ps.editInput}
-                          placeholder="e.g. 200"
-                        />
-                      </div>
-                      <div style={ps.editActions}>
-                        <button
-                          onClick={() => {
-                            const newTotal = parseFloat(tempFeeTotal) || 0
-                            const newPaid = parseFloat(tempFeePaid) || 0
-                            if (newPaid > newTotal) {
-                              addToast('Amount paid cannot exceed total bill', 'error')
-                              return
-                            }
-                            
-                            const newStatus = (newTotal > 0 && newPaid >= newTotal) ? 'completed' : 'pending'
-                            
-                            onUpdatePayment(p.id, {
-                              fee_total: newTotal,
-                              fee_paid: newPaid,
-                              payment_status: newStatus
-                            })
-                            setEditingFeeId(null)
-                          }}
-                          style={ps.btnSave}
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingFeeId(null)}
-                          style={ps.btnCancel}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={ps.feeStatusRow}>
-                      <span style={ps.feeLabel}>
-                        Bill: <strong>₹{feeTotal}</strong>
-                      </span>
-                      <span style={ps.feeLabel}>
-                        Paid: <strong style={{ color: '#10B981' }}>₹{feePaid}</strong>
-                      </span>
-                      {paymentSubTab === 'pending' && (
-                        <button
-                          onClick={() => {
-                            setEditingFeeId(p.id)
-                            setTempFeeTotal(p.fee_total || '0')
-                            setTempFeePaid(p.fee_paid || '0')
-                          }}
-                          style={ps.btnEdit}
-                          title="Edit Fee"
-                        >
-                          <Pencil className="inline-block w-4 h-4" /> Edit Fee
-                        </button>
+      {/* NAVIGATION DRAWER MODAL (PREMIUM NAVY & SERIF DESIGN SYSTEM) */}
+      <AnimatePresence>
+        {showNavMenu && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'flex-end', background: 'rgba(27, 42, 74, 0.35)', backdropFilter: 'blur(6px)' }} onClick={() => setShowNavMenu(false)}>
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 380 }} style={{ width: 340, background: '#FFFFFF', height: '100%', padding: '18px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '-8px 0 36px rgba(27,42,74,0.18)' }} onClick={e => e.stopPropagation()}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                {/* 5. TOP HEADER AREA */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid rgba(27, 42, 74, 0.08)', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 9, background: '#1B2A4A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontWeight: 800, fontSize: '1.15rem', overflow: 'hidden', boxShadow: '0 2px 8px rgba(27, 42, 74, 0.15)' }}>
+                      {schoolLogo || clinic?.logo_url ? (
+                        <img src={schoolLogo || clinic.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        (clinic?.name || 'A').charAt(0).toUpperCase()
                       )}
                     </div>
-                  )}
+                    <div>
+                      {/* 2. TYPOGRAPHY: Playfair Display Serif School Name */}
+                      <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', lineHeight: 1.2 }}>{clinic?.name || 'Ashbourne Academy'}</div>
+                      {/* Code Tag: Styled in Navy Accent Monospace Pill */}
+                      <div style={{ fontSize: '0.7rem', color: '#5A6E85', fontWeight: 600, marginTop: 2 }}>
+                        Code: <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#1B2A4A', background: '#EFF4FA', padding: '2px 6px', borderRadius: 4, letterSpacing: '0.05em' }}>{clinic?.code || 'ASHBOURNE'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Ghost Close Button */}
+                  <button onClick={() => setShowNavMenu(false)} style={{ background: '#EFF4FA', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1B2A4A', transition: 'all 150ms ease' }} onMouseOver={e => e.currentTarget.style.background = '#E2E8F0'} onMouseOut={e => e.currentTarget.style.background = '#EFF4FA'} title="Close Menu">
+                    <X size={17} strokeWidth={2.2} />
+                  </button>
                 </div>
 
-                {/* Actions / Status Right Side */}
-                <div style={ps.cardActions}>
-                  {paymentSubTab === 'pending' ? (
-                    <>
-                      <div style={ps.remainingBadge}>
-                        Due: ₹{remaining.toFixed(2)}
-                      </div>
-                      <button
-                        onClick={() => {
-                          const billTotal = parseFloat(p.fee_total) || 0
-                          if (billTotal <= 0) {
-                            addToast('Please set a Total Bill greater than 0 first', 'error')
-                            setEditingFeeId(p.id)
-                            setTempFeeTotal('500')
-                            setTempFeePaid('0')
-                            return
-                          }
-                          onUpdatePayment(p.id, {
-                            fee_paid: billTotal,
-                            payment_status: 'completed'
-                          })
-                        }}
-                        style={ps.btnClearBalance}
-                      >
-                        Clear Balance
-                      </button>
-                      <button
-                        onClick={() => handleSendReminder(p)}
-                        disabled={remindingId === p.id}
-                        style={{
-                          ...ps.btnRemind,
-                          opacity: remindingId === p.id ? 0.6 : 1,
-                          cursor: remindingId === p.id ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        {remindingId === p.id ? 'Sending...' : <><Bell className="inline-block w-4 h-4" /> Remind Patient</>}
-                      </button>
-                    </>
-                  ) : (
-                    <div style={ps.completedTag}>
-                      <CheckCircle2 className="inline-block w-4 h-4" /> Paid / Completed
-                    </div>
-                  )}
+                {/* 2. TYPOGRAPHY: Section Label in Small-Caps Letter-Spaced Style */}
+                <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#5A6E85', marginBottom: 10, paddingLeft: 4, flexShrink: 0 }}>
+                  NAVIGATION & SERVICES
+                </div>
+
+                {/* SCROLLABLE MENU ITEMS LIST */}
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, paddingRight: 2 }}>
+                  <button onClick={() => { setTab('arrivals'); setShowNavMenu(false); }} className={`drawer-nav-item ${tab === 'arrivals' ? 'active' : ''}`}>
+                    <div className="drawer-icon-badge"><Users size={17} strokeWidth={2} /></div>
+                    <span className="drawer-item-title">Arrivals & Live Queue</span>
+                  </button>
+
+                  <button onClick={() => { setTab('classrooms'); setShowNavMenu(false); }} className={`drawer-nav-item ${tab === 'classrooms' ? 'active' : ''}`}>
+                    <div className="drawer-icon-badge"><DoorOpen size={17} strokeWidth={2} /></div>
+                    <span className="drawer-item-title">Classrooms in Session</span>
+                  </button>
+
+                  <button onClick={() => { setTab('dismissals'); setShowNavMenu(false); }} className={`drawer-nav-item ${tab === 'dismissals' ? 'active' : ''}`}>
+                    <div className="drawer-icon-badge"><UserCheck size={17} strokeWidth={2} /></div>
+                    <span className="drawer-item-title">Dismissal History</span>
+                  </button>
+
+                  <button onClick={() => { router.push('/school-dashboard/analytics'); setShowNavMenu(false); }} className="drawer-nav-item">
+                    <div className="drawer-icon-badge"><BarChart2 size={17} strokeWidth={2} /></div>
+                    <span className="drawer-item-title">Campus Analytics & Reports</span>
+                  </button>
+
+                  <button onClick={() => { router.push('/school-dashboard/crm'); setShowNavMenu(false); }} className="drawer-nav-item">
+                    <div className="drawer-icon-badge"><UserPlus size={17} strokeWidth={2} /></div>
+                    <span className="drawer-item-title">Broadcasting & CRM</span>
+                  </button>
+
+                  <button onClick={() => { router.push('/school-dashboard/billing'); setShowNavMenu(false); }} className="drawer-nav-item">
+                    <div className="drawer-icon-badge"><CreditCard size={17} strokeWidth={2} /></div>
+                    <span className="drawer-item-title">Billing Plans</span>
+                  </button>
+
+                  {/* Subtle thin grey divider */}
+                  <div style={{ height: 1, background: 'rgba(27, 42, 74, 0.08)', margin: '6px 0', flexShrink: 0 }} />
+
+                  <button onClick={() => { setShowQR(true); setShowNavMenu(false); }} className="drawer-nav-item">
+                    <div className="drawer-icon-badge"><QrCode size={17} strokeWidth={2} /></div>
+                    <span className="drawer-item-title">Digital Gate QR Poster</span>
+                  </button>
+
+                  <button onClick={() => { setNewSchoolNameInput(clinic?.name || 'Ashbourne Academy'); setShowEditSchoolModal(true); setShowNavMenu(false); }} className="drawer-nav-item">
+                    <div className="drawer-icon-badge"><Pencil size={17} strokeWidth={2} /></div>
+                    <span className="drawer-item-title">Edit School Profile</span>
+                  </button>
                 </div>
               </div>
-            )
-          })
+
+              {/* 4. LOGOUT BUTTON: Subdued light red background with dashboard matching button styling */}
+              <button onClick={handleLogout} className="drawer-logout-btn">
+                <LogOut size={17} strokeWidth={2.2} /> <span>Exit Console & Logout</span>
+              </button>
+            </motion.div>
+          </div>
         )}
-      </div>
-    </div>
+      </AnimatePresence>
+    </>
   )
-}
-
-// ─── PAYMENTS STYLES ────────────────────────────────────────────────────────
-const ps = {
-  container: {
-    padding: '8px 0 40px',
-  },
-  searchContainer: {
-    position: 'relative',
-    marginBottom: 20,
-    background: 'white',
-    borderRadius: 14,
-    padding: '2px 4px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-    border: '1px solid #E2E8F0',
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: 16,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    fontSize: '1rem',
-    color: '#94A3B8',
-  },
-  searchInput: {
-    width: '100%',
-    padding: '14px 14px 14px 44px',
-    borderRadius: 12,
-    border: 'none',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    outline: 'none',
-    color: '#064E3B',
-    boxSizing: 'border-box',
-  },
-  subTabs: {
-    display: 'flex',
-    gap: 8,
-    marginBottom: 16,
-    borderBottom: '1px solid #E2E8F0',
-    paddingBottom: 8,
-  },
-  subTab: {
-    padding: '10px 18px',
-    border: 'none',
-    background: 'transparent',
-    color: '#64748B',
-    fontWeight: 700,
-    fontSize: '0.85rem',
-    cursor: 'pointer',
-    borderRadius: 10,
-    transition: 'all 0.2s',
-  },
-  subTabActivePending: {
-    background: '#FFF1F2',
-    color: '#E11D48',
-  },
-  subTabActiveCompleted: {
-    background: '#ECFDF5',
-    color: '#059669',
-  },
-  metricsRow: {
-    display: 'flex',
-    gap: 12,
-    marginBottom: 20,
-    flexWrap: 'wrap',
-  },
-  metricCard: {
-    flex: 1,
-    minWidth: 160,
-    background: 'white',
-    borderRadius: 16,
-    padding: '16px 20px',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-    border: '1px solid #F1F5F9',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-  },
-  metricTitle: {
-    fontSize: '0.72rem',
-    fontWeight: 700,
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-  },
-  metricValue: {
-    fontSize: '1.4rem',
-    fontWeight: 900,
-  },
-  list: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 10,
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '60px 24px',
-    background: 'white',
-    borderRadius: 20,
-    boxShadow: '0 4px 16px rgba(0,0,0,0.02)',
-    border: '1px solid #F1F5F9',
-  },
-  card: {
-    background: 'white',
-    borderRadius: 16,
-    padding: '16px 20px',
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 16,
-    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-    border: '1px solid #F1F5F9',
-    transition: 'transform 0.15s, box-shadow 0.2s',
-  },
-  token: {
-    fontWeight: 900,
-    fontSize: '1.15rem',
-    minWidth: 50,
-    textAlign: 'center',
-    fontVariantNumeric: 'tabular-nums',
-  },
-  cardInfo: {
-    flex: 2,
-    minWidth: 200,
-  },
-  patientName: {
-    fontWeight: 700,
-    color: '#065F46',
-    fontSize: '0.95rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  langBadge: {
-    background: '#F0FDFA',
-    color: '#065F46',
-    padding: '2px 8px',
-    borderRadius: 20,
-    fontSize: '0.68rem',
-    fontWeight: 700,
-    border: '1px solid #DDD6FE',
-  },
-  patientMeta: {
-    fontSize: '0.75rem',
-    color: '#94A3B8',
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  feeStatusRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 6,
-    flexWrap: 'wrap',
-  },
-  feeLabel: {
-    fontSize: '0.8rem',
-    color: '#475569',
-  },
-  btnEdit: {
-    background: '#F1F5F9',
-    color: '#475569',
-    border: 'none',
-    borderRadius: 6,
-    padding: '4px 8px',
-    fontSize: '0.72rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-  },
-  editRow: {
-    display: 'flex',
-    gap: 8,
-    alignItems: 'flex-end',
-    flexWrap: 'wrap',
-    marginTop: 8,
-    background: '#F8FAFC',
-    padding: 10,
-    borderRadius: 10,
-    border: '1px solid #E2E8F0',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    flex: 1,
-    minWidth: 80,
-  },
-  inputLabel: {
-    fontSize: '0.65rem',
-    fontWeight: 700,
-    color: '#64748B',
-    textTransform: 'uppercase',
-  },
-  editInput: {
-    padding: '6px 8px',
-    borderRadius: 6,
-    border: '1.5px solid #CBD5E1',
-    fontSize: '0.8rem',
-    width: '100%',
-    outline: 'none',
-    boxSizing: 'border-box',
-    color: '#065F46',
-  },
-  editActions: {
-    display: 'flex',
-    gap: 6,
-  },
-  btnSave: {
-    background: '#10B981',
-    color: 'white',
-    border: 'none',
-    borderRadius: 6,
-    padding: '6px 12px',
-    fontSize: '0.75rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  btnCancel: {
-    background: '#64748B',
-    color: 'white',
-    border: 'none',
-    borderRadius: 6,
-    padding: '6px 12px',
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  cardActions: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: 8,
-    minWidth: 140,
-  },
-  remainingBadge: {
-    background: '#FFE4E6',
-    color: '#E11D48',
-    padding: '4px 10px',
-    borderRadius: 20,
-    fontSize: '0.75rem',
-    fontWeight: 800,
-    border: '1px solid #FECDD3',
-  },
-  btnClearBalance: {
-    background: 'linear-gradient(135deg, #10B981, #059669)',
-    color: 'white',
-    border: 'none',
-    borderRadius: 10,
-    padding: '8px 16px',
-    fontSize: '0.8rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    width: '100%',
-    textAlign: 'center',
-    boxShadow: '0 4px 10px rgba(16, 185, 129, 0.2)',
-  },
-  btnRemind: {
-    background: 'linear-gradient(135deg, #065F46, #4F46E5)',
-    color: 'white',
-    border: 'none',
-    borderRadius: 10,
-    padding: '8px 16px',
-    fontSize: '0.8rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    width: '100%',
-    textAlign: 'center',
-    boxShadow: '0 4px 10px rgba(6,95,70, 0.2)',
-  },
-  completedTag: {
-    color: '#047857',
-    fontWeight: 700,
-    fontSize: '0.78rem',
-    background: '#D1FAE5',
-    padding: '6px 14px',
-    borderRadius: 20,
-    border: '1px solid #A7F3D0',
-    textAlign: 'center',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-}
-
-// ─── STYLES ──────────────────────────────────────────────────────────────────
-const s = {
-  root: { fontFamily: "'Inter','DM Sans','Segoe UI',sans-serif", background: '#F1F5F9', minHeight: '100vh', width: '100%', maxWidth: 'none', margin: '0 auto' },
-  loadingScreen: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F1F5F9' },
-  spinner: { width: 40, height: 40, border: '3px solid #E2E8F0', borderTop: '3px solid #065F46', borderRadius: '50%' },
-  toastContainer: { position: 'fixed', top: 16, right: 16, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 },
-  toast: { padding: '12px 18px', borderRadius: 12, color: 'white', fontWeight: 600, fontSize: '0.85rem', boxShadow: '0 8px 32px rgba(0,0,0,0.25)', minWidth: 260 },
-  banner: { background: 'linear-gradient(90deg,#065F4615,#06B6D415)', color: '#4F46E5', borderBottom: '1px solid #5EEAD450', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.88rem', fontWeight: 600 },
-  bannerDot: { width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px rgba(16,185,129,0.7)', flexShrink: 0 },
-  header: { background: 'linear-gradient(135deg,#065F46 0%,#064E3B 50%,#09524f 100%)', padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 32px rgba(6,95,70,0.3)', position: 'sticky', top: 0, zIndex: 50 },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: 14 },
-  logoBox: {}, appName: {}, clinicSubName: {},
-  headerCenter: { display: 'flex', gap: 10, flexWrap: 'wrap' },
-  statChip: { display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 14px', backdropFilter: 'blur(8px)' },
-  chipDot: { width: 10, height: 10, borderRadius: '50%', flexShrink: 0 },
-  statPill: { display: 'flex', alignItems: 'center', gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
-  headerRight: { display: 'flex', alignItems: 'center', gap: 10 },
-  liveBadge: { display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', borderRadius: 20, padding: '4px 12px', color: '#34D399', fontSize: '0.72rem', fontWeight: 700, letterSpacing: 1 },
-  liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B981' },
-  clock: { color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.88rem', fontVariantNumeric: 'tabular-nums' },
-  btnBilling: { background: 'rgba(6,95,70,0.2)', color: '#5EEAD4', border: '1px solid rgba(6,95,70,0.4)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
-  btnLogout: { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)', padding: '6px 14px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' },
-  actionBar: { background: 'white', padding: '12px 24px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid #E2E8F0', flexWrap: 'wrap', boxShadow: '0 1px 0 #E2E8F0' },
-  btnQR: { background: '#065F46', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' },
-  btnAdd: { background: '#F0FDFA', color: '#065F46', border: '1px solid #DDD6FE', padding: '10px 18px', borderRadius: 10, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' },
-  btnCall: { background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white', border: 'none', padding: '10px 22px', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 4px 16px rgba(16,185,129,0.4)' },
-  btnGhost: { background: 'transparent', color: '#64748B', border: '1px solid #E2E8F0', padding: '10px 16px', borderRadius: 10, fontWeight: 500, fontSize: '0.85rem', cursor: 'pointer' },
-  btnDone: { background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)', color: '#065F46', border: '1px solid #A7F3D0', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
-  btnNotify: { background: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)', color: '#92400E', border: '1px solid #FDE68A', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
-  btnSkip: { background: 'linear-gradient(135deg,#FFF1F2,#FFE4E6)', color: '#9F1239', border: '1px solid #FECDD3', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
-  btnPriority: { background: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)', color: '#DC2626', border: '1px solid #FCA5A5', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
-  qrHint: { marginLeft: 'auto', color: '#64748B', fontSize: '0.75rem', fontStyle: 'italic' },
-  addForm: { background: 'linear-gradient(135deg,#F0FDFA,#EFF6FF)', borderBottom: '1px solid #DDD6FE', padding: '16px 24px' },
-  addFormTitle: { fontWeight: 700, color: '#064E3B', marginBottom: 12, fontSize: '0.88rem' },
-  addFormRow: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' },
-  input: { padding: '10px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: '0.88rem', flex: 1, minWidth: 160, outline: 'none', background: 'white', color: '#065F46' },
-  select: { padding: '10px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: '0.88rem', background: 'white', cursor: 'pointer', color: '#065F46' },
-  tabs: { display: 'flex', padding: '0 24px', background: 'white', borderBottom: '1px solid #F1F5F9', gap: 4 },
-  tab: { padding: '15px 22px', border: 'none', background: 'transparent', color: '#94A3B8', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', borderBottom: '3px solid transparent', transition: 'color .15s' },
-  tabActive: { color: '#065F46', borderBottom: '3px solid #065F46' },
-  list: { padding: '12px 16px 80px' },
-  sectionLabel: { padding: '16px 8px 8px', fontSize: '0.68rem', fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '1.2px', display: 'flex', alignItems: 'center', gap: 6 },
-  card: { background: 'white', borderRadius: 16, padding: '18px 20px', marginBottom: 10, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid #F1F5F9', transition: 'box-shadow .2s,transform .15s' },
-  token: { fontWeight: 900, fontSize: '1.1rem', minWidth: 56, textAlign: 'center', letterSpacing: '-0.5px', fontVariantNumeric: 'tabular-nums' },
-  cardInfo: { flex: 1, minWidth: 0 },
-  patientName: { fontWeight: 700, color: '#065F46', fontSize: '0.93rem', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  langBadge: { background: '#F0FDFA', color: '#065F46', padding: '2px 9px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, border: '1px solid #DDD6FE' },
-  patientMeta: { fontSize: '0.75rem', color: '#94A3B8', marginTop: 4 },
-  estWait: { fontSize: '0.72rem', color: '#64748B', marginTop: 3, fontWeight: 600 },
-  cardActions: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 },
-  doneTag: { color: '#059669', fontWeight: 700, fontSize: '0.78rem', background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)', padding: '5px 14px', borderRadius: 20, border: '1px solid #A7F3D0' },
-  skipTag: { color: '#BE123C', fontWeight: 700, fontSize: '0.78rem', background: 'linear-gradient(135deg,#FFF1F2,#FFE4E6)', padding: '5px 14px', borderRadius: 20, border: '1px solid #FECDD3' },
-  empty: { textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '45vh', padding: '40px 24px' },
 }

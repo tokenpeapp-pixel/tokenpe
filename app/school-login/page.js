@@ -17,8 +17,21 @@ export default function LoginPage() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             localStorage.setItem('tokenpe_vertical', 'school')
+            
+            const params = new URLSearchParams(window.location.search)
+            const isLoggedOut = params.get('logged_out') === 'true'
+            
+            if (isLoggedOut) {
+                localStorage.removeItem('tokenpe_clinic')
+                localStorage.removeItem('tokenpe_user_clinics')
+                localStorage.removeItem('clinicCode')
+                localStorage.removeItem('clinicPhone')
+                localStorage.removeItem('tokenpe_school_queue')
+                return
+            }
+
             // Check session via API instead of localStorage directly to be secure
-            fetch('/api/school-auth/me')
+            fetch('/api/auth/me')
                 .then(res => res.json())
                 .then(data => {
                     if (data.authenticated && data.clinic) {
@@ -33,7 +46,6 @@ export default function LoginPage() {
                 })
                 .catch(() => {})
 
-            const params = new URLSearchParams(window.location.search)
             const errType = params.get('error')
             if (errType === 'no_clinic') {
                 setError('No institution account found for this Google email. Please register first, or use your Institution Code to log in.')
@@ -106,7 +118,7 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { 
-                redirectTo: `${window.location.origin}/school-auth/callback?intent=${mode}`,
+                redirectTo: `${window.location.origin}/auth/callback?intent=${mode}`,
                 queryParams: {
                     prompt: 'select_account'
                 }
@@ -130,10 +142,10 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/school-auth/login', {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin })
+                body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin, vertical: 'school' })
             })
             const result = await res.json()
 
@@ -172,7 +184,7 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/school-auth/register', {
+            const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -183,7 +195,8 @@ export default function LoginPage() {
                     specialty: regInstitutionType === 'Other' ? customInstitutionType : regInstitutionType,
                     city: regCity,
                     lat: regLat,
-                    lng: regLng
+                    lng: regLng,
+                    vertical: 'school'
                 })
             })
             const result = await res.json()
@@ -217,7 +230,7 @@ export default function LoginPage() {
         setSuccess('')
         setLoading(true)
         try {
-            const res = await fetch('/api/school-auth/send-otp', {
+            const res = await fetch('/api/auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: loginEmail, phone: loginPhone })
@@ -250,7 +263,7 @@ export default function LoginPage() {
         }
         setLoading(true)
         try {
-            const res = await fetch('/api/school-auth/reset-pin', {
+            const res = await fetch('/api/auth/reset-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ otpToken, otp: otpCode, newPin })

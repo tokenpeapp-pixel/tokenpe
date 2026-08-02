@@ -1,15 +1,19 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import '../lovable.css'
 import { supabase, getISTDateString } from '../../../lib/supabase'
 import confetti from 'canvas-confetti'
-import { Gift, AlertTriangle, Hourglass, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { Gift, AlertTriangle, Hourglass, RefreshCw, CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, X, HelpCircle, PhoneCall, CreditCard, Clock } from 'lucide-react'
 
 const PLAN_META = {
-  starter:      { name: 'Starter', price: '₹499',   priceNum: 499,  limit: 50,       color: '#6B7280' },
-  pro:          { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#fef3c7' },
-  professional: { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#fef3c7' },
-  elite:        { name: 'Elite',   price: '₹1,999', priceNum: 1999, limit: Infinity, color: '#F59E0B' },
+  elite_monthly: { name: 'Elite Monthly', price: '₹5,000', priceNum: 5000,  limit: Infinity, color: '#fbbf24' },
+  elite_yearly:  { name: 'Elite Yearly',  price: '₹50,000', priceNum: 50000, limit: Infinity, color: '#10b981' },
+  elite_custom:  { name: 'Elite Custom',  price: '₹178/day', priceNum: 178,  limit: Infinity, color: '#a78bfa' },
+  elite:         { name: 'Elite',         price: '₹5,000', priceNum: 5000,  limit: Infinity, color: '#fbbf24' },
+  starter:       { name: 'Starter',       price: '₹499',   priceNum: 499,   limit: 50,       color: '#9ca3af' },
+  pro:           { name: 'Pro',           price: '₹999',   priceNum: 999,   limit: 150,      color: '#fef3c7' },
+  professional:  { name: 'Pro',           price: '₹999',   priceNum: 999,   limit: 150,      color: '#fef3c7' },
 }
 
 export default function BillingPage() {
@@ -25,8 +29,7 @@ export default function BillingPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(null)
   const [currentDate, setCurrentDate]     = useState(null)
   const [openFaq, setOpenFaq]             = useState(null)
-  const [isPrimaryBranch, setIsPrimaryBranch] = useState(true)
-  const [primaryBranchName, setPrimaryBranchName] = useState(null)
+  const [customDays, setCustomDays]       = useState(30)
 
   useEffect(() => { setCurrentDate(new Date()) }, [])
 
@@ -41,7 +44,7 @@ export default function BillingPage() {
 
     async function load() {
       const stored = localStorage.getItem('tokenpe_clinic')
-      if (!stored) { router.push('/login'); return }
+      if (!stored) { router.push('/restaurant-login'); return }
       const clinicData = JSON.parse(stored)
 
       const today = getISTDateString()
@@ -61,11 +64,8 @@ export default function BillingPage() {
 
       if (freshData?.success && freshData.clinic) {
         setRestaurant(freshData.clinic)
-        setIsPrimaryBranch(freshData.isPrimaryBranch !== false)
-        setPrimaryBranchName(freshData.primaryBranchName)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
       } else {
-        // fallback to cached data if API fails
         setRestaurant(clinicData)
       }
       setTodayCount(countData?.success ? countData.count : 0)
@@ -92,647 +92,537 @@ export default function BillingPage() {
             if (isActivated) {
               const meta = PLAN_META[fresh.plan_id]
               setShowSuccessModal(meta?.name || fresh.plan_id)
-              confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#7f1d1d', '#2DD4BF', '#d97706', 'rgba(255, 255, 255, 0.03)'], zIndex: 10000 })
+              confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#fbbf24', '#10b981', '#7f1d1d'], zIndex: 10000 })
             }
             return
           }
         }
       }
-      if (attempts < maxAttempts) setTimeout(poll, 2000)
+      if (attempts < maxAttempts) setTimeout(poll, 2500)
       else setUpgrading(null)
     }
     setTimeout(poll, 2000)
   }, [])
 
-  const handleUpgrade = useCallback(async (tier) => {
-    if (!clinic || upgrading) return
-    setUpgrading(tier)
+  const planId   = clinic?.plan_id || 'elite'
+  const meta     = PLAN_META[planId] || PLAN_META.elite
+  const planName = meta.name
+  const subStatus = clinic?.subscription_status || 'trialing'
+
+  const trialEnd       = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
+  const isTrial        = subStatus === 'trialing' && trialEnd && trialEnd > currentDate
+  const isTrialExpired = subStatus === 'trialing' && trialEnd && trialEnd <= currentDate
+  const isCanceled     = subStatus === 'canceled'
+  const isCancelPending = subStatus === 'cancel_pending'
+  const isActive       = subStatus === 'active'
+
+  const planEndDate = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
+
+  const daysLeft = trialEnd
+    ? Math.max(0, Math.ceil((trialEnd.getTime() - (currentDate?.getTime() || 0)) / (1000 * 60 * 60 * 24)))
+    : 0
+
+  async function handleUpgrade(planTier) {
+    if (upgrading) return
+    setUpgrading(planTier)
+
     try {
+      if (planTier === 'elite_custom') {
+        const amount = customDays * 178
+        const orderRes = await fetch('/api/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount,
+            clinicId: clinic.id,
+            days: customDays,
+            notes: { plan_tier: 'elite_custom', days: customDays }
+          })
+        })
+        const orderData = await orderRes.json()
+        if (!orderRes.ok || !orderData.success) {
+          alert(orderData.error || 'Failed to initialize payment')
+          setUpgrading(null)
+          return
+        }
+
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: 'TokenPe',
+          description: `Elite Custom Plan (${customDays} Days)`,
+          order_id: orderData.orderId,
+          prefill: {
+            name: clinic?.name || '',
+            email: clinic?.email || '',
+            contact: clinic?.phone || ''
+          },
+          theme: { color: '#7f1d1d' },
+          handler: function (response) {
+            pollForUpdate(clinic.id, 'elite')
+          },
+          modal: {
+            ondismiss: function () { setUpgrading(null) }
+          }
+        }
+
+        const rzp = new window.Razorpay(options)
+        rzp.open()
+        return
+      }
+
       const res = await fetch('/api/razorpay/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, planTier: tier })
+        body: JSON.stringify({ planTier, clinicId: clinic.id })
       })
       const data = await res.json()
-      if (!res.ok || !data.subscriptionId) throw new Error(data.error || 'Failed to create subscription')
+      if (!res.ok || !data.success) {
+        alert(data.error || 'Failed to initialize subscription')
+        setUpgrading(null)
+        return
+      }
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         subscription_id: data.subscriptionId,
         name: 'TokenPe',
-        description: `${PLAN_META[tier]?.name || tier} Plan Subscription`,
-        image: `${window.location.origin}/logo-light.svg`,
-        prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.clinicPhone },
-        theme: { color: '#fef3c7' },
-        handler: () => pollForUpdate(clinic.id, tier),
-        modal: { ondismiss: () => setUpgrading(null) }
+        description: `Upgrade to ${PLAN_META[planTier]?.name || planTier}`,
+        prefill: {
+          name: clinic?.name || '',
+          email: clinic?.email || '',
+          contact: clinic?.phone || ''
+        },
+        theme: { color: '#7f1d1d' },
+        handler: function (response) {
+          pollForUpdate(clinic.id, planTier)
+        },
+        modal: {
+          ondismiss: function () { setUpgrading(null) }
+        }
       }
 
       const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', (resp) => {
-        alert(`Payment failed: ${resp.error.description}`)
-        setUpgrading(null)
-      })
       rzp.open()
+
     } catch (err) {
-      alert(`Error: ${err.message}`)
+      console.error(err)
+      alert('An unexpected error occurred. Please try again.')
       setUpgrading(null)
     }
-  }, [clinic, upgrading, pollForUpdate])
+  }
 
-  const executeCancel = async () => {
+  async function executeCancel() {
     setIsCanceling(true)
     try {
-      setUpgrading('cancel')
       const res = await fetch('/api/razorpay/cancel-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, reason: cancelReason })
       })
       const data = await res.json()
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to cancel')
-
-      const res2 = await fetch(`/api/clinics/get?id=${clinic.id}`)
-      if (res2.ok) {
-        const data2 = await res2.json()
-        if (data2.success && data2.clinic) {
-          setRestaurant(data2.clinic)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(data2.clinic))
+      if (res.ok && data.success) {
+        setShowCancelModal(false)
+        setRestaurant(prev => ({ ...prev, subscription_status: 'cancel_pending' }))
+        const stored = localStorage.getItem('tokenpe_clinic')
+        if (stored) {
+          localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), subscription_status: 'cancel_pending' }))
         }
-      }
-      setShowCancelModal(false)
-    } catch (err) {
-      alert(`Error: ${err.message}`)
-    } finally {
-      setUpgrading(null)
-      setIsCanceling(false)
-    }
-  }
-
-  const executeResume = async () => {
-    setUpgrading('resume')
-    try {
-      const res = await fetch('/api/razorpay/resume-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id })
-      })
-      const data = await res.json()
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to reactivate')
-
-      const res2 = await fetch(`/api/clinics/get?id=${clinic.id}`)
-      if (res2.ok) {
-        const data2 = await res2.json()
-        if (data2.success && data2.clinic) {
-          setRestaurant(data2.clinic)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(data2.clinic))
-        }
+        alert('Your subscription cancellation is scheduled. You retain full access until the end of your period.')
+      } else {
+        alert(data.error || 'Failed to cancel subscription')
       }
     } catch (err) {
-      alert(`Error: ${err.message}`)
-    } finally {
-      setUpgrading(null)
+      console.error(err)
+      alert('An unexpected error occurred')
     }
+    setIsCanceling(false)
   }
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAF8]">
-      <div className="w-10 h-10 border-4 border-[#E5E7EB] border-t-[#7f1d1d] rounded-full animate-spin"></div>
-    </div>
-  )
-
-  // ── Derived state ──────────────────────────────────────────────────────────
-  const planId       = clinic?.plan_id || 'starter'
-  const planMeta     = PLAN_META[planId] || PLAN_META['starter']
-  const planName     = planMeta.name
-  const planLimit    = planMeta.limit
-  const planPrice    = planMeta.price
-
-  const status          = clinic?.subscription_status || 'trialing'
-  const isTrial         = status === 'trialing'
-  const isActive        = status === 'active'
-  const isCancelPending = status === 'cancel_at_period_end'
-  const isCanceled      = status === 'canceled'
-
-  const percentage = planLimit === Infinity ? 0 : Math.min((todayCount / planLimit) * 100, 100)
-
-  const userRestaurants = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]') : []
-  const oldestRestaurant = userRestaurants.length > 0
-    ? userRestaurants.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userRestaurants[0])
-    : clinic
-
-  const trialEnd = oldestRestaurant?.trial_ends_at
-    ? new Date(oldestRestaurant.trial_ends_at)
-    : (oldestRestaurant?.created_at ? new Date(new Date(oldestRestaurant.created_at).getTime() + 7 * 24 * 60 * 60 * 1000) : null)
-
-  const realDaysLeft    = trialEnd && currentDate ? Math.ceil((trialEnd - currentDate) / (1000 * 60 * 60 * 24)) : 0
-  const daysLeft        = isTrial ? Math.max(0, realDaysLeft) : null
-  const isTrialExpired  = isTrial && trialEnd && realDaysLeft < 0
-
-  // Tier level map — normalise pro/professional
-  const tierLevels = { starter: 1, pro: 2, professional: 2, elite: 3 }
-  const currentLevel = tierLevels[planId] || 1
-
-  // No downgrade support — only upgrades and reactivation
 
   const plans = [
     {
-      tier: 'starter', label: 'Starter', price: '₹499',
-      features: ['Up to 50 guests/day', 'Standard WhatsApp Alerts', 'Basic 7-day Analytics', 'Auto-Generated Restaurant Code'],
-      checkColor: '#6B7280', accent: '#6B7280'
+      tier: 'elite_monthly',
+      label: 'Elite Monthly',
+      price: '₹5,000',
+      period: '/month',
+      subnote: 'Standard monthly billing',
+      badge: 'MOST COMMON',
+      accent: '#fbbf24',
+      borderClass: 'border-2 border-[#fbbf24]',
+      features: [
+        'Everything included',
+        'Unlimited covers & guests/day',
+        'WhatsApp SMS & AI Voice notes',
+        '365 days full history & export',
+        'Multi-branch management',
+        'CRM & Broadcasts enabled'
+      ]
     },
     {
-      tier: 'pro', label: 'Pro', price: '₹999',
-      features: ['Up to 150 guests/day', 'Branded WhatsApp Identity', 'Multilingual AI Voice Alerts', 'Queue Pause & Smart Wait Time', '30-Day History & Heatmap'],
-      checkColor: '#7f1d1d', accent: '#7f1d1d', featured: true
+      tier: 'elite_yearly',
+      label: 'Elite Yearly',
+      price: '₹50,000',
+      period: '/year',
+      subnote: '₹4,167/mo — 2 months FREE',
+      badge: 'BEST VALUE — SAVE ₹10,000',
+      accent: '#10b981',
+      borderClass: 'border-2 border-[#10b981]',
+      features: [
+        'Everything in Monthly',
+        '2 months FREE (vs monthly rate)',
+        'Priority VIP Support',
+        'All future updates included'
+      ]
     },
     {
-      tier: 'elite', label: 'Elite', price: '₹1,999',
-      features: ['Unlimited guests/day', 'Report Download (PDF/CSV)', 'Multi-Restaurant Management', 'VIP WhatsApp Support', 'CRM Broadcasts'],
-      checkColor: '#F59E0B', accent: '#F59E0B'
+      tier: 'elite_custom',
+      label: 'Elite Custom Duration',
+      price: '₹178',
+      period: '/day',
+      subnote: `Total: ₹${(customDays * 178).toLocaleString('en-IN')} (${customDays} days)`,
+      badge: 'FLEXIBLE DURATION',
+      accent: '#a78bfa',
+      borderClass: 'border-2 border-[#a78bfa]/60',
+      features: [
+        'Choose exact number of days',
+        'All Elite features included',
+        'Min 1 day, max 365 days',
+        'Ideal for events & pop-ups',
+        'Pay only for what you use'
+      ]
     }
   ]
 
   const faqs = [
-    { q: 'Can I change plans?', a: 'Yes! You can upgrade anytime. Upgrades are immediate. To downgrade, cancel your current subscription first and then subscribe to the new plan.' },
-    { q: "What's included in Pro?", a: 'Pro includes up to 150 guests/day, branded WhatsApp alerts, AI voice notes in 10 languages, queue pause functionality, and 30-day analytics heatmap.' },
-    { q: 'Can I cancel anytime?', a: 'Yes. You can cancel at any time from the billing page. You retain full access until the end of your current billing period. No refunds are provided for partial periods.' },
-    { q: 'Do you offer refunds?', a: 'We do not offer refunds for partial billing periods. However, you can use the service until your billing period ends after cancellation.' },
+    { q: 'Can I change plans anytime?', a: 'Yes! Upgrades take effect immediately. To switch plan types, select any tier above.' },
+    { q: "What's included in Elite?", a: 'Elite includes unlimited guest covers/day, branded WhatsApp alerts, AI voice notes in 10 languages, multi-branch switching, CRM broadcasts, and 365-day history analytics.' },
+    { q: 'Can I cancel anytime?', a: 'Yes, cancel with one click anytime. You maintain full access until your period ends.' },
+    { q: 'Do you offer refunds?', a: 'We do not issue partial refunds, but your service remains fully active until the end of your paid duration.' },
   ]
 
+  if (loading) return (
+    <div className="lovable-root flex items-center justify-center min-h-screen">
+      <div className="w-10 h-10 border-4 border-[#3f1515] border-t-[#fbbf24] rounded-full animate-spin" />
+    </div>
+  )
+
   return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-      <div className="min-h-screen flex flex-col lg:flex-row bg-[#FAFAF8] font-sans text-[#111827]">
+    <div className="lovable-root">
 
-        {/* ── Main Content ── */}
-        <main className="flex-grow lg:overflow-y-auto lg:h-screen">
-          <div className="max-w-[900px] mx-auto p-4 sm:p-6 lg:p-8">
+      {/* ── HEADER ── */}
+      <header className="lovable-header" style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <button 
+            onClick={() => router.push('/restaurant-dashboard')}
+            className="lovable-btn-outline"
+            style={{ padding: '8px 16px', fontSize: '0.8rem' }}
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          </button>
+        </div>
 
-            {/* Top Bar */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
-              <div>
-                <button onClick={() => router.push('/restaurant-dashboard')} className="mb-3 text-[#fbbf24] font-bold text-[13px] hover:underline flex items-center gap-1">
-                  ← Back to Dashboard
-                </button>
-                <h1 className="text-xl sm:text-2xl font-black text-[#111827]">Billing</h1>
-                <p className="text-sm text-[#6B7280]">Manage your subscription, invoices and payment methods.</p>
-              </div>
-              {/* Only show Upgrade Plan if user is not already on elite or is cancelled */}
-              {(planId !== 'elite' || isCanceled || isTrial) && (
-                <button
-                  onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="bg-[#7f1d1d] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-amber-900/10 hover:opacity-90 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
-                >
-                  <span className="material-symbols-outlined text-[18px]">upgrade</span>
-                  Upgrade Plan
-                </button>
+        <div className="lovable-supertitle">RESTAURANT | BILLING & SUBSCRIPTIONS</div>
+        <h1 className="lovable-title">
+          {clinic?.name || 'Restaurant'} <span>— Billing & Plans</span>
+        </h1>
+        <div className="lovable-subtitle">
+          Manage your subscription tier, billing period, active features, and invoices.
+        </div>
+      </header>
+
+      {/* ── CURRENT PLAN CARD ── */}
+      <div style={{ background: 'var(--wine-deep)', border: '1px solid var(--border)', borderRadius: 16, padding: '24px', marginBottom: 28 }}>
+        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>
+          Active Subscription Status
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
+          
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: 700, color: 'var(--foreground)', margin: 0 }}>
+                {planName}
+              </h2>
+              
+              {isTrial && !isTrialExpired && (
+                <span style={{ background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24', padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Gift className="w-3.5 h-3.5" /> FREE TRIAL — {daysLeft} DAYS REMAINING
+                </span>
+              )}
+
+              {isTrialExpired && (
+                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444', padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <AlertTriangle className="w-3.5 h-3.5" /> TRIAL EXPIRED
+                </span>
+              )}
+
+              {isActive && (
+                <span style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#10b981', padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700 }}>
+                  ACTIVE
+                </span>
+              )}
+
+              {isCanceled && (
+                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444', padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700 }}>
+                  CANCELED
+                </span>
               )}
             </div>
 
-            {/* ── Current Plan Card ── */}
-            <section className="bg-[#1a0505] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 mb-8 shadow-sm">
-              {/* Label */}
-              <p className="text-[11px] font-black text-[#9CA3AF] uppercase tracking-widest mb-3">Current Plan</p>
-
-              <div className="flex flex-col sm:flex-row sm:items-start gap-6">
-
-                {/* Left — Plan name + status + price */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <h2 className="text-xl sm:text-2xl font-black text-[#111827]">{planName}</h2>
-                    {isTrial && !isTrialExpired && (
-                      <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full text-[11px] font-extrabold tracking-wide shadow-sm">
-                        <Gift className="inline-block w-4 h-4 mr-1 mb-0.5" /> FREE TRIAL — {daysLeft} days left
-                      </span>
-                    )}
-                    {isTrialExpired && (
-                      <span className="px-3 py-1 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full text-[11px] font-extrabold tracking-wide shadow-sm">
-                        <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" /> TRIAL EXPIRED
-                      </span>
-                    )}
-                    {!isTrial && !isCanceled && (
-                      <span className="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[11px] font-bold tracking-wide">
-                        ACTIVE
-                      </span>
-                    )}
-                    {isCanceled && (
-                      <span className="px-3 py-1 bg-red-50 text-red-500 border border-red-200 rounded-full text-[11px] font-bold tracking-wide">
-                        CANCELED
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="text-sm text-[#6B7280] mt-3 leading-relaxed">
-                    {isTrialExpired
-                      ? <span className="text-red-500 font-bold">Your free trial expired on {trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Please choose a paid plan below to restore access to your dashboard.</span>
-                      : isTrial
-                        ? `Trial ends on ${trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Upgrade now to keep your features!`
-                        : isCanceled
-                          ? <span className="text-red-500 font-bold">Subscription ended. Please reactivate a plan to restore service.</span>
-                          : isCancelPending && clinic?.current_period_end
-                            ? <span className="text-red-500 font-medium"><AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" /> Cancellation scheduled — full access until <strong>{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. No further charges.</span>
-                            : clinic?.current_period_end
-                              ? <>Next billing date: <strong className="text-red-600">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> · Auto-renews at {planName === 'Starter' ? '₹499' : planName === 'Pro' ? '₹999' : '₹1,999'}/mo</>
-                              : <span className="text-gray-500 text-xs"><Hourglass className="inline-block w-3 h-3 mr-1" /> Confirming billing date... (may take a few seconds)</span>}
-                  </div>
-                </div>
-
-                {/* Middle — Next billing date + auto-renewal toggle */}
-                {!isCanceled && !isTrialExpired && (
-                  <div className="sm:text-center sm:min-w-[170px]">
-                    <p className="text-[11px] text-[#9CA3AF] font-bold uppercase mb-1">{isCancelPending ? 'Access Until' : 'Next Billing Date'}</p>
-                    <p className="text-base sm:text-lg font-black text-[#111827] mb-2">
-                      {clinic?.current_period_end
-                        ? new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
-                        : (isTrial ? (trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '---') : '---')}
-                    </p>
-                    <button 
-                      onClick={!isCancelPending ? () => setShowCancelModal(true) : executeResume}
-                      disabled={!!upgrading}
-                      className="flex items-center sm:justify-center gap-2 group disabled:opacity-50 transition-opacity"
-                    >
-                      <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!isCancelPending ? 'bg-[#7f1d1d]' : 'bg-[#E5E7EB]'}`}>
-                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-[#1a0505] shadow transition-transform ${!isCancelPending ? 'translate-x-[18px]' : 'translate-x-1'}`}></span>
-                      </div>
-                      <span className="text-xs font-semibold text-[#6B7280] group-hover:text-[#111827] transition-colors flex items-center gap-1">
-                        Auto renewal {!isCancelPending ? 'ON' : 'OFF'}
-                        {upgrading === 'resume' && <RefreshCw className="w-3 h-3 animate-spin text-[#fbbf24]" />}
-                      </span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Right — Action buttons */}
-                <div className="flex flex-col gap-2 w-full sm:w-auto sm:min-w-[180px]">
-                  {upgrading ? (
-                    <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-500 rounded-xl text-sm font-bold">
-                      <span className="material-symbols-outlined animate-spin">refresh</span>
-                      Processing...
-                    </div>
-                  ) : (
-                    <>
-                      {isActive && !isCancelPending && (
-                        <button
-                          onClick={() => setShowCancelModal(true)}
-                          disabled={!!upgrading}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-[#1a0505] rounded-xl text-sm font-bold text-[#EF4444] hover:bg-red-50 transition-colors disabled:opacity-50"
-                        >
-                          <span className="material-symbols-outlined text-base">cancel</span>
-                          Cancel Plan
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setShowDetails(true)}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-[#1a0505] rounded-xl text-sm font-bold text-[#374151] hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-base">description</span>
-                        View Plan Details
-                      </button>
-                    </>
-                  )}
-                </div>
-
-              </div>
-            </section>
-
-            {/* ── Usage Section ── */}
-            <section className="mb-10">
-              <h3 className="flex items-center gap-2 text-[15px] font-bold text-[#111827] mb-4">
-                <span className="material-symbols-outlined text-[#fbbf24]">bar_chart</span> Daily Usage
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                {/* Guests Today */}
-                <div className="bg-[#1a0505] p-4 border border-[#E5E7EB] rounded-xl">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[#fbbf24] text-lg">person</span>
-                    </div>
-                    <span className="text-xs font-bold text-[#6B7280]">Guests Today</span>
-                  </div>
-                  <div className="flex items-baseline justify-between mb-2">
-                    <span className="text-xl font-black text-[#111827]">{todayCount}</span>
-                    <span className="text-[10px] text-[#9CA3AF]">/ {planLimit === Infinity ? '∞' : planLimit}</span>
-                  </div>
-                  <div className="w-full bg-[#F3F4F6] h-1.5 rounded-full overflow-hidden">
-                    <div className={`h-full transition-all ${percentage >= 100 ? 'bg-[#DC2626]' : percentage >= 80 ? 'bg-[#F59E0B]' : 'bg-[#7f1d1d]'}`} style={{ width: `${percentage}%` }}></div>
-                  </div>
-                </div>
-
-              </div>
-            </section>
-
-            {/* ── Plans Section ── */}
-            <section className="mb-12" id="plans-section">
-                <h3 className="flex items-center gap-2 text-[16px] font-bold text-[#111827] mb-6">
-                <span className="material-symbols-outlined text-[#fbbf24]">inventory_2</span> Available plans
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {plans.map((plan) => {
-                  const planLevel   = tierLevels[plan.tier]
-                  const isCurrent   = currentLevel === planLevel && !isTrial && !isCanceled
-                  const isLower     = planLevel < currentLevel && !isTrial && !isCanceled
-                  const canReact    = isCurrent && isCancelPending
-                  const isLoading   = upgrading === plan.tier
-
-                  // Button label
-                  let btnLabel = `Upgrade to ${plan.label}`
-                  if (isLoading)                  btnLabel = <><Hourglass className="inline-block w-4 h-4 mr-1" /> Processing...</>
-                  else if (canReact)              btnLabel = <><RefreshCw className="inline-block w-4 h-4 mr-1" /> Reactivate</>
-                  else if (isCurrent)             btnLabel = <><CheckCircle2 className="inline-block w-4 h-4 mr-1" /> Current Plan</>
-                  else if (isTrial || isCanceled) btnLabel = `Subscribe – ${plan.price}/mo`
-
-                  const btnDisabled = (isCurrent && !canReact) || (!!upgrading && upgrading !== plan.tier)
-                  const btnActive   = !btnDisabled
-                  // isLower plans: no action button rendered
-
-                  const cardBorder = plan.featured
-                    ? 'border-2 border-[#7f1d1d]'
-                    : plan.tier === 'elite'
-                    ? 'border border-[#FDE68A]'
-                    : 'border border-[#E5E7EB]'
-
-                  const cardBg = plan.tier === 'elite' ? 'bg-[#FFFDF7]' : 'bg-[#1a0505]'
-
-                  const btnClass = btnActive
-                    ? plan.tier === 'elite'
-                      ? 'bg-[#F59E0B] text-[#111827] hover:opacity-90 shadow-lg shadow-amber-900/10'
-                      : 'bg-[#7f1d1d] text-white hover:opacity-90 shadow-lg shadow-amber-900/10'
-                    : 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
-
-                  return (
-                    <div key={plan.tier} className={`${cardBg} ${cardBorder} rounded-2xl p-6 flex flex-col relative transition-all`}
-                      style={plan.featured ? { boxShadow: '0 0 0 4px rgba(6,95,70,0.06)' } : {}}>
-
-                      {plan.featured && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#7f1d1d] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                          Most Popular
-                        </div>
-                      )}
-
-                      {isCurrent && !isCancelPending && (
-                        <div className="absolute top-3 right-3 px-2 py-0.5 bg-[#ECFDF5] text-[#d97706] border border-[#A7F3D0] rounded-full text-[9px] font-black uppercase tracking-wider">
-                          Current
-                        </div>
-                      )}
-
-                      <span className="text-[10px] font-bold uppercase mb-1" style={{ color: plan.accent }}>{plan.label}</span>
-                      <div className="flex items-baseline gap-1 mb-6">
-                        <span className="text-3xl font-black text-[#111827]">{plan.price}</span>
-                        <span className="text-sm text-[#9CA3AF]">/mo</span>
-                      </div>
-                      <ul className="space-y-3 mb-8 flex-grow">
-                        {plan.features.map((f, i) => (
-                          <li key={i} className="flex items-center gap-2 text-xs text-[#4B5563]">
-                            {plan.tier === 'elite'
-                              ? <span className="material-symbols-outlined text-[#F59E0B] text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span>
-                              : plan.featured
-                              ? <span className="material-symbols-outlined text-[#fbbf24] text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                              : <span className="material-symbols-outlined text-[#D1D5DB] text-lg">radio_button_unchecked</span>
-                            }
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-
-                      {!isLower && (
-                        <button
-                          disabled={btnDisabled}
-                          onClick={() => !btnDisabled && handleUpgrade(plan.tier)}
-                          className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${btnClass}`}
-                        >
-                          {btnLabel}
-                        </button>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-
-            {/* ── Billing History ── */}
-            <section className="mb-12">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-[15px] font-bold text-[#111827]">Billing history</h3>
-              </div>
-              <div className="bg-[#1a0505] border border-[#E5E7EB] rounded-2xl overflow-hidden text-sm p-8 text-center text-[#6B7280]">
-                No billing history available yet.
-              </div>
-            </section>
-
+            <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.6 }}>
+              {isTrialExpired
+                ? <span style={{ color: '#ef4444', fontWeight: 700 }}>Your free trial expired on {trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Select a plan below to continue.</span>
+                : isTrial
+                  ? `Trial valid through ${trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. All Elite features enabled.`
+                  : isCancelPending
+                    ? <span style={{ color: '#ef4444', fontWeight: 600 }}>Cancellation scheduled — access remains active until {planEndDate?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}.</span>
+                    : isActive
+                      ? <span style={{ color: '#10b981', fontWeight: 600 }}>Plan active. All features fully unlocked.</span>
+                      : 'Checking plan status...'}
+            </p>
           </div>
 
-          {/* ── Mobile-only: Sidebar content below billing history ── */}
-          <div className="lg:hidden px-4 sm:px-6 pb-8 space-y-6">
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {isActive && !isCancelPending && (
+              <button 
+                onClick={() => setShowCancelModal(true)}
+                className="lovable-btn-outline"
+                style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', justifyContent: 'center' }}
+              >
+                Cancel Plan
+              </button>
+            )}
 
-            {/* Billing Timeline */}
-            <div className="bg-[#1a0505] border border-[#E5E7EB] rounded-2xl p-5 shadow-sm">
-              <h4 className="text-[15px] font-bold text-[#111827] mb-4">Billing Timeline</h4>
-              <div className="relative pl-6 space-y-6 border-l-2 border-dashed border-[#E5E7EB]">
-                <div className="relative">
-                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#7f1d1d] rounded-full"></div>
-                  <p className="text-xs font-bold text-[#111827]">{planName} {isTrial ? 'Trial' : isActive ? 'Active' : isCancelPending ? 'Ending' : 'Inactive'}</p>
-                  <p className="text-[10px] text-[#6B7280]">
-                    {clinic?.created_at ? new Date(clinic.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
-                  </p>
-                </div>
-                {clinic?.current_period_end && (
-                  <div className="relative">
-                    <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#1a0505] border-2 border-[#E5E7EB] rounded-full"></div>
-                    <p className="text-xs font-bold text-[#6B7280]">{isCancelPending ? 'Access Ends' : 'Upcoming Renewal'}</p>
-                    <p className="text-[10px] text-[#9CA3AF]">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* FAQ */}
-            <div>
-              <h4 className="text-[11px] font-black text-[#111827] uppercase tracking-widest mb-4">Common Questions</h4>
-              <div className="space-y-2">
-                {faqs.map((faq, i) => (
-                  <div key={i} className="border border-[#E5E7EB] rounded-xl overflow-hidden">
-                    <button
-                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                      className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors"
-                    >
-                      <span className="text-sm font-bold text-[#111827] pr-2">{faq.q}</span>
-                      <span className="material-symbols-outlined text-sm text-[#9CA3AF] flex-shrink-0 transition-transform" style={{ transform: openFaq === i ? 'rotate(180deg)' : 'none' }}>expand_more</span>
-                    </button>
-                    {openFaq === i && (
-                      <div className="px-4 pb-4 text-xs text-[#6B7280] leading-relaxed border-t border-[#E5E7EB] pt-3">
-                        {faq.a}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <a href="mailto:tokenpe.online@gmail.com" className="mt-4 flex items-center gap-2 p-4 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#fbbf24] hover:bg-amber-50 transition-colors">
-                <span className="material-symbols-outlined text-base">headset_mic</span>
-                Contact Support
-              </a>
-            </div>
+            <button 
+              onClick={() => setShowDetails(true)}
+              className="lovable-btn-outline"
+              style={{ justifyContent: 'center' }}
+            >
+              View Feature Specs
+            </button>
           </div>
 
-        </main>
-
-        <aside className="hidden lg:flex w-[280px] bg-[#1a0505] border-l border-[#E5E7EB] h-screen overflow-y-auto flex-shrink-0 flex-col">
-          <div className="p-6 flex-grow">
-
-            {/* Billing Timeline */}
-            <div className="bg-[#1a0505] border border-[#E5E7EB] rounded-2xl p-5 mb-6 shadow-sm">
-              <h4 className="text-[15px] font-bold text-[#111827] mb-4">Billing Timeline</h4>
-              <div className="relative pl-6 space-y-6 border-l-2 border-dashed border-[#E5E7EB]">
-                <div className="relative">
-                  <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#7f1d1d] rounded-full"></div>
-                  <p className="text-xs font-bold text-[#111827]">{planName} {isTrial ? 'Trial' : isActive ? 'Active' : isCancelPending ? 'Ending' : 'Inactive'}</p>
-                  <p className="text-[10px] text-[#6B7280]">
-                    {clinic?.created_at ? new Date(clinic.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
-                  </p>
-                </div>
-                {clinic?.current_period_end && (
-                  <div className="relative">
-                    <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 bg-[#1a0505] border-2 border-[#E5E7EB] rounded-full"></div>
-                    <p className="text-xs font-bold text-[#6B7280]">{isCancelPending ? 'Access Ends' : 'Upcoming Renewal'}</p>
-                    <p className="text-[10px] text-[#9CA3AF]">{new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* FAQ */}
-            <div>
-              <h4 className="text-[11px] font-black text-[#111827] uppercase tracking-widest mb-4">Common Questions</h4>
-              <div className="space-y-2">
-                {faqs.map((faq, i) => (
-                  <div
-                    key={i}
-                    className="border border-[#E5E7EB] rounded-xl overflow-hidden"
-                  >
-                    <button
-                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                      className="w-full flex justify-between items-center p-3 text-left hover:bg-gray-50 transition-colors"
-                    >
-                      <span className="text-[11px] font-bold text-[#111827] pr-2">{faq.q}</span>
-                      <span className="material-symbols-outlined text-xs text-[#9CA3AF] flex-shrink-0 transition-transform" style={{ transform: openFaq === i ? 'rotate(180deg)' : 'none' }}>expand_more</span>
-                    </button>
-                    {openFaq === i && (
-                      <div className="px-3 pb-3 text-[10px] text-[#6B7280] leading-relaxed border-t border-[#E5E7EB] pt-2">
-                        {faq.a}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Contact Support */}
-              <a href="mailto:tokenpe.online@gmail.com" className="mt-6 flex items-center gap-2 p-3 border border-[#E5E7EB] rounded-xl text-[11px] font-bold text-[#fbbf24] hover:bg-amber-50 transition-colors">
-                <span className="material-symbols-outlined text-base">headset_mic</span>
-                Contact Support
-              </a>
-            </div>
-          </div>
-        </aside>
+        </div>
       </div>
 
-      {/* ── MODALS ── */}
+      {/* ── PERFECTLY ALIGNED PLANS GRID SECTION ── */}
+      <div style={{ marginBottom: 36 }}>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--gold)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Sparkles className="w-5 h-5 text-[#fbbf24]" /> Available Subscription Tiers
+        </h2>
 
-      {/* Details Modal */}
-      {showDetails && (
-        <div onClick={() => setShowDetails(false)} className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div onClick={e => e.stopPropagation()} className="bg-[#1a0505] w-full max-w-[800px] max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-10 relative shadow-2xl">
-            <button onClick={() => setShowDetails(false)} className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors">
-              <span className="material-symbols-outlined text-xl">close</span>
-            </button>
-            <h2 className="text-2xl md:text-3xl font-black text-[#111827] mb-2 tracking-tight">Detailed Feature Breakdown</h2>
-            <p className="text-[#6B7280] mb-8">A comprehensive look at what&apos;s included in every TokenPe subscription tier.</p>
+        {/* 3-Column Equal Height Flex/Grid Container */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, alignItems: 'stretch' }}>
+          {plans.map((plan) => {
+            const isCurrent = (planId === plan.tier) && !isTrial && !isCanceled
+            const isLoading = upgrading === plan.tier
+            const isCustom  = plan.tier === 'elite_custom'
 
-            <div className="overflow-x-auto rounded-xl border border-[#E5E7EB]">
-              <table className="w-full min-w-[600px] text-sm text-left">
-                <thead className="bg-[#F9FAFB] text-[#6B7280] text-xs uppercase font-bold border-b border-[#E5E7EB]">
-                  <tr>
-                    <th className="px-6 py-4 w-2/5">Feature</th>
-                    <th className="px-4 py-4 text-center">Starter</th>
-                    <th className="px-4 py-4 text-center text-[#fbbf24]">Pro</th>
-                    <th className="px-4 py-4 text-center text-[#F59E0B]">Elite</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E5E7EB] text-[#374151]">
-                  {[
-                    ['Daily Guest Limit', '50', '150', 'Unlimited'],
-                    ['WhatsApp Alerts', 'Text only', 'Text + AI Voice', 'Text + AI Voice'],
-                    ['AI Voice Notes (10 langs)', '—', '✓', '✓'],
-                    ['Guest Visit History', '7 Days', '30 Days', '365 Days'],
-                    ['Report Download', '7 Days', '30 Days', 'Unlimited'],
-                    ['Multi-Restaurant Management', '—', '—', '✓'],
-                    ['CRM Broadcasts', '—', '—', '✓'],
-                    ['VIP WhatsApp Support', '—', '—', '✓'],
-                  ].map(([feature, s, p, e]) => (
-                    <tr key={feature}>
-                      <td className="px-6 py-4 font-bold">{feature}</td>
-                      <td className="px-4 py-4 text-center text-[#6B7280]">{s}</td>
-                      <td className="px-4 py-4 text-center font-bold text-[#fbbf24]">{p}</td>
-                      <td className="px-4 py-4 text-center font-bold text-[#F59E0B]">{e}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            return (
+              <div 
+                key={plan.tier} 
+                style={{ 
+                  position: 'relative',
+                  background: 'var(--wine-deep)', 
+                  border: isCurrent ? '2px solid var(--gold)' : '1px solid var(--border)', 
+                  borderRadius: 16, 
+                  padding: '28px 24px 24px', 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  height: '100%',
+                  boxSizing: 'border-box'
+                }}
+              >
+                {/* Badge Top Tag */}
+                {plan.badge && (
+                  <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: plan.accent, color: '#1a0505', fontSize: '0.65rem', fontWeight: 900, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
+                    {plan.badge}
+                  </div>
+                )}
+
+                {/* Top Section */}
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: plan.accent, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+                    {plan.label}
+                  </div>
+
+                  {/* Price Header */}
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
+                    <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.4rem', fontWeight: 700, color: 'var(--foreground)' }}>
+                      {plan.price}
+                    </span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>{plan.period}</span>
+                  </div>
+
+                  {/* Aligned Subnote Slot */}
+                  <div style={{ minHeight: 24, fontSize: '0.78rem', fontWeight: 700, color: plan.tier === 'elite_yearly' ? '#10b981' : plan.tier === 'elite_custom' ? '#a78bfa' : 'var(--muted)', marginBottom: 16 }}>
+                    {plan.subnote}
+                  </div>
+
+                  {/* Interactive Custom Day Picker (Only for Custom Card, else empty aligned spacer) */}
+                  <div style={{ minHeight: isCustom ? 110 : 0, marginBottom: 16 }}>
+                    {isCustom && (
+                      <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', padding: 12, borderRadius: 12 }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: 6 }}>Select Number of Days:</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          <button onClick={() => setCustomDays(d => Math.max(1, d - 1))} className="lovable-btn-outline" style={{ padding: '2px 8px', fontSize: '0.9rem' }}>-</button>
+                          <input
+                            type="number"
+                            min={1} max={365}
+                            value={customDays}
+                            onChange={e => setCustomDays(Math.min(365, Math.max(1, parseInt(e.target.value) || 1)))}
+                            style={{ width: 64, textAlign: 'center', background: 'var(--wine-deep)', border: '1px solid var(--border)', color: '#fef3c7', fontWeight: 700, padding: '4px', borderRadius: 6, fontSize: '0.85rem', outline: 'none' }}
+                          />
+                          <button onClick={() => setCustomDays(d => Math.min(365, d + 1))} className="lovable-btn-outline" style={{ padding: '2px 8px', fontSize: '0.9rem' }}>+</button>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                          {[7, 14, 30, 90].map(d => (
+                            <button key={d} onClick={() => setCustomDays(d)} className="lovable-btn-outline" style={{ padding: '2px 6px', fontSize: '0.68rem', borderColor: customDays === d ? plan.accent : 'var(--border)', color: customDays === d ? plan.accent : 'var(--muted)' }}>
+                              {d}d
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Features List (Flex Grow so CTA buttons stick to bottom) */}
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {plan.features.map((f, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: 'var(--foreground)' }}>
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: plan.accent }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* CTA Button Pinned at Bottom */}
+                <div style={{ marginTop: 'auto' }}>
+                  <button
+                    disabled={isCurrent || (!!upgrading && upgrading !== plan.tier)}
+                    onClick={() => !isCurrent && !upgrading && handleUpgrade(plan.tier)}
+                    className="lovable-btn-primary"
+                    style={{
+                      width: '100%',
+                      justifyContent: 'center',
+                      background: isCurrent ? 'rgba(255,255,255,0.08)' : plan.accent,
+                      color: isCurrent ? 'var(--muted)' : '#1a0505',
+                      opacity: (isCurrent || (!!upgrading && upgrading !== plan.tier)) ? 0.6 : 1,
+                      cursor: (isCurrent || upgrading) ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {isLoading ? 'Processing Payment...' : isCurrent ? '✓ Current Active Plan' : `Select ${plan.label}`}
+                  </button>
+                </div>
+
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── FAQ SECTION ── */}
+      <div style={{ background: 'var(--wine-deep)', border: '1px solid var(--border)', borderRadius: 16, padding: '24px' }}>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--gold)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <HelpCircle className="w-5 h-5" /> Frequently Asked Questions
+        </h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {faqs.map((faq, i) => (
+            <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'rgba(0,0,0,0.2)' }}>
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: 'transparent', border: 'none', color: 'var(--foreground)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' }}
+              >
+                <span>{faq.q}</span>
+                <span style={{ transform: openFaq === i ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--gold)' }}>▼</span>
+              </button>
+              {openFaq === i && (
+                <div style={{ padding: '0 18px 14px 18px', fontSize: '0.8rem', color: 'var(--muted)', lineHeight: 1.6, borderTop: '1px solid var(--border)', pt: 10 }}>
+                  {faq.a}
+                </div>
+              )}
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── DETAILS MODAL ── */}
+      {showDetails && (
+        <div onClick={() => setShowDetails(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--wine-deep)', border: '1px solid var(--border)', width: '100%', maxWidth: 700, borderRadius: 20, padding: 32, position: 'relative', color: 'var(--foreground)' }}>
+            <button onClick={() => setShowDetails(false)} style={{ position: 'absolute', top: 20, right: 20, background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
+              <X className="w-6 h-6" />
+            </button>
+            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.6rem', color: 'var(--gold)', marginBottom: 8 }}>Feature Comparison</h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: 20 }}>Detailed breakdown of capabilities per subscription plan.</p>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--gold)' }}>
+                  <th style={{ padding: '10px 14px' }}>Feature</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'center' }}>Elite Monthly</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'center' }}>Elite Yearly</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Daily Guest Covers', 'Unlimited', 'Unlimited'],
+                  ['WhatsApp SMS Notifications', '✓ Included', '✓ Included'],
+                  ['AI Voice Notes (10 languages)', '✓ Included', '✓ Included'],
+                  ['Multi-Branch Switching', '✓ Included', '✓ Included'],
+                  ['CRM Mass Broadcasts', '✓ Included', '✓ Included'],
+                  ['History Log Access', '365 Days', '365 Days'],
+                  ['VIP Dedicated Support', 'Standard', 'Priority VIP']
+                ].map(([feat, m, y], idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding: '12px 14px', fontWeight: 600 }}>{feat}</td>
+                    <td style={{ padding: '12px 14px', textAlign: 'center', color: '#fbbf24' }}>{m}</td>
+                    <td style={{ padding: '12px 14px', textAlign: 'center', color: '#10b981', fontWeight: 700 }}>{y}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Cancel Modal */}
+      {/* ── CANCEL MODAL ── */}
       {showCancelModal && (
-        <div onClick={() => setShowCancelModal(false)} className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div onClick={e => e.stopPropagation()} className="bg-[#1a0505] w-full max-w-[400px] rounded-3xl p-8 relative shadow-2xl">
-            <h3 className="text-xl font-black text-[#111827] mb-2">Cancel Subscription?</h3>
-            <p className="text-sm text-[#6B7280] mb-6">We&apos;re sorry to see you go. You will retain full access until <strong>{clinic?.current_period_end ? new Date(clinic.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'end of billing period'}</strong>.</p>
+        <div onClick={() => setShowCancelModal(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--wine-deep)', border: '1px solid var(--border)', width: '100%', maxWidth: 400, borderRadius: 20, padding: 28, color: 'var(--foreground)' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ef4444', marginBottom: 8 }}>Cancel Subscription?</h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 20 }}>
+              You will retain full access to all features until <strong>{planEndDate ? planEndDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'end of period'}</strong>.
+            </p>
 
             <select
               value={cancelReason}
               onChange={e => setCancelReason(e.target.value)}
-              className="w-full mb-6 p-3 border border-[#E5E7EB] rounded-xl text-sm bg-gray-50 outline-none focus:border-[#7f1d1d]"
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: '#fef3c7', fontSize: '0.82rem', outline: 'none', marginBottom: 20 }}
             >
-              <option value="">Select a reason... (Optional)</option>
+              <option value="">Select cancellation reason... (Optional)</option>
               <option value="too_expensive">Too expensive</option>
-              <option value="missing_features">Missing features I need</option>
-              <option value="hard_to_use">Too hard to use</option>
-              <option value="not_enough_guests">Not getting enough guests</option>
+              <option value="missing_features">Missing features</option>
               <option value="other">Other reason</option>
             </select>
 
-            <div className="flex flex-col gap-3">
-              <button onClick={() => setShowCancelModal(false)} disabled={isCanceling} className="w-full py-3 bg-[#7f1d1d] text-white rounded-xl font-bold shadow-sm hover:bg-[#4a0a0a] transition-colors disabled:opacity-60">
-                Keep my plan
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button onClick={() => setShowCancelModal(false)} disabled={isCanceling} className="lovable-btn-primary" style={{ justifyContent: 'center' }}>
+                Keep My Subscription
               </button>
-              <button onClick={executeCancel} disabled={isCanceling} className="w-full py-3 bg-transparent text-[#EF4444] border border-[#FECACA] rounded-xl font-bold hover:bg-[#FEF2F2] transition-colors disabled:opacity-60">
-                {isCanceling ? 'Canceling...' : 'Yes, cancel subscription'}
+              <button onClick={executeCancel} disabled={isCanceling} className="lovable-btn-outline" style={{ justifyContent: 'center', color: '#ef4444', borderColor: 'rgba(239,68,68,0.4)' }}>
+                {isCanceling ? 'Canceling...' : 'Confirm Cancellation'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div onClick={() => setShowSuccessModal(null)} className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div onClick={e => e.stopPropagation()} className="bg-[#1a0505] w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl border border-[#7f1d1d]/20" style={{ background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)' }}>
-            <div className="w-20 h-20 bg-[#1a0505] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg text-[#fbbf24]">
-              <span className="material-symbols-outlined text-[48px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-            </div>
-            <h3 className="text-2xl font-extrabold text-[#fbbf24] mb-2">You&apos;re all set!</h3>
-            <p className="text-sm text-[#fbbf24]/80 mb-8">
-              Your <strong>{showSuccessModal}</strong> plan is now active. All features are unlocked.
-            </p>
-            <button onClick={() => router.push('/restaurant-dashboard')} className="w-full py-3 bg-[#7f1d1d] text-white rounded-xl font-bold shadow-lg shadow-amber-900/20 hover:opacity-90 transition-all">
-              Continue to Dashboard
-            </button>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   )
 }

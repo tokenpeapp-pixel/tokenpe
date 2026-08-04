@@ -47,6 +47,8 @@ export async function POST(req) {
       email: email,
       phone: phone || parentClinic?.phone || '0000000000',
       code: newCode,
+      vertical: parentClinic?.vertical || 'school',
+      specialty: parentClinic?.specialty || null,
       plan_id: parentClinic.plan_id || 'starter',
       subscription_status: parentClinic.subscription_status || 'trialing',
       trial_ends_at: parentClinic.trial_ends_at || null,

@@ -664,6 +664,13 @@ export default function SchoolCommandCenter() {
 
   const sounds = useSounds()
 
+  // Support Modal State
+  const [showSupportModal, setShowSupportModal] = useState(false)
+  const [supportMessage, setSupportMessage]     = useState('')
+  const [supportEmail, setSupportEmail]         = useState('')
+  const [sendingSupport, setSendingSupport]     = useState(false)
+  const [supportSent, setSupportSent]           = useState(false)
+
   // State Definitions (100% Real Database Driven)
   const [arrivals, setArrivals] = useState([])
   const [classrooms, setClassrooms] = useState([])
@@ -2545,14 +2552,155 @@ export default function SchoolCommandCenter() {
         )}
       </div>
 
+      {/* DRAWER TOOLTIP HOVER STYLES */}
+      <style>{`
+        .drawer-item-wrapper {
+          position: relative;
+        }
+        .drawer-hover-tooltip {
+          opacity: 0;
+          visibility: hidden;
+          position: absolute;
+          left: -220px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 200px;
+          background: #1B2A4A;
+          color: #FFFFFF;
+          font-size: 0.73rem;
+          line-height: 1.45;
+          padding: 10px 14px;
+          border-radius: 10px;
+          box-shadow: 0 12px 30px rgba(27, 42, 74, 0.35);
+          z-index: 99999;
+          pointer-events: none;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .drawer-hover-tooltip strong {
+          color: #60A5FA;
+          display: block;
+          margin-bottom: 3px;
+          font-size: 0.78rem;
+          font-weight: 700;
+        }
+        .drawer-hover-tooltip::after {
+          content: '';
+          position: absolute;
+          right: -7px;
+          top: 50%;
+          transform: translateY(-50%);
+          border-width: 6px 0 6px 7px;
+          border-style: solid;
+          border-color: transparent transparent transparent #1B2A4A;
+        }
+        .drawer-item-wrapper:hover .drawer-hover-tooltip {
+          opacity: 1;
+          visibility: visible;
+        }
+        @media (max-width: 768px) {
+          .drawer-hover-tooltip {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* QR MODAL */}
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} />}
+
+      {/* SUPPORT & REPORT ISSUE MODAL */}
+      {showSupportModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(27,42,74,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowSupportModal(false)}>
+          <div style={{ background: '#FFFFFF', borderRadius: 18, padding: 28, width: '100%', maxWidth: 460, boxShadow: '0 24px 60px rgba(27,42,74,0.2)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: 10, color: '#2563EB', display: 'flex' }}>
+                  <HelpCircle size={20} />
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: '#1B2A4A' }}>Support & Report Issue</div>
+                  <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600 }}>We're here to help! Get in touch with our tech team.</div>
+                </div>
+              </div>
+              <button onClick={() => setShowSupportModal(false)} style={{ background: '#F1F5F9', border: 'none', borderRadius: 7, padding: 7, cursor: 'pointer', color: '#5A6E85' }}><X size={16} /></button>
+            </div>
+
+            {supportSent ? (
+              <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+                <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '50%', width: 50, height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', color: '#059669' }}>
+                  <CheckCircle2 size={28} />
+                </div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: '#1B2A4A', marginBottom: 6 }}>Ticket Received!</div>
+                <div style={{ fontSize: '0.8rem', color: '#5A6E85', lineHeight: 1.6, marginBottom: 20 }}>
+                  Our team has been notified. We'll reach out to <strong>{supportEmail}</strong> shortly.
+                </div>
+                <button onClick={() => setShowSupportModal(false)} style={{ width: '100%', padding: '11px 0', background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Close</button>
+              </div>
+            ) : (
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                if (!supportMessage.trim()) return
+                setSendingSupport(true)
+                try {
+                  await supabase.from('support_tickets').insert({
+                    school_id: clinic?.id,
+                    school_name: clinic?.name,
+                    email: supportEmail,
+                    message: supportMessage,
+                    created_at: new Date().toISOString()
+                  }).catch(() => {})
+                } catch (err) {}
+                setSendingSupport(false)
+                setSupportSent(true)
+              }}>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#1B2A4A', marginBottom: 6 }}>Your Email *</label>
+                  <input
+                    type="email"
+                    value={supportEmail}
+                    onChange={e => setSupportEmail(e.target.value)}
+                    required
+                    placeholder="admin@school.com"
+                    style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, outline: 'none', fontSize: '0.85rem', color: '#1B2A4A', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 18 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#1B2A4A', marginBottom: 6 }}>Describe the Issue / Request *</label>
+                  <textarea
+                    value={supportMessage}
+                    onChange={e => setSupportMessage(e.target.value)}
+                    required
+                    rows={4}
+                    placeholder="Describe what went wrong or what you need help with…"
+                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, outline: 'none', fontSize: '0.85rem', color: '#1B2A4A', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.5 }}
+                  />
+                </div>
+
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Phone size={16} color="#059669" />
+                  <div style={{ fontSize: '0.75rem', color: '#5A6E85' }}>
+                    Need immediate assistance? WhatsApp us directly at <strong style={{ color: '#1B2A4A' }}>+91 73033 82377</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type="button" onClick={() => setShowSupportModal(false)} style={{ flex: 1, padding: '11px 0', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 8, color: '#5A6E85', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                  <button type="submit" disabled={sendingSupport || !supportMessage.trim()} style={{ flex: 2, padding: '11px 0', background: '#1B2A4A', border: 'none', borderRadius: 8, color: '#FFF', fontWeight: 800, fontSize: '0.85rem', cursor: (sendingSupport || !supportMessage.trim()) ? 'not-allowed' : 'pointer', opacity: (sendingSupport || !supportMessage.trim()) ? 0.6 : 1, fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(27,42,74,0.2)' }}>
+                    {sendingSupport ? 'Submitting…' : 'Submit Ticket'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* NAVIGATION DRAWER MODAL (PREMIUM NAVY & SERIF DESIGN SYSTEM) */}
       <AnimatePresence>
         {showNavMenu && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'flex-end', background: 'rgba(27, 42, 74, 0.35)', backdropFilter: 'blur(6px)' }} onClick={() => setShowNavMenu(false)}>
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 380 }} style={{ width: 340, background: '#FFFFFF', height: '100%', padding: '18px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '-8px 0 36px rgba(27,42,74,0.18)' }} onClick={e => e.stopPropagation()}>
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 380 }} style={{ width: 340, background: '#FFFFFF', height: '100%', padding: '18px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '-8px 0 36px rgba(27,42,74,0.18)', overflow: 'visible' }} onClick={e => e.stopPropagation()}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 {/* 5. TOP HEADER AREA */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid rgba(27, 42, 74, 0.08)', flexShrink: 0 }}>
@@ -2584,50 +2732,119 @@ export default function SchoolCommandCenter() {
                   NAVIGATION & SERVICES
                 </div>
 
-                {/* SCROLLABLE MENU ITEMS LIST */}
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, paddingRight: 2 }}>
-                  <button onClick={() => { setTab('arrivals'); setShowNavMenu(false); }} className={`drawer-nav-item ${tab === 'arrivals' ? 'active' : ''}`}>
-                    <div className="drawer-icon-badge"><Users size={17} strokeWidth={2} /></div>
-                    <span className="drawer-item-title">Arrivals & Live Queue</span>
-                  </button>
+                {/* SCROLLABLE MENU ITEMS LIST WITH HOVER POPUP TOOLTIPS */}
+                <div style={{ flex: 1, overflowY: 'visible', display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 4 }}>
+                  
+                  {/* Item 1: Arrivals */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { setTab('arrivals'); setShowNavMenu(false); }} className={`drawer-nav-item ${tab === 'arrivals' ? 'active' : ''}`} style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><Users size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Arrivals & Live Queue</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Arrivals & Live Queue</strong>
+                      Monitor live student check-ins, call students, notify parents via WhatsApp, and manage active waiting lists.
+                    </div>
+                  </div>
 
-                  <button onClick={() => { setTab('classrooms'); setShowNavMenu(false); }} className={`drawer-nav-item ${tab === 'classrooms' ? 'active' : ''}`}>
-                    <div className="drawer-icon-badge"><DoorOpen size={17} strokeWidth={2} /></div>
-                    <span className="drawer-item-title">Classrooms in Session</span>
-                  </button>
+                  {/* Item 2: Classrooms */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { router.push('/school-dashboard/classrooms'); setShowNavMenu(false); }} className="drawer-nav-item" style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><DoorOpen size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Classrooms in Session</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Classrooms in Session</strong>
+                      Manage separate multi-queues for Admissions, Library, Accounts & Medical Rooms under one campus account.
+                    </div>
+                  </div>
 
-                  <button onClick={() => { setTab('dismissals'); setShowNavMenu(false); }} className={`drawer-nav-item ${tab === 'dismissals' ? 'active' : ''}`}>
-                    <div className="drawer-icon-badge"><UserCheck size={17} strokeWidth={2} /></div>
-                    <span className="drawer-item-title">Dismissal History</span>
-                  </button>
+                  {/* Item 3: Dismissal History */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { router.push('/school-dashboard/history'); setShowNavMenu(false); }} className="drawer-nav-item" style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><UserCheck size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Dismissal History</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Dismissal History</strong>
+                      Search and export past student dismissal logs, custom date ranges (Today, 7D, 30D, 365D), and CSV reports.
+                    </div>
+                  </div>
 
-                  <button onClick={() => { router.push('/school-dashboard/analytics'); setShowNavMenu(false); }} className="drawer-nav-item">
-                    <div className="drawer-icon-badge"><BarChart2 size={17} strokeWidth={2} /></div>
-                    <span className="drawer-item-title">Campus Analytics & Reports</span>
-                  </button>
+                  {/* Item 4: Analytics */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { router.push('/school-dashboard/analytics'); setShowNavMenu(false); }} className="drawer-nav-item" style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><BarChart2 size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Campus Analytics & Reports</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Campus Analytics & Reports</strong>
+                      Track peak check-in hours, average wait times, reason breakdowns, and grade-wise statistics.
+                    </div>
+                  </div>
 
-                  <button onClick={() => { router.push('/school-dashboard/crm'); setShowNavMenu(false); }} className="drawer-nav-item">
-                    <div className="drawer-icon-badge"><UserPlus size={17} strokeWidth={2} /></div>
-                    <span className="drawer-item-title">Broadcasting & CRM</span>
-                  </button>
+                  {/* Item 5: Broadcasting & CRM */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { router.push('/school-dashboard/crm'); setShowNavMenu(false); }} className="drawer-nav-item" style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><UserPlus size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Broadcasting & CRM</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Broadcasting & CRM</strong>
+                      Send mass WhatsApp notices, exam flyers & announcements to all students, plus custom welcome auto-replies.
+                    </div>
+                  </div>
 
-                  <button onClick={() => { router.push('/school-dashboard/billing'); setShowNavMenu(false); }} className="drawer-nav-item">
-                    <div className="drawer-icon-badge"><CreditCard size={17} strokeWidth={2} /></div>
-                    <span className="drawer-item-title">Billing Plans</span>
-                  </button>
+                  {/* Item 6: Billing */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { router.push('/school-dashboard/billing'); setShowNavMenu(false); }} className="drawer-nav-item" style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><CreditCard size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Billing Plans</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Billing Plans</strong>
+                      View current subscription status, upgrade to Elite for multi-queues & broadcasts, or manage renewals.
+                    </div>
+                  </div>
+
+                  {/* Item 7: Support */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { setSupportEmail(clinic?.email || ''); setSupportMessage(''); setSupportSent(false); setShowSupportModal(true); setShowNavMenu(false); }} className="drawer-nav-item" style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><HelpCircle size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Support & Report Issue</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Support & Report Issue</strong>
+                      Submit technical support tickets directly to our engineering team or get instant WhatsApp assistance.
+                    </div>
+                  </div>
 
                   {/* Subtle thin grey divider */}
-                  <div style={{ height: 1, background: 'rgba(27, 42, 74, 0.08)', margin: '6px 0', flexShrink: 0 }} />
+                  <div style={{ height: 1, background: 'rgba(27, 42, 74, 0.08)', margin: '4px 0', flexShrink: 0 }} />
 
-                  <button onClick={() => { setShowQR(true); setShowNavMenu(false); }} className="drawer-nav-item">
-                    <div className="drawer-icon-badge"><QrCode size={17} strokeWidth={2} /></div>
-                    <span className="drawer-item-title">Digital Gate QR Poster</span>
-                  </button>
+                  {/* Item 8: Digital Gate QR */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { setShowQR(true); setShowNavMenu(false); }} className="drawer-nav-item" style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><QrCode size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Digital Gate QR Poster</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Digital Gate QR Poster</strong>
+                      View, customize, and print your campus entrance QR poster for instant student WhatsApp check-in.
+                    </div>
+                  </div>
 
-                  <button onClick={() => { setNewSchoolNameInput(clinic?.name || 'Ashbourne Academy'); setShowEditSchoolModal(true); setShowNavMenu(false); }} className="drawer-nav-item">
-                    <div className="drawer-icon-badge"><Pencil size={17} strokeWidth={2} /></div>
-                    <span className="drawer-item-title">Edit School Profile</span>
-                  </button>
+                  {/* Item 9: Edit School Profile */}
+                  <div className="drawer-item-wrapper">
+                    <button onClick={() => { setNewSchoolNameInput(clinic?.name || 'Ashbourne Academy'); setShowEditSchoolModal(true); setShowNavMenu(false); }} className="drawer-nav-item" style={{ width: '100%' }}>
+                      <div className="drawer-icon-badge"><Pencil size={17} strokeWidth={2} /></div>
+                      <span className="drawer-item-title">Edit School Profile</span>
+                    </button>
+                    <div className="drawer-hover-tooltip">
+                      <strong>Edit School Profile</strong>
+                      Update your institution's name, city location, logo, and sub-heading preferences.
+                    </div>
+                  </div>
                 </div>
               </div>
 

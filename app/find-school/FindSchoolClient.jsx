@@ -9,7 +9,7 @@ import {
 const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919892875513'
 
 // Dynamically import the Leaflet map component with ssr: false
-const MapComponent = dynamic(() => import('./MapComponent'), {
+const MapComponent = dynamic(() => import('./MapComponent.jsx'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>Loading Map...</div>
 })
@@ -199,7 +199,7 @@ export default function FindSchoolClient({ initialSchools, initialQ, initialCity
 
   const fetchNearby = useCallback(async (lat, lng) => {
     try {
-      const res = await fetch(`/api/schools/nearby?lat=${lat}&lng=${lng}&radius=50000`)
+      const res = await fetch(`/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=50000&vertical=school`)
       const json = await res.json()
       setNearbySchools(json.clinics || [])
       setIsNearbyMode(true)

@@ -8,7 +8,8 @@ import { after } from 'next/server'
 export async function POST(req) {
     try {
         const body = await req.json()
-        const { name, phone, email, pin, specialty, city, lat, lng } = body
+        const { name, phone, email, pin, specialty, city, lat, lng, vertical } = body
+        const cleanVertical = ['clinic','restaurant','salon','school','business'].includes(vertical) ? vertical : 'clinic'
 
         if (!name || !phone || !email || !pin) {
             return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
@@ -23,15 +24,19 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Invalid input format.' }, { status: 400 })
         }
 
-        // Check for existing clinic with same phone number
+        // Prevent duplicate registration within the SAME vertical.
+        // Same credentials across DIFFERENT verticals is allowed — each industry
+        // gets its own separate account, trial, and subscription.
         const { data: existingClinic } = await supabaseAdmin
             .from('clinics')
             .select('id')
             .eq('phone', cleanPhone)
+            .eq('email', cleanEmail)
+            .eq('vertical', cleanVertical)   // ← scoped to this industry only
             .limit(1)
 
         if (existingClinic?.length > 0) {
-            return Response.json({ success: false, message: 'This phone number is already registered. Please log in instead.' }, { status: 409 })
+            return Response.json({ success: false, message: `An account with this email and phone number is already registered for ${cleanVertical}. Please log in instead.` }, { status: 409 })
         }
 
         // Always generate a random, unbranded code
@@ -55,6 +60,7 @@ export async function POST(req) {
             specialty: specialty || null,
             city: city ? city.trim() : null,
             is_public: true,
+            vertical: cleanVertical,
         }
 
         if (lat !== undefined && lng !== undefined && lat !== null && lng !== null) {

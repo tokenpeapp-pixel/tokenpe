@@ -8,7 +8,7 @@ import { getSession } from '../../../../lib/auth'
 export async function POST(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
@@ -21,7 +21,7 @@ export async function POST(req) {
 
         // Fetch patient info
         const { data: patient, error: fetchError } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('clinic_id, name, phone, token, fee_total, fee_paid')
             .eq('id', patientId)
             .single()
@@ -30,7 +30,7 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Patient not found' }, { status: 404 })
         }
 
-        if (patient.clinic_id !== session.clinicId) {
+        if (patient.clinic_id !== session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 

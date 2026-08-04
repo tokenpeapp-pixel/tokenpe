@@ -7,18 +7,18 @@ import { after } from 'next/server'
 export async function POST(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
         const body = await req.json()
-        const { clinicId, name, token, language, phone } = body
+        const { businessId, name, token, language, phone } = body
 
-        if (!clinicId || !token) {
+        if (!businessId || !token) {
             return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
         }
 
-        if (clinicId !== session.clinicId) {
+        if (businessId !== session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 
@@ -28,7 +28,7 @@ export async function POST(req) {
         const today = getISTDateString()
         
         // Fetch clinic plan limits AND closed status
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, closed_today_date').eq('id', clinicId).single()
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, closed_today_date').eq('id', businessId).single()
         const planId = clinic?.plan_id || 'starter'
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
 
@@ -42,9 +42,9 @@ export async function POST(req) {
 
         // Count total patients today
         const { count } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('*', { count: 'exact', head: true })
-            .eq('clinic_id', clinicId)
+            .eq('business_id', businessId)
             .eq('date', today)
 
         const currentTotal = count || 0
@@ -58,9 +58,9 @@ export async function POST(req) {
         // Rate limit joins (3 per phone per day, unique names)
         if (cleanPhone !== '0000000000') {
             const { data: existingJoins } = await supabase
-                .from('patients')
+                .from('queue_entries')
                 .select('name')
-                .eq('clinic_id', clinicId)
+                .eq('business_id', businessId)
                 .eq('phone', cleanPhone)
                 .eq('date', today)
 
@@ -80,7 +80,7 @@ export async function POST(req) {
         }
 
         const newPatient = {
-            clinic_id: clinicId,
+            business_id: businessId,
             name: cleanName || `Patient ${token}`,
             phone: cleanPhone,
             token: token,
@@ -90,7 +90,7 @@ export async function POST(req) {
             joined_at: new Date().toISOString()
         }
 
-        const { data, error } = await supabaseAdmin.from('patients').insert([newPatient]).select()
+        const { data, error } = await supabaseAdmin.from('queue_entries').insert([newPatient]).select()
 
         if (error) {
             console.error('[queue/add] Error inserting:', error)
@@ -104,15 +104,15 @@ export async function POST(req) {
             after(async () => {
                 try {
                     // Fetch clinic info for messaging
-                    const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, subscription_status').eq('id', clinicId).single()
+                    const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, subscription_status').eq('id', businessId).single()
                     const planId = clinic?.plan_id || 'starter'
                     const clinicName = clinic?.name || 'the clinic'
 
                     // Count people ahead
                     const { count: aheadCount } = await supabaseAdmin
-                        .from('patients')
+                        .from('queue_entries')
                         .select('*', { count: 'exact', head: true })
-                        .eq('clinic_id', clinicId)
+                        .eq('business_id', businessId)
                         .eq('status', 'waiting')
                         .eq('date', today)
                         .lt('token', token)

@@ -36,7 +36,7 @@ function SalonAuthCallbackContent() {
                 }
 
                 // Call the shared googleCallback API — it handles clinic/salon lookup & JWT
-                const res = await fetch('/api/auth/googleCallback', {
+                const res = await fetch('/api/business-auth/googleCallback', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -57,12 +57,12 @@ function SalonAuthCallbackContent() {
                 const finalSalonData = data.clinic
 
                 // Persist salon session in localStorage
-                localStorage.setItem('clinicCode', finalSalonData.code)
-                localStorage.setItem('clinicPhone', finalSalonData.phone || '0000000000')
+                localStorage.setItem('businessCode', finalSalonData.code)
+                localStorage.setItem('businessPhone', finalSalonData.phone || '0000000000')
                 localStorage.setItem('tokenpe_clinic', JSON.stringify(finalSalonData))
                 localStorage.setItem('tokenpe_vertical', 'salon')
                 if (data.userClinics) {
-                    localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
+                    localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
                 }
 
                 if (data.isNewRegistration) {

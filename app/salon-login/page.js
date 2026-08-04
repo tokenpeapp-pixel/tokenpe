@@ -18,17 +18,17 @@ export default function LoginPage() {
         if (typeof window !== 'undefined') {
             localStorage.setItem('tokenpe_vertical', 'salon')
             // Check session via API instead of localStorage directly to be secure
-            fetch('/api/auth/me')
+            fetch('/api/business-auth/me')
                 .then(res => res.json())
                 .then(data => {
                     if (data.authenticated && data.clinic) {
-                        localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
-                        localStorage.setItem('clinicCode', data.clinic.code)
-                        localStorage.setItem('clinicPhone', data.clinic.phone)
+                        localStorage.setItem('tokenpe_business', JSON.stringify(data.clinic))
+                        localStorage.setItem('businessCode', data.clinic.code)
+                        localStorage.setItem('businessPhone', data.clinic.phone)
                         router.replace('/salon-dashboard')
                     } else {
-                        localStorage.removeItem('tokenpe_clinic')
-                        localStorage.removeItem('tokenpe_user_clinics')
+                        localStorage.removeItem('tokenpe_business')
+                        localStorage.removeItem('tokenpe_user_businesses')
                     }
                 })
                 .catch(() => {})
@@ -132,7 +132,7 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/auth/login', {
+            const res = await fetch('/api/business-auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin, role: selectedRole })
@@ -145,10 +145,10 @@ export default function LoginPage() {
                 return
             }
 
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
-            localStorage.setItem('clinicCode', result.clinic.code)
-            localStorage.setItem('clinicPhone', result.clinic.phone)
-            localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
+            localStorage.setItem('tokenpe_business', JSON.stringify(result.clinic))
+            localStorage.setItem('businessCode', result.clinic.code)
+            localStorage.setItem('businessPhone', result.clinic.phone)
+            localStorage.setItem('tokenpe_user_businesses', JSON.stringify([result.clinic]))
             localStorage.setItem('tokenpe_salon_role', selectedRole)
             router.push('/salon-dashboard')
         } catch (err) {
@@ -175,7 +175,7 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/auth/register', {
+            const res = await fetch('/api/business-auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -200,10 +200,10 @@ export default function LoginPage() {
             setLoading(false)
             
             // Set localStorage 
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(result.clinic))
-            localStorage.setItem('clinicCode', result.clinic.code)
-            localStorage.setItem('clinicPhone', result.clinic.phone)
-            localStorage.setItem('tokenpe_user_clinics', JSON.stringify([result.clinic]))
+            localStorage.setItem('tokenpe_business', JSON.stringify(result.clinic))
+            localStorage.setItem('businessCode', result.clinic.code)
+            localStorage.setItem('businessPhone', result.clinic.phone)
+            localStorage.setItem('tokenpe_user_businesses', JSON.stringify([result.clinic]))
             localStorage.setItem('tokenpe_salon_role', 'owner')
             
             // Trigger celebration pop-up!
@@ -221,7 +221,7 @@ export default function LoginPage() {
         setSuccess('')
         setLoading(true)
         try {
-            const res = await fetch('/api/auth/send-otp', {
+            const res = await fetch('/api/business-auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: loginEmail, phone: loginPhone })
@@ -254,7 +254,7 @@ export default function LoginPage() {
         }
         setLoading(true)
         try {
-            const res = await fetch('/api/auth/reset-pin', {
+            const res = await fetch('/api/business-auth/reset-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ otpToken, otp: otpCode, newPin })

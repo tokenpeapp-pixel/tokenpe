@@ -4,13 +4,13 @@ export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url)
         const patientId = searchParams.get('patientId')
-        const clinicCode = searchParams.get('clinicCode')
+        const businessCode = searchParams.get('businessCode')
 
-        if (!patientId || !clinicCode) {
+        if (!patientId || !businessCode) {
             return Response.json({ success: false, message: 'Missing parameters' }, { status: 400 })
         }
 
-        const code = String(clinicCode).trim().toUpperCase()
+        const code = String(businessCode).trim().toUpperCase()
         const { data: clinic } = await supabaseAdmin
             .from('clinics')
             .select('id, name, logo_url')
@@ -22,7 +22,7 @@ export async function GET(req) {
         }
 
         const { data: patient } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('id, name, rating, feedback_text, clinic_id')
             .eq('id', patientId)
             .single()

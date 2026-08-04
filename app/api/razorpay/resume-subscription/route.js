@@ -8,14 +8,14 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 
 export async function POST(req) {
   try {
-    const { clinicId } = await req.json()
+    const { businessId } = await req.json()
 
-    if (!clinicId) {
-      return Response.json({ error: 'Missing clinicId' }, { status: 400 })
+    if (!businessId) {
+      return Response.json({ error: 'Missing businessId' }, { status: 400 })
     }
 
     const session = await getSession()
-    if (!session || session.clinicId !== clinicId) {
+    if (!session || session.businessId !== businessId) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -29,7 +29,7 @@ export async function POST(req) {
     const { data: clinic, error: cErr } = await supabaseAdmin
       .from('clinics')
       .select('razorpay_subscription_id, plan_id, name, email, phone, current_period_end')
-      .eq('id', clinicId)
+      .eq('id', businessId)
       .single()
 
     if (cErr || !clinic) {
@@ -47,7 +47,7 @@ export async function POST(req) {
       // Manual plan fallback
       await supabaseAdmin.from('clinics').update({
         subscription_status: 'active'
-      }).eq('id', clinicId)
+      }).eq('id', businessId)
       return Response.json({ success: true, message: 'Account reactivated' })
     }
 
@@ -72,7 +72,7 @@ export async function POST(req) {
     if (clinic.email) {
       updateQuery = updateQuery.eq('email', clinic.email)
     } else {
-      updateQuery = updateQuery.eq('id', clinicId)
+      updateQuery = updateQuery.eq('id', businessId)
     }
 
     const { error: updateErr } = await updateQuery

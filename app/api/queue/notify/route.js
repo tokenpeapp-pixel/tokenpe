@@ -9,12 +9,12 @@ import { getSession } from '../../../../lib/auth'
 export async function POST(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
         const {
-            clinicId,
+            businessId,
             clinicName,
             patientPhone,
             patientName,
@@ -22,7 +22,7 @@ export async function POST(req) {
             language
         } = await req.json()
 
-        if (clinicId !== session.clinicId) {
+        if (businessId !== session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 
@@ -38,7 +38,7 @@ The clinic has sent a manual alert for you. Please make sure you are nearby! üè
 _Powered by TokenPe_`
 
         // Check clinic plan features
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id').eq('id', clinicId).single()
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id').eq('id', businessId).single()
         const canUseVoice = clinic?.plan_id === 'pro' || clinic?.plan_id === 'elite'
 
         // Send text + voice (if pro/elite) in parallel

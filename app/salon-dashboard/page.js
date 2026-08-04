@@ -131,7 +131,7 @@ export default function SalonDashboard() {
   const fetchQueueData = async () => {
     try {
       const today = new Date().toISOString().split('T')[0]
-      const res = await fetch(`/api/salons/queue/get?date=${today}`)
+      const res = await fetch(`/api/business/queue/get?date=${today}`)
       const data = await res.json()
       if (data.success) {
         setQueue(data.queue.filter(q => q.status !== 'completed' && q.status !== 'skipped').map(q => ({
@@ -157,7 +157,7 @@ export default function SalonDashboard() {
   useEffect(() => {
     const init = async () => {
       try {
-        const savedClinicStr = localStorage.getItem('tokenpe_clinic')
+        const savedClinicStr = localStorage.getItem('tokenpe_business')
         const savedRole = localStorage.getItem('tokenpe_salon_role')
         if (savedRole) setUserRole(savedRole)
         if (savedClinicStr) {
@@ -191,7 +191,7 @@ export default function SalonDashboard() {
       return
     }
     try {
-      const res = await fetch('/api/salons/queue/update', {
+      const res = await fetch('/api/business/queue/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ queueId: nextWaiting.id, status: 'serving' })
       })
@@ -206,7 +206,7 @@ export default function SalonDashboard() {
     const item = queue.find(q => q.id === id)
     if (!item) return
     try {
-      const res = await fetch('/api/salons/queue/update', {
+      const res = await fetch('/api/business/queue/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ queueId: id, status: 'completed' })
       })
@@ -224,7 +224,7 @@ export default function SalonDashboard() {
     const selectedStf = staff.find(s => s.id === newStylistId) || staff[0]
     
     try {
-      const res = await fetch('/api/salons/queue/add', {
+      const res = await fetch('/api/business/queue/add', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newClientName, phone: newClientPhone, service: selectedSvc.name, stylist: selectedStf.name, price: selectedSvc.price })
       })
@@ -255,7 +255,7 @@ export default function SalonDashboard() {
   const handleSaveSettings = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/salons/update', {
+      const res = await fetch('/api/business/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: salon.id, upiId: settingsUpiId, name: settingsName, address: settingsAddress })
       })
@@ -263,7 +263,7 @@ export default function SalonDashboard() {
       if (data.success) {
         const updatedSalon = { ...salon, upi_id: settingsUpiId, name: settingsName, address: settingsAddress }
         setSalon(updatedSalon)
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedSalon))
+        localStorage.setItem('tokenpe_business', JSON.stringify(updatedSalon))
         setShowSettings(false)
         showToast('Settings saved successfully!')
       } else {
@@ -277,7 +277,7 @@ export default function SalonDashboard() {
   const handleSaveSalonCode = async () => {
     if (!editSalonCode.trim()) return
     try {
-      const res = await fetch('/api/salons/update', {
+      const res = await fetch('/api/business/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: salon.id, code: editSalonCode.trim().toUpperCase() })
       })
@@ -285,7 +285,7 @@ export default function SalonDashboard() {
       if (data.success) {
         const updated = { ...salon, code: editSalonCode.trim().toUpperCase() }
         setSalon(updated)
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(updated))
+        localStorage.setItem('tokenpe_business', JSON.stringify(updated))
         showToast('Salon code updated!')
       } else {
         showToast('Failed to update code: ' + data.error, 'error')
@@ -342,11 +342,11 @@ export default function SalonDashboard() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await fetch('/api/business-auth/logout', { method: 'POST' })
     } catch (e) {
       console.error('Logout error', e)
     }
-    localStorage.removeItem('tokenpe_clinic')
+    localStorage.removeItem('tokenpe_business')
     localStorage.removeItem('tokenpe_salon_role')
     router.push('/salon-login')
   }

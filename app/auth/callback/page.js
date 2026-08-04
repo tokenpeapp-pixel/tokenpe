@@ -30,7 +30,7 @@ function AuthCallbackContent() {
                 }
 
                 // Call our secure backend API to handle all clinic checks, creation, and JWT logic
-                const res = await fetch('/api/auth/googleCallback', {
+                const res = await fetch('/api/business-auth/googleCallback', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -48,11 +48,11 @@ function AuthCallbackContent() {
                 }
 
                 const finalClinicData = data.clinic
-                localStorage.setItem('clinicCode', finalClinicData.code)
-                localStorage.setItem('clinicPhone', finalClinicData.phone || '0000000000')
+                localStorage.setItem('businessCode', finalClinicData.code)
+                localStorage.setItem('businessPhone', finalClinicData.phone || '0000000000')
                 localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinicData))
                 if (data.userClinics) {
-                    localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
+                    localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
                 }
 
                 const targetDashboard = vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : '/dashboard'

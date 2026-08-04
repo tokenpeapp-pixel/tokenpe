@@ -5,31 +5,31 @@ import { getSession } from '../../../../lib/auth'
 export async function GET(req) {
   try {
     const session = await getSession()
-    if (!session || !session.clinicId) {
+    if (!session || !session.businessId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     // Allow fetching stats for a specific branch (verify ownership via email)
     const { searchParams } = new URL(req.url)
-    const requestedClinicId = searchParams.get('clinicId')
-    let clinicId = session.clinicId
+    const requestedClinicId = searchParams.get('businessId')
+    let businessId = session.businessId
 
-    if (requestedClinicId && requestedClinicId !== session.clinicId) {
+    if (requestedClinicId && requestedClinicId !== session.businessId) {
       // Verify ownership: both clinics must share the same email
-      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
+      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.businessId).single()
       const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', requestedClinicId).single()
       if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
         return NextResponse.json({ success: false, error: 'Unauthorized branch access' }, { status: 403 })
       }
-      clinicId = requestedClinicId
+      businessId = requestedClinicId
     }
 
     // Fetch all patients for this clinic to calculate stats
     // We use supabaseAdmin to bypass RLS securely on the server
     const { data: patients, error } = await supabaseAdmin
-      .from('patients')
+      .from('queue_entries')
       .select('phone, crm_rating, feedback_text, feedback_at, name, date, completed_at, status')
-      .eq('clinic_id', clinicId)
+      .eq('business_id', businessId)
       
     if (error) {
       throw error

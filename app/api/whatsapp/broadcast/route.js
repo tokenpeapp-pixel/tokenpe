@@ -6,21 +6,21 @@ import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
   try {
-    const { clinicId, message, imageUrl } = await req.json()
+    const { businessId, message, imageUrl } = await req.json()
     
-    if (!clinicId || (!message && !imageUrl)) {
+    if (!businessId || (!message && !imageUrl)) {
       return NextResponse.json({ success: false, error: 'Clinic ID and message or image required' }, { status: 400 })
     }
 
     const session = await getSession()
-    if (!session || !session.clinicId) {
+    if (!session || !session.businessId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     // Verify branch ownership: session clinic and target clinic must share the same email
-    if (session.clinicId !== clinicId) {
-      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
-      const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', clinicId).single()
+    if (session.businessId !== businessId) {
+      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.businessId).single()
+      const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', businessId).single()
       if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
         return NextResponse.json({ success: false, error: 'Unauthorized branch access' }, { status: 403 })
       }
@@ -30,7 +30,7 @@ export async function POST(req) {
     const { data: clinic, error: clinicError } = await supabaseAdmin
       .from('clinics')
       .select('*')
-      .eq('id', clinicId)
+      .eq('id', businessId)
       .single()
 
     if (clinicError || !clinic) {
@@ -43,9 +43,9 @@ export async function POST(req) {
 
     // 2. Fetch Unique Patients
     const { data: patients, error: patientError } = await supabaseAdmin
-      .from('patients')
+      .from('queue_entries')
       .select('phone')
-      .eq('clinic_id', clinicId)
+      .eq('business_id', businessId)
 
     if (patientError) {
       return NextResponse.json({ success: false, error: 'Failed to fetch patients' }, { status: 500 })

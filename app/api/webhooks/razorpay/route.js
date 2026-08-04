@@ -33,9 +33,9 @@ export async function POST(req) {
     const payment = payload?.payment?.entity
     if (!sub) return Response.json({ ok: true })
 
-    const clinicId = sub.notes?.clinic_id
+    const businessId = sub.notes?.clinic_id
     const planTier = sub.notes?.plan_tier
-    if (!clinicId) return Response.json({ ok: true })
+    if (!businessId) return Response.json({ ok: true })
 
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -48,10 +48,10 @@ export async function POST(req) {
     if (eventType === 'subscription.activated' || eventType === 'subscription.charged') {
       // Payment successful — upgrade clinic plan
       const periodEnd = new Date(sub.current_end * 1000).toISOString()
-      const { data: currentClinic } = await supabaseAdmin.from('clinics').select('name, email, phone').eq('id', clinicId).single()
+      const { data: currentClinic } = await supabaseAdmin.from('clinics').select('name, email, phone').eq('id', businessId).single()
 
       if (!currentClinic) {
-        console.error(`[Razorpay Webhook] Clinic not found for ID: ${clinicId}`)
+        console.error(`[Razorpay Webhook] Clinic not found for ID: ${businessId}`)
         return Response.json({ ok: true })
       }
 
@@ -67,14 +67,14 @@ export async function POST(req) {
       if (currentClinic.email) {
         updateQuery = updateQuery.eq('email', currentClinic.email)
       } else {
-        updateQuery = updateQuery.eq('id', clinicId)
+        updateQuery = updateQuery.eq('id', businessId)
       }
 
       const { error } = await updateQuery
 
       if (error) console.error('[Razorpay Webhook] DB update error:', error)
       else {
-        console.log(`[Razorpay Webhook] ✅ All branches for ${currentClinic.email || clinicId} upgraded to ${planTier}`)
+        console.log(`[Razorpay Webhook] ✅ All branches for ${currentClinic.email || businessId} upgraded to ${planTier}`)
         
         // Send Confirmations only if it's newly activated or charged
         if (currentClinic && eventType === 'subscription.charged') {
@@ -130,11 +130,11 @@ export async function POST(req) {
       const { data: clinicInfo, error: fetchErr } = await supabaseAdmin
         .from('clinics')
         .select('name, email, phone, plan_id')
-        .eq('id', clinicId)
+        .eq('id', businessId)
         .single()
 
       if (fetchErr || !clinicInfo) {
-        console.error(`[Razorpay Webhook] Could not find clinic ${clinicId}:`, fetchErr)
+        console.error(`[Razorpay Webhook] Could not find clinic ${businessId}:`, fetchErr)
       } else {
         console.log(`[Razorpay Webhook] Found clinic: ${clinicInfo.name} (${clinicInfo.email})`)
       }
@@ -147,13 +147,13 @@ export async function POST(req) {
       if (clinicInfo?.email) {
         updateQuery = updateQuery.eq('email', clinicInfo.email)
       } else {
-        updateQuery = updateQuery.eq('id', clinicId)
+        updateQuery = updateQuery.eq('id', businessId)
       }
 
       const { error } = await updateQuery
 
       if (error) console.error('[Razorpay Webhook] DB downgrade error:', error)
-      else console.log(`[Razorpay Webhook] ⚠️ Branches for ${clinicInfo?.email || clinicId} status updated to ${newStatus} — event: ${eventType}`)
+      else console.log(`[Razorpay Webhook] ⚠️ Branches for ${clinicInfo?.email || businessId} status updated to ${newStatus} — event: ${eventType}`)
 
       // ── Send email notification ──
       if (clinicInfo?.email) {
@@ -206,12 +206,12 @@ export async function POST(req) {
 
 
       } else {
-        console.warn(`[Razorpay Webhook] No email found for clinic ${clinicId} — skipping email`)
+        console.warn(`[Razorpay Webhook] No email found for clinic ${businessId} — skipping email`)
       }
     }
 
     if (eventType === 'subscription.completed') {
-      const { data: compClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', clinicId).single()
+      const { data: compClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', businessId).single()
       
       let updateQuery = supabaseAdmin
         .from('clinics')
@@ -220,7 +220,7 @@ export async function POST(req) {
       if (compClinic?.email) {
         updateQuery = updateQuery.eq('email', compClinic.email)
       } else {
-        updateQuery = updateQuery.eq('id', clinicId)
+        updateQuery = updateQuery.eq('id', businessId)
       }
       
       await updateQuery

@@ -13,9 +13,9 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Too many submissions. Try again later.' }, { status: 429 })
         }
 
-        const { patientId, clinicCode, rating, feedbackText } = await req.json()
+        const { patientId, businessCode, rating, feedbackText } = await req.json()
 
-        if (!patientId || !clinicCode) {
+        if (!patientId || !businessCode) {
             return Response.json({ success: false, message: 'Missing patient or clinic' }, { status: 400 })
         }
 
@@ -24,7 +24,7 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Invalid rating' }, { status: 400 })
         }
 
-        const code = String(clinicCode).trim().toUpperCase()
+        const code = String(businessCode).trim().toUpperCase()
         const { data: clinic, error: clinicError } = await supabaseAdmin
             .from('clinics')
             .select('id, name, plan_id, subscription_status')
@@ -40,7 +40,7 @@ export async function POST(req) {
         }
 
         const { data: patient, error: patientError } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('id, clinic_id, rating, phone, name')
             .eq('id', patientId)
             .single()
@@ -65,7 +65,7 @@ export async function POST(req) {
         }
 
         const { error: updateError } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .update({
                 rating: validRating,
                 feedback_text: feedbackText?.trim() || null,
@@ -89,9 +89,9 @@ export async function POST(req) {
         // Recalculate clinic avg_rating
         try {
             const { data: ratedPatients, error: statsError } = await supabaseAdmin
-                .from('patients')
+                .from('queue_entries')
                 .select('rating')
-                .eq('clinic_id', clinic.id)
+                .eq('business_id', clinic.id)
                 .gt('rating', 0)
             
             if (!statsError && ratedPatients) {

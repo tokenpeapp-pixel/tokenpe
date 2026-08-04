@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 
 export default function FeedbackPage() {
-  const { clinicCode } = useParams()
+  const { businessCode } = useParams()
   const searchParams = useSearchParams()
   const patientId = searchParams.get('patientId')
   
@@ -19,13 +19,13 @@ export default function FeedbackPage() {
 
   useEffect(() => {
     async function load() {
-      if (!clinicCode || !patientId) {
+      if (!businessCode || !patientId) {
         setLoading(false)
         return
       }
       
       try {
-        const params = new URLSearchParams({ patientId, clinicCode: clinicCode.toUpperCase() })
+        const params = new URLSearchParams({ patientId, businessCode: businessCode.toUpperCase() })
         const res = await fetch(`/api/feedback/load?${params}`)
         const result = await res.json()
         if (!res.ok || !result.success) {
@@ -45,7 +45,7 @@ export default function FeedbackPage() {
       setLoading(false)
     }
     load()
-  }, [clinicCode, patientId])
+  }, [businessCode, patientId])
 
   async function submitFeedback() {
     if (rating === 0) return alert('Please select a star rating.')
@@ -57,7 +57,7 @@ export default function FeedbackPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patientId,
-          clinicCode: clinicCode.toUpperCase(),
+          businessCode: businessCode.toUpperCase(),
           rating,
           feedbackText
         })

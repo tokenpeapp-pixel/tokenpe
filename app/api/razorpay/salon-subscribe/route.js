@@ -18,7 +18,7 @@ export async function POST(req) {
     }
 
     const session = await getSession()
-    if (!session || session.clinicId !== salonId) {
+    if (!session || session.businessId !== salonId) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

@@ -40,20 +40,20 @@ export default function BillingPage() {
     }
 
     async function load() {
-      const stored = localStorage.getItem('tokenpe_clinic')
-      if (!stored) { router.push('/login'); return }
+      const stored = localStorage.getItem('tokenpe_business')
+      if (!stored) { router.push('/restaurant-login'); return }
       const clinicData = JSON.parse(stored)
 
       const today = getISTDateString()
 
-      const userRestaurants = JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]')
+      const userRestaurants = JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]')
       let queryParam = `clinicId=${clinicData.id}`
       if (userRestaurants.length > 0) {
         queryParam = `clinicIds=${userRestaurants.map(c => c.id).join(',')}`
       }
 
       const [freshRes, countRes] = await Promise.all([
-        fetch(`/api/clinics/get?id=${clinicData.id}`),
+        fetch(`/api/business/get?id=${clinicData.id}`),
         fetch(`/api/analytics/count?${queryParam}&date=${today}`)
       ])
       const freshData = freshRes.ok ? await freshRes.json() : null
@@ -63,7 +63,7 @@ export default function BillingPage() {
         setRestaurant(freshData.clinic)
         setIsPrimaryBranch(freshData.isPrimaryBranch !== false)
         setPrimaryBranchName(freshData.primaryBranchName)
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
+        localStorage.setItem('tokenpe_business', JSON.stringify(freshData.clinic))
       } else {
         // fallback to cached data if API fails
         setRestaurant(clinicData)
@@ -79,13 +79,13 @@ export default function BillingPage() {
     let attempts = 0
     const poll = async () => {
       attempts++
-      const res = await fetch(`/api/clinics/get?id=${clinicId}`)
+      const res = await fetch(`/api/business/get?id=${clinicId}`)
       if (res.ok) {
         const data = await res.json()
         if (data.success && data.clinic) {
           const fresh = data.clinic
           setRestaurant(fresh)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
+          localStorage.setItem('tokenpe_business', JSON.stringify(fresh))
           const isActivated = fresh.subscription_status === 'active' && fresh.plan_id === newPlanTier
           if (isActivated || attempts >= maxAttempts) {
             setUpgrading(null)
@@ -122,7 +122,7 @@ export default function BillingPage() {
         name: 'TokenPe',
         description: `${PLAN_META[tier]?.name || tier} Plan Subscription`,
         image: `${window.location.origin}/logo-light.svg`,
-        prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.clinicPhone },
+        prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.businessPhone },
         theme: { color: '#fef3c7' },
         handler: () => pollForUpdate(clinic.id, tier),
         modal: { ondismiss: () => setUpgrading(null) }
@@ -152,12 +152,12 @@ export default function BillingPage() {
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to cancel')
 
-      const res2 = await fetch(`/api/clinics/get?id=${clinic.id}`)
+      const res2 = await fetch(`/api/business/get?id=${clinic.id}`)
       if (res2.ok) {
         const data2 = await res2.json()
         if (data2.success && data2.clinic) {
           setRestaurant(data2.clinic)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(data2.clinic))
+          localStorage.setItem('tokenpe_business', JSON.stringify(data2.clinic))
         }
       }
       setShowCancelModal(false)
@@ -180,12 +180,12 @@ export default function BillingPage() {
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to reactivate')
 
-      const res2 = await fetch(`/api/clinics/get?id=${clinic.id}`)
+      const res2 = await fetch(`/api/business/get?id=${clinic.id}`)
       if (res2.ok) {
         const data2 = await res2.json()
         if (data2.success && data2.clinic) {
           setRestaurant(data2.clinic)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(data2.clinic))
+          localStorage.setItem('tokenpe_business', JSON.stringify(data2.clinic))
         }
       }
     } catch (err) {
@@ -216,7 +216,7 @@ export default function BillingPage() {
 
   const percentage = planLimit === Infinity ? 0 : Math.min((todayCount / planLimit) * 100, 100)
 
-  const userRestaurants = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]') : []
+  const userRestaurants = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]') : []
   const oldestRestaurant = userRestaurants.length > 0
     ? userRestaurants.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userRestaurants[0])
     : clinic

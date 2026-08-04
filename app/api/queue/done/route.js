@@ -11,12 +11,12 @@ import { after } from 'next/server'
 export async function POST(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
         const {
-            clinicId,
+            businessId,
             clinicName,
             patientId,
             patientPhone,
@@ -25,19 +25,19 @@ export async function POST(req) {
             language
         } = await req.json()
 
-        if (clinicId !== session.clinicId) {
+        if (businessId !== session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 
         const phone = cleanPhone(patientPhone)
 
         // 1. Fetch clinic to check plan
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, code, subscription_status').eq('id', clinicId).single()
+        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, code, subscription_status').eq('id', businessId).single()
         const planId = clinic?.plan_id || 'starter'
 
         // 2. Mark done in DB immediately (block on this so UI updates accurately)
         const { error: dbError } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .update({ status: 'done', completed_at: new Date().toISOString() })
             .eq('id', patientId)
 

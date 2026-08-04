@@ -46,7 +46,7 @@ export default function BillingPage() {
 
       const today = getISTDateString()
 
-      const userClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]')
+      const userClinics = JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]')
       let queryParam = `clinicId=${clinicData.id}`
       if (userClinics.length > 0) {
         queryParam = `clinicIds=${userClinics.map(c => c.id).join(',')}`
@@ -122,7 +122,7 @@ export default function BillingPage() {
         name: 'TokenPe',
         description: `${PLAN_META[tier]?.name || tier} Plan Subscription`,
         image: `${window.location.origin}/logo-light.svg`,
-        prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.clinicPhone },
+        prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.businessPhone },
         theme: { color: '#065F46' },
         handler: () => pollForUpdate(clinic.id, tier),
         modal: { ondismiss: () => setUpgrading(null) }
@@ -216,7 +216,7 @@ export default function BillingPage() {
 
   const percentage = planLimit === Infinity ? 0 : Math.min((todayCount / planLimit) * 100, 100)
 
-  const userClinics = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_clinics') || '[]') : []
+  const userClinics = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]') : []
   const oldestClinic = userClinics.length > 0
     ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0])
     : clinic

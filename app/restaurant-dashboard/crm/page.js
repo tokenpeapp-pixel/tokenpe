@@ -51,15 +51,15 @@ export default function CRMPage() {
 
   useEffect(() => {
     async function load() {
-      const stored = localStorage.getItem('tokenpe_clinic')
-      if (!stored) { router.push('/login'); return }
+      const stored = localStorage.getItem('tokenpe_business')
+      if (!stored) { router.push('/restaurant-login'); return }
 
       const c = JSON.parse(stored)
       
       // Fetch fresh restaurant to get welcome_message
       let freshRestaurant = null
       try {
-        const res = await fetch(`/api/clinics/get?id=${c.id}`)
+        const res = await fetch(`/api/business/get?id=${c.id}`)
         if (res.ok) {
           const data = await res.json()
           if (data.success) freshRestaurant = data.clinic
@@ -75,7 +75,7 @@ export default function CRMPage() {
 
       // Load all branches for the branch selector
       try {
-        const storedRestaurants = localStorage.getItem('tokenpe_user_clinics')
+        const storedRestaurants = localStorage.getItem('tokenpe_user_businesses')
         if (storedRestaurants) setUserRestaurants(JSON.parse(storedRestaurants))
       } catch (e) { /* ignore */ }
 
@@ -95,7 +95,7 @@ export default function CRMPage() {
     // Fetch fresh restaurant data for the selected branch
     let freshRestaurant = null
     try {
-      const res = await fetch(`/api/clinics/get?id=${selected.id}`)
+      const res = await fetch(`/api/business/get?id=${selected.id}`)
       if (res.ok) {
         const data = await res.json()
         if (data.success) freshRestaurant = data.clinic
@@ -122,7 +122,7 @@ export default function CRMPage() {
     setSavingWelcome(true)
     setWelcomeSuccess(false)
     try {
-      const res = await fetch('/api/clinics/update', {
+      const res = await fetch('/api/business/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, welcomeMessage: welcomeMsg })
@@ -132,7 +132,7 @@ export default function CRMPage() {
         setTimeout(() => setWelcomeSuccess(false), 3000)
         const updated = { ...clinic, welcome_message: welcomeMsg }
         setRestaurant(updated)
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(updated))
+        localStorage.setItem('tokenpe_business', JSON.stringify(updated))
       }
     } catch (err) {
       alert('Error saving welcome message')
@@ -192,7 +192,7 @@ export default function CRMPage() {
       if (field === 'recall') payload.smartRecallEnabled = value
       if (field === 'meds') payload.smartMedsEnabled = value
       
-      const res = await fetch('/api/clinics/update', {
+      const res = await fetch('/api/business/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -204,9 +204,9 @@ export default function CRMPage() {
         if (field === 'meds') setFollowupMeds(value)
         
         const updates = field === 'recall' ? { smart_recall_enabled: value } : { smart_meds_enabled: value }
-        const stored = localStorage.getItem('tokenpe_clinic')
+        const stored = localStorage.getItem('tokenpe_business')
         if (stored) {
-          localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), ...updates }))
+          localStorage.setItem('tokenpe_business', JSON.stringify({ ...JSON.parse(stored), ...updates }))
         }
       } else {
         alert(data.error || 'Failed to save follow-up configuration')

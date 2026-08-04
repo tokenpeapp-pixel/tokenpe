@@ -4,7 +4,7 @@ import { getSession } from '../../../../lib/auth'
 export async function GET(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
@@ -15,13 +15,13 @@ export async function GET(req) {
             return Response.json({ success: false, message: 'Date is required' }, { status: 400 })
         }
 
-        const clinicId = session.clinicId
+        const businessId = session.businessId
 
         // Fetch patients for the specific date
         const { data: patients, error } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('*')
-            .eq('clinic_id', clinicId)
+            .eq('business_id', businessId)
             .eq('date', date)
             .order('joined_at', { ascending: true })
 

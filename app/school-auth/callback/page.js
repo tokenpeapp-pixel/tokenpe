@@ -45,11 +45,11 @@ function SchoolAuthCallbackContent() {
                 }
 
                 const finalSchoolData = data.clinic
-                localStorage.setItem('clinicCode', finalSchoolData.code)
-                localStorage.setItem('clinicPhone', finalSchoolData.phone || '0000000000')
+                localStorage.setItem('businessCode', finalSchoolData.code)
+                localStorage.setItem('businessPhone', finalSchoolData.phone || '0000000000')
                 localStorage.setItem('tokenpe_clinic', JSON.stringify(finalSchoolData))
                 if (data.userClinics) {
-                    localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
+                    localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
                 }
 
                 const targetDashboard = '/school-dashboard'

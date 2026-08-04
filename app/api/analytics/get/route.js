@@ -4,31 +4,31 @@ import { getSession } from '../../../../lib/auth'
 export async function GET(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
         const { searchParams } = new URL(req.url)
         const startDate = searchParams.get('startDate')
         const endDate = searchParams.get('endDate')
-        const requestedClinicId = searchParams.get('clinicId')
+        const requestedClinicId = searchParams.get('businessId')
 
-        let clinicId = session.clinicId
+        let businessId = session.businessId
 
-        if (requestedClinicId && requestedClinicId !== session.clinicId) {
+        if (requestedClinicId && requestedClinicId !== session.businessId) {
             // Verify ownership: both clinics must share the same email
-            const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
+            const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.businessId).single()
             const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', requestedClinicId).single()
             if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
                 return Response.json({ success: false, message: 'Unauthorized branch access' }, { status: 403 })
             }
-            clinicId = requestedClinicId
+            businessId = requestedClinicId
         }
 
         let query = supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('*')
-            .eq('clinic_id', clinicId)
+            .eq('business_id', businessId)
             
         if (startDate && endDate) {
             query = query.gte('date', startDate).lte('date', endDate)

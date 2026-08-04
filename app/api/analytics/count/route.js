@@ -3,24 +3,24 @@ import { supabaseAdmin } from '../../../../lib/supabase'
 export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url)
-        const clinicId = searchParams.get('clinicId')
-        const clinicIds = searchParams.get('clinicIds')
+        const businessId = searchParams.get('businessId')
+        const businessIds = searchParams.get('businessIds')
         const date = searchParams.get('date')
 
-        if ((!clinicId && !clinicIds) || !date) {
-            return Response.json({ success: false, message: 'Missing clinicId(s) or date' }, { status: 400 })
+        if ((!businessId && !businessIds) || !date) {
+            return Response.json({ success: false, message: 'Missing businessId(s) or date' }, { status: 400 })
         }
 
         let query = supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('*', { count: 'exact', head: true })
             .eq('date', date)
 
-        if (clinicIds) {
-            const ids = clinicIds.split(',')
+        if (businessIds) {
+            const ids = businessIds.split(',')
             query = query.in('clinic_id', ids)
         } else {
-            query = query.eq('clinic_id', clinicId)
+            query = query.eq('business_id', businessId)
         }
 
         const { count, error } = await query

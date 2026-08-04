@@ -43,9 +43,9 @@ export async function GET(req) {
         const dateStr3 = threeDaysAgo.toISOString().split('T')[0] // YYYY-MM-DD
 
         const { data: medsPatients } = await supabase
-          .from('patients')
+          .from('queue_entries')
           .select('phone, name, language')
-          .eq('clinic_id', clinic.id)
+          .eq('business_id', clinic.id)
           .eq('date', dateStr3)
           .eq('status', 'done')
 
@@ -74,9 +74,9 @@ export async function GET(req) {
         const dateStr90 = ninetyDaysAgo.toISOString().split('T')[0]
 
         const { data: recallPatients } = await supabase
-          .from('patients')
+          .from('queue_entries')
           .select('phone, name, language')
-          .eq('clinic_id', clinic.id)
+          .eq('business_id', clinic.id)
           .eq('date', dateStr90)
           .eq('status', 'done')
 

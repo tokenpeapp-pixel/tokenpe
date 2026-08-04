@@ -95,7 +95,7 @@ export async function POST(req) {
             const phone12 = customerPhone.startsWith('91') ? customerPhone : '91' + customerPhone
 
             const { data: recentPatient } = await supabaseAdmin
-                .from('patients')
+                .from('queue_entries')
                 .select('id, clinic_id')
                 .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                 .eq('status', 'done')
@@ -106,7 +106,7 @@ export async function POST(req) {
 
             if (recentPatient) {
                 await supabaseAdmin
-                    .from('patients')
+                    .from('queue_entries')
                     .update({ rating: directRating })
                     .eq('id', recentPatient.id)
 
@@ -137,7 +137,7 @@ export async function POST(req) {
                 const phone12 = customerPhone.startsWith('91') ? customerPhone : '91' + customerPhone
 
                 const { data: recentPatient } = await supabaseAdmin
-                    .from('patients')
+                    .from('queue_entries')
                     .select('id, clinic_id')
                     .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                     .eq('status', 'done')
@@ -148,7 +148,7 @@ export async function POST(req) {
 
                 if (recentPatient) {
                     await supabaseAdmin
-                        .from('patients')
+                        .from('queue_entries')
                         .update({ rating: visitRating })
                         .eq('id', recentPatient.id)
 
@@ -174,7 +174,7 @@ export async function POST(req) {
                 const phone12 = customerPhone.startsWith('91') ? customerPhone : '91' + customerPhone
 
                 const { data: recentPatient, error: crmErr } = await supabaseAdmin
-                    .from('patients')
+                    .from('queue_entries')
                     .select('id, clinic_id')
                     .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                     .order('joined_at', { ascending: false })
@@ -186,7 +186,7 @@ export async function POST(req) {
                 if (recentPatient) {
                     const feedbackText = parseCrmFeedbackText(textStr)
                     const { error: updateErr } = await supabaseAdmin
-                        .from('patients')
+                        .from('queue_entries')
                         .update({
                             crm_rating: crmRating,
                             feedback_text: feedbackText || null,
@@ -244,16 +244,16 @@ export async function POST(req) {
 
             // Accept clinic code variants + aggressively clean to handle mobile QR scanner bugs (e.g. JOIN%20CODE, JOIN+CODE, JOIN CITY HO 123)
             let rawCode = String(
-                pick(body, 'clinicCode', 'clinic_code', 'cliniccode', 'code', 'Code', 'JOIN') || ''
+                pick(body, 'businessCode', 'clinic_code', 'cliniccode', 'code', 'Code', 'JOIN') || ''
             )
             // 1. Decode any URL artifacts (in case the QR scanner failed to decode ?text=)
             // 2. Replace the word "JOIN" (case insensitive)
             // 3. Remove ALL non-alphanumeric characters (spaces, %, dashes, etc.)
             const cleanedCode = decodeURIComponent(rawCode).replace(/\+/g, ' ').replace(/JOIN/i, '').replace(/[^A-Z0-9]/gi, '')
             
-            const clinicCode = validateClinicCode(cleanedCode)
+            const businessCode = validateClinicCode(cleanedCode)
 
-            console.log(`[Join] phone=${maskPhone(phone)} | name=${maskName(name)} | lang=${language} | clinicCode=${clinicCode}`)
+            console.log(`[Join] phone=${maskPhone(phone)} | name=${maskName(name)} | lang=${language} | businessCode=${businessCode}`)
 
             if (!phone) {
                 console.error('[Join] ❌ No phone number in payload. Keys received:', Object.keys(body).join(', '))
@@ -278,7 +278,7 @@ export async function POST(req) {
                 }, { status: 200 })
             }
 
-            if (!clinicCode) {
+            if (!businessCode) {
                 console.error(`[Join] ❌ Invalid or missing clinic code. rawCode was: "${rawCode}"`)
                 return Response.json({
                     success: false,
@@ -291,11 +291,11 @@ export async function POST(req) {
             const { data: clinic, error: clinicError } = await supabase
                 .from('clinics')
                 .select('*')
-                .eq('code', clinicCode)
+                .eq('code', businessCode)
                 .single()
 
             if (clinicError || !clinic) {
-                console.error(`[Join] ❌ Clinic not found for code: "${clinicCode}"`, clinicError?.message)
+                console.error(`[Join] ❌ Clinic not found for code: "${businessCode}"`, clinicError?.message)
                 return Response.json({
                     success: false,
                     message: '❌ Invalid clinic code. Please scan the QR code again.',
@@ -350,9 +350,9 @@ export async function POST(req) {
             // Item 5: Rate limit joins (3 per phone per day, max 2 per same name)
             const cleanedPhone = cleanPhone(phone)
             const { data: existingJoins } = await supabase
-                .from('patients')
+                .from('queue_entries')
                 .select('name')
-                .eq('clinic_id', clinic.id)
+                .eq('business_id', clinic.id)
                 .eq('phone', cleanedPhone)
                 .eq('date', today)
 
@@ -383,15 +383,15 @@ export async function POST(req) {
                 { data: recentDone }
             ] = await Promise.all([
                 // Total patients today
-                supabaseAdmin.from('patients').select('*', { count: 'exact', head: true })
-                    .eq('clinic_id', clinic.id).eq('date', today),
+                supabaseAdmin.from('queue_entries').select('*', { count: 'exact', head: true })
+                    .eq('business_id', clinic.id).eq('date', today),
                 // People waiting ahead
-                supabaseAdmin.from('patients').select('*', { count: 'exact', head: true })
-                    .eq('clinic_id', clinic.id).eq('date', today).in('status', ['waiting', 'called']),
+                supabaseAdmin.from('queue_entries').select('*', { count: 'exact', head: true })
+                    .eq('business_id', clinic.id).eq('date', today).in('status', ['waiting', 'called']),
                 // Recent done for dynamic wait time
                 planId !== 'starter' 
-                    ? supabaseAdmin.from('patients').select('completed_at')
-                        .eq('clinic_id', clinic.id).eq('date', today).eq('status', 'done')
+                    ? supabaseAdmin.from('queue_entries').select('completed_at')
+                        .eq('business_id', clinic.id).eq('date', today).eq('status', 'done')
                         .not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(10)
                     : Promise.resolve({ data: null })
             ])
@@ -443,7 +443,7 @@ export async function POST(req) {
 
             // 3. Insert patient into queue + send voice note — in parallel
             const insertPayload = {
-                clinic_id: clinic.id,
+                business_id: clinic.id,
                 token: tokenNumber,
                 phone: cleanedPhone,
                 name: name,
@@ -455,7 +455,7 @@ export async function POST(req) {
             }
             console.log(`[Join] Inserting patient: token=${tokenNumber}`)
 
-            const { error: insertError } = await supabaseAdmin.from('patients').insert(insertPayload)
+            const { error: insertError } = await supabaseAdmin.from('queue_entries').insert(insertPayload)
 
             if (insertError) {
                 console.error('[Join] ❌ Insert failed:', insertError.message, insertError.details)

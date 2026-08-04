@@ -4,7 +4,7 @@ import { getSession } from '../../../../lib/auth'
 export async function POST(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
@@ -16,10 +16,10 @@ export async function POST(req) {
         }
 
         const { error } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .update({ status: 'skipped' })
             .eq('id', patientId)
-            .eq('clinic_id', session.clinicId) // Ensure they only skip their own patients
+            .eq('business_id', session.businessId) // Ensure they only skip their own patients
 
         if (error) {
             return Response.json({ success: false, message: 'Failed to skip patient' }, { status: 500 })

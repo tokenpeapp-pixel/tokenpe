@@ -52,9 +52,9 @@ export async function GET(req) {
         const dateStr = trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
         const trialStart = new Date(trialEnd.getTime() - 7 * 24 * 60 * 60 * 1000)
         const { count: totalPatients } = await supabase
-          .from('patients')
+          .from('queue_entries')
           .select('*', { count: 'exact', head: true })
-          .eq('clinic_id', clinic.id)
+          .eq('business_id', clinic.id)
           .gte('joined_at', trialStart.toISOString())
 
         const avgPerDay = Math.round((totalPatients || 0) / 7)

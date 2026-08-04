@@ -52,12 +52,12 @@ _Powered by TokenPe_`
 export async function POST(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
         const {
-            clinicId,
+            businessId,
             clinicName,
             patientId,
             patientPhone,
@@ -66,7 +66,7 @@ export async function POST(req) {
             language
         } = await req.json()
 
-        if (clinicId !== session.clinicId) {
+        if (businessId !== session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 
@@ -75,10 +75,10 @@ export async function POST(req) {
 
         // 1. Fetch clinic to check plan, Mark patient as CALLED, fetch waiting list — in parallel
         const [ { data: clinic }, , { data: waitingPatients }] = await Promise.all([
-            supabaseAdmin.from('clinics').select('plan_id').eq('id', clinicId).single(),
-            supabaseAdmin.from('patients').update({ status: 'called' }).eq('id', patientId),
-            supabaseAdmin.from('patients').select('*')
-                .eq('clinic_id', clinicId)
+            supabaseAdmin.from('clinics').select('plan_id').eq('id', businessId).single(),
+            supabaseAdmin.from('queue_entries').update({ status: 'called' }).eq('id', patientId),
+            supabaseAdmin.from('queue_entries').select('*')
+                .eq('business_id', businessId)
                 .eq('status', 'waiting')
                 .eq('date', today)
                 .order('joined_at', { ascending: true })

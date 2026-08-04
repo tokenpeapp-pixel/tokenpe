@@ -4,17 +4,17 @@ import { getSession } from '../../../../lib/auth'
 export async function GET(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
-        const clinicId = session.clinicId
+        const businessId = session.businessId
 
         // Fetch the current clinic (source of truth for vertical + identity)
         const { data: clinic, error: clinicError } = await supabaseAdmin
             .from('clinics')
             .select('*')
-            .eq('id', clinicId)
+            .eq('id', businessId)
             .single()
 
         if (clinicError || !clinic) {

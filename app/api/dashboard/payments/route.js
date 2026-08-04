@@ -4,20 +4,20 @@ import { getSession } from '../../../../lib/auth'
 export async function GET(req) {
     try {
         const session = await getSession()
-        if (!session || !session.clinicId) {
+        if (!session || !session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
         }
 
         const { searchParams } = new URL(req.url)
         const searchQuery = searchParams.get('search') || ''
-        const clinicId = session.clinicId
+        const businessId = session.businessId
 
         if (searchQuery) {
             // Global search for patients (for payments view)
             const { data: patients, error } = await supabaseAdmin
-                .from('patients')
+                .from('queue_entries')
                 .select('*')
-                .eq('clinic_id', clinicId)
+                .eq('business_id', businessId)
                 .or(`name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,token.ilike.%${searchQuery}%`)
                 .order('joined_at', { ascending: false })
                 .limit(100)
@@ -27,18 +27,18 @@ export async function GET(req) {
         } else {
             // Default view: fetch all pending + recent completed
             const { data: pendingPatients, error: pendingErr } = await supabaseAdmin
-                .from('patients')
+                .from('queue_entries')
                 .select('*')
-                .eq('clinic_id', clinicId)
+                .eq('business_id', businessId)
                 .neq('payment_status', 'completed')
                 .order('joined_at', { ascending: false })
 
             if (pendingErr) throw pendingErr
 
             const { data: completedPatients, error: completedErr } = await supabaseAdmin
-                .from('patients')
+                .from('queue_entries')
                 .select('*')
-                .eq('clinic_id', clinicId)
+                .eq('business_id', businessId)
                 .eq('payment_status', 'completed')
                 .order('joined_at', { ascending: false })
                 .limit(100)

@@ -136,7 +136,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
 
     if (codeChanged) {
       // Check uniqueness via API
-      const res = await fetch('/api/clinics/code', {
+      const res = await fetch('/api/business/code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic?.id, newCode: clean })
@@ -147,13 +147,13 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         setCodeSaving(false)
         return
       }
-      localStorage.setItem('clinicCode', clean)
+      localStorage.setItem('businessCode', clean)
       onCodeUpdate(clean)
     }
 
     if (addressChanged) {
       // Save address via API
-      await fetch('/api/clinics/update', {
+      await fetch('/api/business/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, address: addressInput })
@@ -162,9 +162,9 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
     }
 
     // Update localStorage
-    const stored = localStorage.getItem('tokenpe_clinic')
+    const stored = localStorage.getItem('tokenpe_business')
     if (stored) {
-      try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean, address: addressInput })) } catch (_) { }
+      try { localStorage.setItem('tokenpe_business', JSON.stringify({ ...JSON.parse(stored), code: clean, address: addressInput })) } catch (_) { }
     }
 
     setCodeSaving(false)
@@ -184,16 +184,16 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
       if (error) throw error
 
       const { data: { publicUrl } } = supabase.storage.from('voice-notes').getPublicUrl(fileName)
-      await fetch('/api/clinics/update', {
+      await fetch('/api/business/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, logo_url: publicUrl })
       })
 
       clinic.logo_url = publicUrl // mutate locally for immediate render
-      const stored = localStorage.getItem('tokenpe_clinic')
+      const stored = localStorage.getItem('tokenpe_business')
       if (stored) {
-        localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), logo_url: publicUrl }))
+        localStorage.setItem('tokenpe_business', JSON.stringify({ ...JSON.parse(stored), logo_url: publicUrl }))
       }
     } catch (err) {
       alert('Error uploading logo: ' + err.message)
@@ -204,7 +204,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
   async function saveAddress() {
     setSavingAddress(true)
     try {
-      const res = await fetch('/api/clinics/update', {
+      const res = await fetch('/api/business/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, address: addressInput })
@@ -213,9 +213,9 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         setAddressSuccess(true)
         setTimeout(() => setAddressSuccess(false), 3000)
         clinic.address = addressInput
-        const stored = localStorage.getItem('tokenpe_clinic')
+        const stored = localStorage.getItem('tokenpe_business')
         if (stored) {
-          localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), address: addressInput }))
+          localStorage.setItem('tokenpe_business', JSON.stringify({ ...JSON.parse(stored), address: addressInput }))
         }
       }
     } catch (e) { }
@@ -464,7 +464,7 @@ function DiscoveryProfileModal({ clinic, onClose, onSuccess }) {
     
     setSaving(true)
     try {
-      const res = await fetch('/api/clinics/update', {
+      const res = await fetch('/api/business/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, name: clinicName, specialty: finalSpecialty, city, area, phone, lat, lng })
@@ -627,10 +627,10 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadClinic() {
       // ── Step 1: Paint UI instantly from localStorage cache ──────────────
-      const cachedClinic = localStorage.getItem('tokenpe_clinic')
+      const cachedClinic = localStorage.getItem('tokenpe_business')
 
       try {
-        const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics')) || []
+        const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_businesses')) || []
         setUserClinics(storedUserClinics)
       } catch (e) { }
 
@@ -645,13 +645,13 @@ export default function Dashboard() {
 
       // ── Step 2: Refresh clinic from Supabase in background ──────────────
       try {
-        const res = await fetch('/api/dashboard/init')
+        const res = await fetch('/api/generic-dashboard/init')
         if (!res.ok) throw new Error('Init failed')
         const data = await res.json()
         if (data.success && data.clinic) {
-          localStorage.setItem('clinicCode', data.clinic.code)
-          localStorage.setItem('clinicPhone', data.clinic.phone)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
+          localStorage.setItem('businessCode', data.clinic.code)
+          localStorage.setItem('businessPhone', data.clinic.phone)
+          localStorage.setItem('tokenpe_business', JSON.stringify(data.clinic))
 
           // Only trigger a re-render if something actually changed
           if (JSON.stringify(data.clinic) !== JSON.stringify(parsedCache)) {
@@ -659,7 +659,7 @@ export default function Dashboard() {
           }
 
           if (data.userClinics) {
-            localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
+            localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
             setUserClinics(data.userClinics)
           }
 
@@ -669,9 +669,9 @@ export default function Dashboard() {
         }
       } catch (e) {
         if (!parsedCache) {
-          localStorage.removeItem('clinicCode')
-          localStorage.removeItem('clinicPhone')
-          localStorage.removeItem('tokenpe_clinic')
+          localStorage.removeItem('businessCode')
+          localStorage.removeItem('businessPhone')
+          localStorage.removeItem('tokenpe_business')
           const vertical = localStorage.getItem('tokenpe_vertical')
           if (vertical === 'salon') router.push('/salon-login')
           else if (vertical === 'restaurant') router.push('/restaurant-login')
@@ -694,7 +694,7 @@ export default function Dashboard() {
     async function loadPatients() {
       setLoading(true)
       try {
-        const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
+        const res = await fetch(`/api/generic-dashboard/get?date=${currentDate}`)
         if (res.ok) {
           const data = await res.json()
           if (data.success) setPatients(data.patients || [])
@@ -712,7 +712,7 @@ export default function Dashboard() {
     if (!clinicId) return
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
+        const res = await fetch(`/api/generic-dashboard/get?date=${currentDate}`)
         if (res.ok) {
           const data = await res.json()
           if (data.success) {
@@ -762,7 +762,7 @@ export default function Dashboard() {
       async function fetchHistory() {
         setLoadingHistory(true)
         try {
-          const res = await fetch(`/api/dashboard/get?date=${historyDate}`)
+          const res = await fetch(`/api/generic-dashboard/get?date=${historyDate}`)
           if (res.ok) {
             const data = await res.json()
             if (data.success) setHistoryPatients(data.patients || [])
@@ -788,7 +788,7 @@ export default function Dashboard() {
     // Sync the new code into the userClinics array for the branch switcher
     setUserClinics(prevClinics => {
       const updated = prevClinics.map(c => c.id === clinic.id ? { ...c, code: newCode } : c)
-      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updated))
+      localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updated))
       return updated
     })
 
@@ -805,13 +805,13 @@ export default function Dashboard() {
     setClinic(targetClinic)
     setPatients([])
     setLoading(true)
-    localStorage.setItem('clinicCode', targetClinic.code)
-    localStorage.setItem('clinicPhone', targetClinic.phone)
-    localStorage.setItem('tokenpe_clinic', JSON.stringify(targetClinic))
+    localStorage.setItem('businessCode', targetClinic.code)
+    localStorage.setItem('businessPhone', targetClinic.phone)
+    localStorage.setItem('tokenpe_business', JSON.stringify(targetClinic))
     addToast(`Switched to ${targetClinic.name}`, 'done')
 
     // Update session cookie and wait for it
-    await fetch('/api/auth/switch', {
+    await fetch('/api/business-auth/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetClinicId: targetClinic.id })
@@ -819,7 +819,7 @@ export default function Dashboard() {
 
     // Fetch fresh patients for the new branch securely
     try {
-      const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
+      const res = await fetch(`/api/generic-dashboard/get?date=${currentDate}`)
       if (res.ok) {
         const data = await res.json()
         if (data.success) setPatients(data.patients || [])
@@ -837,7 +837,7 @@ export default function Dashboard() {
     if (!editingBranchName.trim()) return
     setManagingBranch(true)
     try {
-      const res = await fetch('/api/clinics/update', {
+      const res = await fetch('/api/business/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: branchId, name: editingBranchName })
@@ -846,11 +846,11 @@ export default function Dashboard() {
       if (data.success) {
         const updatedUserClinics = userClinics.map(c => c.id === branchId ? { ...c, name: editingBranchName } : c)
         setUserClinics(updatedUserClinics)
-        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
+        localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updatedUserClinics))
         if (clinic?.id === branchId) {
           const updatedClinic = { ...clinic, name: editingBranchName }
           setClinic(updatedClinic)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+          localStorage.setItem('tokenpe_business', JSON.stringify(updatedClinic))
         }
         setEditingBranchId(null)
       } else {
@@ -867,7 +867,7 @@ export default function Dashboard() {
     addToast('Deleting branch...', 'notify')
     setManagingBranch(true)
     try {
-      const res = await fetch('/api/clinics/delete', {
+      const res = await fetch('/api/business/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: branchId })
@@ -876,7 +876,7 @@ export default function Dashboard() {
       if (data.success) {
         const updatedUserClinics = userClinics.filter(c => c.id !== branchId)
         setUserClinics(updatedUserClinics)
-        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
+        localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updatedUserClinics))
         addToast('Branch deleted successfully', 'done')
         if (clinic?.id === branchId) {
           await switchToBranch(updatedUserClinics[0])
@@ -893,11 +893,11 @@ export default function Dashboard() {
   // ── Logout ──────────────────────────────────────────────────────────────
   async function logout() {
     const vertical = localStorage.getItem('tokenpe_vertical')
-    localStorage.removeItem('clinicCode')
-    localStorage.removeItem('clinicPhone')
-    localStorage.removeItem('tokenpe_clinic')
-    localStorage.removeItem('tokenpe_user_clinics')
-    await fetch('/api/auth/logout', { method: 'POST' })
+    localStorage.removeItem('businessCode')
+    localStorage.removeItem('businessPhone')
+    localStorage.removeItem('tokenpe_business')
+    localStorage.removeItem('tokenpe_user_businesses')
+    await fetch('/api/business-auth/logout', { method: 'POST' })
     await supabase.auth.signOut()
     
     if (vertical === 'salon') router.push('/salon-login')
@@ -920,7 +920,7 @@ export default function Dashboard() {
 
     // Attempt DB update in background via backend API
     try {
-      const res = await fetch('/api/clinic/pause', {
+      const res = await fetch('/api/business/pause', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, queuePaused: newStatus })
@@ -948,16 +948,16 @@ export default function Dashboard() {
     setClinic(prev => ({ ...prev, closed_today_date: today }))
     
     try {
-      const res = await fetch('/api/clinic/close', {
+      const res = await fetch('/api/business/close', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id })
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        const stored = localStorage.getItem('tokenpe_clinic')
+        const stored = localStorage.getItem('tokenpe_business')
         if (stored) {
-          try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: today })) } catch (_) {}
+          try { localStorage.setItem('tokenpe_business', JSON.stringify({ ...JSON.parse(stored), closed_today_date: today })) } catch (_) {}
         }
         addToast('🔴 Clinic closed for today.', 'notify')
       } else {
@@ -980,16 +980,16 @@ export default function Dashboard() {
     setClinic(prev => ({ ...prev, closed_today_date: null }))
     
     try {
-      const res = await fetch('/api/clinic/open', {
+      const res = await fetch('/api/business/open', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id })
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        const stored = localStorage.getItem('tokenpe_clinic')
+        const stored = localStorage.getItem('tokenpe_business')
         if (stored) {
-          try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), closed_today_date: null })) } catch (_) {}
+          try { localStorage.setItem('tokenpe_business', JSON.stringify({ ...JSON.parse(stored), closed_today_date: null })) } catch (_) {}
         }
         addToast(<><CheckCircle2 className="inline-block w-4 h-4" /> Clinic is now Open again!</>, 'done')
       } else {
@@ -1010,7 +1010,7 @@ export default function Dashboard() {
     
     // 2. Persist update in database via API
     try {
-      const res = await fetch('/api/queue/update-payment', {
+      const res = await fetch('/api/generic-queue/update-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patientId, updates })
@@ -1023,7 +1023,7 @@ export default function Dashboard() {
       addToast('Failed to save payment changes. Reverting...', 'error')
       
       // Revert local state by refetching patients
-      const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
+      const res = await fetch(`/api/generic-dashboard/get?date=${currentDate}`)
       if (res.ok) {
         const data = await res.json()
         if (data.success) setPatients(data.patients || [])
@@ -1041,7 +1041,7 @@ export default function Dashboard() {
     addToast(`Calling ${next.name || next.token} — notifications & queue alerts sent!`, 'call')
 
     // Call unified backend queue next API to process turn notifications and relative queue alerts!
-    const res = await fetch('/api/queue/next', {
+    const res = await fetch('/api/generic-queue/next', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1066,7 +1066,7 @@ export default function Dashboard() {
     sounds.done()
     addToast(`${patient.name || patient.token} consultation done`, 'done')
 
-    const res = await fetch('/api/queue/done', {
+    const res = await fetch('/api/generic-queue/done', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1091,7 +1091,7 @@ export default function Dashboard() {
     sounds.skip()
     addToast(`${patient.name || patient.token} skipped`, 'skip')
 
-    const res = await fetch('/api/queue/skip', {
+    const res = await fetch('/api/generic-queue/skip', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ patientId: patient.id })
@@ -1113,7 +1113,7 @@ export default function Dashboard() {
     addToast(`🚨 Emergency Call: ${patient.name || patient.token} called next!`, 'call')
 
     try {
-      const res = await fetch('/api/queue/next', {
+      const res = await fetch('/api/generic-queue/next', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1143,7 +1143,7 @@ export default function Dashboard() {
     sounds.notify()
     addToast(`Manual text & voice note alert sent to ${patient.name || patient.token}`, 'notify')
 
-    const res = await fetch('/api/queue/notify', {
+    const res = await fetch('/api/generic-queue/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1183,7 +1183,7 @@ export default function Dashboard() {
         prefill: {
           name: data.clinicName,
           email: data.clinicEmail,
-          contact: data.clinicPhone,
+          contact: data.businessPhone,
         },
         theme: { color: '#065F46' },
         handler: async function (response) {
@@ -1191,7 +1191,7 @@ export default function Dashboard() {
           let attempts = 0
           const poll = async () => {
             attempts++
-            const res = await fetch(`/api/clinics/get?id=${clinic.id}`)
+            const res = await fetch(`/api/business/get?id=${clinic.id}`)
             let fresh = null
             if (res.ok) {
               const data = await res.json()
@@ -1199,7 +1199,7 @@ export default function Dashboard() {
             }
             if (fresh) {
               setClinic(fresh)
-              localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
+              localStorage.setItem('tokenpe_business', JSON.stringify(fresh))
               if (fresh.current_period_end || attempts >= maxAttempts) {
                 setUpgrading(null)
                 setShowUpgradeModal(false)
@@ -1263,7 +1263,7 @@ export default function Dashboard() {
     const token = `T${String(patients.length + 1).padStart(3, '0')}`
 
     try {
-      const res = await fetch('/api/queue/add', {
+      const res = await fetch('/api/generic-queue/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2038,7 +2038,7 @@ export default function Dashboard() {
                   if (!newBranchName.trim()) return
                   setAddingBranch(true)
                   try {
-                    const res = await fetch('/api/clinics/create', {
+                    const res = await fetch('/api/business/create', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ clinicName: newBranchName, email: clinic.email, phone: clinic.phone })
@@ -2047,7 +2047,7 @@ export default function Dashboard() {
                     if (data.success) {
                       const updatedClinics = [...userClinics, data.clinic]
                       setUserClinics(updatedClinics)
-                      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedClinics))
+                      localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updatedClinics))
                       setAddingBranch(false)
                       // Smooth switch to new branch — no reload
                       await switchToBranch(data.clinic)
@@ -2152,8 +2152,8 @@ export default function Dashboard() {
           onSuccess={(updates) => {
             const updatedClinic = { ...clinic, ...updates }
             setClinic(updatedClinic)
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
-            localStorage.setItem('clinicPhone', updatedClinic.phone)
+            localStorage.setItem('tokenpe_business', JSON.stringify(updatedClinic))
+            localStorage.setItem('businessPhone', updatedClinic.phone)
             addToast('Profile completed! You are now visible to patients.', 'done')
           }}
         />
@@ -2649,7 +2649,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
 
     setRemindingId(patient.id)
     try {
-      const res = await fetch('/api/queue/remind-payment', {
+      const res = await fetch('/api/generic-queue/remind-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patientId: patient.id })
@@ -2672,7 +2672,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
   const fetchPayments = async (query = '') => {
     setLoadingGlobal(true)
     try {
-      const url = query ? `/api/dashboard/payments?search=${encodeURIComponent(query)}` : '/api/dashboard/payments'
+      const url = query ? `/api/generic-dashboard/payments?search=${encodeURIComponent(query)}` : '/api/generic-dashboard/payments'
       const res = await fetch(url)
       const data = await res.json()
       if (data.success) {
@@ -2706,7 +2706,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
     // Call the API directly — do NOT delegate to parent's onUpdatePayment
     // which is tied to today's queue state and would cause a revert error
     try {
-      const res = await fetch('/api/queue/update-payment', {
+      const res = await fetch('/api/generic-queue/update-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patientId: id, updates })

@@ -17,14 +17,14 @@ export async function POST(req) {
       elite:   process.env.RAZORPAY_PLAN_ELITE,
     }
 
-    const { clinicId, planTier } = await req.json()
+    const { businessId, planTier } = await req.json()
 
-    if (!clinicId || !planTier) {
-      return Response.json({ error: 'Missing clinicId or planTier' }, { status: 400 })
+    if (!businessId || !planTier) {
+      return Response.json({ error: 'Missing businessId or planTier' }, { status: 400 })
     }
 
     const session = await getSession()
-    if (!session || session.clinicId !== clinicId) {
+    if (!session || session.businessId !== businessId) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -41,7 +41,7 @@ export async function POST(req) {
     )
     
     const { data: clinic, error: cErr } = await supabaseAdmin
-      .from('clinics').select('name, email, phone').eq('id', clinicId).single()
+      .from('clinics').select('name, email, phone').eq('id', businessId).single()
 
     if (cErr || !clinic) {
       return Response.json({ error: 'Clinic not found' }, { status: 404 })
@@ -54,7 +54,7 @@ export async function POST(req) {
       quantity: 1,
       customer_notify: 1,
       notes: {
-        clinic_id: clinicId,
+        business_id: businessId,
         plan_tier: planTier,
         clinic_name: clinic.name,
       }
@@ -64,7 +64,7 @@ export async function POST(req) {
       subscriptionId: subscription.id,
       clinicName: clinic.name,
       clinicEmail: clinic.email,
-      clinicPhone: clinic.phone,
+      businessPhone: clinic.phone,
     })
 
   } catch (err) {

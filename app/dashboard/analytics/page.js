@@ -45,7 +45,7 @@ export default function AnalyticsPage() {
 
       // Load all branches for the branch selector
       try {
-        const storedClinics = localStorage.getItem('tokenpe_user_clinics')
+        const storedClinics = localStorage.getItem('tokenpe_user_businesses')
         if (storedClinics) setUserClinics(JSON.parse(storedClinics))
       } catch (e) { /* ignore */ }
       

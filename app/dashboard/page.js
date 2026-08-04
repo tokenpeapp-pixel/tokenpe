@@ -147,7 +147,7 @@ function QRModal({ clinic, onClose, onCodeUpdate, router }) {
         setCodeSaving(false)
         return
       }
-      localStorage.setItem('clinicCode', clean)
+      localStorage.setItem('businessCode', clean)
       onCodeUpdate(clean)
     }
 
@@ -630,7 +630,7 @@ export default function Dashboard() {
       const cachedClinic = localStorage.getItem('tokenpe_clinic')
 
       try {
-        const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_clinics')) || []
+        const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_businesses')) || []
         setUserClinics(storedUserClinics)
       } catch (e) { }
 
@@ -649,8 +649,8 @@ export default function Dashboard() {
         if (!res.ok) throw new Error('Init failed')
         const data = await res.json()
         if (data.success && data.clinic) {
-          localStorage.setItem('clinicCode', data.clinic.code)
-          localStorage.setItem('clinicPhone', data.clinic.phone)
+          localStorage.setItem('businessCode', data.clinic.code)
+          localStorage.setItem('businessPhone', data.clinic.phone)
           localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
 
           // Only trigger a re-render if something actually changed
@@ -659,7 +659,7 @@ export default function Dashboard() {
           }
 
           if (data.userClinics) {
-            localStorage.setItem('tokenpe_user_clinics', JSON.stringify(data.userClinics))
+            localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
             setUserClinics(data.userClinics)
           }
 
@@ -669,8 +669,8 @@ export default function Dashboard() {
         }
       } catch (e) {
         if (!parsedCache) {
-          localStorage.removeItem('clinicCode')
-          localStorage.removeItem('clinicPhone')
+          localStorage.removeItem('businessCode')
+          localStorage.removeItem('businessPhone')
           localStorage.removeItem('tokenpe_clinic')
           const vertical = localStorage.getItem('tokenpe_vertical')
           if (vertical === 'salon') router.push('/salon-login')
@@ -788,7 +788,7 @@ export default function Dashboard() {
     // Sync the new code into the userClinics array for the branch switcher
     setUserClinics(prevClinics => {
       const updated = prevClinics.map(c => c.id === clinic.id ? { ...c, code: newCode } : c)
-      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updated))
+      localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updated))
       return updated
     })
 
@@ -805,13 +805,13 @@ export default function Dashboard() {
     setClinic(targetClinic)
     setPatients([])
     setLoading(true)
-    localStorage.setItem('clinicCode', targetClinic.code)
-    localStorage.setItem('clinicPhone', targetClinic.phone)
+    localStorage.setItem('businessCode', targetClinic.code)
+    localStorage.setItem('businessPhone', targetClinic.phone)
     localStorage.setItem('tokenpe_clinic', JSON.stringify(targetClinic))
     addToast(`Switched to ${targetClinic.name}`, 'done')
 
     // Update session cookie and wait for it
-    await fetch('/api/auth/switch', {
+    await fetch('/api/business-auth/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetClinicId: targetClinic.id })
@@ -846,7 +846,7 @@ export default function Dashboard() {
       if (data.success) {
         const updatedUserClinics = userClinics.map(c => c.id === branchId ? { ...c, name: editingBranchName } : c)
         setUserClinics(updatedUserClinics)
-        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
+        localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updatedUserClinics))
         if (clinic?.id === branchId) {
           const updatedClinic = { ...clinic, name: editingBranchName }
           setClinic(updatedClinic)
@@ -876,7 +876,7 @@ export default function Dashboard() {
       if (data.success) {
         const updatedUserClinics = userClinics.filter(c => c.id !== branchId)
         setUserClinics(updatedUserClinics)
-        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserClinics))
+        localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updatedUserClinics))
         addToast('Branch deleted successfully', 'done')
         if (clinic?.id === branchId) {
           await switchToBranch(updatedUserClinics[0])
@@ -893,11 +893,11 @@ export default function Dashboard() {
   // ── Logout ──────────────────────────────────────────────────────────────
   async function logout() {
     const vertical = localStorage.getItem('tokenpe_vertical')
-    localStorage.removeItem('clinicCode')
-    localStorage.removeItem('clinicPhone')
+    localStorage.removeItem('businessCode')
+    localStorage.removeItem('businessPhone')
     localStorage.removeItem('tokenpe_clinic')
-    localStorage.removeItem('tokenpe_user_clinics')
-    await fetch('/api/auth/logout', { method: 'POST' })
+    localStorage.removeItem('tokenpe_user_businesses')
+    await fetch('/api/business-auth/logout', { method: 'POST' })
     await supabase.auth.signOut()
     
     if (vertical === 'salon') router.push('/salon-login')
@@ -920,7 +920,7 @@ export default function Dashboard() {
 
     // Attempt DB update in background via backend API
     try {
-      const res = await fetch('/api/clinic/pause', {
+      const res = await fetch('/api/business/pause', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, queuePaused: newStatus })
@@ -948,7 +948,7 @@ export default function Dashboard() {
     setClinic(prev => ({ ...prev, closed_today_date: today }))
     
     try {
-      const res = await fetch('/api/clinic/close', {
+      const res = await fetch('/api/business/close', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id })
@@ -980,7 +980,7 @@ export default function Dashboard() {
     setClinic(prev => ({ ...prev, closed_today_date: null }))
     
     try {
-      const res = await fetch('/api/clinic/open', {
+      const res = await fetch('/api/business/open', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id })
@@ -1183,7 +1183,7 @@ export default function Dashboard() {
         prefill: {
           name: data.clinicName,
           email: data.clinicEmail,
-          contact: data.clinicPhone,
+          contact: data.businessPhone,
         },
         theme: { color: '#065F46' },
         handler: async function (response) {
@@ -2047,7 +2047,7 @@ export default function Dashboard() {
                     if (data.success) {
                       const updatedClinics = [...userClinics, data.clinic]
                       setUserClinics(updatedClinics)
-                      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedClinics))
+                      localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updatedClinics))
                       setAddingBranch(false)
                       // Smooth switch to new branch — no reload
                       await switchToBranch(data.clinic)
@@ -2153,7 +2153,7 @@ export default function Dashboard() {
             const updatedClinic = { ...clinic, ...updates }
             setClinic(updatedClinic)
             localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
-            localStorage.setItem('clinicPhone', updatedClinic.phone)
+            localStorage.setItem('businessPhone', updatedClinic.phone)
             addToast('Profile completed! You are now visible to patients.', 'done')
           }}
         />

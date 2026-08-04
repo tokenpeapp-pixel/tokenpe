@@ -35,9 +35,9 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     async function load() {
-      const stored = localStorage.getItem('tokenpe_clinic')
+      const stored = localStorage.getItem('tokenpe_business')
       if (!stored) {
-        router.push('/login')
+        router.push('/restaurant-login')
         return
       }
       const c = JSON.parse(stored)
@@ -45,7 +45,7 @@ export default function AnalyticsPage() {
 
       // Load all branches for the branch selector
       try {
-        const storedRestaurants = localStorage.getItem('tokenpe_user_clinics')
+        const storedRestaurants = localStorage.getItem('tokenpe_user_businesses')
         if (storedRestaurants) setUserRestaurants(JSON.parse(storedRestaurants))
       } catch (e) { /* ignore */ }
       
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
     }
 
     // Fetch this period
-    let url = `/api/analytics/get?clinicId=${c.id}&startDate=${cutoffDate}`
+    let url = `/api/generic-analytics/get?clinicId=${c.id}&startDate=${cutoffDate}`
     if (range !== 'today') {
       url += `&endDate=${endDate}`
     }
@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
       const lastEnd = getISTDateString(prevEnd)
 
       try {
-        const res2 = await fetch(`/api/analytics/get?clinicId=${c.id}&startDate=${lastCutoff}&endDate=${lastEnd}`)
+        const res2 = await fetch(`/api/generic-analytics/get?clinicId=${c.id}&startDate=${lastCutoff}&endDate=${lastEnd}`)
         if (res2.ok) {
           const data2 = await res2.json()
           if (data2.success) lastPeriodData = data2.data || []
@@ -119,7 +119,7 @@ export default function AnalyticsPage() {
     
     // Fetch overall feedback
     try {
-      const resFeedback = await fetch(`/api/analytics/feedback?clinicId=${c.id}`)
+      const resFeedback = await fetch(`/api/generic-analytics/feedback?clinicId=${c.id}`)
       if (resFeedback.ok) {
         const fbData = await resFeedback.json()
         if (fbData.success) setOverallFeedback(fbData.feedback)

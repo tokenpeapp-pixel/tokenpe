@@ -72,7 +72,7 @@ export async function GET(req) {
                     phone: '9999999999',
                     name: 'Debug Test Patient',
                     language: 'en',
-                    clinicCode: testJoin.toUpperCase()
+                    businessCode: testJoin.toUpperCase()
                 })
             })
             const data = await res.json()
@@ -90,7 +90,7 @@ export async function GET(req) {
     // ── Default: show env check + list clinics ───────────────────────────────
     const { data: clinics } = await supabaseAdmin.from('clinics').select('id, name, code, email')
     const { data: recentPatients } = await supabaseAdmin
-        .from('patients')
+        .from('queue_entries')
         .select('id, name, phone, token, status, clinic_id, date')
         .order('joined_at', { ascending: false })
         .limit(5)

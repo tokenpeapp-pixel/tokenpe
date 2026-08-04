@@ -45,6 +45,14 @@ export default function SchoolCRMPage() {
   const [followupRecall, setFollowupRecall] = useState(false)
   const [savingFollowups, setSavingFollowups] = useState(false)
 
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   useEffect(() => {
     async function load() {
       const stored = localStorage.getItem('tokenpe_clinic')
@@ -215,9 +223,9 @@ export default function SchoolCRMPage() {
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
 
       {/* ── HEADER ── */}
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: isMobile ? '10px 12px' : '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
         <button onClick={() => router.push('/school-dashboard')} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
-          <ChevronLeft size={16} /> Back
+          <ChevronLeft size={16} />{isMobile ? null : ' Back'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #7C3AED 100%)', borderRadius: 8, padding: 8 }}>
@@ -225,11 +233,11 @@ export default function SchoolCRMPage() {
           </div>
           <div>
             <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: '#1B2A4A' }}>Student Directory (CRM)</div>
-            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600 }}>{clinic?.name} — Broadcasts & Guest Engagement</div>
+            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600, display: isMobile ? 'none' : 'block' }}>{clinic?.name} — Broadcasts & Guest Engagement</div>
           </div>
         </div>
         {/* Summary badges */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ marginLeft: 'auto', display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#EFF6FF', padding: '6px 12px', borderRadius: 6, border: '1px solid #BFDBFE' }}>
             <Users size={13} color="#2563EB" />
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1D4ED8' }}>{totalStudents} Students</span>
@@ -241,17 +249,17 @@ export default function SchoolCRMPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 20px' }}>
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: isMobile ? '14px 12px' : '24px 20px' }}>
 
         {/* ── TAB BAR ── */}
-        <div style={{ display: 'flex', gap: 0, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: 4, marginBottom: 22, width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 0, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: 4, marginBottom: 22, width: isMobile ? '100%' : 'fit-content', overflowX: 'auto' }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
               display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 7, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'inherit', transition: 'all 0.18s ease',
               background: activeTab === t.id ? '#1B2A4A' : 'transparent',
               color: activeTab === t.id ? '#FFF' : '#5A6E85',
             }}>
-              {t.icon} {t.label}
+              {t.icon} {isMobile ? t.label.split(' ')[0] : t.label}
             </button>
           ))}
         </div>
@@ -262,7 +270,7 @@ export default function SchoolCRMPage() {
         {activeTab === 'directory' && (
           <div>
             {/* Search + Filter */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10, marginBottom: 18 }}>
               <div style={{ flex: 1, position: 'relative' }}>
                 <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, grade, or guardian…" style={{ width: '100%', padding: '10px 14px 10px 36px', border: '1.5px solid #E2E8F0', borderRadius: 8, outline: 'none', background: '#FFFFFF', fontSize: '0.85rem', color: '#1B2A4A', fontFamily: 'inherit', boxSizing: 'border-box' }} />
@@ -284,7 +292,7 @@ export default function SchoolCRMPage() {
                 {students.length === 0 ? 'No students on record yet — they appear after their first visit.' : 'No students match your search.'}
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(268px, 1fr))', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(268px, 1fr))', gap: 14 }}>
                 {filtered.map((s, i) => (
                   <div key={i} style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '18px 20px', boxShadow: '0 4px 14px rgba(27,42,74,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>
@@ -412,7 +420,7 @@ export default function SchoolCRMPage() {
             </div>
 
             {/* Tips */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
               {[
                 { icon: '📢', title: 'Exam Alerts', desc: 'Notify students about upcoming exam dates, schedule changes, or hall ticket requirements.' },
                 { icon: '🎉', title: 'Event Announcements', desc: 'Share upcoming college fests, seminars, sports events, or cultural programs.' },

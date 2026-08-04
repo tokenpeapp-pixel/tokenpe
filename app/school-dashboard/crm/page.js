@@ -2,52 +2,48 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
-import { Trophy, Building, CheckCircle2, Users, Megaphone, Camera, Rocket, RefreshCw, Pill, Star } from 'lucide-react'
+import {
+  Users, Megaphone, Camera, CheckCircle2, Star, ChevronLeft,
+  MessageSquare, Rocket, Trophy, Lock, Search, Filter, Phone,
+  GraduationCap, Clock, Tag, RefreshCw, X, Send, Bell, Zap
+} from 'lucide-react'
 
-export default function CRMPage() {
+const S = { fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }
+const COLORS = ['#2563EB', '#059669', '#D97706', '#7C3AED', '#DB2777', '#DC2626']
+
+export default function SchoolCRMPage() {
   const router = useRouter()
-  const [clinic, setClinic] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [totalPatients, setTotalPatients] = useState(0)
-  const [medsReachable, setMedsReachable] = useState(0)
-  const [recallReachable, setRecallReachable] = useState(0)
-  const [avgRating, setAvgRating] = useState(0)
+  const [clinic, setClinic]               = useState(null)
+  const [loading, setLoading]             = useState(true)
+  const [activeTab, setActiveTab]         = useState('directory') // 'directory' | 'broadcast' | 'welcome'
+
+  // Directory state
+  const [students, setStudents]           = useState([])
+  const [search, setSearch]               = useState('')
+  const [filterGrade, setFilterGrade]     = useState('All')
+
+  // CRM stats
+  const [totalStudents, setTotalStudents] = useState(0)
+  const [reachable, setReachable]         = useState(0)
+  const [avgRating, setAvgRating]         = useState(0)
   const [recentFeedbacks, setRecentFeedbacks] = useState([])
-  
-  const [welcomeMsg, setWelcomeMsg] = useState('')
+
+  // Welcome message
+  const [welcomeMsg, setWelcomeMsg]       = useState('')
   const [savingWelcome, setSavingWelcome] = useState(false)
   const [welcomeSuccess, setWelcomeSuccess] = useState(false)
 
-  const [broadcastMsg, setBroadcastMsg] = useState('')
-  const [broadcastImage, setBroadcastImage] = useState('')
+  // Broadcast
+  const [broadcastMsg, setBroadcastMsg]   = useState('')
+  const [broadcastImage, setBroadcastImage] = useState(null) // { url, name }
   const [uploadingImage, setUploadingImage] = useState(false)
   const [sendingBroadcast, setSendingBroadcast] = useState(false)
   const [broadcastSuccess, setBroadcastSuccess] = useState(false)
+  const [broadcastCount, setBroadcastCount] = useState(0)
 
-  // Smart Follow-ups Config
+  // Smart follow-ups
   const [followupRecall, setFollowupRecall] = useState(false)
-  const [followupMeds, setFollowupMeds] = useState(false)
   const [savingFollowups, setSavingFollowups] = useState(false)
-  const [userClinics, setUserClinics] = useState([])
-
-  async function loadCRMStats(clinicObj) {
-    if (clinicObj.plan_id !== 'elite' && clinicObj.plan_id !== 'pro' && clinicObj.subscription_status !== 'trialing') {
-      return
-    }
-    try {
-      const statsRes = await fetch(`/api/crm/stats?clinicId=${clinicObj.id}`)
-      const stats = await statsRes.json()
-      if (stats.success) {
-        setTotalPatients(stats.totalPatients || 0)
-        setMedsReachable(stats.medsReachable || 0)
-        setRecallReachable(stats.recallReachable || 0)
-        setAvgRating(stats.avgRating || 0)
-        setRecentFeedbacks(stats.recentFeedbacks || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch CRM stats:', err)
-    }
-  }
 
   useEffect(() => {
     async function load() {
@@ -55,23 +51,16 @@ export default function CRMPage() {
       if (!stored) { router.push('/school-login'); return }
 
       const c = JSON.parse(stored)
-      
-      // Fetch fresh clinic to get welcome_message
-      let freshClinic = null
+
+      // Try to fetch fresh clinic data
+      let freshClinic = c
       try {
         const res = await fetch(`/api/business/get?id=${c.id}`)
         if (res.ok) {
           const data = await res.json()
-          if (data.success) freshClinic = data.clinic
+          if (data.success && data.clinic) freshClinic = data.clinic
         }
       } catch (e) {}
-      
-      const finalClinic = freshClinic || c
-      
-      setClinic(finalClinic)
-      setWelcomeMsg(finalClinic.welcome_message || '')
-      setFollowupRecall(finalClinic.smart_recall_enabled || false)
-      setFollowupMeds(finalClinic.smart_meds_enabled || false)
 
       // Load all branches for the branch selector
       try {
@@ -79,21 +68,14 @@ export default function CRMPage() {
         if (storedClinics) setUserClinics(JSON.parse(storedClinics))
       } catch (e) { /* ignore */ }
 
-      await loadCRMStats(finalClinic)
-      
+      // Load student directory from school_history (deduplicated)
+      await loadDirectory(freshClinic.id)
       setLoading(false)
     }
     load()
   }, [router])
 
-  async function handleBranchChange(e) {
-    const selectedId = e.target.value
-    const selected = userClinics.find(c => c.id === selectedId)
-    if (!selected) return
-    setLoading(true)
-    
-    // Fetch fresh clinic data for the selected branch
-    let freshClinic = null
+  async function loadDirectory(schoolId) {
     try {
       const res = await fetch(`/api/business/get?id=${selected.id}`)
       if (res.ok) {
@@ -127,61 +109,58 @@ export default function CRMPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, welcomeMessage: welcomeMsg })
       })
-      if (res.ok) {
+      const data = await res.json()
+      if (res.ok && data.success) {
         setWelcomeSuccess(true)
         setTimeout(() => setWelcomeSuccess(false), 3000)
         const updated = { ...clinic, welcome_message: welcomeMsg }
         setClinic(updated)
         localStorage.setItem('tokenpe_business', JSON.stringify(updated))
       }
-    } catch (err) {
-      alert('Error saving welcome message')
-    }
+    } catch (err) { alert('Error saving welcome message') }
     setSavingWelcome(false)
   }
 
   async function handleImageUpload(e) {
-    const file = e.target.files[0]
+    const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > 5 * 1024 * 1024) return alert('Image size must be less than 5MB')
     setUploadingImage(true)
     try {
-      const fileName = `broadcasts/${clinic.id}_${Date.now()}.png`
-      const { data, error } = await supabase.storage.from('voice-notes').upload(fileName, file, { upsert: true })
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${clinic.id}_${Date.now()}.${fileExt}`
+      const { error } = await supabase.storage.from('public_assets').upload(`broadcasts/${fileName}`, file, { upsert: true })
       if (error) throw error
-      const { data: { publicUrl } } = supabase.storage.from('voice-notes').getPublicUrl(fileName)
-      setBroadcastImage(publicUrl)
-    } catch(err) {
-      alert('Error uploading image: ' + err.message)
+      const { data: { publicUrl } } = supabase.storage.from('public_assets').getPublicUrl(`broadcasts/${fileName}`)
+      setBroadcastImage({ url: publicUrl, name: file.name })
+    } catch (err) {
+      alert('Failed to upload image. Please try again.')
     }
     setUploadingImage(false)
   }
 
   async function sendBroadcast() {
-    if (!broadcastMsg.trim() && !broadcastImage) return alert('Please enter a message or upload an image.')
-    if (!confirm(`Are you sure you want to send this broadcast to ${totalPatients} patients?`)) return
+    if (!broadcastMsg.trim() && !broadcastImage) return alert('Enter a message or attach a flyer.')
+    if (broadcastCount === 0) return alert('No students with phone numbers are on record yet.')
+    if (!confirm(`Send this broadcast to ${broadcastCount} students via WhatsApp?`)) return
 
     setSendingBroadcast(true)
     setBroadcastSuccess(false)
-    
     try {
       const res = await fetch('/api/whatsapp/broadcast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, message: broadcastMsg || ' ', imageUrl: broadcastImage })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, message: broadcastMsg, imageUrl: broadcastImage?.url || null })
       })
       const data = await res.json()
-      
       if (res.ok && data.success) {
         setBroadcastSuccess(true)
         setBroadcastMsg('')
-        setBroadcastImage('')
+        setBroadcastImage(null)
         setTimeout(() => setBroadcastSuccess(false), 5000)
       } else {
         alert(data.error || 'Failed to send broadcast')
       }
-    } catch (err) {
-      alert('Error sending broadcast')
-    }
+    } catch (err) { alert('Error sending broadcast') }
     setSendingBroadcast(false)
   }
 
@@ -219,235 +198,306 @@ export default function CRMPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#065F46]">
-      <div className="w-10 h-10 border-4 border-white/10 border-t-[#F59E0B] rounded-full animate-spin" />
+    <div style={{ minHeight: '100vh', background: '#F4F7FB', display: 'flex', alignItems: 'center', justifyContent: 'center', ...S }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid #E2E8F0', borderTopColor: '#2563EB', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
+        <div style={{ color: '#5A6E85', fontWeight: 600, fontSize: '0.88rem' }}>Loading Student Directory...</div>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 
-  const isEliteOrTrial = clinic?.plan_id === 'elite' || clinic?.subscription_status === 'trialing'
-
-  if (clinic?.plan_id !== 'elite' && clinic?.plan_id !== 'pro' && clinic?.subscription_status !== 'trialing') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#065F46] text-white p-4 font-sans">
-        <div className="bg-white/5 border border-white/10 p-8 rounded-3xl text-center max-w-sm w-full">
-          <div className="text-5xl mb-4 flex justify-center"><Trophy size={48} className="text-amber-500" /></div>
-          <h2 className="text-2xl font-black mb-3">Premium Feature</h2>
-          <p className="text-[#CCFBF1] text-sm leading-relaxed mb-6">
-            Patient CRM and Smart Follow-ups are available to Pro and Elite plan members. Upgrade to engage your patients!
-          </p>
-          <button onClick={() => router.push('/dashboard/billing')} className="w-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] text-black py-3 rounded-xl font-black mb-3">
-            Upgrade Plan
-          </button>
-          <button onClick={() => router.push('/dashboard')} className="w-full bg-transparent text-[#CCFBF1] py-3 rounded-xl font-bold hover:text-white">
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#065F46] font-sans pb-20">
-      <div className="bg-[#065F46] text-white px-4 py-6 sm:px-8 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center">
-            ←
-          </button>
+    <div style={{ minHeight: '100vh', background: '#F4F7FB', ...S }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+
+      {/* ── HEADER ── */}
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
+        <button onClick={() => router.push('/school-dashboard')} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
+          <ChevronLeft size={16} /> Back
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #7C3AED 100%)', borderRadius: 8, padding: 8 }}>
+            <Users size={18} color="#FFF" />
+          </div>
           <div>
-            <div className="text-xs text-[#CCFBF1] font-bold uppercase tracking-widest">Patient CRM</div>
-            <div className="text-xl font-black">{clinic.name}</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: '#1B2A4A' }}>Student Directory (CRM)</div>
+            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600 }}>{clinic?.name} — Broadcasts & Guest Engagement</div>
           </div>
         </div>
-        {userClinics.length > 1 && (
-          <select
-            value={clinic?.id || ''}
-            onChange={handleBranchChange}
-            className="bg-[#065F46] border border-[#064E3B] text-white px-4 py-2.5 rounded-xl font-semibold outline-none text-sm"
-          >
-            {userClinics.map(uc => (
-              <option key={uc.id} value={uc.id}>{uc.name}</option>
-            ))}
-          </select>
-        )}
+        {/* Summary badges */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#EFF6FF', padding: '6px 12px', borderRadius: 6, border: '1px solid #BFDBFE' }}>
+            <Users size={13} color="#2563EB" />
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1D4ED8' }}>{totalStudents} Students</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#ECFDF5', padding: '6px 12px', borderRadius: 6, border: '1px solid #A7F3D0' }}>
+            <Bell size={13} color="#059669" />
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669' }}>{reachable} Reachable</span>
+          </div>
+        </div>
       </div>
 
-      <div className="w-full mx-auto p-4 sm:p-8 space-y-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#065F46] tracking-tight">CRM & Broadcasts</h1>
-          <p className="text-[#64748B] text-sm sm:text-base mt-1">Engage with your patients and customize your clinic's automated messaging.</p>
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 20px' }}>
+
+        {/* ── TAB BAR ── */}
+        <div style={{ display: 'flex', gap: 0, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: 4, marginBottom: 22, width: 'fit-content' }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 7, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'inherit', transition: 'all 0.18s ease',
+              background: activeTab === t.id ? '#1B2A4A' : 'transparent',
+              color: activeTab === t.id ? '#FFF' : '#5A6E85',
+            }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
         </div>
 
-        <div className="space-y-8">
-          {/* Welcome Message */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden hover-card">
-            {!isEliteOrTrial && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
-                <div className="text-3xl mb-2 flex justify-center"><Trophy size={32} className="text-amber-500" /></div>
-                <h3 className="text-lg font-black text-[#065F46] mb-2">Elite Feature</h3>
-                <p className="text-[#64748B] text-sm mb-4 font-medium">Upgrade to Elite to set a personalized WhatsApp welcome message.</p>
-                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#065F46] text-white px-6 py-2.5 rounded-xl font-bold text-sm">Upgrade to Elite</button>
+        {/* ════════════════════════════════════════════════
+            TAB 1: STUDENT DIRECTORY
+        ════════════════════════════════════════════════ */}
+        {activeTab === 'directory' && (
+          <div>
+            {/* Search + Filter */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+              <div style={{ flex: 1, position: 'relative' }}>
+                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, grade, or guardian…" style={{ width: '100%', padding: '10px 14px 10px 36px', border: '1.5px solid #E2E8F0', borderRadius: 8, outline: 'none', background: '#FFFFFF', fontSize: '0.85rem', color: '#1B2A4A', fontFamily: 'inherit', boxSizing: 'border-box' }} />
               </div>
-            )}
-            <h2 className="text-lg font-black mb-2">Personalized Welcome Message</h2>
-            <p className="text-[#64748B] text-sm mb-5">This message will be appended to the standard TokenPe WhatsApp reply when a patient joins your queue.</p>
-            
-            <textarea
-              value={welcomeMsg}
-              onChange={e => setWelcomeMsg(e.target.value)}
-              placeholder="e.g. Welcome to City Hospital! Please wait in the AC lounge. Free Wi-Fi password is: city123"
-              className="w-full min-h-[100px] p-4 rounded-xl border-2 border-[#E2E8F0] outline-none text-sm font-medium resize-y mb-4 focus:border-[#065F46]"
-            />
-            
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <button 
-                onClick={saveWelcomeMessage}
-                disabled={savingWelcome}
-                className={`bg-[#065F46] text-white px-6 py-2.5 rounded-xl font-bold ${savingWelcome ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#064E3B]'}`}
-              >
-                {savingWelcome ? 'Saving...' : 'Save Welcome Message'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 8, padding: '0 12px' }}>
+                <Filter size={13} color="#5A6E85" />
+                <select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: '0.82rem', color: '#1B2A4A', fontWeight: 600, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {grades.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+              <button onClick={() => loadDirectory(clinic.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 8, padding: '0 14px', cursor: 'pointer', color: '#5A6E85', fontWeight: 700, fontSize: '0.78rem', fontFamily: 'inherit' }}>
+                <RefreshCw size={13} /> Refresh
               </button>
-              {welcomeSuccess && <span className="text-[#10B981] font-bold text-sm"><CheckCircle2 className="inline-block w-4 h-4 mr-1" /> Saved successfully!</span>}
-            </div>
-          </div>
-
-          {/* Broadcasts */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] relative overflow-hidden hover-card">
-            {!isEliteOrTrial && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
-                <div className="text-3xl mb-2 flex justify-center"><Rocket size={32} className="text-[#065F46]" /></div>
-                <h3 className="text-lg font-black text-[#065F46] mb-2">Elite Feature</h3>
-                <p className="text-[#64748B] text-sm mb-4 font-medium">Upgrade to Elite to send mass WhatsApp broadcasts to all your patients.</p>
-                <button onClick={() => router.push('/dashboard/billing')} className="bg-[#065F46] text-white px-6 py-2.5 rounded-xl font-bold text-sm">Upgrade to Elite</button>
-              </div>
-            )}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-5">
-              <div>
-                <h2 className="text-lg font-black mb-2">WhatsApp Broadcast</h2>
-                <p className="text-[#64748B] text-sm">Send a mass update to all your past patients instantly.</p>
-              </div>
-              <div className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">
-                <Users className="inline-block w-4 h-4 mr-1" /> {totalPatients} Reachable Patients
-              </div>
             </div>
 
-            <textarea
-              value={broadcastMsg}
-              onChange={e => setBroadcastMsg(e.target.value)}
-              placeholder="e.g. Dr. Sharma's Clinic will be closed this Sunday. We are also running a free dental checkup camp next week!"
-              className="w-full min-h-[120px] p-4 rounded-xl border-2 border-[#E2E8F0] outline-none text-sm font-medium resize-y mb-4 focus:border-[#10B981]"
-            />
-
-            <div className="bg-[#FFFBEB] border border-[#FDE68A] p-4 rounded-xl mb-5 text-sm text-[#92400E]">
-              <strong>Note:</strong> Broadcasts are sent using the official TokenPe WhatsApp API. Do not use this for spam, or your clinic's broadcast privileges may be revoked.
-            </div>
-            
-            {broadcastImage && (
-              <div className="relative inline-block mb-5">
-                <img src={broadcastImage} alt="Broadcast Attachment" className="w-32 h-32 object-cover rounded-xl border border-[#E2E8F0]" />
-                <button onClick={() => setBroadcastImage('')} className="absolute -top-2 -right-2 bg-[#EF4444] text-white w-6 h-6 rounded-full font-bold flex items-center justify-center">×</button>
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <button 
-                onClick={sendBroadcast}
-                disabled={sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)}
-                className={`bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center ${(sendingBroadcast || totalPatients === 0 || (!broadcastMsg && !broadcastImage)) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#059669]'}`}
-              >
-                {sendingBroadcast ? 'Sending...' : <><Megaphone className="inline-block w-4 h-4 mr-2" /> Send Broadcast</>}
-              </button>
-              
-              <label className={`flex items-center gap-2 text-[#065F46] font-bold text-sm bg-[#F0FDFA] px-4 py-2.5 rounded-xl border border-dashed border-[#5EEAD4] transition ${uploadingImage ? 'cursor-wait opacity-70' : 'cursor-pointer hover:bg-[#CCFBF1]'}`}>
-                {uploadingImage ? 'Uploading...' : <><Camera className="inline-block w-4 h-4 mr-2" /> Attach Flyer</>}
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
-              </label>
-
-              {broadcastSuccess && <span className="text-[#10B981] font-bold text-sm"><CheckCircle2 className="inline-block w-4 h-4 mr-1" /> Broadcast queued!</span>}
-            </div>
-          </div>
-
-          {/* Smart Follow-ups */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-            <h2 className="text-lg font-black mb-2">Smart Patient Follow-ups</h2>
-            <p className="text-[#64748B] text-sm mb-6">Automate your patient retention with intelligent WhatsApp reminders.</p>
-
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-base font-bold text-[#065F46]">90-Day Routine Recall <RefreshCw className="inline-block w-4 h-4 ml-1" /></h3>
-                    <span className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">{recallReachable} Reachable Today</span>
-                  </div>
-                  <p className="text-sm text-[#64748B]">Automatically messages patients 90 days after their visit to schedule a routine check-up.</p>
-                </div>
-                <label className="relative inline-block w-11 h-6 flex-shrink-0 cursor-pointer">
-                  <input type="checkbox" checked={followupRecall} onChange={e => saveFollowupConfig('recall', e.target.checked)} disabled={savingFollowups} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-[#CBD5E1] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#10B981]"></div>
-                </label>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-base font-bold text-[#065F46]">Medicine Reminders <Pill className="inline-block w-4 h-4 ml-1" /></h3>
-                    <span className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">{medsReachable} Reachable Today</span>
-                  </div>
-                  <p className="text-sm text-[#64748B]">Sends a friendly "Did you start your medicines?" check-in 3 days post-visit.</p>
-                </div>
-                <label className="relative inline-block w-11 h-6 flex-shrink-0 cursor-pointer">
-                  <input type="checkbox" checked={followupMeds} onChange={e => saveFollowupConfig('meds', e.target.checked)} disabled={savingFollowups} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-[#CBD5E1] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#10B981]"></div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Patient Feedback */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
-              <div>
-                <h2 className="text-lg font-black mb-2">Patient Feedback</h2>
-                <p className="text-[#64748B] text-sm">Ratings and reviews collected after consultation.</p>
-              </div>
-              <div className="bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] px-5 py-2.5 rounded-xl flex items-center gap-2">
-                <span className="text-2xl font-black">{avgRating > 0 ? avgRating : 'N/A'}</span>
-                <Star className="inline-block w-5 h-5 text-[#F59E0B] fill-current" />
-              </div>
-            </div>
-
-            {recentFeedbacks.length === 0 ? (
-              <div className="text-center p-8 bg-[#F8FAFC] rounded-xl border-2 border-dashed border-[#E2E8F0]">
-                <p className="text-[#94A3B8] font-bold">No text feedback received yet.</p>
-                <p className="text-[#CBD5E1] text-sm mt-1">Patients reply to the automated TokenPe WhatsApp feedback message after their visit.</p>
+            {/* Student Grid */}
+            {filtered.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 60, color: '#5A6E85', fontSize: '0.9rem', fontWeight: 600, background: '#FFFFFF', borderRadius: 12, border: '1px dashed #CBD5E1' }}>
+                {students.length === 0 ? 'No students on record yet — they appear after their first visit.' : 'No students match your search.'}
               </div>
             ) : (
-              <div className="grid gap-4">
-                {recentFeedbacks.map((fb, idx) => {
-                  const timeStr = fb.feedback_at || fb.completed_at || fb.date
-                  const formattedTime = timeStr ? new Date(timeStr).toLocaleString('en-IN', { 
-                    timeZone: 'Asia/Kolkata', 
-                    day: 'numeric', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                  }) : 'Unknown Date'
-                  
-                  return (
-                    <div key={idx} className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
-                      <div className="flex justify-between mb-2">
-                        <span className="font-bold text-[#065F46]">{fb.name || 'Anonymous'}</span>
-                        <span className="text-[#F59E0B] flex items-center">{Array.from({length: fb.crm_rating}).map((_, i) => <Star key={'f'+i} className="inline-block w-4 h-4 fill-current" />)}{Array.from({length: 5 - fb.crm_rating}).map((_, i) => <Star key={'e'+i} className="inline-block w-4 h-4" />)}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(268px, 1fr))', gap: 14 }}>
+                {filtered.map((s, i) => (
+                  <div key={i} style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '18px 20px', boxShadow: '0 4px 14px rgba(27,42,74,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: `linear-gradient(135deg, ${COLORS[i % COLORS.length]}, ${COLORS[(i + 2) % COLORS.length]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 800, fontSize: '0.95rem', flexShrink: 0 }}>
+                        {s.name?.charAt(0) || '?'}
                       </div>
-                      {fb.feedback_text && (
-                        <p className="text-[#475569] text-sm italic mt-1">"{fb.feedback_text}"</p>
-                      )}
-                      <div className="text-xs text-[#94A3B8] mt-2 text-right">{formattedTime}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '0.95rem', color: '#1B2A4A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                          <Tag size={10} color="#7C3AED" />
+                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#7C3AED', background: '#F5F3FF', padding: '1px 7px', borderRadius: 4 }}>{s.grade}</span>
+                        </div>
+                      </div>
+                      <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
+                          <Star size={11} color="#F59E0B" fill="#F59E0B" />
+                          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#D97706' }}>{s.visits}×</span>
+                        </div>
+                        <div style={{ fontSize: '0.6rem', color: '#94A3B8', fontWeight: 600 }}>visits</div>
+                      </div>
                     </div>
-                  )
-                })}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <Phone size={11} color="#5A6E85" />
+                        <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, color: '#1B2A4A' }}>{s.guardian}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <Clock size={11} color="#5A6E85" />
+                        <span style={{ fontSize: '0.76rem', color: '#5A6E85', fontWeight: 600 }}>Last: {s.lastVisit}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
+        )}
 
-        </div>
+        {/* ════════════════════════════════════════════════
+            TAB 2: WHATSAPP BROADCAST
+        ════════════════════════════════════════════════ */}
+        {activeTab === 'broadcast' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+            {/* Audience Stat Card */}
+            <div style={{ background: '#FFFFFF', border: '1.5px solid #A7F3D0', borderRadius: 12, padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 18, boxShadow: '0 4px 12px rgba(5,150,105,0.08)' }}>
+              <div style={{ background: '#ECFDF5', borderRadius: 10, padding: 14 }}><Megaphone size={24} color="#059669" /></div>
+              <div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.6rem', fontWeight: 700, color: '#1B2A4A', lineHeight: 1 }}>{broadcastCount}</div>
+                <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 3 }}>Students Reachable via WhatsApp</div>
+                <div style={{ fontSize: '0.7rem', color: '#5A6E85', marginTop: 2 }}>Based on phone numbers collected during queue check-in</div>
+              </div>
+            </div>
+
+            {/* Compose card */}
+            <div style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '22px 24px', boxShadow: '0 4px 12px rgba(27,42,74,0.04)', position: 'relative', overflow: 'hidden' }}>
+              {!isElite && (
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(248,250,252,0.94)', backdropFilter: 'blur(8px)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center', borderRadius: 12 }}>
+                  <Trophy size={36} color="#D97706" style={{ marginBottom: 12 }} />
+                  <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', color: '#1B2A4A', marginBottom: 6 }}>Elite Feature</h3>
+                  <p style={{ fontSize: '0.82rem', color: '#5A6E85', lineHeight: 1.6, maxWidth: 320, marginBottom: 18 }}>
+                    Upgrade to Elite to send mass WhatsApp broadcasts to all your students.
+                  </p>
+                  <button onClick={() => router.push('/school-dashboard/billing')} style={{ background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem', fontFamily: 'inherit' }}>
+                    <Zap size={14} style={{ display: 'inline', marginRight: 6 }} /> Upgrade to Elite
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', marginBottom: 3 }}>Compose Broadcast</div>
+                  <div style={{ fontSize: '0.75rem', color: '#5A6E85' }}>Send a mass message or announcement flyer to all students via WhatsApp.</div>
+                </div>
+              </div>
+
+              <textarea
+                value={broadcastMsg}
+                onChange={e => setBroadcastMsg(e.target.value)}
+                placeholder="e.g. 📢 Exam schedule update — Mid-semester exams begin on 5th August. Please carry your hall tickets. Best of luck from the Admin!"
+                style={{ width: '100%', minHeight: 120, padding: 14, borderRadius: 10, background: '#F8FAFC', border: '1.5px solid #E2E8F0', color: '#1B2A4A', fontSize: '0.85rem', outline: 'none', resize: 'vertical', marginBottom: 16, boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.6 }}
+              />
+
+              {/* Image preview */}
+              {broadcastImage && (
+                <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 10, background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 12px', marginBottom: 16 }}>
+                  <img src={broadcastImage.url} alt="Flyer" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6 }} />
+                  <span style={{ fontSize: '0.78rem', color: '#5A6E85', fontWeight: 600 }}>{broadcastImage.name}</span>
+                  <button onClick={() => setBroadcastImage(null)} style={{ background: '#DC2626', color: '#FFF', border: 'none', width: 20, height: 20, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <X size={11} />
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  onClick={sendBroadcast}
+                  disabled={sendingBroadcast || broadcastCount === 0 || (!broadcastMsg && !broadcastImage)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: (sendingBroadcast || broadcastCount === 0 || (!broadcastMsg && !broadcastImage)) ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: '0.85rem', fontFamily: 'inherit', opacity: (sendingBroadcast || broadcastCount === 0 || (!broadcastMsg && !broadcastImage)) ? 0.55 : 1, boxShadow: '0 4px 12px rgba(27,42,74,0.2)' }}>
+                  <Send size={14} /> {sendingBroadcast ? 'Sending...' : `Send to ${broadcastCount} Students`}
+                </button>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 8, padding: '9px 16px', cursor: uploadingImage ? 'wait' : 'pointer', fontWeight: 700, fontSize: '0.82rem', color: '#5A6E85', fontFamily: 'inherit' }}>
+                  <Camera size={14} color="#7C3AED" />
+                  {uploadingImage ? 'Uploading…' : 'Attach Flyer'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} disabled={uploadingImage} />
+                </label>
+
+                {broadcastSuccess && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#059669', fontWeight: 800, fontSize: '0.82rem', background: '#ECFDF5', padding: '8px 14px', borderRadius: 8, border: '1px solid #A7F3D0' }}>
+                    <CheckCircle2 size={15} /> Broadcast queued successfully!
+                  </span>
+                )}
+              </div>
+
+              {/* Message preview */}
+              {broadcastMsg && (
+                <div style={{ marginTop: 18, padding: '14px 16px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 10 }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#059669', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>📱 WhatsApp Preview</div>
+                  <div style={{ fontSize: '0.82rem', color: '#1B2A4A', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    📢 <strong>Update from {clinic?.name}</strong>{'\n\n'}{broadcastMsg}{'\n\n'}<em style={{ color: '#5A6E85' }}>Powered by TokenPe</em>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Tips */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+              {[
+                { icon: '📢', title: 'Exam Alerts', desc: 'Notify students about upcoming exam dates, schedule changes, or hall ticket requirements.' },
+                { icon: '🎉', title: 'Event Announcements', desc: 'Share upcoming college fests, seminars, sports events, or cultural programs.' },
+                { icon: '⚠️', title: 'Urgent Notices', desc: 'Send emergency campus notifications like holiday announcements or class cancellations.' },
+              ].map((tip, i) => (
+                <div key={i} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 10, padding: '14px 16px' }}>
+                  <div style={{ fontSize: '1.4rem', marginBottom: 6 }}>{tip.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#1B2A4A', marginBottom: 4 }}>{tip.title}</div>
+                  <div style={{ fontSize: '0.74rem', color: '#5A6E85', lineHeight: 1.6 }}>{tip.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════
+            TAB 3: WELCOME MESSAGE
+        ════════════════════════════════════════════════ */}
+        {activeTab === 'welcome' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '22px 24px', boxShadow: '0 4px 12px rgba(27,42,74,0.04)', position: 'relative', overflow: 'hidden' }}>
+              {!isElite && (
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(248,250,252,0.94)', backdropFilter: 'blur(8px)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center', borderRadius: 12 }}>
+                  <Lock size={32} color="#D97706" style={{ marginBottom: 12 }} />
+                  <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', color: '#1B2A4A', marginBottom: 6 }}>Elite Feature</h3>
+                  <p style={{ fontSize: '0.82rem', color: '#5A6E85', lineHeight: 1.6, maxWidth: 300, marginBottom: 18 }}>Upgrade to Elite to set a personalised WhatsApp welcome message for your students.</p>
+                  <button onClick={() => router.push('/school-dashboard/billing')} style={{ background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem', fontFamily: 'inherit' }}>Upgrade to Elite</button>
+                </div>
+              )}
+
+              <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', marginBottom: 4 }}>Personalised Welcome Message</div>
+              <div style={{ fontSize: '0.75rem', color: '#5A6E85', marginBottom: 18 }}>
+                This message is appended to the WhatsApp confirmation reply when a student joins the queue. Personalise it with campus Wi-Fi, wait area info, or a warm greeting.
+              </div>
+
+              <textarea
+                value={welcomeMsg}
+                onChange={e => setWelcomeMsg(e.target.value)}
+                placeholder="e.g. Welcome to ABC College! Please proceed to the waiting area near the admin block. For urgent queries, call 1800-XXX-XXXX."
+                style={{ width: '100%', minHeight: 110, padding: 14, borderRadius: 10, background: '#F8FAFC', border: '1.5px solid #E2E8F0', color: '#1B2A4A', fontSize: '0.85rem', outline: 'none', resize: 'vertical', marginBottom: 18, boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.6 }}
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <button onClick={saveWelcomeMessage} disabled={savingWelcome} style={{ background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 8, padding: '10px 22px', cursor: savingWelcome ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: '0.85rem', opacity: savingWelcome ? 0.7 : 1, fontFamily: 'inherit' }}>
+                  {savingWelcome ? 'Saving…' : 'Save Welcome Message'}
+                </button>
+                {welcomeSuccess && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#059669', fontWeight: 800, fontSize: '0.82rem' }}>
+                    <CheckCircle2 size={15} /> Saved successfully!
+                  </span>
+                )}
+              </div>
+
+              {/* Preview */}
+              {welcomeMsg && (
+                <div style={{ marginTop: 20, padding: '14px 16px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 10 }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#059669', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>📱 WhatsApp Preview</div>
+                  <div style={{ fontSize: '0.82rem', color: '#1B2A4A', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    ✅ <strong>Your token has been confirmed!</strong>{'\n'}Queue position: #1{'\n\n'}{welcomeMsg}{'\n\n'}<em style={{ color: '#5A6E85' }}>— {clinic?.name} via TokenPe</em>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Smart follow-up toggle */}
+            <div style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 4px 12px rgba(27,42,74,0.04)' }}>
+              <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1rem', color: '#1B2A4A', marginBottom: 4 }}>Smart Recall Reminders</div>
+              <div style={{ fontSize: '0.75rem', color: '#5A6E85', marginBottom: 16 }}>Automatically send a WhatsApp follow-up to students who haven't visited in 30 days.</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1B2A4A' }}>30-Day Re-engagement Reminder</div>
+                  <div style={{ fontSize: '0.72rem', color: '#5A6E85', marginTop: 2 }}>"We miss you at {clinic?.name}! Don't forget your upcoming visit."</div>
+                </div>
+                <button
+                  onClick={() => {
+                    const newVal = !followupRecall
+                    setFollowupRecall(newVal)
+                    // Save via API
+                    fetch('/api/clinics/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clinicId: clinic.id, smartRecallEnabled: newVal }) }).catch(() => {})
+                  }}
+                  style={{ width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', background: followupRecall ? '#059669' : '#CBD5E1', transition: 'background 0.2s ease', position: 'relative', flexShrink: 0 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FFF', position: 'absolute', top: 3, left: followupRecall ? 25 : 3, transition: 'left 0.2s ease', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )

@@ -662,10 +662,7 @@ export default function Dashboard() {
     loadRestaurant()
   }, [])
 
-
   // ── Load guests when restaurant ID or currentDate changes ─────────────────
-  // Using clinic.id (not the whole restaurant object) to avoid reloading on every
-  // minor restaurant state update (e.g. queue_paused toggle)
   const clinicId = clinic?.id
   useEffect(() => {
     if (!clinicId) return
@@ -696,7 +693,6 @@ export default function Dashboard() {
           if (data.success) {
             setGuests(prev => {
               const newGuests = data.patients || data.guests || []
-              // Find newly inserted guests for the notification
               const newAdds = newGuests.filter(np => {
                 const isNew = !prev.some(p => p.id === np.id)
                 const isLocal = localAddedGuestIdsRef.current.has(np.id)
@@ -730,7 +726,7 @@ export default function Dashboard() {
       if (todayStr !== currentDate) {
         setCurrentDate(todayStr)
       }
-    }, 60000) // Check once a minute
+    }, 60000)
     return () => clearInterval(t)
   }, [currentDate])
 
@@ -763,7 +759,6 @@ export default function Dashboard() {
   function handleCodeUpdate(newCode) {
     setRestaurant(prev => ({ ...prev, code: newCode }))
 
-    // Sync the new code into the userRestaurants array for the branch switcher
     setUserRestaurants(prevRestaurants => {
       const updated = prevRestaurants.map(c => c.id === clinic.id ? { ...c, code: newCode } : c)
       localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updated))
@@ -779,7 +774,6 @@ export default function Dashboard() {
     setShowAddBranch(false)
     if (targetRestaurant.id === clinic?.id) return
 
-    // Optimistically switch UI immediately — no flash, no reload
     setRestaurant(targetRestaurant)
     setGuests([])
     setLoading(true)
@@ -792,10 +786,9 @@ export default function Dashboard() {
     await fetch('/api/business-auth/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetRestaurantId: targetRestaurant.id })
+      body: JSON.stringify({ targetClinicId: targetRestaurant.id, targetRestaurantId: targetRestaurant.id })
     })
 
-    // Fetch fresh guests for the new branch securely
     try {
       const res = await fetch(`/api/generic-dashboard/get?date=${currentDate}`)
       if (res.ok) {
@@ -805,10 +798,40 @@ export default function Dashboard() {
     } catch (e) { }
     setLoading(false)
 
-    // Show Discovery Profile if the new branch is missing details
     if (!targetRestaurant.specialty || !targetRestaurant.city || targetRestaurant.phone === '0000000000') {
       setShowDiscovery(true)
     }
+  }
+
+  async function handleAddBranch() {
+    if (!newBranchName.trim() || !clinic) return
+    setAddingBranch(true)
+    try {
+      const res = await fetch('/api/clinics/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clinicName: newBranchName.trim(),
+          email: clinic.email,
+          phone: clinic.phone,
+          parentPlanId: clinic.plan_id
+        })
+      })
+      const data = await res.json()
+      if (data.success && data.clinic) {
+        const updatedUserRestaurants = [...userRestaurants, data.clinic]
+        setUserRestaurants(updatedUserRestaurants)
+        localStorage.setItem('tokenpe_user_clinics', JSON.stringify(updatedUserRestaurants))
+        setShowAddBranch(false)
+        setNewBranchName('')
+        addToast(`Added branch "${data.clinic.name}"!`, 'done')
+      } else {
+        addToast(data.error || 'Failed to add branch', 'error')
+      }
+    } catch (e) {
+      addToast('Error adding branch', 'error')
+    }
+    setAddingBranch(false)
   }
 
   async function handleSaveBranchEdit(branchId) {
@@ -1455,7 +1478,7 @@ export default function Dashboard() {
 
             <div className="dropdown-divider" style={{ margin: '8px 0' }} />
 
-            <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
+            <button className="dropdown-item" onClick={() => { router.push('/restaurant-dashboard/history'); setMenuOpen(false); }}>
               <div className="menu-icon-wrapper">
                 <History className="w-5 h-5" />
               </div>
@@ -1647,7 +1670,7 @@ export default function Dashboard() {
 
             <div className="dropdown-divider" style={{ margin: '8px 0' }} />
 
-            <button className="dropdown-item" onClick={() => { setActiveTab('history'); setMenuOpen(false); }}>
+            <button className="dropdown-item" onClick={() => { router.push('/restaurant-dashboard/history'); setMenuOpen(false); }}>
               <div className="menu-icon-wrapper">
                 <History className="w-5 h-5" />
               </div>
@@ -1982,8 +2005,42 @@ export default function Dashboard() {
 
       {/* ── Trial Warning Banner ── */}
       {showTrialWarning && (
-        <div style={{ background: daysLeft <= 3 ? '#DC2626' : 'rgba(6,95,70,0.15)', color: daysLeft <= 3 ? 'white' : '#fcd34d', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative', borderBottom: daysLeft <= 3 ? 'none' : '1px solid rgba(127,29,29,0.5)' }}>
-          {daysLeft <= 3 ? <><AlertTriangle className="inline-block w-4 h-4" /> Your</> : <><Sparkles className="inline-block w-4 h-4" /> You are on the</>} Elite Free Trial. Ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'} on {trialEnd?.toLocaleDateString('en-IN')}. <button onClick={() => router.push('/restaurant-dashboard/billing')} style={{ background: daysLeft <= 3 ? 'white' : 'rgba(127,29,29,0.3)', color: daysLeft <= 3 ? '#DC2626' : 'rgba(255, 255, 255, 0.03)', border: daysLeft <= 3 ? 'none' : '1px solid rgba(251,191,36,0.3)', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Choose a Plan</button>
+        <div style={{
+          background: 'rgba(127,29,29,0.45)',
+          color: '#fef3c7',
+          padding: '10px 18px',
+          borderRadius: '12px',
+          marginBottom: '20px',
+          fontSize: '12px',
+          fontWeight: 600,
+          border: '1px solid rgba(251,191,36,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12,
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertTriangle size={15} style={{ color: '#fbbf24', flexShrink: 0 }} />
+            <span>Elite Free Trial — Ends in <strong>{daysLeft} {daysLeft === 1 ? 'day' : 'days'}</strong> on {trialEnd?.toLocaleDateString('en-IN')}.</span>
+          </div>
+          <button 
+            onClick={() => router.push('/restaurant-dashboard/billing')} 
+            style={{ 
+              background: '#7f1d1d', 
+              color: '#fef3c7', 
+              border: '1px solid rgba(251,191,36,0.4)', 
+              padding: '6px 14px', 
+              borderRadius: '8px', 
+              fontSize: '11.5px', 
+              fontWeight: 700, 
+              cursor: 'pointer', 
+              whiteSpace: 'nowrap' 
+            }}
+          >
+            Choose a Plan
+          </button>
         </div>
       )}
 
@@ -2102,7 +2159,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-      
+
       {activeTab === 'payments' && <PaymentsView guests={guests} />}
 
       {showSuccessModal && (

@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../../lib/supabase'
-import { Lock, Download, Printer, Rocket, Building, Calendar, Trophy, Brain, TrendingUp } from 'lucide-react'
+import '../lovable.css'
+import { Lock, Download, Printer, Rocket, Building, Calendar, Trophy, Brain, TrendingUp, ArrowLeft, RefreshCw, BarChart2 } from 'lucide-react'
 
 // ─── PHONE MASKING (Privacy) ────────────────────────────────────────────────
 function maskPhone(phone) {
@@ -19,6 +19,12 @@ function getISTDateString(date = new Date()) {
   return istDate.toISOString().split('T')[0]
 }
 
+function getMaxDays(planId) {
+  if (planId === 'starter') return 7
+  if (planId === 'pro') return 30
+  return 365
+}
+
 export default function AnalyticsPage() {
   const router = useRouter()
   const [clinic, setRestaurant] = useState(null)
@@ -29,8 +35,6 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState('today') // today, 7, 30, 90, 180, 365, custom
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
-  const [aiInsights, setAiInsights] = useState(null)
-  const [loadingAi, setLoadingAi] = useState(false)
   const [userRestaurants, setUserRestaurants] = useState([])
 
   useEffect(() => {
@@ -43,18 +47,14 @@ export default function AnalyticsPage() {
       const c = JSON.parse(stored)
       setRestaurant(c)
 
-      // Load all branches for the branch selector
       try {
         const storedRestaurants = localStorage.getItem('tokenpe_user_businesses')
         if (storedRestaurants) setUserRestaurants(JSON.parse(storedRestaurants))
-      } catch (e) { /* ignore */ }
+      } catch (e) { }
       
-      // Default date range
-      if (c.plan_id === 'starter') setDateRange('7')
-      else if (c.plan_id === 'pro') setDateRange('30')
-      else setDateRange('30') // Elite default to 30
-
-      await fetchAnalytics(c, c.plan_id === 'starter' ? '7' : '30')
+      const defaultRange = c.plan_id === 'starter' ? '7' : '30'
+      setDateRange(defaultRange)
+      await fetchAnalytics(c, defaultRange)
     }
     load()
   }, [router])
@@ -95,16 +95,15 @@ export default function AnalyticsPage() {
       }
     } catch(e) {}
 
-    // Fetch last period (for comparison)
     let lastPeriodData = []
     if (c.plan_id !== 'starter' && range !== 'today') {
-      const prevEnd = new Date(cutoffDate)
-      prevEnd.setDate(prevEnd.getDate() - 1)
-      const prevStart = new Date(prevEnd)
-      prevStart.setDate(prevStart.getDate() - days + 1)
-      const lastCutoff = getISTDateString(prevStart)
-      const lastEnd = getISTDateString(prevEnd)
-
+      const lEndD = new Date(cutoffDate)
+      lEndD.setDate(lEndD.getDate() - 1)
+      const lStartD = new Date(lEndD)
+      lStartD.setDate(lStartD.getDate() - days)
+      
+      const lStart = getISTDateString(lStartD)
+      const lEnd = getISTDateString(lEndD)
       try {
         const res2 = await fetch(`/api/generic-analytics/get?clinicId=${c.id}&startDate=${lastCutoff}&endDate=${lastEnd}`)
         if (res2.ok) {
@@ -114,7 +113,7 @@ export default function AnalyticsPage() {
       } catch(e) {}
     }
 
-    setGuests(thisPeriodData || [])
+    setGuests(thisPeriodData)
     setLastPeriodGuests(lastPeriodData)
     
     // Fetch overall feedback
@@ -134,48 +133,6 @@ export default function AnalyticsPage() {
     setLoading(false)
   }
 
-  async function fetchAiInsights(data) {
-    setLoadingAi(true)
-    try {
-      const totalGuests = data.length
-      const waitTimes = data.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
-      const avgWaitTime = waitTimes.length ? Math.round(waitTimes.reduce((a,b)=>a+b,0)/waitTimes.length) : 0
-      
-      // Calculate peak hour
-      const hourCounts = {}
-      data.forEach(p => {
-        if(p.joined_at) {
-          const h = new Date(p.joined_at).getHours()
-          hourCounts[h] = (hourCounts[h]||0)+1
-        }
-      })
-      let peakHour = 'N/A'
-      let maxH = 0
-      Object.keys(hourCounts).forEach(h => {
-        if(hourCounts[h] > maxH) { maxH = hourCounts[h]; peakHour = h + ':00' }
-      })
-
-      const payload = { totalGuests, avgWaitTime, peakHour }
-      const res = await fetch('/api/insights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      const result = await res.json()
-      if (result.success) setAiInsights(result.insights)
-    } catch(e) {
-      console.error(e)
-    }
-    setLoadingAi(false)
-  }
-
-  // Plan-based max allowed lookback (in days)
-  function getMaxDays(planId) {
-    if (planId === 'starter') return 7
-    if (planId === 'pro') return 30
-    return 3650 // Elite: ~10 years
-  }
-
   function handleBranchChange(e) {
     const selectedId = e.target.value
     const selected = userRestaurants.find(c => c.id === selectedId)
@@ -183,7 +140,6 @@ export default function AnalyticsPage() {
     setRestaurant(selected)
     setGuests([])
     setLastPeriodGuests([])
-    setAiInsights(null)
     const range = selected.plan_id === 'starter' ? '7' : '30'
     setDateRange(range)
     fetchAnalytics(selected, range)
@@ -193,16 +149,15 @@ export default function AnalyticsPage() {
     const val = e.target.value
     if (val === 'custom') {
       setDateRange('custom')
-      // Pre-fill with sensible defaults
       const today = getISTDateString(new Date())
-      const maxDays = getMaxDays(clinic.plan_id)
+      const maxDays = getMaxDays(clinic?.plan_id)
       const dAgo = new Date(); dAgo.setDate(dAgo.getDate() - Math.min(7, maxDays))
       setCustomStart(getISTDateString(dAgo))
       setCustomEnd(today)
       return
     }
-    if (clinic.plan_id === 'starter' && val !== 'today' && val !== '7') return alert('Upgrade to Pro to view this date range.')
-    if (clinic.plan_id === 'pro' && !['today','7','30'].includes(val)) return alert('Upgrade to Elite to view this date range.')
+    if (clinic?.plan_id === 'starter' && val !== 'today' && val !== '7') return alert('Upgrade to Pro to view this date range.')
+    if (clinic?.plan_id === 'pro' && !['today','7','30'].includes(val)) return alert('Upgrade to Elite to view this date range.')
     setDateRange(val)
     fetchAnalytics(clinic, val)
   }
@@ -211,13 +166,13 @@ export default function AnalyticsPage() {
     if (!customStart || !customEnd) return alert('Please select both start and end dates.')
     if (customStart > customEnd) return alert('Start date cannot be after end date.')
 
-    const maxDays = getMaxDays(clinic.plan_id)
+    const maxDays = getMaxDays(clinic?.plan_id)
     const today = new Date()
     const startD = new Date(customStart)
     const diffDays = Math.ceil((today - startD) / (1000 * 60 * 60 * 24))
 
     if (diffDays > maxDays) {
-      const planName = clinic.plan_id === 'starter' ? 'Starter (7 days)' : 'Pro (30 days)'
+      const planName = clinic?.plan_id === 'starter' ? 'Starter (7 days)' : 'Pro (30 days)'
       return alert(`Your ${planName} plan allows viewing up to ${maxDays} days of history. Upgrade to unlock more!`)
     }
 
@@ -235,7 +190,7 @@ export default function AnalyticsPage() {
         p.token,
         `"${p.name || 'Walk-in'}"`,
         p.phone ? maskPhone(p.phone) : '',
-        p.status.toUpperCase(),
+        (p.status || '').toUpperCase(),
         waitTime
       ]
     })
@@ -254,17 +209,8 @@ export default function AnalyticsPage() {
   const todayStr = getISTDateString(new Date())
   const todayData = guests.filter(p => p.date === todayStr)
   
-  // Section 1: Today
-  const todayTotal = todayData.length
-  const todayCompleted = todayData.filter(p => p.status === 'done').length
-  const todaySkipped = todayData.filter(p => p.status === 'skipped').length
-  const todayWaitTimes = todayData.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
-  const todayAvgWait = todayWaitTimes.length ? Math.round(todayWaitTimes.reduce((a,b)=>a+b,0)/todayWaitTimes.length) : 0
-  const todayCompletedPct = todayTotal ? Math.round((todayCompleted / todayTotal) * 100) : 0
-
-  // Section 2 & 3: Selected Range
   const rangeTotal = guests.length
-  const rangeCompleted = guests.filter(p => p.status === 'done').length
+  const rangeCompleted = guests.filter(p => p.status === 'done' || p.status === 'completed').length
   const rangeSkipped = guests.filter(p => p.status === 'skipped').length
   const rangeWaitTimes = guests.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
   const rangeAvgWait = rangeWaitTimes.length ? Math.round(rangeWaitTimes.reduce((a,b)=>a+b,0)/rangeWaitTimes.length) : 0
@@ -279,18 +225,9 @@ export default function AnalyticsPage() {
     if(!p.joined_at || p.is_manual) walkIns++
     
     if (p.phone && !p.is_manual) {
-      // 1. Joined
       exactAlertsSent++
       if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
-      
-      // 2. Called/Done/Skipped (they get a 'Now' or 'Skipped' alert)
-      if (['called', 'done', 'skipped'].includes(p.status)) {
-        exactAlertsSent++
-        if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
-      }
-      
-      // 3. Done
-      if (p.status === 'done') {
+      if (['called', 'done', 'completed', 'skipped'].includes(p.status)) {
         exactAlertsSent++
         if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
       }
@@ -300,10 +237,10 @@ export default function AnalyticsPage() {
   const returningPct = rangeTotal ? Math.round((returningCount / rangeTotal) * 100) : 0
   const newPct = rangeTotal ? 100 - returningPct : 0
   const whatsappCount = rangeTotal - walkIns
-  const daysInRange = dateRange === 'today' ? 1 : dateRange === 'custom' ? Math.max(1, Math.ceil((new Date(customEnd) - new Date(customStart)) / (1000 * 60 * 60 * 24)) + 1) : parseInt(dateRange)
+  const daysInRange = dateRange === 'today' ? 1 : dateRange === 'custom' ? Math.max(1, Math.ceil((new Date(customEnd) - new Date(customStart)) / (1000 * 60 * 60 * 24)) + 1) : parseInt(dateRange) || 1
   const avgPerDay = Math.round(rangeTotal / daysInRange)
 
-  // Section 4: Heatmap (Mon-Sun, 24 Hours)
+  // Heatmap (Mon-Sun, 24 Hours)
   const heatmap = Array(7).fill(0).map(() => Array(24).fill(0))
   let heatmapMax = 0
   guests.forEach(p => {
@@ -318,32 +255,18 @@ export default function AnalyticsPage() {
   })
   const daysOfWeek = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
-  // Section 5: Language Breakdown
+  // Language Breakdown
   const langCounts = {}
   guests.forEach(p => {
     const l = p.language || 'en'
     langCounts[l] = (langCounts[l]||0)+1
   })
-  const langMap = { hi:'हिंदी', en:'English', mr:'मराठी', gu:'ગુજરાતી', pa:'ਪੰਜਾਬੀ', ta:'தமிழ்', te:'తెలుగు', bn:'বাংলা', kn:'ಕನ್ನಡ', ml:'മലയാളം' }
+  const langMap = { hi:'हिंदी', en:'English', mr:'मराठी', gu:'ગુજરાતી', pa:'ਪੰਜਾਬੀ', ta:'தமிழ்', te:'తెలుగు', bn:'বাংলা', kn:'<ctrl42><ctrl42><ctrl42> Malayalam' }
   const sortedLangs = Object.entries(langCounts).sort((a,b)=>b[1]-a[1])
 
-  // Section 6: Monthly Comparison (only makes sense if > today)
-  const lastTotal = lastPeriodGuests.length
-  const lastCompleted = lastPeriodGuests.filter(p => p.status === 'done').length
-  const lastCompletedPct = lastTotal ? Math.round((lastCompleted / lastTotal) * 100) : 0
-  const lastWaitTimes = lastPeriodGuests.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
-  const lastAvgWait = lastWaitTimes.length ? Math.round(lastWaitTimes.reduce((a,b)=>a+b,0)/lastWaitTimes.length) : 0
-  
-  const totalChange = lastTotal ? Math.round(((rangeTotal - lastTotal)/lastTotal)*100) : 0
-
-  // Section 7: Feedback
-  const ratings = overallFeedback?.ratings || {5:0, 4:0, 3:0, 2:0, 1:0}
-  const avgRating = overallFeedback?.avgRating || "0.0"
-  const ratingCount = overallFeedback?.ratingCount || 0
-
   if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-[#7f1d1d]">
-      <div className="w-10 h-10 border-4 border-white/10 border-t-[#F59E0B] rounded-full animate-spin"></div>
+    <div className="lovable-root flex items-center justify-center min-h-screen">
+      <div className="w-10 h-10 border-4 border-[#3f1515] border-t-[#fbbf24] rounded-full animate-spin"></div>
     </div>
   )
 
@@ -352,15 +275,15 @@ export default function AnalyticsPage() {
   const isElite = clinic?.plan_id === 'elite'
 
   const LockCard = ({ title, planRequired }) => (
-    <div className="absolute inset-0 bg-[#1a0505]/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl border border-[#E2E8F0]">
-      <div className="bg-[#1a0505] p-6 rounded-2xl shadow-xl flex flex-col items-center text-center max-w-sm">
-        <div className="w-12 h-12 bg-[#380505] rounded-full flex items-center justify-center mb-4"><Lock className="w-6 h-6 text-zinc-300" /></div>
-        <h3 className="text-xl font-bold text-[#fbbf24] mb-2">Unlock {title}</h3>
-        <p className="text-zinc-300 mb-6 text-sm">Upgrade to the {planRequired} plan to access advanced analytics and grow your clinic.</p>
-        <button onClick={() => router.push('/restaurant-dashboard/billing')} className="bg-[#fbbf24] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#d97706]">
-          Upgrade Now
-        </button>
+    <div className="absolute inset-0 bg-[#0f0505]/80 backdrop-blur-md z-10 flex flex-col items-center justify-center rounded-2xl p-6 text-center border border-[#3f1515]">
+      <div className="w-12 h-12 bg-[#2a0a0a] border border-[#fbbf24]/30 rounded-full flex items-center justify-center mb-3">
+        <Lock className="w-6 h-6 text-[#fbbf24]" />
       </div>
+      <h3 className="text-lg font-black text-[#f9fafb] mb-1">Unlock {title}</h3>
+      <p className="text-xs text-[#a1a1aa] mb-4 max-w-xs">Upgrade to the {planRequired} plan to access advanced analytics & reporting.</p>
+      <button onClick={() => router.push('/restaurant-dashboard/billing')} className="lovable-btn-primary">
+        Upgrade Now
+      </button>
     </div>
   )
 
@@ -371,54 +294,42 @@ export default function AnalyticsPage() {
     if (dateRange === '90') return "90 Days Snapshot"
     if (dateRange === '180') return "6 Months Snapshot"
     if (dateRange === '365') return "1 Year Snapshot"
-    if (dateRange === 'custom') {
-      if (!customStart || !customEnd) return "Custom Period Snapshot"
-      const formatOpts = { day: '2-digit', month: 'short', year: 'numeric' }
-      const s = new Date(customStart).toLocaleDateString('en-IN', formatOpts)
-      const e = new Date(customEnd).toLocaleDateString('en-IN', formatOpts)
-      return `${s} - ${e} Snapshot`
-    }
-    return 'Period Snapshot'
+    return "Custom Period Snapshot"
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
-      <style>{`
-        @media print {
-          body { background: white !important; }
-          .no-print { display: none !important; }
-          .shadow-sm, .shadow-xl { box-shadow: none !important; border: 1px solid #E2E8F0 !important; }
-          .bg-[#1a0505] { background: white !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
-      `}</style>
+    <div className="lovable-root">
       
-      {/* HEADER */}
-      <div className="bg-[#7f1d1d] text-white p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/restaurant-dashboard')} className="w-10 h-10 bg-[#1a0505]/10 hover:bg-[#1a0505]/20 rounded-full flex items-center justify-center">←</button>
-          <div>
-            <div className="text-xs text-[#CCFBF1] font-bold tracking-widest uppercase mb-1">Analytics Dashboard</div>
-            <div className="text-2xl font-black">{clinic?.name}</div>
+      {/* ── HEADER ── */}
+      <header className="lovable-header" style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button 
+              onClick={() => router.push('/restaurant-dashboard')}
+              className="lovable-btn-outline"
+              style={{ padding: '8px 16px', fontSize: '0.8rem' }}
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+            </button>
           </div>
-        </div>
-        <div className="flex flex-col gap-3 w-full sm:w-auto">
-          <div className="flex flex-col sm:flex-row gap-3">
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {userRestaurants.length > 1 && (
               <select
                 value={clinic?.id || ''}
                 onChange={handleBranchChange}
-                className="bg-[#7f1d1d] border border-[#4a0a0a] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
+                style={{ background: 'var(--wine-deep)', border: '1px solid var(--border)', color: 'var(--foreground)', padding: '8px 14px', borderRadius: 8, fontSize: '0.8rem', outline: 'none' }}
               >
                 {userRestaurants.map(uc => (
                   <option key={uc.id} value={uc.id}>{uc.name}</option>
                 ))}
               </select>
             )}
+
             <select 
               value={dateRange} 
               onChange={handleDateChange}
-              className="bg-[#4a0a0a] border border-[#334155] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
+              style={{ background: 'var(--wine-deep)', border: '1px solid var(--border)', color: 'var(--foreground)', padding: '8px 14px', borderRadius: 8, fontSize: '0.8rem', outline: 'none', fontWeight: 600 }}
             >
               <option value="today">Today Only</option>
               <option value="7">Last 7 Days</option>
@@ -428,322 +339,213 @@ export default function AnalyticsPage() {
               <option value="365">Last 1 Year {!isElite ? '(Locked)' : ''}</option>
               <option value="custom">Custom Range</option>
             </select>
+
             <button
               onClick={() => isStarter ? router.push('/restaurant-dashboard/billing') : exportCSV()}
-              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#4a0a0a] text-[#99F6E4] cursor-not-allowed' : 'bg-[#fbbf24] text-white hover:bg-[#d97706]'}`}
+              className="lovable-btn-outline"
+              style={{ padding: '8px 16px', fontSize: '0.8rem' }}
             >
-              {isStarter ? <><Lock className="inline-block w-4 h-4 mr-1" /> CSV Export</> : <><Download className="inline-block w-4 h-4 mr-1" /> CSV</>}
+              {isStarter ? <><Lock className="w-3.5 h-3.5" /> CSV Export</> : <><Download className="w-3.5 h-3.5 text-[#fbbf24]" /> Export CSV</>}
             </button>
+
             <button
               onClick={() => isStarter ? router.push('/restaurant-dashboard/billing') : window.print()}
-              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#4a0a0a] text-[#99F6E4] cursor-not-allowed' : 'bg-[#F59E0B] text-white hover:bg-[#D97706]'}`}
+              className="lovable-btn-outline"
+              style={{ padding: '8px 16px', fontSize: '0.8rem' }}
             >
-              {isStarter ? <><Lock className="inline-block w-4 h-4 mr-1" /> PDF Report</> : <><Printer className="inline-block w-4 h-4 mr-1" /> PDF</>}
+              {isStarter ? <><Lock className="w-3.5 h-3.5" /> Print PDF</> : <><Printer className="w-3.5 h-3.5 text-[#fbbf24]" /> Print PDF</>}
             </button>
           </div>
+        </div>
 
-          {/* Custom Date Range Picker */}
-          {dateRange === 'custom' && (
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#4a0a0a] border border-[#022C22] p-3 rounded-xl">
-              <div className="flex items-center gap-2 flex-1">
-                <label className="text-[#CCFBF1] text-xs font-bold whitespace-nowrap">FROM</label>
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={e => setCustomStart(e.target.value)}
-                  max={customEnd || getISTDateString(new Date())}
-                  min={(() => { const d = new Date(); d.setDate(d.getDate() - getMaxDays(clinic?.plan_id)); return getISTDateString(d) })()}
-                  className="bg-[#7f1d1d] border border-[#022C22] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
-                />
-              </div>
-              <div className="flex items-center gap-2 flex-1">
-                <label className="text-[#CCFBF1] text-xs font-bold whitespace-nowrap">TO</label>
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={e => setCustomEnd(e.target.value)}
-                  min={customStart}
-                  max={getISTDateString(new Date())}
-                  className="bg-[#7f1d1d] border border-[#022C22] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
-                />
-              </div>
-              <button
-                onClick={applyCustomRange}
-                className="bg-[#7f1d1d] hover:bg-[#4a0a0a] text-white px-5 py-2 rounded-lg font-bold text-sm whitespace-nowrap"
-              >
-                Apply ✓
-              </button>
-            </div>
-          )}
+        <div className="lovable-supertitle">RESTAURANT | ANALYTICS & REPORTS</div>
+        <h1 className="lovable-title">
+          {clinic?.name || 'Restaurant'} <span>— Performance Reports</span>
+        </h1>
+        <div className="lovable-subtitle">
+          In-depth queue performance, guest frequency, peak hours heatmap, and language distribution.
+        </div>
+      </header>
+
+      {/* Custom Date Picker */}
+      {dateRange === 'custom' && (
+        <div style={{ background: 'var(--wine-deep)', border: '1px solid var(--border)', padding: '12px 16px', borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gold)' }}>FROM:</span>
+            <input
+              type="date"
+              value={customStart}
+              onChange={e => setCustomStart(e.target.value)}
+              max={customEnd || getISTDateString(new Date())}
+              style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: '#fef3c7', padding: '6px 12px', borderRadius: 8, fontSize: '0.8rem', outline: 'none' }}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gold)' }}>TO:</span>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={e => setCustomEnd(e.target.value)}
+              min={customStart}
+              max={getISTDateString(new Date())}
+              style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: '#fef3c7', padding: '6px 12px', borderRadius: 8, fontSize: '0.8rem', outline: 'none' }}
+            />
+          </div>
+          <button onClick={applyCustomRange} className="lovable-btn-primary" style={{ padding: '6px 16px', fontSize: '0.8rem' }}>
+            Apply Filter
+          </button>
+        </div>
+      )}
+
+      {/* ── STATS ROW ── */}
+      <div className="lovable-stats-row">
+        <div className="lovable-stat-block">
+          <div className="lovable-stat-title"><span>I.</span> TOTAL GUESTS</div>
+          <div className="lovable-stat-value">{rangeTotal}</div>
+          <div className="lovable-stat-sub">{getSnapshotTitle()}</div>
+        </div>
+
+        <div className="lovable-stat-block">
+          <div className="lovable-stat-title"><span>II.</span> AVG WAIT TIME</div>
+          <div className="lovable-stat-value" style={{ color: 'var(--gold)' }}>{rangeAvgWait}<span style={{ fontSize: '1.2rem', marginLeft: 4 }}>min</span></div>
+          <div className="lovable-stat-sub">per cover average</div>
+        </div>
+
+        <div className="lovable-stat-block">
+          <div className="lovable-stat-title"><span>III.</span> COMPLETION RATE</div>
+          <div className="lovable-stat-value" style={{ color: '#10b981' }}>{rangeTotal ? Math.round((rangeCompleted / rangeTotal) * 100) : 0}%</div>
+          <div className="lovable-stat-sub">{rangeCompleted} tables completed</div>
+        </div>
+
+        <div className="lovable-stat-block">
+          <div className="lovable-stat-title"><span>IV.</span> SKIPPED</div>
+          <div className="lovable-stat-value" style={{ color: '#ef4444' }}>{rangeSkipped}</div>
+          <div className="lovable-stat-sub">unresponsive covers</div>
         </div>
       </div>
 
-      <div className="w-full mx-auto p-4 sm:p-6 space-y-6">
+      {/* ── INSIGHTS & PERFORMANCE GRID ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 28 }}>
         
-        {/* PRINT HEADER ONLY */}
-        <div className="hidden print:block mb-8 border-b-2 border-[#E2E8F0] pb-4">
-          <h1 className="text-3xl font-black text-[#fbbf24]">{clinic?.name}</h1>
-          <p className="text-[#64748B] font-semibold">Analytics Report • Generated {new Date().toLocaleDateString('en-IN')}</p>
-        </div>
+        {/* Guest Insights */}
+        <div style={{ background: 'var(--wine-deep)', border: '1px solid var(--border)', borderRadius: 16, padding: '24px' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--gold)', marginBottom: 20 }}>Guest Frequency</h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+              <span style={{ color: 'var(--muted)' }}>Total Covers</span>
+              <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>{rangeTotal}</span>
+            </div>
 
-        {/* SEC 1: PERIOD SNAPSHOT */}
-        <div>
-          <h2 className="text-xl font-black text-[#fbbf24] mb-4">
-            {getSnapshotTitle()}
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-[#1a0505] p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Guests</div>
-              <div className="text-3xl font-black text-[#fbbf24]">{rangeTotal}</div>
+            <div style={{ width: '100%', height: 10, borderRadius: 5, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', display: 'flex' }}>
+              <div style={{ width: `${returningPct}%`, background: 'var(--gold)' }} />
+              <div style={{ width: `${newPct}%`, background: '#38bdf8' }} />
             </div>
-            <div className="bg-[#1a0505] p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Avg Wait Time</div>
-              <div className="text-3xl font-black text-[#F59E0B]">{rangeAvgWait}<span className="text-sm font-medium text-[#94A3B8] ml-1">min</span></div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} />
+                <span>Returning ({returningPct}%)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#38bdf8' }} />
+                <span>New ({newPct}%)</span>
+              </div>
             </div>
-            <div className="bg-[#1a0505] p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Completed</div>
-              <div className="text-3xl font-black text-[#fbbf24]">{rangeTotal ? Math.round((rangeCompleted / rangeTotal) * 100) : 0}%</div>
-            </div>
-            <div className="bg-[#1a0505] p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Skipped</div>
-              <div className="text-3xl font-black text-[#EF4444]">{rangeSkipped}</div>
+
+            <div style={{ borderTop: '1px solid var(--border)', pt: 16, display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>WhatsApp QR Joins</span>
+                <span style={{ fontWeight: 700 }}>{whatsappCount}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>Walk-in Manual Entries</span>
+                <span style={{ fontWeight: 700 }}>{walkIns}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>Avg Guests / Day</span>
+                <span style={{ fontWeight: 700 }}>{avgPerDay}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* SEC 2 & 3: INSIGHTS & PERFORMANCE */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-[#1a0505] p-6 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-            <h2 className="text-lg font-black text-[#fbbf24] mb-6">Guest Insights</h2>
-            <div className="space-y-5">
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Total Guests</span>
-                <span className="font-bold text-lg">{rangeTotal}</span>
-              </div>
-              <div className="w-full bg-[#F1F5F9] h-3 rounded-full overflow-hidden flex">
-                <div style={{width: `${returningPct}%`}} className="bg-[#7f1d1d] h-full"></div>
-                <div style={{width: `${newPct}%`}} className="bg-[#38BDF8] h-full"></div>
-              </div>
-              <div className="flex justify-between text-sm">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#7f1d1d]"></div><span className="font-semibold text-[#fbbf24]">Returning ({returningPct}%)</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#38BDF8]"></div><span className="font-semibold text-[#fbbf24]">New ({newPct}%)</span></div>
-              </div>
-              <div className="pt-4 border-t border-[#F1F5F9] flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">WhatsApp Joins</span>
-                <span className="font-bold">{whatsappCount}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Walk-ins</span>
-                <span className="font-bold">{walkIns}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Avg Guests/Day</span>
-                <span className="font-bold">{avgPerDay}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative bg-[#1a0505] p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-            {isStarter && <LockCard title="Advanced Queue Analytics" planRequired="Pro" />}
-            <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#fbbf24] mb-6">Queue Performance</h2>
-            <div className="space-y-5">
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Average Wait</span>
-                <span className="font-bold text-[#F59E0B]">{rangeAvgWait} mins</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Completed vs Skipped</span>
-                <span className="font-bold text-[#fbbf24]">{rangeCompleted} <span className="text-[#94A3B8]">/</span> <span className="text-[#EF4444]">{rangeSkipped}</span></span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">WhatsApp Alerts Sent</span>
-                <span className="font-bold">{exactAlertsSent}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Voice Notes Generated</span>
-                <span className="font-bold">{exactVoicesGenerated}</span>
-              </div>
-              <div className="pt-4 border-t border-[#F1F5F9] flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Peak Queue Size</span>
-                <span className="font-bold text-xl">{heatmapMax}</span>
-              </div>
-            </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SEC 4: HEATMAP */}
-        <div className="relative bg-[#1a0505] p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-          {isStarter && <LockCard title="Busy Hour Heatmap" planRequired="Pro" />}
+        {/* Queue Performance */}
+        <div style={{ position: 'relative', background: 'var(--wine-deep)', border: '1px solid var(--border)', borderRadius: 16, padding: '24px', overflow: 'hidden' }}>
+          {isStarter && <LockCard title="Advanced Queue Performance" planRequired="Pro" />}
           <div className={isStarter ? 'blur-sm select-none' : ''}>
-            <h2 className="text-lg font-black text-[#fbbf24] mb-6">Busy Hour Heatmap</h2>
-            <div className="overflow-x-auto pb-4 custom-scrollbar">
-              <div className="min-w-[800px] pr-4">
-                <div className="flex mb-2">
-                  <div className="w-12"></div>
-                  {Array(24).fill(0).map((_,i) => (
-                    <div key={i} className="flex-1 text-center text-xs font-bold text-[#94A3B8]">
-                      {i === 0 ? '12a' : i < 12 ? i+'a' : i === 12 ? '12p' : (i-12)+'p'}
-                    </div>
-                  ))}
-                </div>
-                {daysOfWeek.map((day, dIdx) => (
-                  <div key={day} className="flex items-center mb-1 gap-1">
-                    <div className="w-12 text-xs font-bold text-[#64748B]">{day}</div>
-                    {heatmap[dIdx].map((count, hIdx) => {
-                      let bgColor = 'linear-gradient(135deg, #1f0303 0%, #4a0a0a 100%)' // 0 guests (gray)
-                      if (heatmapMax > 0 && count > 0) {
-                        const normalizedMax = Math.max(heatmapMax, 6) // Baseline of 6 guests (10 mins/guest) for peak volume
-                        const ratio = count / normalizedMax
-                        
-                        if (ratio >= 0.75) {
-                          bgColor = `rgba(239, 68, 68, ${Math.max(0.7, count / heatmapMax)})` // Red for most
-                        } else if (ratio >= 0.35) {
-                          bgColor = `rgba(16, 185, 129, ${Math.max(0.6, count / heatmapMax)})` // Solid green for medium
-                        } else {
-                          bgColor = `rgba(16, 185, 129, 0.3)` // Light green for less
-                        }
-                      }
-                      return (
-                        <div 
-                          key={hIdx} 
-                          title={`${count} guests`}
-                          className="flex-1 h-8 rounded-sm transition-all hover:ring-2 hover:ring-[#7f1d1d]"
-                          style={{ backgroundColor: bgColor }}
-                        ></div>
-                      )
-                    })}
-                  </div>
-                ))}
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--gold)', marginBottom: 20 }}>Queue Efficiency</h2>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>Average Wait Duration</span>
+                <span style={{ fontWeight: 700, color: 'var(--gold)' }}>{rangeAvgWait} mins</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>Completed vs Skipped</span>
+                <span style={{ fontWeight: 700 }}><span style={{ color: '#10b981' }}>{rangeCompleted}</span> / <span style={{ color: '#ef4444' }}>{rangeSkipped}</span></span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>WhatsApp SMS Alerts Sent</span>
+                <span style={{ fontWeight: 700 }}>{exactAlertsSent}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>AI Voice Alerts Triggered</span>
+                <span style={{ fontWeight: 700 }}>{exactVoicesGenerated}</span>
+              </div>
+              <div style={{ borderTop: '1px solid var(--border)', pt: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--muted)' }}>Peak Hourly Volume</span>
+                <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>{heatmapMax} covers</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* SEC 5 & 6 */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="relative bg-[#1a0505] p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-            {isStarter && <LockCard title="Language Analytics" planRequired="Pro" />}
-            <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#fbbf24] mb-6">Language Breakdown</h2>
-              <div className="space-y-4">
-                {sortedLangs.slice(0,5).map(([code, count]) => (
-                  <div key={code}>
-                    <div className="flex justify-between text-sm font-semibold mb-1">
-                      <span>{langMap[code] || code}</span>
-                      <span>{Math.round((count/rangeTotal)*100)}%</span>
-                    </div>
-                    <div className="w-full bg-[#F1F5F9] h-2 rounded-full">
-                      <div className="bg-[#7f1d1d] h-full rounded-full" style={{width: `${(count/rangeTotal)*100}%`}}></div>
-                    </div>
-                  </div>
-                ))}
-                {sortedLangs.length === 0 && <div className="text-[#94A3B8] text-sm italic">No language data available.</div>}
-              </div>
-            </div>
-          </div>
-
-          <div className="relative bg-[#1a0505] p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-            {isStarter && <LockCard title="Monthly Comparison" planRequired="Pro" />}
-            <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#fbbf24] mb-6">Period Comparison</h2>
-              {totalChange > 0 ? (
-                <div className="bg-[#ECFDF5] text-[#fbbf24] p-3 rounded-xl text-sm font-bold mb-4 flex items-center gap-2">
-                  <TrendingUp className="inline-block w-5 h-5" /> Your restaurant grew {totalChange}% this period!
-                </div>
-              ) : (
-                <div className="bg-[#F8FAFC] text-[#64748B] p-3 rounded-xl text-sm font-bold mb-4">
-                  Compare this period vs previous period
-                </div>
-              )}
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[#94A3B8] border-b border-[#F1F5F9]">
-                    <th className="pb-2 font-semibold">Metric</th>
-                    <th className="pb-2 font-semibold text-right">Current</th>
-                    <th className="pb-2 font-semibold text-right">Previous</th>
-                  </tr>
-                </thead>
-                <tbody className="font-semibold text-[#fbbf24]">
-                  <tr className="border-b border-[#F1F5F9]">
-                    <td className="py-3 text-[#64748B]">Total Guests</td>
-                    <td className="py-3 text-right">{rangeTotal}</td>
-                    <td className="py-3 text-right">{lastTotal}</td>
-                  </tr>
-                  <tr className="border-b border-[#F1F5F9]">
-                    <td className="py-3 text-[#64748B]">Completed %</td>
-                    <td className="py-3 text-right">{rangeTotal ? Math.round((rangeCompleted/rangeTotal)*100) : 0}%</td>
-                    <td className="py-3 text-right">{lastCompletedPct}%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-3 text-[#64748B]">Avg Wait Time</td>
-                    <td className="py-3 text-right">{rangeAvgWait}m</td>
-                    <td className="py-3 text-right">{lastAvgWait}m</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* SEC 7: FEEDBACK */}
-        <div className="relative bg-[#1a0505] p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-          {!isElite && <LockCard title="Guest Feedback" planRequired="Elite" />}
-          <div className={!isElite ? 'blur-sm select-none' : ''}>
-            <h2 className="text-lg font-black text-[#fbbf24] mb-6">Guest Feedback Summary</h2>
-            <div className="flex flex-col md:flex-row gap-8 items-center">
-              <div className="text-center">
-                <div className="text-6xl font-black text-[#F59E0B]">{avgRating}</div>
-                <div className="flex gap-1 text-[#F59E0B] my-2 text-xl justify-center">
-                  {'★★★★★'.split('').map((s,i) => <span key={i} className={i < Math.round(avgRating) ? '' : 'text-gray-200'}>{s}</span>)}
-                </div>
-                <div className="text-[#64748B] text-sm font-semibold">{ratingCount} reviews</div>
-              </div>
-              <div className="flex-1 w-full space-y-2">
-                {[5,4,3,2,1].map(star => (
-                  <div key={star} className="flex items-center gap-3 text-sm font-semibold">
-                    <span className="w-12 text-[#64748B]">{star} stars</span>
-                    <div className="flex-1 bg-[#F1F5F9] h-2 rounded-full">
-                      <div className="bg-[#F59E0B] h-full rounded-full" style={{width: `${ratingCount ? (ratings[star]/ratingCount)*100 : 0}%`}}></div>
-                    </div>
-                    <span className="w-8 text-right text-[#fbbf24]">{ratingCount ? Math.round((ratings[star]/ratingCount)*100) : 0}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SEC 8: AI INSIGHTS */}
-        <div className="relative bg-gradient-to-br from-[#7f1d1d] to-[#4a0a0a] p-1 rounded-2xl shadow-xl overflow-hidden hover-card print:bg-none print:shadow-none print:p-0 print:border print:border-[#E2E8F0] print:break-inside-avoid">
-          {!isElite && <LockCard title="Smart AI Insights" planRequired="Elite" />}
-          <div className={`bg-[#7f1d1d] rounded-xl p-6 print:bg-[#1a0505] print:p-5 ${!isElite ? 'blur-sm select-none' : ''}`}>
-            <div className="flex items-center gap-3 mb-6">
-              <Brain className="w-8 h-8" />
-              <h2 className="text-xl font-black text-white print:text-[#fbbf24]">TokenPe AI Insights</h2>
-            </div>
-            {loadingAi ? (
-              <div className="text-[#CCFBF1] font-semibold animate-pulse print:text-[#64748B]">Generating insights using TokenPe AI...</div>
-            ) : aiInsights ? (
-              <div className="grid md:grid-cols-3 gap-4">
-                {aiInsights.map((insight, i) => (
-                  <div key={i} className="bg-[#1a0505]/5 border border-white/10 p-5 rounded-xl backdrop-blur-md print:bg-[#F8FAFC] print:border-[#E2E8F0] print:break-inside-avoid print:backdrop-blur-none">
-                    <div className="text-2xl mb-3">{insight.icon}</div>
-                    <p className="text-white text-sm font-semibold leading-relaxed print:text-[#fbbf24]">{insight.insight}</p>
-                    <div className={`mt-4 text-xs font-bold uppercase tracking-wider ${insight.type==='positive'?'text-[#fbbf24]':insight.type==='warning'?'text-[#F59E0B]':'text-[#38BDF8]'}`}>
-                      {insight.type}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-[#CCFBF1] font-semibold print:text-[#64748B]">Not enough data to generate insights yet.</div>
-            )}
           </div>
         </div>
 
       </div>
+
+      {/* ── HEATMAP SECTION ── */}
+      <div style={{ position: 'relative', background: 'var(--wine-deep)', border: '1px solid var(--border)', borderRadius: 16, padding: '24px', overflow: 'hidden' }}>
+        {isStarter && <LockCard title="Busy Hour Heatmap" planRequired="Pro" />}
+        <div className={isStarter ? 'blur-sm select-none' : ''}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--gold)', marginBottom: 16 }}>Busy Hour Heatmap (Day × Hour)</h2>
+          <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
+            <div style={{ minWidth: 750 }}>
+              <div style={{ display: 'flex', marginBottom: 6 }}>
+                <div style={{ width: 44 }} />
+                {Array(24).fill(0).map((_,i) => (
+                  <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '0.65rem', fontWeight: 700, color: 'var(--muted)' }}>
+                    {i === 0 ? '12a' : i < 12 ? i+'a' : i === 12 ? '12p' : (i-12)+'p'}
+                  </div>
+                ))}
+              </div>
+              {daysOfWeek.map((day, dIdx) => (
+                <div key={day} style={{ display: 'flex', alignItems: 'center', marginBottom: 4, gap: 4 }}>
+                  <div style={{ width: 44, fontSize: '0.72rem', fontWeight: 700, color: 'var(--gold)' }}>{day}</div>
+                  {heatmap[dIdx].map((count, hIdx) => {
+                    let bg = 'rgba(0,0,0,0.3)'
+                    if (heatmapMax > 0 && count > 0) {
+                      const ratio = count / Math.max(heatmapMax, 5)
+                      if (ratio >= 0.75) bg = '#ef4444' // Heavy peak (red)
+                      else if (ratio >= 0.4) bg = '#f59e0b' // Medium (amber)
+                      else bg = 'rgba(212, 163, 115, 0.4)' // Light (gold)
+                    }
+                    return (
+                      <div 
+                        key={hIdx} 
+                        style={{ flex: 1, height: 26, borderRadius: 4, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700, color: count > 0 ? '#fff' : 'transparent' }}
+                        title={`${day} ${hIdx}:00 — ${count} guests`}
+                      >
+                        {count > 0 ? count : ''}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   )
 }

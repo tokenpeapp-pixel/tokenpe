@@ -1,37 +1,15 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../../lib/supabase'
-import { Lock, Download, Printer, Rocket, Building, Calendar, Trophy, Brain, TrendingUp } from 'lucide-react'
-
-// ─── PHONE MASKING (Privacy) ────────────────────────────────────────────────
-function maskPhone(phone) {
-  if (!phone) return ''
-  const p = String(phone).replace(/\D/g, '')
-  if (p.length <= 4) return '****'
-  return p.slice(0, 2) + '****' + p.slice(-4)
-}
-
-// Helper to get IST Date
-function getISTDateString(date = new Date()) {
-  const istOffset = 5.5 * 60 * 60 * 1000
-  const istDate = new Date(date.getTime() + istOffset)
-  return istDate.toISOString().split('T')[0]
-}
+import { BarChart2, TrendingUp, Users, Clock, ChevronLeft, Calendar, Activity, Star, Zap, RefreshCw, AlertTriangle } from 'lucide-react'
+import { supabase, getISTDateString } from '../../../lib/supabase'
 
 export default function AnalyticsPage() {
   const router = useRouter()
-  const [clinic, setClinic] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [patients, setPatients] = useState([])
-  const [lastPeriodPatients, setLastPeriodPatients] = useState([])
-  const [overallFeedback, setOverallFeedback] = useState(null)
-  const [dateRange, setDateRange] = useState('today') // today, 7, 30, 90, 180, 365, custom
-  const [customStart, setCustomStart] = useState('')
-  const [customEnd, setCustomEnd] = useState('')
-  const [aiInsights, setAiInsights] = useState(null)
-  const [loadingAi, setLoadingAi] = useState(false)
-  const [userClinics, setUserClinics] = useState([])
+  const [error, setError] = useState(null)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const [selectedDate, setSelectedDate] = useState(getISTDateString()) // "YYYY-MM-DD"
 
   useEffect(() => {
     async function load() {
@@ -40,8 +18,6 @@ export default function AnalyticsPage() {
         router.push('/school-login')
         return
       }
-      const c = JSON.parse(stored)
-      setClinic(c)
 
       // Load all branches for the branch selector
       try {
@@ -54,16 +30,135 @@ export default function AnalyticsPage() {
       else if (c.plan_id === 'pro') setDateRange('30')
       else setDateRange('30') // Elite default to 30
 
-      await fetchAnalytics(c, c.plan_id === 'starter' ? '7' : '30')
+      // ── 1. Fetch today's school_history (completed/cancelled) ──
+      const { data: histData, error: histErr } = await supabase
+        .from('school_history')
+        .select('id, student_name, grade_class, time_label, status, created_at, completed_at, guardian_name')
+        .eq('school_id', schoolId)
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .order('created_at', { ascending: true })
+
+      if (histErr) throw histErr
+      const history = histData || []
+      setHistoryToday(history)
+
+      // ── 2. Fetch today's queue entries (all statuses) ──
+      const { data: qData } = await supabase
+        .from('school_queue')
+        .select('id, name, status, created_at, completed_at, notes, phone')
+        .eq('school_id', schoolId)
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .order('created_at', { ascending: true })
+      const queue = qData || []
+      setQueueToday(queue)
+
+      // Also fetch all-time total from queues table
+      const { count: allTimeCount } = await supabase
+        .from('school_queue')
+        .select('id', { count: 'exact', head: true })
+        .eq('school_id', schoolId)
+      setQueueAllTime(allTimeCount || 0)
+
+      // ── 3. Compute stats ──
+      const allEntries = [...history, ...queue.filter(q => !history.find(h => h.id === q.id))]
+
+      const completed = history.filter(h => h.status === 'done').length
+      const cancelled = [...history, ...queue].filter(r => r.status === 'cancelled').length
+      const currentWaiting = queue.filter(q => q.status === 'waiting' || q.status === 'with_staff').length
+      const totalToday = Math.max(history.length, queue.length)
+
+      // Hourly buckets: 7am = index 0, 8pm = index 13
+      const buckets = Array(14).fill(0)
+      const allCreated = [...history, ...queue]
+      allCreated.forEach(r => {
+        if (!r.created_at) return
+        // Parse IST hour
+        const d = new Date(r.created_at)
+        const istHour = (d.getUTCHours() + 5 + Math.floor((d.getUTCMinutes() + 30) / 60)) % 24
+        const idx = istHour - 7
+        if (idx >= 0 && idx < 14) buckets[idx]++
+      })
+      setHourlyBuckets(buckets)
+
+      // Peak hour
+      const peakIdx = buckets.indexOf(Math.max(...buckets))
+      const peakHourRaw = peakIdx + 7
+      const peakHour = buckets[peakIdx] > 0
+        ? `${peakHourRaw > 12 ? peakHourRaw - 12 : peakHourRaw}:00 ${peakHourRaw >= 12 ? 'PM' : 'AM'}`
+        : 'N/A'
+
+      // Avg wait time (completed_at - created_at where both exist)
+      const waitTimes = history
+        .filter(h => h.completed_at && h.created_at)
+        .map(h => (new Date(h.completed_at) - new Date(h.created_at)) / 60000)
+        .filter(m => m > 0 && m < 120)
+      const avgWait = waitTimes.length > 0 ? Math.round(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length) : null
+
+      // Satisfaction = completed / (completed + cancelled) * 100
+      const satisfaction = (completed + cancelled) > 0
+        ? Math.round((completed / (completed + cancelled)) * 100)
+        : null
+
+      setStats({
+        totalServedToday: totalToday,
+        completedToday: completed,
+        cancelledToday: cancelled,
+        currentInQueue: currentWaiting,
+        peakHour,
+        avgWaitMin: avgWait,
+        satisfactionRate: satisfaction,
+        totalAllTime: allTimeCount || 0,
+      })
+
+      // ── 4. Reason breakdown ──
+      const reasonMap = {}
+      queue.forEach(q => {
+        const raw = q.notes || ''
+        const reason = raw.includes('|') ? raw.split('|')[1]?.trim() : (raw || 'General')
+        reasonMap[reason] = (reasonMap[reason] || 0) + 1
+      })
+      const reasonArr = Object.entries(reasonMap).sort((a, b) => b[1] - a[1]).slice(0, 5)
+      setReasonBreakdown(reasonArr)
+
+      // ── 5. Grade breakdown ──
+      const gradeMap = {}
+      history.forEach(h => {
+        const g = h.grade_class || 'Unknown'
+        gradeMap[g] = (gradeMap[g] || 0) + 1
+      })
+      queue.forEach(q => {
+        const raw = q.notes || ''
+        const g = raw.includes('|') ? raw.split('|')[0]?.trim() : 'Unknown'
+        if (g) gradeMap[g] = (gradeMap[g] || 0) + 1
+      })
+      const gradeArr = Object.entries(gradeMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
+      setGradeBreakdown(gradeArr)
+
+      setLastUpdated(new Date())
+      setError(null)
+    } catch (err) {
+      console.error('Analytics load error:', err)
+      setError('Failed to load analytics data. Check your connection.')
+    } finally {
+      setLoading(false)
     }
-    load()
-  }, [router])
+  }, [])
 
-  async function fetchAnalytics(c, range, cStart, cEnd) {
+  const todayStr = getISTDateString()
+  const isToday = selectedDate === todayStr
+
+  useEffect(() => {
     setLoading(true)
+    loadData(selectedDate)
+    if (!isToday) return // no auto-refresh for past dates
+    const interval = setInterval(() => loadData(selectedDate), 30000)
+    return () => clearInterval(interval)
+  }, [selectedDate, loadData, isToday])
 
-    let cutoffDate, endDate
-    let days = 0
+  const hours = ['7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm']
+  const maxH = Math.max(...hourlyBuckets, 1)
 
     if (range === 'custom' && cStart && cEnd) {
       cutoffDate = cStart
@@ -382,368 +477,202 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
-      <style>{`
-        @media print {
-          body { background: white !important; }
-          .no-print { display: none !important; }
-          .shadow-sm, .shadow-xl { box-shadow: none !important; border: 1px solid #E2E8F0 !important; }
-          .bg-white { background: white !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
-      `}</style>
-      
-      {/* HEADER */}
-      <div className="bg-[#065F46] text-white p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/dashboard')} className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center">←</button>
+    <div style={{ minHeight: '100vh', background: '#F4F7FB', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+
+      {/* Header */}
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
+        <button onClick={() => router.push('/school-dashboard')} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
+          <ChevronLeft size={16} /> Back
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #2563EB 100%)', borderRadius: 8, padding: 8 }}>
+            <BarChart2 size={18} color="#FFF" />
+          </div>
           <div>
-            <div className="text-xs text-[#CCFBF1] font-bold tracking-widest uppercase mb-1">Analytics Dashboard</div>
-            <div className="text-2xl font-black">{clinic?.name}</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: '#1B2A4A' }}>Campus Analytics & Reports</div>
+            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600 }}>
+              {isToday
+                ? lastUpdated ? `Live · last updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : 'Loading...'
+                : `Showing history for ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`
+              }
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-3 w-full sm:w-auto">
-          <div className="flex flex-col sm:flex-row gap-3">
-            {userClinics.length > 1 && (
-              <select
-                value={clinic?.id || ''}
-                onChange={handleBranchChange}
-                className="bg-[#065F46] border border-[#064E3B] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
-              >
-                {userClinics.map(uc => (
-                  <option key={uc.id} value={uc.id}>{uc.name}</option>
-                ))}
-              </select>
-            )}
-            <select 
-              value={dateRange} 
-              onChange={handleDateChange}
-              className="bg-[#064E3B] border border-[#334155] text-white px-4 py-2.5 rounded-xl font-semibold outline-none"
-            >
-              <option value="today">Today Only</option>
-              <option value="7">Last 7 Days</option>
-              <option value="30">Last 30 Days {isStarter ? '(Locked)' : ''}</option>
-              <option value="90">Last 90 Days {isStarter || isPro ? '(Locked)' : ''}</option>
-              <option value="180">Last 6 Months {!isElite ? '(Locked)' : ''}</option>
-              <option value="365">Last 1 Year {!isElite ? '(Locked)' : ''}</option>
-              <option value="custom">Custom Range</option>
-            </select>
-            <button
-              onClick={() => isStarter ? router.push('/dashboard/billing') : exportCSV()}
-              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#064E3B] text-[#99F6E4] cursor-not-allowed' : 'bg-[#10B981] text-white hover:bg-[#059669]'}`}
-            >
-              {isStarter ? <><Lock className="inline-block w-4 h-4 mr-1" /> CSV Export</> : <><Download className="inline-block w-4 h-4 mr-1" /> CSV</>}
-            </button>
-            <button
-              onClick={() => isStarter ? router.push('/dashboard/billing') : window.print()}
-              className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 ${isStarter ? 'bg-[#064E3B] text-[#99F6E4] cursor-not-allowed' : 'bg-[#F59E0B] text-white hover:bg-[#D97706]'}`}
-            >
-              {isStarter ? <><Lock className="inline-block w-4 h-4 mr-1" /> PDF Report</> : <><Printer className="inline-block w-4 h-4 mr-1" /> PDF</>}
-            </button>
-          </div>
-
-          {/* Custom Date Range Picker */}
-          {dateRange === 'custom' && (
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#064E3B] border border-[#022C22] p-3 rounded-xl">
-              <div className="flex items-center gap-2 flex-1">
-                <label className="text-[#CCFBF1] text-xs font-bold whitespace-nowrap">FROM</label>
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={e => setCustomStart(e.target.value)}
-                  max={customEnd || getISTDateString(new Date())}
-                  min={(() => { const d = new Date(); d.setDate(d.getDate() - getMaxDays(clinic?.plan_id)); return getISTDateString(d) })()}
-                  className="bg-[#065F46] border border-[#022C22] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
-                />
-              </div>
-              <div className="flex items-center gap-2 flex-1">
-                <label className="text-[#CCFBF1] text-xs font-bold whitespace-nowrap">TO</label>
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={e => setCustomEnd(e.target.value)}
-                  min={customStart}
-                  max={getISTDateString(new Date())}
-                  className="bg-[#065F46] border border-[#022C22] text-white px-3 py-2 rounded-lg text-sm font-semibold outline-none flex-1 min-w-0"
-                />
-              </div>
-              <button
-                onClick={applyCustomRange}
-                className="bg-[#065F46] hover:bg-[#064E3B] text-white px-5 py-2 rounded-lg font-bold text-sm whitespace-nowrap"
-              >
-                Apply ✓
-              </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Date Picker */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0, background: '#FFFFFF', border: '1.5px solid #BFDBFE', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(37,99,235,0.08)' }}>
+            <div style={{ background: '#EFF6FF', padding: '7px 10px', display: 'flex', alignItems: 'center', borderRight: '1px solid #BFDBFE' }}>
+              <Calendar size={14} color="#2563EB" />
             </div>
+            <input
+              type="date"
+              value={selectedDate}
+              max={todayStr}
+              onChange={e => { if (e.target.value) setSelectedDate(e.target.value) }}
+              style={{
+                border: 'none', outline: 'none', padding: '7px 12px',
+                fontSize: '0.78rem', fontWeight: 700, color: '#1D4ED8',
+                background: 'transparent', cursor: 'pointer', fontFamily: 'inherit',
+                minWidth: 130,
+              }}
+            />
+          </div>
+          {/* Today shortcut */}
+          {!isToday && (
+            <button onClick={() => setSelectedDate(todayStr)} style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, color: '#2563EB' }}>
+              Today
+            </button>
           )}
+          <button onClick={() => { setLoading(true); loadData(selectedDate) }} style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: '#5A6E85', fontSize: '0.75rem', fontWeight: 700 }}>
+            <RefreshCw size={13} /> Refresh
+          </button>
         </div>
       </div>
 
-      <div className="w-full mx-auto p-4 sm:p-6 space-y-6">
-        
-        {/* PRINT HEADER ONLY */}
-        <div className="hidden print:block mb-8 border-b-2 border-[#E2E8F0] pb-4">
-          <h1 className="text-3xl font-black text-[#065F46]">{clinic?.name}</h1>
-          <p className="text-[#64748B] font-semibold">Analytics Report • Generated {new Date().toLocaleDateString('en-IN')}</p>
+      {loading && (
+        <div style={{ textAlign: 'center', padding: 80 }}>
+          <div style={{ display: 'inline-block', width: 36, height: 36, border: '3px solid #E2E8F0', borderTopColor: '#2563EB', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ marginTop: 14, color: '#5A6E85', fontWeight: 600, fontSize: '0.88rem' }}>Loading live analytics...</div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
+      )}
 
-        {/* SEC 1: PERIOD SNAPSHOT */}
-        <div>
-          <h2 className="text-xl font-black text-[#065F46] mb-4">
-            {getSnapshotTitle()}
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Patients</div>
-              <div className="text-3xl font-black text-[#065F46]">{rangeTotal}</div>
-            </div>
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Avg Wait Time</div>
-              <div className="text-3xl font-black text-[#F59E0B]">{rangeAvgWait}<span className="text-sm font-medium text-[#94A3B8] ml-1">min</span></div>
-            </div>
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Completed</div>
-              <div className="text-3xl font-black text-[#10B981]">{rangeTotal ? Math.round((rangeCompleted / rangeTotal) * 100) : 0}%</div>
-            </div>
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-              <div className="text-[#64748B] text-xs font-bold uppercase tracking-wide mb-2">Skipped</div>
-              <div className="text-3xl font-black text-[#EF4444]">{rangeSkipped}</div>
-            </div>
-          </div>
+      {!loading && error && (
+        <div style={{ maxWidth: 500, margin: '60px auto', background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 12, padding: '24px 28px', textAlign: 'center' }}>
+          <AlertTriangle size={32} color="#DC2626" style={{ marginBottom: 12 }} />
+          <div style={{ fontWeight: 700, color: '#DC2626', marginBottom: 6 }}>{error}</div>
+          <button onClick={() => { setLoading(true); loadData() }} style={{ marginTop: 12, background: '#DC2626', color: '#FFF', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem', fontFamily: 'inherit' }}>Try Again</button>
         </div>
+      )}
 
-        {/* SEC 2 & 3: INSIGHTS & PERFORMANCE */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] hover-card">
-            <h2 className="text-lg font-black text-[#065F46] mb-6">Patient Insights</h2>
-            <div className="space-y-5">
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Total Patients</span>
-                <span className="font-bold text-lg">{rangeTotal}</span>
-              </div>
-              <div className="w-full bg-[#F1F5F9] h-3 rounded-full overflow-hidden flex">
-                <div style={{width: `${returningPct}%`}} className="bg-[#065F46] h-full"></div>
-                <div style={{width: `${newPct}%`}} className="bg-[#38BDF8] h-full"></div>
-              </div>
-              <div className="flex justify-between text-sm">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#065F46]"></div><span className="font-semibold text-[#065F46]">Returning ({returningPct}%)</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#38BDF8]"></div><span className="font-semibold text-[#065F46]">New ({newPct}%)</span></div>
-              </div>
-              <div className="pt-4 border-t border-[#F1F5F9] flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">WhatsApp Joins</span>
-                <span className="font-bold">{whatsappCount}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Walk-ins</span>
-                <span className="font-bold">{walkIns}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Avg Patients/Day</span>
-                <span className="font-bold">{avgPerDay}</span>
-              </div>
-            </div>
-          </div>
+      {!loading && !error && (
+        <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 20px' }}>
 
-          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-            {isStarter && <LockCard title="Advanced Queue Analytics" planRequired="Pro" />}
-            <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#065F46] mb-6">Queue Performance</h2>
-            <div className="space-y-5">
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Average Wait</span>
-                <span className="font-bold text-[#F59E0B]">{rangeAvgWait} mins</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Completed vs Skipped</span>
-                <span className="font-bold text-[#10B981]">{rangeCompleted} <span className="text-[#94A3B8]">/</span> <span className="text-[#EF4444]">{rangeSkipped}</span></span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">WhatsApp Alerts Sent</span>
-                <span className="font-bold">{exactAlertsSent}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Voice Notes Generated</span>
-                <span className="font-bold">{exactVoicesGenerated}</span>
-              </div>
-              <div className="pt-4 border-t border-[#F1F5F9] flex justify-between items-center">
-                <span className="text-[#64748B] font-semibold">Peak Queue Size</span>
-                <span className="font-bold text-xl">{heatmapMax}</span>
-              </div>
-            </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SEC 4: HEATMAP */}
-        <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-          {isStarter && <LockCard title="Busy Hour Heatmap" planRequired="Pro" />}
-          <div className={isStarter ? 'blur-sm select-none' : ''}>
-            <h2 className="text-lg font-black text-[#065F46] mb-6">Busy Hour Heatmap</h2>
-            <div className="overflow-x-auto pb-4 custom-scrollbar">
-              <div className="min-w-[800px] pr-4">
-                <div className="flex mb-2">
-                  <div className="w-12"></div>
-                  {Array(24).fill(0).map((_,i) => (
-                    <div key={i} className="flex-1 text-center text-xs font-bold text-[#94A3B8]">
-                      {i === 0 ? '12a' : i < 12 ? i+'a' : i === 12 ? '12p' : (i-12)+'p'}
-                    </div>
-                  ))}
+          {/* KPI Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 12, marginBottom: 24 }}>
+            {kpiCards.map((k, i) => (
+              <div key={i} style={{ background: '#FFFFFF', border: `1.5px solid ${k.border}`, borderRadius: 10, padding: '16px 18px', boxShadow: '0 4px 12px rgba(27,42,74,0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                  <div style={{ background: k.bg, color: k.color, borderRadius: 8, padding: 7, display: 'flex' }}>{k.icon}</div>
                 </div>
-                {daysOfWeek.map((day, dIdx) => (
-                  <div key={day} className="flex items-center mb-1 gap-1">
-                    <div className="w-12 text-xs font-bold text-[#64748B]">{day}</div>
-                    {heatmap[dIdx].map((count, hIdx) => {
-                      let bgColor = '#F1F5F9' // 0 patients (gray)
-                      if (heatmapMax > 0 && count > 0) {
-                        const normalizedMax = Math.max(heatmapMax, 6) // Baseline of 6 patients (10 mins/patient) for peak volume
-                        const ratio = count / normalizedMax
-                        
-                        if (ratio >= 0.75) {
-                          bgColor = `rgba(239, 68, 68, ${Math.max(0.7, count / heatmapMax)})` // Red for most
-                        } else if (ratio >= 0.35) {
-                          bgColor = `rgba(16, 185, 129, ${Math.max(0.6, count / heatmapMax)})` // Solid green for medium
-                        } else {
-                          bgColor = `rgba(16, 185, 129, 0.3)` // Light green for less
-                        }
-                      }
-                      return (
-                        <div 
-                          key={hIdx} 
-                          title={`${count} patients`}
-                          className="flex-1 h-8 rounded-sm transition-all hover:ring-2 hover:ring-[#065F46]"
-                          style={{ backgroundColor: bgColor }}
-                        ></div>
-                      )
-                    })}
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.65rem', fontWeight: 700, color: '#1B2A4A', lineHeight: 1 }}>{k.value}</div>
+                <div style={{ fontSize: '0.65rem', color: '#5A6E85', fontWeight: 800, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.label}</div>
+                <div style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: 500, marginTop: 3 }}>{k.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Hourly Traffic Bar Chart */}
+          <div style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '22px 24px', boxShadow: '0 4px 16px rgba(27,42,74,0.06)', marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1rem', color: '#1B2A4A' }}>Hourly Footfall</div>
+                <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600, marginTop: 2 }}>Live queue volume by hour — today</div>
+              </div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: isToday ? '#2563EB' : '#5A6E85', background: isToday ? '#EFF6FF' : '#F1F5F9', border: `1px solid ${isToday ? '#BFDBFE' : '#E2E8F0'}`, padding: '4px 10px', borderRadius: 6 }}>{isToday ? 'LIVE' : new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+            </div>
+            {hourlyBuckets.every(v => v === 0) ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: '#94A3B8', fontSize: '0.85rem', fontWeight: 600 }}>No queue activity recorded yet today</div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 160 }}>
+                {hourlyBuckets.map((v, i) => (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
+                    {v > 0 && <div style={{ fontSize: '0.58rem', fontWeight: 800, color: v === Math.max(...hourlyBuckets) ? '#2563EB' : '#94A3B8' }}>{v}</div>}
+                    <div style={{
+                      width: '100%', borderRadius: '4px 4px 0 0',
+                      height: `${Math.max((v / maxH) * 130, v > 0 ? 4 : 2)}px`,
+                      background: v === Math.max(...hourlyBuckets)
+                        ? 'linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%)'
+                        : v > 0 ? 'linear-gradient(180deg, #93C5FD 0%, #BFDBFE 100%)' : '#F1F5F9',
+                      transition: 'height 0.6s ease',
+                      boxShadow: v === Math.max(...hourlyBuckets) ? '0 4px 12px rgba(37,99,235,0.3)' : 'none'
+                    }} />
+                    <div style={{ fontSize: '0.55rem', color: '#94A3B8', fontWeight: 600, whiteSpace: 'nowrap' }}>{hours[i]}</div>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SEC 5 & 6 */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-            {isStarter && <LockCard title="Language Analytics" planRequired="Pro" />}
-            <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#065F46] mb-6">Language Breakdown</h2>
-              <div className="space-y-4">
-                {sortedLangs.slice(0,5).map(([code, count]) => (
-                  <div key={code}>
-                    <div className="flex justify-between text-sm font-semibold mb-1">
-                      <span>{langMap[code] || code}</span>
-                      <span>{Math.round((count/rangeTotal)*100)}%</span>
-                    </div>
-                    <div className="w-full bg-[#F1F5F9] h-2 rounded-full">
-                      <div className="bg-[#065F46] h-full rounded-full" style={{width: `${(count/rangeTotal)*100}%`}}></div>
-                    </div>
-                  </div>
-                ))}
-                {sortedLangs.length === 0 && <div className="text-[#94A3B8] text-sm italic">No language data available.</div>}
-              </div>
-            </div>
+            )}
           </div>
 
-          <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-            {isStarter && <LockCard title="Monthly Comparison" planRequired="Pro" />}
-            <div className={isStarter ? 'blur-sm select-none' : ''}>
-              <h2 className="text-lg font-black text-[#065F46] mb-6">Period Comparison</h2>
-              {totalChange > 0 ? (
-                <div className="bg-[#ECFDF5] text-[#065F46] p-3 rounded-xl text-sm font-bold mb-4 flex items-center gap-2">
-                  <TrendingUp className="inline-block w-5 h-5" /> Your clinic grew {totalChange}% this period!
-                </div>
+          {/* Bottom Grid: Reason + Grade breakdown */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+            {/* Reason Breakdown */}
+            <div style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '20px 22px', boxShadow: '0 4px 12px rgba(27,42,74,0.04)' }}>
+              <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '0.95rem', color: '#1B2A4A', marginBottom: 16 }}>Visit Reasons</div>
+              {reasonBreakdown.length === 0 ? (
+                <div style={{ color: '#94A3B8', fontSize: '0.82rem', fontWeight: 600, padding: '12px 0' }}>No data yet</div>
               ) : (
-                <div className="bg-[#F8FAFC] text-[#64748B] p-3 rounded-xl text-sm font-bold mb-4">
-                  Compare this period vs previous period
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {reasonBreakdown.map(([reason, count], i) => {
+                    const maxR = reasonBreakdown[0][1]
+                    const pct = Math.round((count / maxR) * 100)
+                    const colors = ['#2563EB', '#059669', '#D97706', '#7C3AED', '#DB2777']
+                    return (
+                      <div key={i}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>{reason}</span>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: colors[i % colors.length] }}>{count}</span>
+                        </div>
+                        <div style={{ height: 6, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: colors[i % colors.length], borderRadius: 99, transition: 'width 0.8s ease' }} />
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[#94A3B8] border-b border-[#F1F5F9]">
-                    <th className="pb-2 font-semibold">Metric</th>
-                    <th className="pb-2 font-semibold text-right">Current</th>
-                    <th className="pb-2 font-semibold text-right">Previous</th>
-                  </tr>
-                </thead>
-                <tbody className="font-semibold text-[#065F46]">
-                  <tr className="border-b border-[#F1F5F9]">
-                    <td className="py-3 text-[#64748B]">Total Patients</td>
-                    <td className="py-3 text-right">{rangeTotal}</td>
-                    <td className="py-3 text-right">{lastTotal}</td>
-                  </tr>
-                  <tr className="border-b border-[#F1F5F9]">
-                    <td className="py-3 text-[#64748B]">Completed %</td>
-                    <td className="py-3 text-right">{rangeTotal ? Math.round((rangeCompleted/rangeTotal)*100) : 0}%</td>
-                    <td className="py-3 text-right">{lastCompletedPct}%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-3 text-[#64748B]">Avg Wait Time</td>
-                    <td className="py-3 text-right">{rangeAvgWait}m</td>
-                    <td className="py-3 text-right">{lastAvgWait}m</td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
-          </div>
-        </div>
 
-        {/* SEC 7: FEEDBACK */}
-        <div className="relative bg-white p-6 rounded-2xl shadow-sm border border-[#F1F5F9] overflow-hidden hover-card">
-          {!isElite && <LockCard title="Patient Feedback" planRequired="Elite" />}
-          <div className={!isElite ? 'blur-sm select-none' : ''}>
-            <h2 className="text-lg font-black text-[#065F46] mb-6">Patient Feedback Summary</h2>
-            <div className="flex flex-col md:flex-row gap-8 items-center">
-              <div className="text-center">
-                <div className="text-6xl font-black text-[#F59E0B]">{avgRating}</div>
-                <div className="flex gap-1 text-[#F59E0B] my-2 text-xl justify-center">
-                  {'★★★★★'.split('').map((s,i) => <span key={i} className={i < Math.round(avgRating) ? '' : 'text-gray-200'}>{s}</span>)}
+            {/* Grade Breakdown */}
+            <div style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '20px 22px', boxShadow: '0 4px 12px rgba(27,42,74,0.04)' }}>
+              <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '0.95rem', color: '#1B2A4A', marginBottom: 16 }}>By Class / Grade</div>
+              {gradeBreakdown.length === 0 ? (
+                <div style={{ color: '#94A3B8', fontSize: '0.82rem', fontWeight: 600, padding: '12px 0' }}>No data yet</div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {gradeBreakdown.map(([grade, count], i) => {
+                    const colors = ['#EFF6FF|#2563EB', '#ECFDF5|#059669', '#FEF3C7|#D97706', '#F5F3FF|#7C3AED', '#FDF2F8|#DB2777', '#FEF2F2|#DC2626']
+                    const [bgColor, textColor] = colors[i % colors.length].split('|')
+                    return (
+                      <div key={i} style={{ background: bgColor, border: `1px solid ${textColor}33`, borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: textColor }}>{grade}</span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textColor, background: `${textColor}22`, padding: '1px 7px', borderRadius: 4 }}>{count}</span>
+                      </div>
+                    )
+                  })}
                 </div>
-                <div className="text-[#64748B] text-sm font-semibold">{ratingCount} reviews</div>
-              </div>
-              <div className="flex-1 w-full space-y-2">
-                {[5,4,3,2,1].map(star => (
-                  <div key={star} className="flex items-center gap-3 text-sm font-semibold">
-                    <span className="w-12 text-[#64748B]">{star} stars</span>
-                    <div className="flex-1 bg-[#F1F5F9] h-2 rounded-full">
-                      <div className="bg-[#F59E0B] h-full rounded-full" style={{width: `${ratingCount ? (ratings[star]/ratingCount)*100 : 0}%`}}></div>
-                    </div>
-                    <span className="w-8 text-right text-[#065F46]">{ratingCount ? Math.round((ratings[star]/ratingCount)*100) : 0}%</span>
-                  </div>
-                ))}
+              )}
+
+              {/* Completion rate bar */}
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#5A6E85' }}>Overall Completion Rate</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#059669' }}>
+                    {stats.totalServedToday > 0 ? `${Math.round((stats.completedToday / stats.totalServedToday) * 100)}%` : '—'}
+                  </span>
+                </div>
+                <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${stats.totalServedToday > 0 ? Math.round((stats.completedToday / stats.totalServedToday) * 100) : 0}%`,
+                    background: 'linear-gradient(90deg, #059669 0%, #10B981 100%)',
+                    borderRadius: 99, transition: 'width 1s ease'
+                  }} />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* SEC 8: AI INSIGHTS */}
-        <div className="relative bg-gradient-to-br from-[#065F46] to-[#064E3B] p-1 rounded-2xl shadow-xl overflow-hidden hover-card print:bg-none print:shadow-none print:p-0 print:border print:border-[#E2E8F0] print:break-inside-avoid">
-          {!isElite && <LockCard title="Smart AI Insights" planRequired="Elite" />}
-          <div className={`bg-[#065F46] rounded-xl p-6 print:bg-white print:p-5 ${!isElite ? 'blur-sm select-none' : ''}`}>
-            <div className="flex items-center gap-3 mb-6">
-              <Brain className="w-8 h-8" />
-              <h2 className="text-xl font-black text-white print:text-[#065F46]">TokenPe AI Insights</h2>
-            </div>
-            {loadingAi ? (
-              <div className="text-[#CCFBF1] font-semibold animate-pulse print:text-[#64748B]">Generating insights using TokenPe AI...</div>
-            ) : aiInsights ? (
-              <div className="grid md:grid-cols-3 gap-4">
-                {aiInsights.map((insight, i) => (
-                  <div key={i} className="bg-white/5 border border-white/10 p-5 rounded-xl backdrop-blur-md print:bg-[#F8FAFC] print:border-[#E2E8F0] print:break-inside-avoid print:backdrop-blur-none">
-                    <div className="text-2xl mb-3">{insight.icon}</div>
-                    <p className="text-white text-sm font-semibold leading-relaxed print:text-[#065F46]">{insight.insight}</p>
-                    <div className={`mt-4 text-xs font-bold uppercase tracking-wider ${insight.type==='positive'?'text-[#10B981]':insight.type==='warning'?'text-[#F59E0B]':'text-[#38BDF8]'}`}>
-                      {insight.type}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-[#CCFBF1] font-semibold print:text-[#64748B]">Not enough data to generate insights yet.</div>
-            )}
           </div>
-        </div>
 
-      </div>
+          {/* Auto-refresh note */}
+          <div style={{ textAlign: 'center', marginTop: 20, color: '#94A3B8', fontSize: '0.72rem', fontWeight: 600 }}>
+            {isToday ? '↻ Auto-refreshes every 30 seconds · Data source: live Supabase DB' : `📅 Viewing historical data for ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

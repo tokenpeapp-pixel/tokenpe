@@ -56,6 +56,14 @@ export default function HistoryPage() {
   const completedCount  = records.filter(r => r.status === 'done').length
   const cancelledCount  = records.filter(r => r.status === 'cancelled').length
 
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   const loadHistory = useCallback(async (days, cStart, cEnd) => {
     setLoading(true)
     setError(null)
@@ -153,9 +161,9 @@ export default function HistoryPage() {
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
 
       {/* ── HEADER ── */}
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: isMobile ? '10px 12px' : '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
         <button onClick={() => router.push('/school-dashboard')} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
-          <ChevronLeft size={16} /> Back
+          <ChevronLeft size={16} />{isMobile ? null : ' Back'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #059669 100%)', borderRadius: 8, padding: 8 }}>
@@ -163,31 +171,31 @@ export default function HistoryPage() {
           </div>
           <div>
             <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: '#1B2A4A' }}>Dismissal History</div>
-            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600, display: isMobile ? 'none' : 'block' }}>
               {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Loading…'}
             </div>
           </div>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button onClick={() => loadHistory(activeRange >= 0 ? QUICK_RANGES[activeRange].days : null, customStart, customEnd)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#5A6E85', fontWeight: 700, fontSize: '0.75rem' }}>
             <RefreshCw size={13} /> Refresh
           </button>
           <button onClick={exportCSV} disabled={!filtered.length} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1B2A4A', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: filtered.length ? 'pointer' : 'not-allowed', color: '#FFF', fontWeight: 700, fontSize: '0.75rem', opacity: filtered.length ? 1 : 0.5 }}>
-            <Download size={13} /> Export CSV
+            <Download size={13} />{isMobile ? null : ' Export CSV'}
           </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '22px 20px' }}>
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: isMobile ? '14px 12px' : '22px 20px' }}>
 
         {/* ── KPI STRIP ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr 1fr' : 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
           {[
             { label: 'Total Records', value: totalCount,     color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', icon: <Users size={16}/> },
             { label: 'Completed',     value: completedCount, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0', icon: <CheckCircle2 size={16}/> },
             { label: 'Cancelled',     value: cancelledCount, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA', icon: <XCircle size={16}/> },
           ].map((k, i) => (
-            <div key={i} style={{ background: '#FFFFFF', border: `1.5px solid ${k.border}`, borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 4px 12px rgba(27,42,74,0.04)' }}>
+            <div key={i} style={{ background: '#FFFFFF', border: `1.5px solid ${k.border}`, borderRadius: 10, padding: isMobile ? '8px' : '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 4px 12px rgba(27,42,74,0.04)' }}>
               <div style={{ background: k.bg, color: k.color, borderRadius: 8, padding: 8, display: 'flex', flexShrink: 0 }}>{k.icon}</div>
               <div>
                 <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.7rem', fontWeight: 700, color: '#1B2A4A', lineHeight: 1 }}>{loading ? '—' : k.value}</div>
@@ -198,7 +206,7 @@ export default function HistoryPage() {
         </div>
 
         {/* ── FILTERS ROW ── */}
-        <div style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: '14px 16px', marginBottom: 18, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: '14px 16px', marginBottom: 18, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' }}>
 
           {/* Quick range buttons */}
           <div style={{ display: 'flex', gap: 6 }}>
@@ -209,7 +217,7 @@ export default function HistoryPage() {
                 color: activeRange === i ? '#FFF' : '#5A6E85',
                 fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s ease',
               }}>
-                {r.label}
+                {isMobile ? r.label.replace(' Days', 'D').replace(' Today', 'Today') : r.label}
               </button>
             ))}
           </div>
@@ -293,7 +301,39 @@ export default function HistoryPage() {
 
             {/* Rows */}
             <div style={{ maxHeight: 520, overflowY: 'auto' }}>
-              {filtered.map((r, idx) => {
+              {isMobile ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 10 }}>
+                  {filtered.map((r, idx) => {
+                    const isDone = r.status === 'done'
+                    const isCancelled = r.status === 'cancelled'
+                    return (
+                      <div key={r.id} style={{ background: idx%2===0?'#FFF':'#FAFBFD', border: '1px solid #F1F5F9', borderRadius: 10, padding: '12px 14px' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 8 }}>
+                          <div style={{ fontFamily:'Playfair Display, serif', fontWeight:700, fontSize:'0.95rem', color:'#1B2A4A' }}>{r.student_name}</div>
+                          {isDone ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#059669', fontSize: '0.68rem', fontWeight: 800, padding: '3px 9px', borderRadius: 20 }}>
+                              <CheckCircle2 size={10} /> Completed
+                            </span>
+                          ) : isCancelled ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '0.68rem', fontWeight: 800, padding: '3px 9px', borderRadius: 20 }}>
+                              <XCircle size={10} /> Cancelled
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94A3B8' }}>{r.status || '—'}</span>
+                          )}
+                        </div>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
+                          <div style={{ fontSize:'0.75rem', color:'#5A6E85', display: 'flex', alignItems: 'center', gap: 4 }}><GraduationCap size={12}/> {r.grade_class||'—'}</div>
+                          <div style={{ fontSize:'0.75rem', color:'#5A6E85', display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12}/> {r.time_label||'—'}</div>
+                          <div style={{ fontSize:'0.75rem', color:'#5A6E85', display: 'flex', alignItems: 'center', gap: 4 }}><Phone size={12}/> {r.guardian_name||'—'}</div>
+                          <div style={{ fontSize:'0.75rem', color:'#94A3B8' }}>{r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : ''}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                filtered.map((r, idx) => {
                 const isDone      = r.status === 'done'
                 const isCancelled = r.status === 'cancelled'
                 const dateLabel   = r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
@@ -352,7 +392,8 @@ export default function HistoryPage() {
                     </div>
                   </div>
                 )
-              })}
+              })
+              )}
             </div>
 
             {/* Footer */}

@@ -535,12 +535,15 @@ export default function SchoolCommandCenter() {
   const [studentName, setStudentName] = useState('')
   const [gradeClass, setGradeClass] = useState('')
   const [reason, setReason] = useState('')
-  const [guardianName, setGuardianName] = useState('')
   const [activeRoom, setActiveRoom] = useState('Room 101 / Main Gate')
+  const [locationNoticeToast, setLocationNoticeToast] = useState(null)
 
   function handleRoomChange(e) {
-    const val = e.target.value
-    setActiveRoom(val)
+    setActiveRoom(e.target.value)
+  }
+
+  function saveLocation() {
+    const val = activeRoom.trim() || 'Main Gate / Reception'
     if (typeof window !== 'undefined') {
       localStorage.setItem('tokenpe_active_room', val)
       if (clinic?.id && clinic.id !== 'demo-school-id') {
@@ -548,6 +551,9 @@ export default function SchoolCommandCenter() {
         supabase.from('public_schools').update({ location: val }).eq('id', clinic.id).then(() => {}).catch(() => {})
       }
     }
+    setLocationNoticeToast('✓ Location updated successfully!')
+    if (window._locToastTimer) clearTimeout(window._locToastTimer)
+    window._locToastTimer = setTimeout(() => setLocationNoticeToast(null), 3000)
   }
 
   // Edit School Name, Subtitle & Logo states
@@ -2118,6 +2124,37 @@ export default function SchoolCommandCenter() {
       `}</style>
 
       <div className="cmd-root">
+        {/* Toast Popup Notification for Location update */}
+        <AnimatePresence>
+          {locationNoticeToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              style={{
+                position: 'fixed',
+                top: 24,
+                right: 24,
+                zIndex: 99999,
+                background: '#10B981',
+                color: '#FFFFFF',
+                padding: '12px 22px',
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                boxShadow: '0 10px 30px rgba(16, 185, 129, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                border: '1px solid #059669'
+              }}
+            >
+              <CheckCircle2 style={{ width: 20, height: 20, color: '#FFFFFF' }} />
+              <span>Location updated successfully!</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* ── TOP CONTROL STRIP ── */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="cmd-meta-bar">
           {/* Left Group: Live Date */}
@@ -2142,15 +2179,38 @@ export default function SchoolCommandCenter() {
           {/* Right Group: Active Queue Location Refined Input Pill */}
           <div className="cmd-meta-group">
             <span className="cmd-meta-label" style={{ color: '#5A6E85' }}>LOCATION:</span>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <MapPin style={{ width: 14, height: 14, color: '#3B82F6', position: 'absolute', left: 10, pointerEvents: 'none' }} />
-              <input
-                type="text"
-                value={activeRoom}
-                onChange={handleRoomChange}
-                placeholder="Active room / Gate..."
-                className="cmd-meta-pill-input"
-              />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <MapPin style={{ width: 14, height: 14, color: '#3B82F6', position: 'absolute', left: 10, pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  value={activeRoom}
+                  onChange={handleRoomChange}
+                  onKeyDown={e => { if (e.key === 'Enter') saveLocation(); }}
+                  placeholder="Active room / Gate..."
+                  className="cmd-meta-pill-input"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={saveLocation}
+                style={{
+                  background: 'linear-gradient(135deg, #1B2A4A, #24365C)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 12px',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 6px rgba(27, 42, 74, 0.15)',
+                  transition: 'all 0.2s ease'
+                }}
+                title="Click to save updated location"
+              >
+                Save
+              </button>
             </div>
           </div>
         </motion.div>

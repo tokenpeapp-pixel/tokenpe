@@ -10,6 +10,13 @@ export default function AnalyticsPage() {
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [selectedDate, setSelectedDate] = useState(getISTDateString()) // "YYYY-MM-DD"
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // Raw data
   const [historyToday, setHistoryToday] = useState([])
@@ -227,9 +234,9 @@ export default function AnalyticsPage() {
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
 
       {/* Header */}
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: isMobile ? '10px 12px' : '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
         <button onClick={() => router.push('/school-dashboard')} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
-          <ChevronLeft size={16} /> Back
+          <ChevronLeft size={16} />{isMobile ? null : ' Back'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #2563EB 100%)', borderRadius: 8, padding: 8 }}>
@@ -237,7 +244,7 @@ export default function AnalyticsPage() {
           </div>
           <div>
             <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: '#1B2A4A' }}>Campus Analytics & Reports</div>
-            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600, display: isMobile ? 'none' : 'block' }}>
               {isToday
                 ? lastUpdated ? `Live · last updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : 'Loading...'
                 : `Showing history for ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`
@@ -245,10 +252,10 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ marginLeft: 'auto', display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 10 }}>
           {/* Date Picker */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0, background: '#FFFFFF', border: '1.5px solid #BFDBFE', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(37,99,235,0.08)' }}>
-            <div style={{ background: '#EFF6FF', padding: '7px 10px', display: 'flex', alignItems: 'center', borderRight: '1px solid #BFDBFE' }}>
+            <div style={{ background: '#EFF6FF', padding: '7px 10px', display: 'flex', alignItems: 'center', borderRight: isMobile ? 'none' : '1px solid #BFDBFE' }}>
               <Calendar size={14} color="#2563EB" />
             </div>
             <input
@@ -260,7 +267,7 @@ export default function AnalyticsPage() {
                 border: 'none', outline: 'none', padding: '7px 12px',
                 fontSize: '0.78rem', fontWeight: 700, color: '#1D4ED8',
                 background: 'transparent', cursor: 'pointer', fontFamily: 'inherit',
-                minWidth: 130,
+                minWidth: isMobile ? 30 : 130,
               }}
             />
           </div>
@@ -293,10 +300,10 @@ export default function AnalyticsPage() {
       )}
 
       {!loading && !error && (
-        <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 20px' }}>
+        <div style={{ maxWidth: 980, margin: '0 auto', padding: isMobile ? '14px 12px' : '28px 20px' }}>
 
           {/* KPI Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 12, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
             {kpiCards.map((k, i) => (
               <div key={i} style={{ background: '#FFFFFF', border: `1.5px solid ${k.border}`, borderRadius: 10, padding: '16px 18px', boxShadow: '0 4px 12px rgba(27,42,74,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
@@ -321,7 +328,7 @@ export default function AnalyticsPage() {
             {hourlyBuckets.every(v => v === 0) ? (
               <div style={{ textAlign: 'center', padding: '32px 0', color: '#94A3B8', fontSize: '0.85rem', fontWeight: 600 }}>No queue activity recorded yet today</div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 160 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 160, overflowX: 'auto' }}>
                 {hourlyBuckets.map((v, i) => (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
                     {v > 0 && <div style={{ fontSize: '0.58rem', fontWeight: 800, color: v === Math.max(...hourlyBuckets) ? '#2563EB' : '#94A3B8' }}>{v}</div>}
@@ -342,7 +349,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Bottom Grid: Reason + Grade breakdown */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
 
             {/* Reason Breakdown */}
             <div style={{ background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 12, padding: '20px 22px', boxShadow: '0 4px 12px rgba(27,42,74,0.04)' }}>

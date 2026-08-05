@@ -59,13 +59,7 @@ export async function POST(req) {
 
         // Create JWT session using existing clinic data (no code rotation — doctors set custom codes)
         const sessionPayload = {
-<<<<<<< HEAD:app/api/business-auth/login/route.js
             businessId: data.id, businessCode: data.code, phone: data.phone, type: data.type, role: activeRole
-=======
-            clinicId: data.id,
-            clinicCode: data.code,
-            phone: data.phone
->>>>>>> 229d27511e88d44c9dc70bfcc88d37e8f7ff4375:app/api/auth/login/route.js
         }
         const token = await signToken(sessionPayload)
 

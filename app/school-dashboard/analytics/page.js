@@ -10,7 +10,6 @@ export default function AnalyticsPage() {
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [selectedDate, setSelectedDate] = useState(getISTDateString()) // "YYYY-MM-DD"
-<<<<<<< HEAD
   const [patients, setPatients] = useState([])
   const [loadingAi, setLoadingAi] = useState(false)
   const [aiInsights, setAiInsights] = useState(null)
@@ -21,15 +20,14 @@ export default function AnalyticsPage() {
   const [customEnd, setCustomEnd] = useState('')
   const [lastPeriodPatients, setLastPeriodPatients] = useState([])
   const [overallFeedback, setOverallFeedback] = useState(null)
-=======
   const [isMobile, setIsMobile] = useState(false)
+  
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
->>>>>>> 229d27511e88d44c9dc70bfcc88d37e8f7ff4375
 
   const todayStr = getISTDateString()
   const isToday = selectedDate === todayStr

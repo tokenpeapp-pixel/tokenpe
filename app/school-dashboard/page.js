@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { 
   GraduationCap, Phone, CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, 
   Bell, Download, Printer, Star, Mic, AlertTriangle, Hourglass, RefreshCw, Sparkles, 
@@ -3556,5 +3556,13 @@ function SchoolCommandCenterInner() {
         )}
       </AnimatePresence>
     </>
+  )
+}
+
+export default function SchoolDashboardPage() {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#F4F7FB', color: '#1B2A4A', fontFamily: 'sans-serif', fontWeight: 600 }}>Loading Dashboard...</div>}>
+      <SchoolCommandCenterInner />
+    </Suspense>
   )
 }

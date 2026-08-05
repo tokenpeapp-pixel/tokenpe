@@ -111,7 +111,7 @@ export default function BillingPage() {
       const res = await fetch('/api/razorpay/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, planTier: tier })
+        body: JSON.stringify({ businessId: clinic.id, planTier: tier })
       })
       const data = await res.json()
       if (!res.ok || !data.subscriptionId) throw new Error(data.error || 'Failed to create subscription')

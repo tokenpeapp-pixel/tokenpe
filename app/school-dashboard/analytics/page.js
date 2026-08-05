@@ -10,224 +10,62 @@ export default function AnalyticsPage() {
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [selectedDate, setSelectedDate] = useState(getISTDateString()) // "YYYY-MM-DD"
+  const [patients, setPatients] = useState([])
+  const [loadingAi, setLoadingAi] = useState(false)
+  const [aiInsights, setAiInsights] = useState(null)
+  const [userClinics, setUserClinics] = useState([])
+  const [clinic, setClinic] = useState(null)
+  const [dateRange, setDateRange] = useState('7')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+  const [lastPeriodPatients, setLastPeriodPatients] = useState([])
+  const [overallFeedback, setOverallFeedback] = useState(null)
 
-  useEffect(() => {
-    async function load() {
-      const stored = localStorage.getItem('tokenpe_business')
-      if (!stored) {
-        router.push('/school-login')
-        return
+  const todayStr = getISTDateString()
+  const isToday = selectedDate === todayStr
+
+  const loadData = useCallback(async (date) => {
+    try {
+      setLoading(true)
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_clinic') : null
+      const school = stored ? JSON.parse(stored) : null
+      const schoolId = school?.id
+
+      let query = supabase.from('queue_entries').select('*')
+      if (schoolId) query = query.eq('business_id', schoolId)
+      if (date) query = query.eq('date', date)
+
+      const { data, error } = await query
+      if (!error && data) {
+        setPatients(data)
       }
-
-      // Load all branches for the branch selector
-      try {
-        const storedClinics = localStorage.getItem('tokenpe_user_businesses')
-        if (storedClinics) setUserClinics(JSON.parse(storedClinics))
-      } catch (e) { /* ignore */ }
-      
-      // Default date range
-      if (c.plan_id === 'starter') setDateRange('7')
-      else if (c.plan_id === 'pro') setDateRange('30')
-      else setDateRange('30') // Elite default to 30
-
-      // ── 1. Fetch today's school_history (completed/cancelled) ──
-      const { data: histData, error: histErr } = await supabase
-        .from('school_history')
-        .select('id, student_name, grade_class, time_label, status, created_at, completed_at, guardian_name')
-        .eq('school_id', schoolId)
-        .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay)
-        .order('created_at', { ascending: true })
-
-      if (histErr) throw histErr
-      const history = histData || []
-      setHistoryToday(history)
-
-      // ── 2. Fetch today's queue entries (all statuses) ──
-      const { data: qData } = await supabase
-        .from('school_queue')
-        .select('id, name, status, created_at, completed_at, notes, phone')
-        .eq('school_id', schoolId)
-        .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay)
-        .order('created_at', { ascending: true })
-      const queue = qData || []
-      setQueueToday(queue)
-
-      // Also fetch all-time total from queues table
-      const { count: allTimeCount } = await supabase
-        .from('school_queue')
-        .select('id', { count: 'exact', head: true })
-        .eq('school_id', schoolId)
-      setQueueAllTime(allTimeCount || 0)
-
-      // ── 3. Compute stats ──
-      const allEntries = [...history, ...queue.filter(q => !history.find(h => h.id === q.id))]
-
-      const completed = history.filter(h => h.status === 'done').length
-      const cancelled = [...history, ...queue].filter(r => r.status === 'cancelled').length
-      const currentWaiting = queue.filter(q => q.status === 'waiting' || q.status === 'with_staff').length
-      const totalToday = Math.max(history.length, queue.length)
-
-      // Hourly buckets: 7am = index 0, 8pm = index 13
-      const buckets = Array(14).fill(0)
-      const allCreated = [...history, ...queue]
-      allCreated.forEach(r => {
-        if (!r.created_at) return
-        // Parse IST hour
-        const d = new Date(r.created_at)
-        const istHour = (d.getUTCHours() + 5 + Math.floor((d.getUTCMinutes() + 30) / 60)) % 24
-        const idx = istHour - 7
-        if (idx >= 0 && idx < 14) buckets[idx]++
-      })
-      setHourlyBuckets(buckets)
-
-      // Peak hour
-      const peakIdx = buckets.indexOf(Math.max(...buckets))
-      const peakHourRaw = peakIdx + 7
-      const peakHour = buckets[peakIdx] > 0
-        ? `${peakHourRaw > 12 ? peakHourRaw - 12 : peakHourRaw}:00 ${peakHourRaw >= 12 ? 'PM' : 'AM'}`
-        : 'N/A'
-
-      // Avg wait time (completed_at - created_at where both exist)
-      const waitTimes = history
-        .filter(h => h.completed_at && h.created_at)
-        .map(h => (new Date(h.completed_at) - new Date(h.created_at)) / 60000)
-        .filter(m => m > 0 && m < 120)
-      const avgWait = waitTimes.length > 0 ? Math.round(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length) : null
-
-      // Satisfaction = completed / (completed + cancelled) * 100
-      const satisfaction = (completed + cancelled) > 0
-        ? Math.round((completed / (completed + cancelled)) * 100)
-        : null
-
-      setStats({
-        totalServedToday: totalToday,
-        completedToday: completed,
-        cancelledToday: cancelled,
-        currentInQueue: currentWaiting,
-        peakHour,
-        avgWaitMin: avgWait,
-        satisfactionRate: satisfaction,
-        totalAllTime: allTimeCount || 0,
-      })
-
-      // ── 4. Reason breakdown ──
-      const reasonMap = {}
-      queue.forEach(q => {
-        const raw = q.notes || ''
-        const reason = raw.includes('|') ? raw.split('|')[1]?.trim() : (raw || 'General')
-        reasonMap[reason] = (reasonMap[reason] || 0) + 1
-      })
-      const reasonArr = Object.entries(reasonMap).sort((a, b) => b[1] - a[1]).slice(0, 5)
-      setReasonBreakdown(reasonArr)
-
-      // ── 5. Grade breakdown ──
-      const gradeMap = {}
-      history.forEach(h => {
-        const g = h.grade_class || 'Unknown'
-        gradeMap[g] = (gradeMap[g] || 0) + 1
-      })
-      queue.forEach(q => {
-        const raw = q.notes || ''
-        const g = raw.includes('|') ? raw.split('|')[0]?.trim() : 'Unknown'
-        if (g) gradeMap[g] = (gradeMap[g] || 0) + 1
-      })
-      const gradeArr = Object.entries(gradeMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
-      setGradeBreakdown(gradeArr)
-
-      setLastUpdated(new Date())
-      setError(null)
-    } catch (err) {
-      console.error('Analytics load error:', err)
-      setError('Failed to load analytics data. Check your connection.')
+      setLastUpdated(new Date().toLocaleTimeString())
+    } catch (e) {
+      console.error(e)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  const todayStr = getISTDateString()
-  const isToday = selectedDate === todayStr
-
   useEffect(() => {
     setLoading(true)
     loadData(selectedDate)
-    if (!isToday) return // no auto-refresh for past dates
+    if (!isToday) return
     const interval = setInterval(() => loadData(selectedDate), 30000)
     return () => clearInterval(interval)
   }, [selectedDate, loadData, isToday])
 
+  const hourlyBuckets = new Array(14).fill(0)
+  patients.forEach(p => {
+    if (p.joined_at) {
+      const h = new Date(p.joined_at).getHours()
+      if (h >= 7 && h <= 20) hourlyBuckets[h - 7]++
+    }
+  })
+
   const hours = ['7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm']
   const maxH = Math.max(...hourlyBuckets, 1)
 
-    if (range === 'custom' && cStart && cEnd) {
-      cutoffDate = cStart
-      endDate = cEnd
-      days = Math.max(1, Math.ceil((new Date(cEnd) - new Date(cStart)) / (1000 * 60 * 60 * 24)) + 1)
-    } else if (range === 'today') {
-      cutoffDate = getISTDateString(new Date())
-      endDate = cutoffDate
-      days = 1
-    } else {
-      days = parseInt(range)
-      const d = new Date()
-      d.setDate(d.getDate() - days)
-      cutoffDate = getISTDateString(d)
-      endDate = getISTDateString(new Date())
-    }
-
-    // Fetch this period
-    let url = `/api/generic-analytics/get?clinicId=${c.id}&startDate=${cutoffDate}`
-    if (range !== 'today') {
-      url += `&endDate=${endDate}`
-    }
-    let thisPeriodData = []
-    try {
-      const res = await fetch(url)
-      if (res.ok) {
-        const data = await res.json()
-        if (data.success) thisPeriodData = data.data || []
-      }
-    } catch(e) {}
-
-    // Fetch last period (for comparison)
-    let lastPeriodData = []
-    if (c.plan_id !== 'starter' && range !== 'today') {
-      const prevEnd = new Date(cutoffDate)
-      prevEnd.setDate(prevEnd.getDate() - 1)
-      const prevStart = new Date(prevEnd)
-      prevStart.setDate(prevStart.getDate() - days + 1)
-      const lastCutoff = getISTDateString(prevStart)
-      const lastEnd = getISTDateString(prevEnd)
-
-      try {
-        const res2 = await fetch(`/api/generic-analytics/get?clinicId=${c.id}&startDate=${lastCutoff}&endDate=${lastEnd}`)
-        if (res2.ok) {
-          const data2 = await res2.json()
-          if (data2.success) lastPeriodData = data2.data || []
-        }
-      } catch(e) {}
-    }
-
-    setPatients(thisPeriodData || [])
-    setLastPeriodPatients(lastPeriodData)
-    
-    // Fetch overall feedback
-    try {
-      const resFeedback = await fetch(`/api/generic-analytics/feedback?clinicId=${c.id}`)
-      if (resFeedback.ok) {
-        const fbData = await resFeedback.json()
-        if (fbData.success) setOverallFeedback(fbData.feedback)
-      }
-    } catch(e) {}
-    
-    // Fetch AI insights for Elite
-    if (c.plan_id === 'elite') {
-      fetchAiInsights(thisPeriodData || [])
-    }
-    
-    setLoading(false)
-  }
 
   async function fetchAiInsights(data) {
     setLoadingAi(true)
@@ -346,8 +184,8 @@ export default function AnalyticsPage() {
   }
 
   // --- DATA PROCESSING ---
-  const todayStr = getISTDateString(new Date())
-  const todayData = patients.filter(p => p.date === todayStr)
+  const currentTodayStr = getISTDateString(new Date())
+  const todayData = patients.filter(p => p.date === currentTodayStr)
   
   // Section 1: Today
   const todayTotal = todayData.length

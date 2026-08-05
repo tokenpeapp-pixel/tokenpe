@@ -64,8 +64,7 @@ export default function BillingPage() {
 
       if (freshData?.success && freshData.clinic) {
         setRestaurant(freshData.clinic)
-        setIsPrimaryBranch(freshData.isPrimaryBranch !== false)
-        setPrimaryBranchName(freshData.primaryBranchName)
+
         localStorage.setItem('tokenpe_business', JSON.stringify(freshData.clinic))
       } else {
         setRestaurant(clinicData)
@@ -177,7 +176,7 @@ export default function BillingPage() {
       const res = await fetch('/api/razorpay/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planTier, clinicId: clinic.id })
+        body: JSON.stringify({ planTier, businessId: clinic.id })
       })
       const data = await res.json()
       if (!res.ok || !data.success) {
@@ -190,11 +189,11 @@ export default function BillingPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         subscription_id: data.subscriptionId,
         name: 'TokenPe',
-        description: `${PLAN_META[tier]?.name || tier} Plan Subscription`,
+        description: `${PLAN_META[planTier]?.name || planTier} Plan Subscription`,
         image: `${window.location.origin}/logo-light.svg`,
-        prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.businessPhone },
+        prefill: { name: clinic?.name || '', email: clinic?.email || '', contact: clinic?.phone || '' },
         theme: { color: '#fef3c7' },
-        handler: () => pollForUpdate(clinic.id, tier),
+        handler: () => pollForUpdate(clinic.id, planTier),
         modal: { ondismiss: () => setUpgrading(null) }
       }
 
@@ -271,39 +270,6 @@ export default function BillingPage() {
     </div>
   )
 
-  // ── Derived state ──────────────────────────────────────────────────────────
-  const planId       = clinic?.plan_id || 'starter'
-  const planMeta     = PLAN_META[planId] || PLAN_META['starter']
-  const planName     = planMeta.name
-  const planLimit    = planMeta.limit
-  const planPrice    = planMeta.price
-
-  const status          = clinic?.subscription_status || 'trialing'
-  const isTrial         = status === 'trialing'
-  const isActive        = status === 'active'
-  const isCancelPending = status === 'cancel_at_period_end'
-  const isCanceled      = status === 'canceled'
-
-  const percentage = planLimit === Infinity ? 0 : Math.min((todayCount / planLimit) * 100, 100)
-
-  const userRestaurants = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]') : []
-  const oldestRestaurant = userRestaurants.length > 0
-    ? userRestaurants.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userRestaurants[0])
-    : clinic
-
-  const trialEnd = oldestRestaurant?.trial_ends_at
-    ? new Date(oldestRestaurant.trial_ends_at)
-    : (oldestRestaurant?.created_at ? new Date(new Date(oldestRestaurant.created_at).getTime() + 7 * 24 * 60 * 60 * 1000) : null)
-
-  const realDaysLeft    = trialEnd && currentDate ? Math.ceil((trialEnd - currentDate) / (1000 * 60 * 60 * 24)) : 0
-  const daysLeft        = isTrial ? Math.max(0, realDaysLeft) : null
-  const isTrialExpired  = isTrial && trialEnd && realDaysLeft < 0
-
-  // Tier level map — normalise pro/professional
-  const tierLevels = { starter: 1, pro: 2, professional: 2, elite: 3 }
-  const currentLevel = tierLevels[planId] || 1
-
-  // No downgrade support — only upgrades and reactivation
 
   const plans = [
     {

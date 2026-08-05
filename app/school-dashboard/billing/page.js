@@ -65,8 +65,6 @@ export default function SchoolBillingPage() {
 
       if (freshData?.success && freshData.clinic) {
         setClinic(freshData.clinic)
-        setIsPrimaryBranch(freshData.isPrimaryBranch !== false)
-        setPrimaryBranchName(freshData.primaryBranchName)
         localStorage.setItem('tokenpe_business', JSON.stringify(freshData.clinic))
       } else {
         setClinic(clinicData)
@@ -107,45 +105,7 @@ export default function SchoolBillingPage() {
     setTimeout(poll, 2000)
   }, [])
 
-  const planId    = clinic?.plan_id || 'elite'
-  const meta      = PLAN_META[planId] || PLAN_META.elite
-  const planName  = meta.name
-  const subStatus = clinic?.subscription_status || 'trialing'
 
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        subscription_id: data.subscriptionId,
-        name: 'TokenPe',
-        description: `${PLAN_META[tier]?.name || tier} Plan Subscription`,
-        image: `${window.location.origin}/logo-light.svg`,
-        prefill: { name: data.clinicName, email: data.clinicEmail, contact: data.businessPhone },
-        theme: { color: '#065F46' },
-        handler: () => pollForUpdate(clinic.id, tier),
-        modal: { ondismiss: () => setUpgrading(null) }
-      }
-
-      const res  = await fetch('/api/razorpay/create-subscription', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planTier, clinicId: clinic.id })
-      })
-      const data = await res.json()
-      if (!res.ok || !data.success) { alert(data.error || 'Failed to initialize subscription'); setUpgrading(null); return }
-
-      new window.Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        subscription_id: data.subscriptionId,
-        name: 'TokenPe', description: `Upgrade to ${PLAN_META[planTier]?.name || planTier}`,
-        prefill: { name: clinic?.name || '', email: clinic?.email || '', contact: clinic?.phone || '' },
-        theme: { color: '#1B2A4A' },
-        handler: () => pollForUpdate(clinic.id, planTier),
-        modal: { ondismiss: () => setUpgrading(null) }
-      }).open()
-    } catch (err) {
-      console.error(err)
-      alert('An unexpected error occurred. Please try again.')
-      setUpgrading(null)
-    }
-  }
 
   async function executeCancel() {
     setIsCanceling(true)

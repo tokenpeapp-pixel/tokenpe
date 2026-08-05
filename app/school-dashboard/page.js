@@ -13,7 +13,7 @@ import confetti from 'canvas-confetti'
 import QRCode from 'qrcode'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// ─── ANIMATED COUNTER NUMBER ───
+// â”€â”€â”€ ANIMATED COUNTER NUMBER â”€â”€â”€
 function AnimatedNumber({ value }) {
   return (
     <span style={{ position: 'relative', display: 'inline-flex', overflow: 'hidden', verticalAlign: 'middle' }}>
@@ -33,7 +33,7 @@ function AnimatedNumber({ value }) {
   )
 }
 
-// ─── ANIMATED CLOCK WITH SECONDS & SMOOTH TRANSITIONS ───
+// â”€â”€â”€ ANIMATED CLOCK WITH SECONDS & SMOOTH TRANSITIONS â”€â”€â”€
 function AnimatedClock() {
   const [time, setTime] = useState(null)
 
@@ -65,7 +65,7 @@ function AnimatedClock() {
   )
 }
 
-// ─── SOUND EFFECTS ───
+// â”€â”€â”€ SOUND EFFECTS â”€â”€â”€
 function useSounds() {
   const audioCtx = useRef(null)
   function getCtx() {
@@ -101,7 +101,7 @@ function useSounds() {
   }
 }
 
-// ─── FULL FEATURED QR POSTER MODAL (RESTAURANT GENERATOR LOGIC + SCHOOL NAVY THEME) ───
+// â”€â”€â”€ FULL FEATURED QR POSTER MODAL (RESTAURANT GENERATOR LOGIC + SCHOOL NAVY THEME) â”€â”€â”€
 function QRModal({ clinic, onClose, onCodeUpdate }) {
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
@@ -140,7 +140,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
   async function saveCode() {
     const clean = codeInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
     if (clean.length < 3 || clean.length > 12) {
-      setCodeError('Code must be 3–12 alphanumeric characters.')
+      setCodeError('Code must be 3â€“12 alphanumeric characters.')
       return
     }
 
@@ -191,12 +191,6 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
     if (!file) return
     setUploadingLogo(true)
     try {
-      if (clinic?.id && clinic.id !== 'demo-school-id') {
-        await supabase.from('schools').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('public_schools').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
-      }
-    } catch (_) {}
-
       const { data: { publicUrl } } = supabase.storage.from('voice-notes').getPublicUrl(fileName)
       await fetch('/api/business/update', {
         method: 'POST',
@@ -389,7 +383,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
       const logoUrl = clinic?.logo_url
       win.document.write(`
         <!DOCTYPE html><html><head>
-        <title>Gate Pass QR — ${clinic?.name || 'School'}</title>
+        <title>Gate Pass QR â€” ${clinic?.name || 'School'}</title>
         <style>
           body { font-family: 'Plus Jakarta Sans', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #F4F7FB; }
           .poster { background: #FFFFFF; border: 2px solid #1B2A4A; border-radius: 16px; width: 340px; padding: 32px 24px; text-align: center; box-shadow: 0 10px 30px rgba(27,42,74,0.1); }
@@ -499,7 +493,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
           {codeSuccess && (
             <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginBottom: 6 }}>
-              ✓ Code updated! New QR generated.
+              âœ“ Code updated! New QR generated.
             </div>
           )}
 
@@ -531,7 +525,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
               
               <div style={{ display: 'flex', gap: 8, width: '100%', marginTop: 2 }}>
                 <button type="button" onClick={saveCode} disabled={codeSaving} style={{ flex: 1, padding: '9px 0', background: '#1B2A4A', color: '#FFFFFF', border: 'none', borderRadius: 6, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', opacity: codeSaving ? 0.7 : 1 }}>
-                  {codeSaving ? 'Saving...' : '✓ Save Code'}
+                  {codeSaving ? 'Saving...' : 'âœ“ Save Code'}
                 </button>
                 <button type="button" onClick={() => { setEditingCode(false); setCodeInput(clinic?.code || ''); setCodeError('') }} style={{ flex: 1, padding: '9px 0', background: 'transparent', color: '#1B2A4A', border: '1px solid #1B2A4A', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
                   Cancel
@@ -575,7 +569,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 }
 
 // ─── MAIN SCHOOL COMMAND CENTER PAGE ───
-export default function SchoolCommandCenter() {
+function SchoolCommandCenterInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeTabFromUrl = searchParams.get('tab') || 'arrivals'
@@ -606,7 +600,11 @@ export default function SchoolCommandCenter() {
       } else {
         alert("Failed to save profile.")
       }
+    } catch (e) {
+      console.error(e)
+      alert('An error occurred. Please try again.')
     }
+    setSaving(false)
   }
 
   // Form input states
@@ -686,7 +684,7 @@ export default function SchoolCommandCenter() {
     } catch (err) {}
     setShowBroadcastModal(false)
     setBroadcastMsgText('')
-    alert(`📢 Notice Broadcast Sent to Queue:\n\n"${msg}"`)
+    alert(`ðŸ“¢ Notice Broadcast Sent to Queue:\n\n"${msg}"`)
   }
 
   function handleLogoUpload(e) {
@@ -742,16 +740,6 @@ export default function SchoolCommandCenter() {
 
   const sounds = useSounds()
 
-  // ── Load clinic from session (multi-clinic support) ─────────────────────
-  useEffect(() => {
-    async function loadClinic() {
-      // ── Step 1: Paint UI instantly from localStorage cache ──────────────
-      const cachedClinic = localStorage.getItem('tokenpe_business')
-
-      try {
-        const storedUserClinics = JSON.parse(localStorage.getItem('tokenpe_user_businesses')) || []
-        setUserClinics(storedUserClinics)
-      } catch (e) { }
 
   // Helper to ensure we have a valid real Supabase school ID for all DB operations
   async function getRealSchoolId() {
@@ -788,7 +776,7 @@ export default function SchoolCommandCenter() {
     return clinic?.id
   }
 
-  // ── 1. DYNAMIC INITIALIZATION & REAL DB FETCH ──
+  // â”€â”€ 1. DYNAMIC INITIALIZATION & REAL DB FETCH â”€â”€
   useEffect(() => {
     if (typeof window === 'undefined') return
     const savedRoom = localStorage.getItem('tokenpe_active_room')
@@ -799,13 +787,10 @@ export default function SchoolCommandCenter() {
 
     if (stored) {
       try {
-        const res = await fetch('/api/generic-dashboard/init')
-        if (!res.ok) throw new Error('Init failed')
-        const data = await res.json()
-        if (data.success && data.clinic) {
-          localStorage.setItem('businessCode', data.clinic.code)
-          localStorage.setItem('businessPhone', data.clinic.phone)
-          localStorage.setItem('tokenpe_business', JSON.stringify(data.clinic))
+        currentSchool = JSON.parse(stored)
+        setSchool(currentSchool)
+      } catch (_) {}
+    }
 
     if (currentSchool?.logo_url) setSchoolLogo(currentSchool.logo_url)
 
@@ -839,27 +824,16 @@ export default function SchoolCommandCenter() {
               localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub))
             }
           }
-
-          if (data.userClinics) {
-            localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
-            setUserClinics(data.userClinics)
-          }
-
-          if (!data.clinic.specialty || !data.clinic.city || data.clinic.phone === '0000000000') {
-            setShowDiscovery(true)
-          }
         }
-      } catch (e) {
-        if (!parsedCache) {
-          localStorage.removeItem('businessCode')
-          localStorage.removeItem('businessPhone')
-          localStorage.removeItem('tokenpe_business')
+
+        if (!currentSchool) {
           const vertical = localStorage.getItem('tokenpe_vertical')
           if (vertical === 'salon') router.push('/salon-login')
           else if (vertical === 'restaurant') router.push('/restaurant-login')
           else if (vertical === 'school') router.push('/school-login')
           else if (vertical === 'other') router.push('/business-login')
           else router.push('/school-login')
+          return
         }
       } catch (err) {
         console.warn('Supabase real DB load:', err)
@@ -870,12 +844,12 @@ export default function SchoolCommandCenter() {
 
     loadDynamicData()
 
-    // ── Real-time polling every 4s for queue updates ──
+    // â”€â”€ Real-time polling every 4s for queue updates â”€â”€
     const interval = setInterval(loadDynamicData, 4000)
     return () => clearInterval(interval)
   }, [])
 
-  // ── 2. DYNAMIC ADMIT FUNCTION (MOVES TO WITH STAFF SECTION) ──
+  // â”€â”€ 2. DYNAMIC ADMIT FUNCTION (MOVES TO WITH STAFF SECTION) â”€â”€
   async function handleAdmit(id) {
     try { sounds.admit() } catch (e) {}
     confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } })
@@ -905,7 +879,7 @@ export default function SchoolCommandCenter() {
     }
   }
 
-  // ── 2a2. COMPLETE CONSULTATION (MOVES FROM WITH STAFF TO DISMISSED) ──
+  // â”€â”€ 2a2. COMPLETE CONSULTATION (MOVES FROM WITH STAFF TO DISMISSED) â”€â”€
   async function handleCompleteStaff(id) {
     try { sounds.admit() } catch (e) {}
     confetti({ particleCount: 25, spread: 45, origin: { y: 0.7 } })
@@ -920,42 +894,25 @@ export default function SchoolCommandCenter() {
 
       // DB Dynamic Updates
       try {
-        const res = await fetch(`/api/generic-dashboard/get?date=${currentDate}`)
+        const res = await fetch('/api/business/complete-patient', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientId: id, clinicId: clinic.id })
+        })
         if (res.ok) {
-          const data = await res.json()
-          if (data.success) {
-            setPatients(prev => {
-              const newPatients = data.patients || []
-              // Find newly inserted patients for the notification
-              const newAdds = newPatients.filter(np => {
-                const isNew = !prev.some(p => p.id === np.id)
-                const isLocal = localAddedPatientIdsRef.current.has(np.id)
-                return isNew && !isLocal
-              })
-              if (newAdds.length > 0) {
-                 sounds.newPatient()
-                 setNewPatientAlert(newAdds[0])
-                 if (newPatientAlertTimeoutRef.current) {
-                   clearTimeout(newPatientAlertTimeoutRef.current)
-                 }
-                 newPatientAlertTimeoutRef.current = setTimeout(() => {
-                   setNewPatientAlert(null)
-                   newPatientAlertTimeoutRef.current = null
-                 }, 5000)
-                 addToast(`New patient joined: ${newAdds[0].name || maskPhone(newAdds[0].phone)} — ${newAdds[0].token}`, 'new')
-              }
-              return newPatients
-            })
+          const res2 = await fetch(`/api/generic-dashboard/get?date=${currentDate}`)
+          if (res2.ok) {
+            const data2 = await res2.json()
+            if (data2.success) setPatients(data2.patients || [])
           }
         }
       } catch (e) {
         console.warn('DB Complete Staff Error:', e)
       }
-    }, 60000) // Check once a minute
-    return () => clearInterval(t)
-  }, [currentDate])
+    }
+  }
 
-  // ── Fetch History ───────────────────────────────────────────────────────
+  // â”€â”€ Fetch History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (activeTab === 'history' && clinic) {
       async function fetchHistory() {
@@ -973,14 +930,14 @@ export default function SchoolCommandCenter() {
     }
   }, [activeTab, historyDate, clinic])
 
-  // ── Toast system ────────────────────────────────────────────────────────
+  // â”€â”€ Toast system â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function addToast(msg, type = 'done') {
     const id = `${Date.now()}-${Math.random()}`
     setToasts(prev => [...prev, { id, msg, type }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
   }
 
-  // ── Code Update Callback ─────────────────────────────────────
+  // â”€â”€ Code Update Callback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function handleCodeUpdate(newCode) {
     setClinic(prev => ({ ...prev, code: newCode }))
 
@@ -994,13 +951,13 @@ export default function SchoolCommandCenter() {
     addToast(`Clinic code updated to ${newCode}! Share it with your patients.`, 'done')
   }
 
-  // ── Smooth Branch Switcher (no reload) ─────────────────────────────────
+  // â”€â”€ Smooth Branch Switcher (no reload) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function switchToBranch(targetClinic) {
     setMenuOpen(false)
     setShowAddBranch(false)
     if (targetClinic.id === clinic?.id) return
 
-    // Optimistically switch UI immediately — no flash, no reload
+    // Optimistically switch UI immediately â€” no flash, no reload
     setClinic(targetClinic)
     setPatients([])
     setLoading(true)
@@ -1089,7 +1046,7 @@ export default function SchoolCommandCenter() {
     setManagingBranch(false)
   }
 
-  // ── Logout ──────────────────────────────────────────────────────────────
+  // â”€â”€ Logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function logout() {
     const vertical = localStorage.getItem('tokenpe_vertical')
     localStorage.removeItem('businessCode')
@@ -1106,7 +1063,7 @@ export default function SchoolCommandCenter() {
     else router.push('/school-login')
   }
 
-  // ── Toggle Pause ────────────────────────────────────────────────────────
+  // â”€â”€ Toggle Pause â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function togglePause() {
     if (clinic.plan_id === 'starter') {
       addToast('Queue pause is a Pro feature. Please upgrade.', 'error')
@@ -1136,7 +1093,7 @@ export default function SchoolCommandCenter() {
     }
   }
 
-  // ── 2c. DYNAMIC SKIP FUNCTION (TRIGGER CONFIRMATION MODAL TO REMOVE) ──
+  // â”€â”€ 2c. DYNAMIC SKIP FUNCTION (TRIGGER CONFIRMATION MODAL TO REMOVE) â”€â”€
   function handleSkip(idOrObj) {
     if (typeof idOrObj === 'object' && idOrObj !== null) {
       setSkipTarget(idOrObj)
@@ -1146,7 +1103,7 @@ export default function SchoolCommandCenter() {
     }
   }
 
-  // ── 3. DYNAMIC MANUAL CHECK-IN ──
+  // â”€â”€ 3. DYNAMIC MANUAL CHECK-IN â”€â”€
   async function handleManualCheckIn(e) {
     e.preventDefault()
     if (!studentName.trim()) return
@@ -1200,7 +1157,7 @@ export default function SchoolCommandCenter() {
         if (stored) {
           try { localStorage.setItem('tokenpe_business', JSON.stringify({ ...JSON.parse(stored), closed_today_date: today })) } catch (_) {}
         }
-        addToast('🔴 Clinic closed for today.', 'notify')
+        addToast('ðŸ”´ Clinic closed for today.', 'notify')
       } else {
         // REVERT ON FAILURE
         setClinic(prev => ({ ...prev, closed_today_date: previousDate }))
@@ -1211,7 +1168,7 @@ export default function SchoolCommandCenter() {
     }
   }
 
-  // ── Re-open Clinic ────────────────────────────────────────────────────────
+  // â”€â”€ Re-open Clinic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function reopenClinic() {
     setMenuOpen(false)
     const previousDate = clinic.closed_today_date
@@ -1243,7 +1200,7 @@ export default function SchoolCommandCenter() {
     }
   }
 
-  // ── Actions ─────────────────────────────────────────────────────────────
+  // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function onUpdatePayment(patientId, updates) {
     // 1. Optimistic UI update: Find the patient in local state and apply updates
     setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p))
@@ -1278,7 +1235,7 @@ export default function SchoolCommandCenter() {
     // Optimistic UI Update
     setPatients(prev => prev.map(p => p.id === next.id ? { ...p, status: STATUS.CALLED } : p))
     sounds.callNext()
-    addToast(`Calling ${next.name || next.token} — notifications & queue alerts sent!`, 'call')
+    addToast(`Calling ${next.name || next.token} â€” notifications & queue alerts sent!`, 'call')
 
     // Call unified backend queue next API to process turn notifications and relative queue alerts!
     const res = await fetch('/api/generic-queue/next', {
@@ -1350,7 +1307,7 @@ export default function SchoolCommandCenter() {
     // Optimistic UI Update
     setPatients(prev => prev.map(p => p.id === patient.id ? { ...p, status: STATUS.CALLED } : p))
     sounds.callNext()
-    addToast(`🚨 Emergency Call: ${patient.name || patient.token} called next!`, 'call')
+    addToast(`ðŸš¨ Emergency Call: ${patient.name || patient.token} called next!`, 'call')
 
     try {
       const res = await fetch('/api/generic-queue/next', {
@@ -1409,7 +1366,7 @@ export default function SchoolCommandCenter() {
       const res = await fetch('/api/razorpay/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, planTier: tier })
+        body: JSON.stringify({ businessId: clinic.id, planTier: tier })
       })
       const data = await res.json()
       if (!res.ok || !data.subscriptionId) throw new Error(data.error || 'Failed to create subscription')
@@ -1534,7 +1491,7 @@ export default function SchoolCommandCenter() {
     }
   }
 
-  // ── Computed ────────────────────────────────────────────────────────────
+  // â”€â”€ Computed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const isClosedToday = !!clinic?.closed_today_date
   const waiting = patients.filter(p => p.status === STATUS.WAITING)
   const called = patients.filter(p => p.status === STATUS.CALLED)
@@ -1542,7 +1499,7 @@ export default function SchoolCommandCenter() {
   const activePatients = [...called, ...waiting]
   const displayPatients = activeTab === 'active' ? activePatients : done
 
-  // ── Limits ──
+  // â”€â”€ Limits â”€â”€
   const planId = clinic?.plan_id || 'starter'
   const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
   const isLimitReached = patients.length >= limit
@@ -1563,7 +1520,7 @@ export default function SchoolCommandCenter() {
     </div>
   )
 
-  // ── Trial Expired Lockout ───────────────────────────────────────────────
+  // â”€â”€ Trial Expired Lockout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isTrialExpired) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#09090b', backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15), transparent 60%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Inter',sans-serif" }}>
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
@@ -1579,7 +1536,7 @@ export default function SchoolCommandCenter() {
           onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.6)'; e.currentTarget.style.background = '#10b981' }}
           onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(5, 150, 105, 0.4)'; e.currentTarget.style.background = '#059669' }}
         >
-          View Plans & Upgrade →
+          View Plans & Upgrade â†’
         </button>
         <button
           onClick={logout}
@@ -1591,8 +1548,8 @@ export default function SchoolCommandCenter() {
         </button>
         <p style={{ marginTop: 24, fontSize: 12, color: '#475569' }}>Need help? Email <a href="mailto:tokenpe.online@gmail.com" style={{ color: '#10b981', fontWeight: 500 }}>tokenpe.online@gmail.com</a></p>
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
     <>
@@ -1620,7 +1577,7 @@ export default function SchoolCommandCenter() {
           box-sizing: border-box;
         }
 
-        /* ── TOP METADATA CONTROL STRIP ── */
+        /* â”€â”€ TOP METADATA CONTROL STRIP â”€â”€ */
         .cmd-meta-bar {
           display: flex;
           justify-content: space-between;
@@ -1694,7 +1651,7 @@ export default function SchoolCommandCenter() {
           box-shadow: 0 0 0 3px rgba(27, 42, 74, 0.08);
         }
 
-        /* ── HEADER ── */
+        /* â”€â”€ HEADER â”€â”€ */
         .cmd-header {
           display: flex;
           justify-content: space-between;
@@ -1800,7 +1757,7 @@ export default function SchoolCommandCenter() {
           50% { transform: scale(1.6); opacity: 0.5; }
         }
 
-        /* ── STATS ROW (ELEVATED HERO NUMBERS) ── */
+        /* â”€â”€ STATS ROW (ELEVATED HERO NUMBERS) â”€â”€ */
         .cmd-stats-row {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -1861,7 +1818,7 @@ export default function SchoolCommandCenter() {
           font-style: italic;
         }
 
-        /* ── ADMISSIONS & NEXT QUEUE HERO CARDS ── */
+        /* â”€â”€ ADMISSIONS & NEXT QUEUE HERO CARDS â”€â”€ */
         .cmd-hero-grid {
           display: grid;
           grid-template-columns: 1.2fr 0.8fr;
@@ -1954,7 +1911,7 @@ export default function SchoolCommandCenter() {
           transform: translateY(0) scale(0.98);
         }
 
-        /* ── TABS ── */
+        /* â”€â”€ TABS â”€â”€ */
         .cmd-tabs {
           display: flex;
           gap: 28px;
@@ -1983,7 +1940,7 @@ export default function SchoolCommandCenter() {
           border-bottom-color: var(--acc-navy);
         }
 
-        /* ── DUAL SECTION GRID ── */
+        /* â”€â”€ DUAL SECTION GRID â”€â”€ */
         .cmd-split-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -2209,7 +2166,7 @@ export default function SchoolCommandCenter() {
           .cmd-tab-sub { font-size: 0.6rem !important; margin-top: 2px !important; }
         }
 
-        /* ── 3 ACTION BUTTON SYSTEM (ADMIT, NOTIFY, SKIP) ── */
+        /* â”€â”€ 3 ACTION BUTTON SYSTEM (ADMIT, NOTIFY, SKIP) â”€â”€ */
         .cmd-card-actions {
           display: flex;
           gap: 10px;
@@ -2348,7 +2305,7 @@ export default function SchoolCommandCenter() {
         .btn-skip-sm:active { transform: scale(0.97) !important; }
       `}</style>
 
-      {/* ── MODAL: MANUAL CHECK-IN ── */}
+      {/* â”€â”€ MODAL: MANUAL CHECK-IN â”€â”€ */}
       <AnimatePresence>
         {showAddModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -2375,14 +2332,14 @@ export default function SchoolCommandCenter() {
                   <label style={{ display: 'block', fontWeight: 700, marginBottom: 4, color: '#1B2A4A' }}>WhatsApp Number</label>
                   <input type="tel" maxLength={10} value={guardianName} onChange={e => setGuardianName(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="e.g. 9876543210" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: 6, outline: 'none', background: '#F4F7FB' }} />
                 </div>
-                <button type="submit" className="cmd-btn-solid" style={{ marginTop: 8, padding: '12px 20px' }}>Confirm Check-in →</button>
+                <button type="submit" className="cmd-btn-solid" style={{ marginTop: 8, padding: '12px 20px' }}>Confirm Check-in â†’</button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* ── MODAL: EDIT SCHOOL NAME & LOGO ── */}
+      {/* â”€â”€ MODAL: EDIT SCHOOL NAME & LOGO â”€â”€ */}
       <AnimatePresence>
         {showEditSchoolModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -2429,14 +2386,14 @@ export default function SchoolCommandCenter() {
                   </div>
                 </div>
 
-                <button type="submit" className="cmd-btn-solid" style={{ padding: '12px 20px', marginTop: 4 }}>Save Changes →</button>
+                <button type="submit" className="cmd-btn-solid" style={{ padding: '12px 20px', marginTop: 4 }}>Save Changes â†’</button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* ── MODAL: BROADCAST NOTICE TO QUEUE ── */}
+      {/* â”€â”€ MODAL: BROADCAST NOTICE TO QUEUE â”€â”€ */}
       <AnimatePresence>
         {showBroadcastModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -2468,7 +2425,7 @@ export default function SchoolCommandCenter() {
                 )}
                 <button type="submit" className="cmd-btn-solid" style={{ padding: '12px 20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' }}>
                   <Megaphone style={{ width: 16, height: 16 }} />
-                  <span>Broadcast Notice Now →</span>
+                  <span>Broadcast Notice Now â†’</span>
                 </button>
               </form>
             </motion.div>
@@ -2476,7 +2433,7 @@ export default function SchoolCommandCenter() {
         )}
       </AnimatePresence>
 
-      {/* ── MODAL: CONFIRM SKIP / REMOVE FROM QUEUE ── */}
+      {/* â”€â”€ MODAL: CONFIRM SKIP / REMOVE FROM QUEUE â”€â”€ */}
       <AnimatePresence>
         {skipTarget && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 110, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -2495,7 +2452,7 @@ export default function SchoolCommandCenter() {
                   Cancel
                 </button>
                 <button type="button" onClick={() => confirmRemoveFromQueue(skipTarget.id)} className="cmd-btn-solid" style={{ flex: 1, padding: '10px 14px', fontSize: '0.8rem', fontWeight: 800, background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)', color: '#FFF', border: 'none' }}>
-                  Yes, Remove →
+                  Yes, Remove â†’
                 </button>
               </div>
             </motion.div>
@@ -2503,7 +2460,7 @@ export default function SchoolCommandCenter() {
         )}
       </AnimatePresence>
 
-      {/* ── NOTIFICATION TOAST BANNER (MEMBER NOTIFIED TO BE READY) ── */}
+      {/* â”€â”€ NOTIFICATION TOAST BANNER (MEMBER NOTIFIED TO BE READY) â”€â”€ */}
       <AnimatePresence>
         {notifyToast && (
           <motion.div
@@ -2621,7 +2578,7 @@ export default function SchoolCommandCenter() {
       `}</style>
 
       <div className="cmd-root">
-        {/* ── TOP CONTROL STRIP ── */}
+        {/* â”€â”€ TOP CONTROL STRIP â”€â”€ */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="cmd-meta-bar">
           {/* Left Group: Live Date */}
           <div className="cmd-meta-group">
@@ -2631,7 +2588,34 @@ export default function SchoolCommandCenter() {
             </div>
           </div>
 
-      {/* ── Add New Branch Modal ── */}
+          {/* Center Group: Serif Identity Anchor (Desktop Only) */}
+          <div 
+            onClick={() => { setNewSchoolNameInput(clinic?.name || 'Ashbourne Academy'); setShowEditSchoolModal(true); }}
+            className="cmd-meta-school-btn cmd-desktop-only"
+            title="Click to edit official school name & logo"
+          >
+            <Building style={{ width: 15, height: 15, color: '#3B82F6' }} />
+            <span className="cmd-meta-school-title">{clinic?.name || 'Ashbourne Academy'}</span>
+            <Pencil style={{ width: 12, height: 12, color: '#3B82F6', marginLeft: 2 }} />
+          </div>
+
+          {/* Right Group: Active Queue Location Input Pill */}
+          <div className="cmd-meta-group">
+            <span className="cmd-meta-label" style={{ color: '#5A6E85' }}>LOCATION:</span>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <MapPin style={{ width: 14, height: 14, color: '#3B82F6', position: 'absolute', left: 10, pointerEvents: 'none' }} />
+              <input
+                type="text"
+                value={activeRoom}
+                onChange={handleRoomChange}
+                placeholder="Active room / Gate..."
+                className="cmd-meta-pill-input"
+              />
+            </div>
+          </div>
+        </motion.div>
+
+      {/* â”€â”€ Add New Branch Modal â”€â”€ */}
       {showAddBranch && (
         <div onClick={() => setShowAddBranch(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#065F46', borderRadius: 24, padding: '32px', width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -2661,7 +2645,7 @@ export default function SchoolCommandCenter() {
                       setUserClinics(updatedClinics)
                       localStorage.setItem('tokenpe_user_businesses', JSON.stringify(updatedClinics))
                       setAddingBranch(false)
-                      // Smooth switch to new branch — no reload
+                      // Smooth switch to new branch â€” no reload
                       await switchToBranch(data.clinic)
                     } else {
                       alert(data.error || 'Failed to create branch')
@@ -2683,7 +2667,7 @@ export default function SchoolCommandCenter() {
         </div>
       )}
 
-      {/* ── Toasts ── */}
+      {/* â”€â”€ Toasts â”€â”€ */}
       <div style={s.toastContainer}>
         {toasts.map(t => (
           <div 
@@ -2708,19 +2692,19 @@ export default function SchoolCommandCenter() {
                 lineHeight: 1
               }}
             >
-              ×
+              Ã—
             </button>
           </div>
         ))}
       </div>
 
-      {/* ── New Patient Banner ── */}
+      {/* â”€â”€ New Patient Banner â”€â”€ */}
       {newPatientAlert && (
         <div style={{ ...s.banner, justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={s.bannerDot} />
             <span><PlusCircle className="inline-block w-4 h-4" /> New patient joined!&nbsp;</span>
-            <strong>{newPatientAlert.name || maskPhone(newPatientAlert.phone)} — {newPatientAlert.token}</strong>
+            <strong>{newPatientAlert.name || maskPhone(newPatientAlert.phone)} â€” {newPatientAlert.token}</strong>
           </div>
           <button 
             onClick={() => {
@@ -2742,15 +2726,15 @@ export default function SchoolCommandCenter() {
               marginLeft: '12px'
             }}
           >
-            ×
+            Ã—
           </button>
         </div>
       )}
 
-      {/* ── QR Modal ── */}
+      {/* â”€â”€ QR Modal â”€â”€ */}
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} onCodeUpdate={handleCodeUpdate} router={router} />}
 
-      {/* ── Discovery Profile Modal ── */}
+      {/* â”€â”€ Discovery Profile Modal â”€â”€ */}
       {showDiscovery && (
         <DiscoveryProfileModal 
           clinic={clinic} 
@@ -2765,17 +2749,17 @@ export default function SchoolCommandCenter() {
         />
       )}
 
-      {/* ── Trial Warning Banner ── */}
+      {/* â”€â”€ Trial Warning Banner â”€â”€ */}
       {showTrialWarning && (
         <div style={{ background: daysLeft <= 3 ? '#DC2626' : 'rgba(6,95,70,0.15)', color: daysLeft <= 3 ? 'white' : '#5EEAD4', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 600, zIndex: 60, position: 'relative', borderBottom: daysLeft <= 3 ? 'none' : '1px solid rgba(6,95,70,0.3)' }}>
           {daysLeft <= 3 ? <><AlertTriangle className="inline-block w-4 h-4" /> Your</> : <><Sparkles className="inline-block w-4 h-4" /> You are on the</>} Elite Free Trial. Ends in {daysLeft} {daysLeft === 1 ? 'day' : 'days'} on {trialEnd?.toLocaleDateString('en-IN')}. <button onClick={() => router.push('/dashboard/billing')} style={{ background: daysLeft <= 3 ? 'white' : 'rgba(6,95,70,0.2)', color: daysLeft <= 3 ? '#DC2626' : '#fff', border: daysLeft <= 3 ? 'none' : '1px solid rgba(6,95,70,0.4)', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, marginLeft: '10px', cursor: 'pointer' }}>Choose a Plan</button>
         </div>
       )}
 
-      {/* ── Closed Today Banner ── */}
+      {/* â”€â”€ Closed Today Banner â”€â”€ */}
       {isClosedToday && (
         <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 700, zIndex: 60, position: 'relative', borderBottom: '1px solid rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', letterSpacing: '0.2px' }}>
-          <span>🔴 Clinic is Closed for Today — No new patients will be accepted.</span>
+          <span>ðŸ”´ Clinic is Closed for Today â€” No new patients will be accepted.</span>
           <button
             onClick={reopenClinic}
             className="reopen-banner-btn"
@@ -2785,34 +2769,7 @@ export default function SchoolCommandCenter() {
         </div>
       )}
 
-      {/* ── Header ── */}
-      <header className="dash-header">
-        <div className="header-top-row">
-          <div style={{ ...s.headerLeft, flex: 1, minWidth: 0 }}>
-            <img src="/logo.svg" alt="TokenPe" style={{ height: '36px', width: 'auto', flexShrink: 0 }} />
-            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '14px', overflow: 'hidden', flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.45)', letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Clinic Console</div>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{clinic?.name}</div>
-            </div>
-          </div>
-
-          {/* Right Group: Active Queue Location Refined Input Pill */}
-          <div className="cmd-meta-group">
-            <span className="cmd-meta-label" style={{ color: '#5A6E85' }}>LOCATION:</span>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <MapPin style={{ width: 14, height: 14, color: '#3B82F6', position: 'absolute', left: 10, pointerEvents: 'none' }} />
-              <input
-                type="text"
-                value={activeRoom}
-                onChange={handleRoomChange}
-                placeholder="Active room / Gate..."
-                className="cmd-meta-pill-input"
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ── HEADER ── */}
+        {/* â”€â”€ HEADER â”€â”€ */}
         <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="cmd-header">
           <div className="cmd-brand">
             <div 
@@ -2856,7 +2813,7 @@ export default function SchoolCommandCenter() {
                 title="Click to edit description tagline & city"
               >
                 <span>{schoolSubtitle || clinic?.specialty || 'Campus Operations & Gate Control Console'}</span>
-                {clinic?.city && <><span style={{ opacity: 0.45 }}>•</span><span style={{ fontWeight: 700, color: '#1B2A4A' }}>{clinic.city}</span></>}
+                {clinic?.city && <><span style={{ opacity: 0.45 }}>â€¢</span><span style={{ fontWeight: 700, color: '#1B2A4A' }}>{clinic.city}</span></>}
               </div>
             </div>
           </div>
@@ -2865,7 +2822,7 @@ export default function SchoolCommandCenter() {
             <div className="cmd-clock">
               <AnimatedClock />
               <div className="cmd-clock-sub">
-                <span className="live-dot" /> SESSION ACTIVE • TERM II
+                <span className="live-dot" /> SESSION ACTIVE â€¢ TERM II
               </div>
             </div>
             <button 
@@ -2879,280 +2836,17 @@ export default function SchoolCommandCenter() {
           </div>
         </motion.header>
 
-// ─── PATIENT CARD ──────────────────────────────────────────────────────────
-function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCall }) {
-  const isWaiting = patient.status === STATUS.WAITING
-  const isCalled = patient.status === STATUS.CALLED
-  const isDone = patient.status === STATUS.DONE
-  const isSkipped = patient.status === STATUS.SKIPPED
-  const waitMins = Math.floor((new Date() - new Date(patient.joined_at)) / 60000)
-  const joinedTime = new Date(patient.joined_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
-  const completedTime = patient.completed_at ? new Date(patient.completed_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : null
-  
-  const statusConfig = {
-    waiting: { color: '#F97316', bg: '#FFF7ED', border: '#FDBA74', label: 'Waiting' },
-    called:  { color: '#10B981', bg: '#F0FDF4', border: '#6EE7B7', label: 'With Doctor' },
-    done:    { color: '#6366F1', bg: '#EEF2FF', border: '#A5B4FC', label: 'Done' },
-    skipped: { color: '#FB7185', bg: '#FFF1F2', border: '#FECDD3', label: 'Skipped' },
-  }[patient.status] || { color: '#64748b', bg: '#F8FAFC', border: '#CBD5E1', label: patient.status }
+        {/*  STATS ROW  */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} style={{ marginBottom: 24 }}>
+          <div className="cmd-stats-row">
 
-  return (
-    <div style={{
-      background: 'white',
-      borderRadius: 16,
-      marginBottom: 10,
-      border: `1px solid ${statusConfig.border}`,
-      boxShadow: isCalled ? '0 4px 20px rgba(16,185,129,0.12)' : '0 2px 8px rgba(0,0,0,0.04)',
-      overflow: 'hidden',
-      opacity: isDone || isSkipped ? 0.72 : 1,
-    }}>
-      {/* Main info row */}
-      <div style={{ display: 'flex', alignItems: 'stretch' }}>
-        {/* Left: Token + Status */}
-        <div style={{
-          background: statusConfig.bg,
-          borderRight: `1px solid ${statusConfig.border}`,
-          minWidth: 68,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '14px 6px',
-          gap: 3,
-          flexShrink: 0,
-        }}>
-          <div style={{ fontSize: '1.05rem', fontWeight: 900, color: statusConfig.color, letterSpacing: '-0.5px' }}>{patient.token}</div>
-          {position && <div style={{ fontSize: '0.6rem', fontWeight: 700, color: statusConfig.color, opacity: 0.75, textTransform: 'uppercase' }}>#{position}</div>}
-          <div style={{
-            fontSize: '0.58rem', fontWeight: 700, color: statusConfig.color,
-            background: `${statusConfig.color}18`, border: `1px solid ${statusConfig.border}`,
-            borderRadius: 20, padding: '2px 6px', marginTop: 3, textAlign: 'center', letterSpacing: 0.2,
-          }}>{statusConfig.label}</div>
-        </div>
+            {/* Card 1 */}
+            <div className="cmd-stat-card">
+              <div className="cmd-stat-tag">
+                AWAITING CHECK-IN
+                <Users className="w-3.5 h-3.5 text-[#7FA8D9]" />
+              </div>
 
-        {/* Right: Info */}
-        <div style={{ flex: 1, padding: '12px 14px', minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#065F46', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
-              {patient.name || 'Walk-in Patient'}
-            </span>
-            <span style={{ fontSize: '0.63rem', fontWeight: 700, color: '#065F46', background: '#F0FDFA', border: '1px solid #DDD6FE', borderRadius: 20, padding: '1px 7px', flexShrink: 0 }}>
-              {LANG_NAMES[patient.language] || 'हिंदी'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 10px', fontSize: '0.75rem', color: '#64748B' }}>
-            <span><Smartphone className="inline-block w-4 h-4" /> +91 {maskPhone(patient.phone)}</span>
-            <span><Clock className="inline-block w-4 h-4" /> {joinedTime}</span>
-            {isWaiting && waitMins > 0 && <span style={{ color: waitMins > 20 ? '#EF4444' : '#F97316', fontWeight: 700 }}><Hourglass className="inline-block w-4 h-4" /> {waitMins}m</span>}
-            {completedTime && <span><CheckCircle2 className="inline-block w-4 h-4" /> {completedTime}</span>}
-            {position && <span style={{ color: '#065F46', fontWeight: 600 }}>~{position * 7}min est.</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Action buttons */}
-      {(isWaiting || isCalled) && (
-        <div style={{
-          borderTop: `1px solid ${statusConfig.border}`,
-          background: statusConfig.bg,
-          display: 'flex', gap: 8, padding: '10px 12px', flexWrap: 'wrap',
-        }}>
-          {isCalled && (
-            <button onClick={onDone} style={{ flex: 1, minWidth: 90, padding: '9px 12px', background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Check className="w-4 h-4" /> Done</button>
-          )}
-          {isWaiting && onPriorityCall && (
-            <button onClick={onPriorityCall} style={{ flex: 1, minWidth: 100, padding: '9px 12px', background: 'linear-gradient(135deg,#EF4444,#DC2626)', color: 'white', border: 'none', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Megaphone className="w-4 h-4" /> Call Now</button>
-          )}
-          {isWaiting && (
-            <button onClick={onNotify} style={{ flex: 1, minWidth: 80, padding: '9px 12px', background: 'white', color: '#1D4ED8', border: '1.5px solid #BFDBFE', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}><Bell className="inline-block w-4 h-4" /> Notify</button>
-          )}
-          {isWaiting && (
-            <button onClick={onSkip} style={{ padding: '9px 14px', background: 'white', color: '#94A3B8', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}><SkipForward className="inline-block w-4 h-4" /> Skip</button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── PAYMENTS VIEW ──────────────────────────────────────────────────────────
-function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addToast }) {
-  const [globalPatients, setGlobalPatients] = useState([])
-  const [loadingGlobal, setLoadingGlobal] = useState(true)
-  const [paymentSubTab, setPaymentSubTab] = useState('pending')
-  const [paymentSearch, setPaymentSearch] = useState('')
-  const [editingFeeId, setEditingFeeId] = useState(null)
-  const [tempFeeTotal, setTempFeeTotal] = useState('')
-  const [tempFeePaid, setTempFeePaid] = useState('')
-  const [remindingId, setRemindingId] = useState(null)
-
-  async function handleSendReminder(patient) {
-    const billTotal = parseFloat(patient.fee_total) || 0
-    if (billTotal <= 0) {
-      addToast('Please set a Total Bill greater than 0 first', 'error')
-      setEditingFeeId(patient.id)
-      setTempFeeTotal('500')
-      setTempFeePaid('0')
-      return
-    }
-
-    if (!patient.phone || patient.phone === '0000000000') {
-      addToast('Cannot send reminder: invalid phone number', 'error')
-      return
-    }
-
-    setRemindingId(patient.id)
-    try {
-      const res = await fetch('/api/generic-queue/remind-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId: patient.id })
-      })
-
-      const data = await res.json()
-      if (res.ok && data.success) {
-        addToast(`Reminder sent to ${patient.name || patient.token}`, 'done')
-      } else {
-        throw new Error(data.message || 'Failed to send reminder')
-      }
-    } catch (err) {
-      console.error(err)
-      addToast(err.message || 'Error sending reminder', 'error')
-    } finally {
-      setRemindingId(null)
-    }
-  }
-
-  const fetchPayments = async (query = '') => {
-    setLoadingGlobal(true)
-    try {
-      const url = query ? `/api/generic-dashboard/payments?search=${encodeURIComponent(query)}` : '/api/generic-dashboard/payments'
-      const res = await fetch(url)
-      const data = await res.json()
-      if (data.success) {
-        setGlobalPatients(data.patients || [])
-      }
-    } catch (e) {
-      console.error(e)
-    }
-    setLoadingGlobal(false)
-  }
-
-  useEffect(() => {
-    fetchPayments()
-  }, [])
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (paymentSearch.trim().length >= 3) {
-        fetchPayments(paymentSearch)
-      } else if (paymentSearch.trim() === '') {
-        fetchPayments()
-      }
-    }, 500)
-    return () => clearTimeout(delayDebounceFn)
-  }, [paymentSearch])
-
-  const onUpdatePayment = async (id, updates) => {
-    // Optimistically update local state immediately
-    setGlobalPatients(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
-
-    // Call the API directly — do NOT delegate to parent's onUpdatePayment
-    // which is tied to today's queue state and would cause a revert error
-    try {
-      const res = await fetch('/api/generic-queue/update-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId: id, updates })
-      })
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.message || 'API request failed')
-      }
-    } catch (e) {
-      console.error('[PaymentsView onUpdatePayment Error]', e)
-      addToast('Failed to save payment changes. Please try again.', 'error')
-      // Revert optimistic update by re-fetching global data
-      fetchPayments()
-    }
-  }
-
-  // Sub-tab counters
-  const pendingCount = globalPatients.filter(p => p.payment_status !== 'completed').length
-  const completedCount = globalPatients.filter(p => p.payment_status === 'completed').length
-
-  // Metrics (calculated dynamically from fetched records)
-  const pendingAmountCompleted = globalPatients
-    .filter(p => p.payment_status !== 'completed')
-    .reduce((sum, p) => sum + (parseFloat(p.fee_paid) || 0), 0)
-
-  const pendingRemainingBalance = globalPatients
-    .filter(p => p.payment_status !== 'completed')
-    .reduce((sum, p) => sum + ((parseFloat(p.fee_total) || 0) - (parseFloat(p.fee_paid) || 0)), 0)
-
-  const completedTransactionsDone = globalPatients
-    .filter(p => p.payment_status === 'completed')
-    .reduce((sum, p) => sum + (parseFloat(p.fee_paid) || 0), 0)
-
-  // Real-time Search & Filter
-  const filtered = globalPatients.filter(p => {
-    const matchesSubTab = paymentSubTab === 'pending'
-      ? p.payment_status !== 'completed'
-      : p.payment_status === 'completed'
-
-    const q = paymentSearch.toLowerCase().trim()
-    const matchesSearch = !q ||
-      (p.name || '').toLowerCase().includes(q) ||
-      (p.phone || '').includes(q) ||
-      (p.token || '').toLowerCase().includes(q)
-
-    return matchesSubTab && matchesSearch
-  })
-
-  return (
-    <div style={ps.container}>
-      {/* ── Search Bar ── */}
-      <div style={ps.searchContainer}>
-        <span style={ps.searchIcon}><Search className="w-4 h-4 text-[#94A3B8]" /></span>
-        <input
-          type="text"
-          placeholder="Search patient by name, phone, or token..."
-          value={paymentSearch}
-          onChange={e => setPaymentSearch(e.target.value)}
-          style={ps.searchInput}
-        />
-      </div>
-
-      {/* ── Sub-Tabs Navigation ── */}
-      <div style={ps.subTabs}>
-        <button
-          onClick={() => { setPaymentSubTab('pending'); setEditingFeeId(null); }}
-          style={{
-            ...ps.subTab,
-            ...(paymentSubTab === 'pending' ? ps.subTabActivePending : {})
-          }}
-        >
-          <AlertTriangle className="inline-block w-4 h-4" /> Pending Payments ({pendingCount})
-        </button>
-        <button
-          onClick={() => { setPaymentSubTab('completed'); setEditingFeeId(null); }}
-          style={{
-            ...ps.subTab,
-            ...(paymentSubTab === 'completed' ? ps.subTabActiveCompleted : {})
-          }}
-        >
-          <CheckCircle2 className="inline-block w-4 h-4" /> Completed Receipts ({completedCount})
-        </button>
-      </div>
-
-      {/* ── Metric Cards ── */}
-      <div style={ps.metricsRow}>
-        {paymentSubTab === 'pending' ? (
-          <>
-            <div style={ps.metricCard}>
-              <div style={ps.metricTitle}>Pending: Amount Completed</div>
-              <div style={{ ...ps.metricValue, color: '#10B981' }}>₹{pendingAmountCompleted.toFixed(2)}</div>
-            </div>
             <div className="cmd-stat-val"><AnimatedNumber value={arrivals.length} /></div>
             <div className="cmd-stat-underline" />
             <div className="cmd-stat-sub">at the front desk</div>
@@ -3196,9 +2890,10 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
             <div className="cmd-stat-underline" />
             <div className="cmd-stat-sub">{arrivals.length > 0 ? `${arrivals.length} student${arrivals.length > 1 ? 's' : ''} in queue` : 'queue is clear'}</div>
           </div>
+        </div>
         </motion.div>
 
-        {/* ── LIVE QUEUE CONTROL (FULL WIDTH HERO CARD) ── */}
+        {/* â”€â”€ LIVE QUEUE CONTROL (FULL WIDTH HERO CARD) â”€â”€ */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} style={{ marginBottom: 24 }}>
           <div className="cmd-card" style={{ width: '100%' }}>
             <div className="cmd-card-tag">
@@ -3245,7 +2940,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
           </div>
         </motion.div>
 
-        {/* ── TABS (ARRIVALS & COMPLETED ONLY) ── */}
+        {/* â”€â”€ TABS (ARRIVALS & COMPLETED ONLY) â”€â”€ */}
         <div className="cmd-tabs">
           <button className={`cmd-tab ${tab === 'arrivals' ? 'active' : ''}`} onClick={() => setTab('arrivals')}>
             <span className="cmd-tab-title">ARRIVALS</span>
@@ -3257,7 +2952,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
           </button>
         </div>
 
-        {/* ── AWAITING CHECK-IN & ACTIVE CONSULTATION HERO ROW (ARRIVALS TAB ONLY) ── */}
+        {/* â”€â”€ AWAITING CHECK-IN & ACTIVE CONSULTATION HERO ROW (ARRIVALS TAB ONLY) â”€â”€ */}
         {tab === 'arrivals' && <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
           {/* 2-Column Split: Left = WITH STAFF, Right = NEXT IN QUEUE */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 20 }}>
@@ -3267,7 +2962,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
               <div>
                 <div className="cmd-card-tag" style={{ marginBottom: 12 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, color: '#047857', fontSize: '0.75rem' }}>
-                    <span className="live-dot" style={{ background: '#10B981', boxShadow: '0 0 8px #10B981' }} /> ACTIVE CONSULTATION • WITH STAFF
+                    <span className="live-dot" style={{ background: '#10B981', boxShadow: '0 0 8px #10B981' }} /> ACTIVE CONSULTATION â€¢ WITH STAFF
                   </span>
                   <span style={{ fontSize: '0.6rem', background: '#059669', color: '#FFF', padding: '3px 8px', borderRadius: 4, fontWeight: 800 }}>({withStaff.length}) ACTIVE</span>
                 </div>
@@ -3282,7 +2977,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
                       <div key={s.id} style={{ background: '#FFFFFF', border: '1.5px solid #A7F3D0', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                         <div>
                           <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: 700, color: '#1B2A4A' }}>{s.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#047857', fontWeight: 600, marginTop: 2 }}>{s.grade || 'General'} • {s.reason || 'Consultation'}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#047857', fontWeight: 600, marginTop: 2 }}>{s.grade || 'General'} â€¢ {s.reason || 'Consultation'}</div>
                         </div>
                         <button
                           onClick={() => handleCompleteStaff(s.id)}
@@ -3305,7 +3000,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
               <div>
                 <div className="cmd-card-tag" style={{ marginBottom: 12 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, color: '#1B2A4A', fontSize: '0.75rem' }}>
-                    <span className="live-dot" /> 1ST IN LINE • IMMEDIATE ADMIT
+                    <span className="live-dot" /> 1ST IN LINE â€¢ IMMEDIATE ADMIT
                   </span>
                   <span style={{ fontSize: '0.6rem', background: '#1B2A4A', color: '#FFF', padding: '3px 8px', borderRadius: 4, fontWeight: 800 }}>NEXT IN QUEUE</span>
                 </div>
@@ -3319,7 +3014,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
                       </div>
                       <div>
                         <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>CLASS / GRADE</span>
-                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontSize: '0.88rem' }}>{nextInQueue.grade || '—'}</span>
+                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontSize: '0.88rem' }}>{nextInQueue.grade || 'â€”'}</span>
                       </div>
                       <div>
                         <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>REASON</span>
@@ -3396,7 +3091,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
                         <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
                           <GraduationCap style={{ width: 11, height: 11, color: '#3B82F6' }} /> CLASS / GRADE
                         </span>
-                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontSize: '0.88rem' }}>{a.grade || '—'}</span>
+                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontSize: '0.88rem' }}>{a.grade || 'â€”'}</span>
                       </div>
 
                       <div>
@@ -3410,7 +3105,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
                         <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
                           <Phone style={{ width: 11, height: 11, color: '#3B82F6' }} /> CONTACT NUMBER
                         </span>
-                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontFamily: 'monospace', fontSize: '0.85rem' }}>{a.guardian || '—'}</span>
+                        <span style={{ fontWeight: 700, color: '#1B2A4A', fontFamily: 'monospace', fontSize: '0.85rem' }}>{a.guardian || 'â€”'}</span>
                       </div>
 
                       <div>
@@ -3443,7 +3138,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
           </div>
         </motion.div>}
 
-        {/* ── COMPLETED TAB VIEW ── */}
+        {/* â”€â”€ COMPLETED TAB VIEW â”€â”€ */}
         {tab === 'dismissals' && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} style={{ marginBottom: 28 }}>
             <div className="cmd-sec-card">
@@ -3461,7 +3156,7 @@ function PaymentsView({ patients, onUpdatePayment: externalOnUpdatePayment, addT
                     <div key={idx} style={{ padding: '12px 16px', background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 8px rgba(27,42,74,0.04)' }}>
                       <div>
                         <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: 700, color: '#1B2A4A' }}>{d.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#5A6E85', marginTop: 2 }}>{d.grade || 'General'} • {d.guardian || 'N/A'}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#5A6E85', marginTop: 2 }}>{d.grade || 'General'} â€¢ {d.guardian || 'N/A'}</div>
                       </div>
                       <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', fontWeight: 800, color: '#059669', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '4px 8px', borderRadius: 6 }}>
                         {d.time}

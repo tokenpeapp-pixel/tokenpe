@@ -256,13 +256,14 @@ function FloatingObjects() {
 function MobileAutoCarousel({ children, total, activeDotColor = "#1D4ED8" }) {
   const containerRef = useRef(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  const isInteracting = useRef(false);
 
-  const getScrollEl = () => {
+  const getScrollEl = useCallback(() => {
     if (!containerRef.current) return null;
     return containerRef.current.querySelector('.power-grid, .feat-grid, .test-grid') || containerRef.current;
-  };
+  }, []);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const el = getScrollEl();
     if (!el) return;
     const scrollPos = el.scrollLeft;
@@ -270,15 +271,21 @@ function MobileAutoCarousel({ children, total, activeDotColor = "#1D4ED8" }) {
     const cardWidth = firstCard ? firstCard.offsetWidth + 16 : el.offsetWidth;
     const idx = Math.round(scrollPos / cardWidth);
     setActiveIdx(Math.min(Math.max(0, idx), total - 1));
-  };
+  }, [getScrollEl, total]);
 
   useEffect(() => {
-    const isMobile = window.innerWidth <= 768;
-    if (!isMobile) return;
+    const checkAndAutoSlide = () => {
+      if (typeof window === 'undefined') return false;
+      return window.innerWidth <= 768;
+    };
+
+    if (!checkAndAutoSlide()) return;
 
     const interval = setInterval(() => {
+      if (isInteracting.current) return;
       const el = getScrollEl();
       if (!el) return;
+
       setActiveIdx((prevIdx) => {
         const nextIdx = (prevIdx + 1) % total;
         const firstCard = el.querySelector('.power-card, .feat-card, .test-card') || el.firstElementChild;
@@ -286,10 +293,10 @@ function MobileAutoCarousel({ children, total, activeDotColor = "#1D4ED8" }) {
         el.scrollTo({ left: nextIdx * cardWidth, behavior: "smooth" });
         return nextIdx;
       });
-    }, 3500);
+    }, 3200);
 
     return () => clearInterval(interval);
-  }, [total]);
+  }, [total, getScrollEl]);
 
   const scrollToIdx = (idx) => {
     const el = getScrollEl();
@@ -302,7 +309,13 @@ function MobileAutoCarousel({ children, total, activeDotColor = "#1D4ED8" }) {
 
   return (
     <div>
-      <div ref={containerRef} onScroll={handleScroll} className="mobile-carousel-grid">
+      <div 
+        ref={containerRef} 
+        onScroll={handleScroll} 
+        onTouchStart={() => { isInteracting.current = true; }}
+        onTouchEnd={() => { setTimeout(() => { isInteracting.current = false; }, 2000); }}
+        className="mobile-carousel-grid"
+      >
         {children}
       </div>
       <div className="carousel-dots-wrap">
@@ -1136,11 +1149,11 @@ export default function SchoolLandingPage() {
           .hero-cta .btn { justify-content: center; width: 100%; font-size: 16px; padding: 16px 24px; }
           .trust-row     { flex-direction: column; align-items: flex-start; gap: 10px; }
 
-          .sec, .sec-sm  { padding: 56px 18px; }
-          .sec-head      { margin-bottom: 44px; }
-          .sec-title     { font-size: 34px; line-height: 1.22; margin-bottom: 16px; }
-          .sec-sub       { font-size: 16px; }
-          .eyebrow       { font-size: 12px; padding: 6px 14px; margin-bottom: 14px; }
+          .sec, .sec-sm  { padding: 28px 18px; }
+          .sec-head      { margin-bottom: 24px; }
+          .sec-title     { font-size: 30px; line-height: 1.2; margin-bottom: 12px; }
+          .sec-sub       { font-size: 15px; }
+          .eyebrow       { font-size: 11.5px; padding: 5px 12px; margin-bottom: 10px; }
 
           .power-grid, .feat-grid, .test-grid {
             display: flex !important;
@@ -1159,12 +1172,31 @@ export default function SchoolLandingPage() {
             display: none !important;
           }
           .power-card, .feat-card, .test-card {
-            flex: 0 0 88% !important;
-            min-width: 88% !important;
-            max-width: 88% !important;
+            flex: 0 0 82% !important;
+            min-width: 82% !important;
+            max-width: 82% !important;
             scroll-snap-align: center !important;
             padding: 28px 22px !important;
             border-radius: 24px !important;
+            box-sizing: border-box !important;
+          }
+          .how-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 8px !important;
+          }
+          .how-p {
+            display: none !important;
+          }
+          .how-n {
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 18px !important;
+            margin-bottom: 12px !important;
+          }
+          .how-h3 {
+            font-size: 13.5px !important;
+            line-height: 1.25 !important;
           }
           .power-title   { font-size: 20px; }
           .power-desc    { font-size: 14.5px; margin-bottom: 20px; }
@@ -1352,7 +1384,7 @@ export default function SchoolLandingPage() {
 
           <MobileAutoCarousel total={3} activeDotColor="#1D4ED8"><div className="power-grid">
             {/* ─ Voice AI ─ */}
-            <Reveal delay={0} className="power-card">
+            <div className="power-card">
               <Phone className="card-ghost-icon" aria-hidden />
               <div className="power-card-top">
                 <div className="power-icon"><Phone size={26} color="#1D4ED8" /></div>
@@ -1378,10 +1410,10 @@ export default function SchoolLandingPage() {
                 </div>
               </div>
               <div className="power-badge"><Zap size={14} /> Handles 200+ parent calls/day</div>
-            </Reveal>
+            </div>
 
             {/* ─ WhatsApp Chatbot ─ */}
-            <Reveal delay={0.15} className="power-card">
+            <div className="power-card">
               <MessageSquare className="card-ghost-icon" aria-hidden />
               <div className="power-card-top">
                 <div className="power-icon"><MessageSquare size={26} color="#1D4ED8" /></div>
@@ -1397,10 +1429,10 @@ export default function SchoolLandingPage() {
                 <WhatsAppChat />
               </div>
               <div className="power-badge"><Clock size={14} /> 24 / 7 instant responses</div>
-            </Reveal>
+            </div>
 
             {/* ─ Google Reviews ─ */}
-            <Reveal delay={0.3} className="power-card">
+            <div className="power-card">
               <ThumbsUp className="card-ghost-icon" aria-hidden />
               <div className="power-card-top">
                 <div className="power-icon"><ThumbsUp size={26} color="#1D4ED8" /></div>
@@ -1424,7 +1456,7 @@ export default function SchoolLandingPage() {
                 </div>
               </div>
               <div className="power-badge"><Star size={14} fill="#1D4ED8" stroke="none" /> Avg. 4.9 rating from parents</div>
-            </Reveal>
+            </div>
           </div></MobileAutoCarousel>
         </section>
 
@@ -1470,14 +1502,14 @@ export default function SchoolLandingPage() {
             <p className="sec-sub">From main gate passes to teacher PTM queues — TokenPe replaces paper registers with one smart digital dashboard.</p>
           </Reveal>
           <MobileAutoCarousel total={FEATURES.length} activeDotColor="#1D4ED8"><div className="feat-grid">
-            {FEATURES.map((f, i) => (
-              <Reveal key={f.title} delay={(i % 3) * 0.1} className="feat-card">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="feat-card">
                 <f.icon className="card-ghost-icon" aria-hidden />
                 <div className="feat-icon"><f.icon size={26} color="#1D4ED8" /></div>
                 <div className="feat-tag">{f.tag}</div>
                 <h3 className="feat-title">{f.title}</h3>
                 <p className="feat-desc">{f.desc}</p>
-              </Reveal>
+              </div>
             ))}
           </div></MobileAutoCarousel>
         </section>
@@ -1502,14 +1534,14 @@ export default function SchoolLandingPage() {
 
 
         {/* ── TESTIMONIALS ── */}
-        <section className="sec" style={{ paddingTop: 90 }}>
+        <section className="sec test-sec">
           <Reveal className="sec-head">
             <span className="eyebrow">Loved by school leaders</span>
             <h2 className="sec-title">Don&apos;t just take our word for it</h2>
           </Reveal>
           <MobileAutoCarousel total={TESTIMONIALS.length} activeDotColor="#1D4ED8"><div className="test-grid">
-            {TESTIMONIALS.map((t, i) => (
-              <Reveal key={t.n} delay={i * 0.15} className="test-card">
+            {TESTIMONIALS.map((t) => (
+              <div key={t.n} className="test-card">
                 <div className="stars">{Array.from({ length: 5 }).map((_, j) => <Star key={j} size={16} fill="#1D4ED8" stroke="none" />)}</div>
                 <p className="test-q">&ldquo;{t.q}&rdquo;</p>
                 <div className="test-person">
@@ -1519,7 +1551,7 @@ export default function SchoolLandingPage() {
                     <div className="test-role">{t.r}</div>
                   </div>
                 </div>
-              </Reveal>
+              </div>
             ))}
           </div></MobileAutoCarousel>
         </section>

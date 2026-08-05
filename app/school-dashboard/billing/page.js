@@ -32,6 +32,14 @@ export default function SchoolBillingPage() {
   const [openFaq, setOpenFaq]                     = useState(null)
   const [customDays, setCustomDays]               = useState(30)
 
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   useEffect(() => { setCurrentDate(new Date()) }, [])
 
   useEffect(() => {
@@ -259,9 +267,9 @@ export default function SchoolBillingPage() {
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
 
       {/* ── HEADER ── */}
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: isMobile ? '10px 12px' : '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
         <button onClick={() => router.push('/school-dashboard')} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
-          <ChevronLeft size={16} /> Back
+          <ChevronLeft size={16} />{isMobile ? null : ' Back'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #059669 100%)', borderRadius: 8, padding: 8 }}>
@@ -269,7 +277,7 @@ export default function SchoolBillingPage() {
           </div>
           <div>
             <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: '#1B2A4A' }}>Billing Plans</div>
-            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600 }}>{clinic?.name || 'School'} — Subscription Management</div>
+            <div style={{ fontSize: '0.72rem', color: '#5A6E85', fontWeight: 600, display: isMobile ? 'none' : 'block' }}>{clinic?.name || 'School'} — Subscription Management</div>
           </div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: '#ECFDF5', padding: '6px 12px', borderRadius: 6, border: '1px solid #A7F3D0' }}>
@@ -278,14 +286,14 @@ export default function SchoolBillingPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '28px 20px' }}>
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: isMobile ? '14px 12px' : '28px 20px' }}>
 
         {/* ── CURRENT PLAN CARD ── */}
         <div style={{ background: '#1B2A4A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '24px 28px', marginBottom: 28, color: '#FFF', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
           <div style={{ fontSize: '0.68rem', fontWeight: 900, color: '#F59E0B', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Active Subscription Status</div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: 700, color: '#FFF', margin: 0 }}>{planName}</h2>
@@ -340,7 +348,7 @@ export default function SchoolBillingPage() {
             <Sparkles size={18} color="#D97706" /> Available Subscription Tiers
           </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 20, alignItems: 'stretch' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(290px, 1fr))', gap: 20, alignItems: 'stretch' }}>
             {plans.map((plan) => {
               const isCurrent = (planId === plan.tier) && !isTrial && !isCanceled
               const isLoading = upgrading === plan.tier
@@ -473,7 +481,7 @@ export default function SchoolBillingPage() {
       {/* ── FEATURE COMPARISON MODAL ── */}
       {showDetails && (
         <div onClick={() => setShowDetails(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', width: '100%', maxWidth: 720, borderRadius: 20, padding: 32, position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', width: '100%', maxWidth: 720, borderRadius: 20, padding: 32, position: 'relative', maxHeight: '92vh', overflowY: 'auto' }}>
             <button onClick={() => setShowDetails(false)} style={{ position: 'absolute', top: 20, right: 20, background: '#F1F5F9', border: 'none', color: '#5A6E85', cursor: 'pointer', borderRadius: 6, padding: 6 }}>
               <X size={16} />
             </button>

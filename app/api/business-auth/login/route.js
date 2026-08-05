@@ -17,7 +17,8 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { email, phone, pin, role } = body
+        const { email, phone, pin, vertical } = body
+        const cleanVertical = ['clinic','restaurant','salon','school','business'].includes(vertical) ? vertical : 'clinic'
 
         if (!email || !phone || !pin) {
             return Response.json({ success: false, message: 'Missing fields' }, { status: 400 })
@@ -37,6 +38,7 @@ export async function POST(req) {
             .select('*')
             .ilike('email', cleanEmail)
             .eq('phone', cleanPhone)
+            .eq('vertical', cleanVertical)   // ← only match correct industry
             .order('created_at', { ascending: true })
             .limit(1)
 
@@ -44,7 +46,7 @@ export async function POST(req) {
 
         if (error || !data) {
             loginLimiter.recordFailure(ip)
-            return Response.json({ success: false, message: 'Invalid email or phone number.' }, { status: 401 })
+            return Response.json({ success: false, message: `No ${cleanVertical} account found for these credentials.` }, { status: 401 })
         }
 
         if (data.pin !== cleanPin) {
@@ -55,11 +57,15 @@ export async function POST(req) {
         // Success — reset rate limiter
         loginLimiter.reset(ip)
 
-        const activeRole = role || 'owner'
-
         // Create JWT session using existing clinic data (no code rotation — doctors set custom codes)
         const sessionPayload = {
+<<<<<<< HEAD:app/api/business-auth/login/route.js
             businessId: data.id, businessCode: data.code, phone: data.phone, type: data.type, role: activeRole
+=======
+            clinicId: data.id,
+            clinicCode: data.code,
+            phone: data.phone
+>>>>>>> 229d27511e88d44c9dc70bfcc88d37e8f7ff4375:app/api/auth/login/route.js
         }
         const token = await signToken(sessionPayload)
 
@@ -73,7 +79,7 @@ export async function POST(req) {
             path: '/'
         })
 
-        return Response.json({ success: true, clinic: data, role: activeRole }, { status: 200 })
+        return Response.json({ success: true, clinic: data }, { status: 200 })
 
     } catch (error) {
         console.error('[Login API Error]', error)

@@ -912,7 +912,7 @@ function SchoolCommandCenterInner() {
 
   // â”€â”€ Fetch History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
-    if (activeTab === 'history' && clinic) {
+    if (tab === 'history' && clinic) {
       async function fetchHistory() {
         setLoadingHistory(true)
         try {
@@ -926,7 +926,7 @@ function SchoolCommandCenterInner() {
       }
       fetchHistory()
     }
-  }, [activeTab, historyDate, clinic])
+  }, [tab, historyDate, clinic])
 
   // â”€â”€ Toast system â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function addToast(msg, type = 'done') {
@@ -1495,7 +1495,7 @@ function SchoolCommandCenterInner() {
   const called = patients.filter(p => p.status === STATUS.CALLED)
   const done = patients.filter(p => p.status === STATUS.DONE)
   const activePatients = [...called, ...waiting]
-  const displayPatients = activeTab === 'active' ? activePatients : done
+  const displayPatients = tab === 'active' ? activePatients : done
 
   // â”€â”€ Limits â”€â”€
   const planId = clinic?.plan_id || 'starter'

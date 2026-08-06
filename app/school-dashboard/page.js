@@ -613,6 +613,15 @@ function SchoolCommandCenterInner() {
   const [reason, setReason] = useState('')
   const [activeRoom, setActiveRoom] = useState('Room 101 / Main Gate')
   const [locationNoticeToast, setLocationNoticeToast] = useState(null)
+  
+  const [currentDate, setCurrentDate] = useState(() => {
+    const d = new Date()
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]
+  })
+  const [historyDate, setHistoryDate] = useState(() => {
+    const d = new Date()
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]
+  })
 
   function handleRoomChange(e) {
     setActiveRoom(e.target.value)

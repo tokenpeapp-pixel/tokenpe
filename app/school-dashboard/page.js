@@ -568,6 +568,9 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
   )
 }
 
+// ─── Patient status constants ───
+const STATUS = { WAITING: 'waiting', CALLED: 'called', DONE: 'done', SKIPPED: 'skipped' }
+
 // ─── MAIN SCHOOL COMMAND CENTER PAGE ───
 function SchoolCommandCenterInner() {
   const router = useRouter()
@@ -606,6 +609,15 @@ function SchoolCommandCenterInner() {
   const [addingBranch, setAddingBranch] = useState(false)
   const [managingBranch, setManagingBranch] = useState(false)
   const [closingClinic, setClosingClinic] = useState(false)
+  const [showAddBranch, setShowAddBranch] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [showDiscovery, setShowDiscovery] = useState(false)
+
+  // ── Add patient form state ─────────────────────────────────────────────────
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newPhone, setNewPhone] = useState('')
+  const [newLang, setNewLang] = useState('hi')
 
   // ── Profile complete modal state ───────────────────────────────────────────
   const [saving, setSaving] = useState(false)

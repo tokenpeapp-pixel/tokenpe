@@ -576,11 +576,19 @@ function SchoolCommandCenterInner() {
 
   const [tab, setTab] = useState(activeTabFromUrl)
   const [clinic, setSchool] = useState(null)
+  const setClinic = setSchool   // alias so all existing setClinic() calls work
   const [loading, setLoading] = useState(true)
   const [showQR, setShowQR] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [queuePaused, setQueuePaused] = useState(false)
+
+  // ── Queue / patient state ──────────────────────────────────────────────────
+  const [patients, setPatients] = useState([])
+  const [userClinics, setUserClinics] = useState([])
+  const [toasts, setToasts] = useState([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [historyPatients, setHistoryPatients] = useState([])
 
   async function handleSave() {
     const finalSpecialty = specialty === 'Other' ? (customSpecialty || 'Other') : specialty
@@ -844,6 +852,14 @@ function SchoolCommandCenterInner() {
         if (schoolData.location && !localStorage.getItem('tokenpe_active_room')) {
           setActiveRoom(schoolData.location)
           localStorage.setItem('tokenpe_active_room', schoolData.location)
+        }
+        // Populate userClinics from localStorage (branch switcher) or seed with current school
+        try {
+          const storedBranches = localStorage.getItem('tokenpe_user_businesses')
+          const branches = storedBranches ? JSON.parse(storedBranches) : [schoolData]
+          setUserClinics(branches)
+        } catch (_) {
+          setUserClinics([schoolData])
         }
         // Update the paint cache with fresh server data
         localStorage.setItem('tokenpe_school_business', JSON.stringify(schoolData))

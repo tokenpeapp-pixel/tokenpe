@@ -6,7 +6,7 @@ import Lenis from "lenis";
 import {
   Search, Stethoscope, Users, Zap, Bell,
   Hospital, QrCode, MessageSquare, ArrowRight,
-  Star, Globe2, Shield, BarChart3, CheckCircle2, Mic, Clock,
+  Star, Globe2, Shield, BarChart3, CheckCircle2, Mic, Clock, Calendar, Mail,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════
@@ -29,6 +29,35 @@ function CountUp({ target, suffix = "", prefix = "", duration = 1.8 }) {
     requestAnimationFrame(step);
   }, [inView, target, duration]);
   return <span ref={ref}>{prefix}{val.toLocaleString("en-IN")}{suffix}</span>;
+}
+
+function DurationCountUp({ targetMin = 9, targetSec = 42, duration = 1.8 }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [min, setMin] = useState(0);
+  const [sec, setSec] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    let start = null;
+    const totalTargetSec = targetMin * 60 + targetSec;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / (duration * 1000), 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const currentTotalSec = Math.floor(eased * totalTargetSec);
+      setMin(Math.floor(currentTotalSec / 60));
+      setSec(currentTotalSec % 60);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [inView, targetMin, targetSec, duration]);
+
+  return (
+    <span ref={ref}>
+      {min}m {sec < 10 ? `0${sec}` : sec}s
+    </span>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -242,6 +271,11 @@ function RolesTokenJourneySection({ ROLES }) {
   const [tokenPos, setTokenPos] = useState({ x: 16.66, opacity: 0 });
   const [hoveredCard, setHoveredCard] = useState(null);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [slideIndex, setSlideIndex] = useState(0);
+  const sliderRef = useRef(null);
+  const autoSlideRef = useRef(null);
+  const userTouchRef = useRef(false);
+  const TOTAL_SLIDES = 3;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -250,56 +284,21 @@ function RolesTokenJourneySection({ ROLES }) {
     }
   }, []);
 
+  // Auto-slide disabled to prevent viewport jumping
+
   useEffect(() => {
     if (!inView || reducedMotion || hoveredCard !== null) return;
-
     let timeoutIds = [];
-
-    // Patient (idx 2)
-    setTokenPos({ x: 16.66, opacity: 1 });
-    setActiveStep(2);
-
-    // Travel to Receptionist (idx 1)
-    timeoutIds.push(setTimeout(() => {
-      if (hoveredCard === null) {
-        setTokenPos({ x: 50, opacity: 1 });
-        setActiveStep(1);
-      }
-    }, 1200));
-
-    // Travel to Doctor (idx 0)
-    timeoutIds.push(setTimeout(() => {
-      if (hoveredCard === null) {
-        setTokenPos({ x: 83.33, opacity: 1 });
-        setActiveStep(0);
-      }
-    }, 2400));
-
+    setTokenPos({ x: 16.66, opacity: 1 }); setActiveStep(2);
+    timeoutIds.push(setTimeout(() => { if (hoveredCard === null) { setTokenPos({ x: 50, opacity: 1 }); setActiveStep(1); } }, 1200));
+    timeoutIds.push(setTimeout(() => { if (hoveredCard === null) { setTokenPos({ x: 83.33, opacity: 1 }); setActiveStep(0); } }, 2400));
     const loopInterval = setInterval(() => {
       if (hoveredCard !== null) return;
-
-      setTokenPos({ x: 16.66, opacity: 1 });
-      setActiveStep(2);
-
-      timeoutIds.push(setTimeout(() => {
-        if (hoveredCard === null) {
-          setTokenPos({ x: 50, opacity: 1 });
-          setActiveStep(1);
-        }
-      }, 1500));
-
-      timeoutIds.push(setTimeout(() => {
-        if (hoveredCard === null) {
-          setTokenPos({ x: 83.33, opacity: 1 });
-          setActiveStep(0);
-        }
-      }, 3000));
+      setTokenPos({ x: 16.66, opacity: 1 }); setActiveStep(2);
+      timeoutIds.push(setTimeout(() => { if (hoveredCard === null) { setTokenPos({ x: 50, opacity: 1 }); setActiveStep(1); } }, 1500));
+      timeoutIds.push(setTimeout(() => { if (hoveredCard === null) { setTokenPos({ x: 83.33, opacity: 1 }); setActiveStep(0); } }, 3000));
     }, 10000);
-
-    return () => {
-      timeoutIds.forEach(clearTimeout);
-      clearInterval(loopInterval);
-    };
+    return () => { timeoutIds.forEach(clearTimeout); clearInterval(loopInterval); };
   }, [inView, reducedMotion, hoveredCard]);
 
   const handleMouseEnter = (cardIndex) => {
@@ -308,9 +307,38 @@ function RolesTokenJourneySection({ ROLES }) {
     const targetX = cardIndex === 2 ? 16.66 : cardIndex === 1 ? 50 : 83.33;
     setTokenPos({ x: targetX, opacity: 1 });
   };
+  const handleMouseLeave = () => { setHoveredCard(null); };
 
-  const handleMouseLeave = () => {
-    setHoveredCard(null);
+  const resumeTimer = useRef(null);
+
+  const handleTouchStart = () => {
+    userTouchRef.current = true;
+    clearTimeout(resumeTimer.current);
+  };
+
+  const handleTouchEnd = () => {
+    resumeTimer.current = setTimeout(() => {
+      userTouchRef.current = false;
+    }, 6000);
+  };
+
+  // Track scroll position for dot indicator
+  const handleSliderScroll = (e) => {
+    const el = e.target;
+    const idx = Math.round(el.scrollLeft / el.offsetWidth);
+    setSlideIndex(idx);
+  };
+
+  const scrollToSlide = (idx) => {
+    userTouchRef.current = true;
+    clearTimeout(resumeTimer.current);
+    if (sliderRef.current) {
+      sliderRef.current.scrollTo({ left: idx * sliderRef.current.offsetWidth, behavior: "smooth" });
+      setSlideIndex(idx);
+    }
+    resumeTimer.current = setTimeout(() => {
+      userTouchRef.current = false;
+    }, 6000);
   };
 
   const ORDERED_ROLES = [ROLES[2], ROLES[1], ROLES[0]];
@@ -331,7 +359,7 @@ function RolesTokenJourneySection({ ROLES }) {
           </div>
 
           <div className="cl-journey-container" ref={containerRef}>
-            {/* Curved SVG Connecting Path */}
+            {/* Curved SVG Connecting Path (desktop only) */}
             <svg className="cl-journey-path-svg" viewBox="0 0 1000 48" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="tokenPathGlow" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -343,34 +371,19 @@ function RolesTokenJourneySection({ ROLES }) {
                   <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#34d399" floodOpacity="0.6" />
                 </filter>
               </defs>
-              <path
-                d="M 166 24 Q 333 -4, 500 24 T 833 24"
-                fill="none"
-                stroke="url(#tokenPathGlow)"
-                strokeWidth="3"
-                strokeDasharray="8 6"
-                filter="url(#pathGlowFilter)"
-              />
+              <path d="M 166 24 Q 333 -4, 500 24 T 833 24" fill="none" stroke="url(#tokenPathGlow)" strokeWidth="3" strokeDasharray="8 6" filter="url(#pathGlowFilter)" />
             </svg>
 
-            {/* Glowing Floating Token Pill */}
+            {/* Token pill (desktop only) */}
             {!reducedMotion && (
-              <div
-                className="cl-token-pill"
-                style={{
-                  left: `${tokenPos.x}%`,
-                  opacity: tokenPos.opacity,
-                }}
-              >
+              <div className="cl-token-pill" style={{ left: `${tokenPos.x}%`, opacity: tokenPos.opacity }}>
                 <div className="cl-token-pill-dot" />
-                <span>
-                  {activeStep === 2 ? "For Patients" : activeStep === 1 ? "For Receptionists" : "For Doctors"}
-                </span>
+                <span>{activeStep === 2 ? "For Patients" : activeStep === 1 ? "For Receptionists" : "For Doctors"}</span>
               </div>
             )}
 
-            {/* Roles Grid */}
-            <div className="cl-roles-grid">
+            {/* ── Desktop Grid ── */}
+            <div className="cl-roles-grid cl-roles-desktop">
               {ORDERED_ROLES.map((r, i) => {
                 const originalIdx = MAPPED_INDICES[i];
                 const isActive = activeStep === originalIdx;
@@ -394,6 +407,45 @@ function RolesTokenJourneySection({ ROLES }) {
                   </div>
                 );
               })}
+            </div>
+
+            {/* ── Mobile Snap Slider ── */}
+            <div className="cl-roles-slider-wrap">
+              <div
+                className="cl-roles-slider"
+                ref={sliderRef}
+                onScroll={handleSliderScroll}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+              >
+                {ORDERED_ROLES.map((r, i) => {
+                  const originalIdx = MAPPED_INDICES[i];
+                  return (
+                    <div key={i} className="cl-roles-slide">
+                      <div className="cl-role-ghost-bg">
+                        {originalIdx === 0 && <Stethoscope size={120} />}
+                        {originalIdx === 1 && <Users size={120} />}
+                        {originalIdx === 2 && <Zap size={120} />}
+                      </div>
+                      <div className="cl-role-icon">{r.icon}</div>
+                      <div className="cl-role-tag">{r.tag}</div>
+                      <h3 className="cl-role-h3">{r.title}</h3>
+                      <p className="cl-role-p">{r.body}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Dot Indicators */}
+              <div className="cl-roles-dots">
+                {ORDERED_ROLES.map((_, i) => (
+                  <button
+                    key={i}
+                    className={`cl-roles-dot${slideIndex === i ? " active" : ""}`}
+                    onClick={() => scrollToSlide(i)}
+                    aria-label={`Slide ${i + 1}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -700,33 +752,107 @@ function ShieldGhost() {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════ */
 export default function ClinicLandingPage({ config }) {
-  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
+  // Features Mobile Slider State
+  const [featSlideIndex, setFeatSlideIndex] = useState(0);
+  const featSliderRef = useRef(null);
+  const featUserTouchRef = useRef(false);
+  const featResumeTimer = useRef(null);
+
+  // Command Center Interactive Tooltips State
+  const [hoveredBar, setHoveredBar] = useState(null); // index or null
+  const [hoveredTrendIdx, setHoveredTrendIdx] = useState(null); // index or null
+  const [trendMouseY, setTrendMouseY] = useState(40); // Y offset
+  const [barMouseY, setBarMouseY] = useState(30); // Y offset for bars
+
+  // Request Demo Modal State
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [demoEmail, setDemoEmail] = useState("");
+  const [demoSubmitted, setDemoSubmitted] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const handleDemoSubmit = (e) => {
+    e.preventDefault();
+    if (!demoEmail.trim()) return;
+    setDemoLoading(true);
+    setTimeout(() => {
+      setDemoLoading(false);
+      setDemoSubmitted(true);
+    }, 800);
+  };
+
+  const openDemoModal = () => {
+    setDemoSubmitted(false);
+    setDemoEmail("");
+    setDemoModalOpen(true);
+  };
+
+  const handleTrendMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const clampedY = Math.max(15, Math.min(offsetY - 20, rect.height - 75));
+    setTrendMouseY(clampedY);
+  };
+
+  const handleBarMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const clampedY = Math.max(10, Math.min(offsetY - 20, rect.height - 65));
+    setBarMouseY(clampedY);
+  };
+
+  // Close menu on route change or resize
   useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-      wheelMultiplier: 1.0,
-      touchMultiplier: 1.5,
-    });
-
-    window.lenisInstance = lenis;
-
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
-
-    return () => {
-      window.lenisInstance = null;
-      lenis.destroy();
-    };
+    const close = () => setMenuOpen(false);
+    window.addEventListener("resize", close);
+    return () => window.removeEventListener("resize", close);
   }, []);
+
+  // Features Slider Event Handlers (manual swipe & dot navigation)
+
+  const handleFeatSliderScroll = (e) => {
+    const el = e.target;
+    const slide = el.querySelector(".cl-feat-slide");
+    if (!slide) return;
+    const slideWidth = slide.offsetWidth + 16; // width + gap
+    const idx = Math.round(el.scrollLeft / slideWidth);
+    if (idx >= 0 && idx < 4) {
+      setFeatSlideIndex(idx);
+    }
+  };
+
+  const handleFeatTouchStart = () => {
+    featUserTouchRef.current = true;
+    clearTimeout(featResumeTimer.current);
+  };
+
+  const handleFeatTouchEnd = () => {
+    featResumeTimer.current = setTimeout(() => {
+      featUserTouchRef.current = false;
+    }, 6000);
+  };
+
+  const scrollToFeatSlide = (idx) => {
+    featUserTouchRef.current = true;
+    clearTimeout(featResumeTimer.current);
+    if (featSliderRef.current) {
+      const slide = featSliderRef.current.querySelector(".cl-feat-slide");
+      const slideWidth = slide ? slide.offsetWidth + 16 : featSliderRef.current.offsetWidth;
+      featSliderRef.current.scrollTo({
+        left: idx * slideWidth,
+        behavior: "smooth",
+      });
+      setFeatSlideIndex(idx);
+    }
+    featResumeTimer.current = setTimeout(() => {
+      featUserTouchRef.current = false;
+    }, 6000);
+  };
+
+  // Smooth scrolling disabled for native scroll stability
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 24);
@@ -742,11 +868,7 @@ export default function ClinicLandingPage({ config }) {
   const go = (id) => {
     const target = document.getElementById(id);
     if (target) {
-      if (window.lenisInstance) {
-        window.lenisInstance.scrollTo(target, { duration: 1.2 });
-      } else {
-        target.scrollIntoView({ behavior: "smooth" });
-      }
+      target.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -1681,69 +1803,596 @@ export default function ClinicLandingPage({ config }) {
           line-height: 1.7; font-style: italic; flex: 1; margin-bottom: 20px;
         }
         .cl-test-name { font-size: 14px; font-weight: 800; color: #065F46; margin-bottom: 2px; }
-        .cl-test-role { font-size: 12.5px; color: rgba(26,61,43,0.45); }
+        /* ── LOOPING TICKER STRIP ── */
+        .cl-ticker-strip {
+          background: #f4faf7;
+          border-top: 1px solid rgba(6, 95, 70, 0.08);
+          border-bottom: 1px solid rgba(6, 95, 70, 0.08);
+          overflow: hidden;
+          padding: 16px 0;
+          white-space: nowrap;
+          display: flex;
+          user-select: none;
+        }
+        .cl-ticker-track {
+          display: flex;
+          width: max-content;
+          animation: cl-marquee-scroll 35s linear infinite;
+        }
+        .cl-ticker-strip:hover .cl-ticker-track {
+          animation-play-state: paused;
+        }
+        .cl-ticker-set {
+          display: flex;
+          align-items: center;
+          gap: 28px;
+          padding-right: 28px;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          color: #475569;
+          font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+        }
+        .cl-ticker-dot {
+          color: #10b981;
+          font-size: 16px;
+          line-height: 1;
+        }
+        @keyframes cl-marquee-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+
+        /* ── FEATURES MOBILE SLIDER ── */
+        .cl-feat-slider-wrap { display: none; }
+        .cl-feat-desktop { display: grid; }
+        .cl-feat-slider {
+          display: flex;
+          overflow-x: scroll;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+          gap: 16px;
+          padding: 4px 4px 12px;
+          scrollbar-width: none;
+        }
+        .cl-feat-slider::-webkit-scrollbar { display: none; }
+        .cl-feat-slide {
+          flex: 0 0 calc(85vw);
+          max-width: 320px;
+          scroll-snap-align: center;
+          background: #ffffff;
+          border-radius: 24px;
+          padding: 28px 24px 24px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 8px 24px rgba(6, 95, 70, 0.05);
+          border: 1.5px solid rgba(6, 95, 70, 0.1);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 250px;
+        }
+        .cl-feat-dots {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+          margin-top: 22px;
+          padding: 6px 0;
+          position: relative;
+          z-index: 10;
+        }
+        .cl-feat-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: rgba(6, 95, 70, 0.25);
+          border: 1px solid rgba(6, 95, 70, 0.15);
+          cursor: pointer;
+          padding: 0;
+          transition: background 0.3s ease, width 0.3s ease, transform 0.2s ease;
+        }
+        .cl-feat-dot.active {
+          background: #059669;
+          width: 28px;
+          border-radius: 6px;
+          box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35);
+        }
+
+        /* ── COMMAND CENTER ANALYTICS (FULL-WIDTH MATTE TEAL BAND) ── */
+        .cl-command-section {
+          width: 100vw;
+          position: relative;
+          left: 50%;
+          right: 50%;
+          margin-left: -50vw;
+          margin-right: -50vw;
+          background: #082a20;
+          background-image:
+            radial-gradient(circle at 80% 10%, rgba(52, 211, 153, 0.08) 0%, transparent 60%),
+            radial-gradient(circle at 10% 90%, rgba(16, 185, 129, 0.06) 0%, transparent 60%);
+          padding: 100px 0 110px;
+          margin-top: 80px;
+          margin-bottom: 80px;
+          border-top: 1px solid rgba(52, 211, 153, 0.12);
+          border-bottom: 1px solid rgba(52, 211, 153, 0.12);
+        }
+        .cl-command-container {
+          max-width: 1160px;
+          margin: 0 auto;
+          padding: 0 24px;
+        }
+        .cl-command-header {
+          margin-bottom: 54px;
+        }
+        .cl-command-badge {
+          display: inline-block;
+          font-size: 11.5px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          color: #34d399;
+          margin-bottom: 14px;
+          text-transform: uppercase;
+        }
+        .cl-command-title {
+          font-size: 44px;
+          font-weight: 900;
+          color: #ffffff;
+          line-height: 1.15;
+          letter-spacing: -0.03em;
+          margin-bottom: 16px;
+          max-width: 720px;
+        }
+        .cl-command-sub {
+          font-size: 17px;
+          color: rgba(241, 245, 249, 0.72);
+          max-width: 600px;
+          line-height: 1.65;
+        }
+
+        /* Command Grid & Interactive Cards */
+        .cl-command-grid {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: 24px;
+        }
+        .cl-cmd-card {
+          background: rgba(13, 51, 39, 0.7);
+          border: 1px solid rgba(52, 211, 153, 0.14);
+          border-radius: 24px;
+          padding: 32px;
+          backdrop-filter: blur(12px);
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                      border-color 0.35s ease,
+                      box-shadow 0.35s ease,
+                      background 0.35s ease;
+          cursor: cell;
+          position: relative;
+          overflow: hidden;
+        }
+        .cl-cmd-card:hover {
+          transform: translateY(-6px);
+          border-color: rgba(52, 211, 153, 0.4);
+          background: rgba(16, 62, 48, 0.85);
+          box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4), 0 0 24px rgba(52, 211, 153, 0.12);
+        }
+        .cl-cmd-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+        }
+        .cl-cmd-card-label {
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          color: rgba(241, 245, 249, 0.6);
+          text-transform: uppercase;
+          display: block;
+        }
+        .cl-cmd-legend {
+          display: flex;
+          gap: 16px;
+          font-size: 12px;
+          font-weight: 700;
+          color: rgba(241, 245, 249, 0.8);
+        }
+        .cl-cmd-legend span { display: flex; align-items: center; gap: 6px; }
+        .cl-cmd-dot {
+          width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+        }
+        .cl-cmd-dot.dot-served { background: #34d399; box-shadow: 0 0 8px #34d399; }
+        .cl-cmd-dot.dot-waiting { background: rgba(255,255,255,0.6); }
+
+        /* Chart SVG */
+        .cl-cmd-chart-wrap {
+          position: relative;
+          padding-top: 10px;
+          cursor: cell;
+        }
+        .cl-cmd-chart-svg {
+          width: 100%;
+          height: 140px;
+          overflow: visible;
+        }
+        .cl-cmd-axis-y {
+          position: absolute; left: -4px; top: 12px; bottom: 30px;
+          display: flex; flex-direction: column; justify-content: space-between;
+          font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35);
+        }
+        .cl-cmd-axis-x {
+          display: flex; justify-content: space-between;
+          padding-left: 24px; margin-top: 10px;
+          font-size: 11.5px; font-weight: 700; color: rgba(255,255,255,0.45);
+        }
+
+        /* Gauge Efficiency */
+        .cl-cmd-gauge-wrap {
+          position: relative; width: 140px; height: 140px;
+          margin: 20px auto 16px;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .cl-cmd-gauge-svg {
+          width: 100%; height: 100%; transform: rotate(-90deg);
+        }
+        .cl-cmd-gauge-fill {
+          stroke-dasharray: 390;
+          stroke-dashoffset: 390;
+          animation: fill-gauge 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.3s;
+        }
+        @keyframes fill-gauge {
+          from { stroke-dashoffset: 390; }
+          to { stroke-dashoffset: 24; }
+        }
+        .cl-cmd-gauge-val {
+          position: absolute; text-align: center;
+          display: flex; flex-direction: column; align-items: center;
+        }
+        .cl-cmd-gauge-num {
+          font-size: 34px; font-weight: 900; color: #ffffff; line-height: 1;
+          letter-spacing: -0.03em;
+        }
+        .cl-cmd-gauge-sub {
+          font-size: 9px; font-weight: 800; letter-spacing: 0.12em;
+          color: #34d399; margin-top: 4px;
+        }
+        .cl-cmd-gauge-desc {
+          text-align: center; font-size: 13px; color: rgba(241, 245, 249, 0.6);
+          font-weight: 500; margin-top: 12px;
+        }
+
+        /* Tooltips & Hover Effects */
+        .cl-cmd-chart-pt { cursor: cell; }
+        .cl-cmd-tooltip {
+          position: absolute;
+          background: #0d3327;
+          border: 1.5px solid rgba(52, 211, 153, 0.4);
+          border-radius: 12px;
+          padding: 8px 12px;
+          color: #ffffff;
+          box-shadow: 0 10px 28px rgba(0,0,0,0.5), 0 0 16px rgba(52,211,153,0.2);
+          pointer-events: none;
+          z-index: 20;
+          min-width: 90px;
+          animation: cl-pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes cl-pop-in {
+          from { opacity: 0; transform: translateY(4px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .cl-cmd-tooltip-trend {
+          top: 15px;
+          transform: translateX(-50%);
+        }
+        .cl-cmd-tooltip-bar {
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+        }
+        .cl-tooltip-title {
+          font-size: 12px; font-weight: 800; color: #ffffff; margin-bottom: 4px;
+        }
+        .cl-tooltip-row {
+          font-size: 11px; color: rgba(241,245,249,0.85); display: flex; align-items: center; gap: 6px; margin-top: 2px;
+        }
+        .cl-tooltip-row .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .cl-tooltip-row .dot-served { background: #34d399; }
+        .cl-tooltip-row .dot-waiting { background: rgba(255,255,255,0.7); }
+        .cl-tooltip-row strong { color: #34d399; font-weight: 800; }
+
+        /* Hourly Bars */
+        .cl-cmd-bars-wrap {
+          display: flex; justify-content: space-between; align-items: flex-end;
+          height: 140px; margin-top: 20px; gap: 8px; position: relative;
+          cursor: cell;
+        }
+        .cl-cmd-bar-col {
+          flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;
+          cursor: cell; position: relative; transition: opacity 0.2s ease;
+        }
+        .cl-cmd-bar-col.active .cl-cmd-bar-fill {
+          background: linear-gradient(180deg, #6ee7b7 0%, #10b981 100%);
+          box-shadow: 0 0 16px rgba(52, 211, 153, 0.6);
+        }
+        .cl-cmd-bar-col.active .cl-cmd-bar-time {
+          color: #34d399; font-weight: 800;
+        }
+        .cl-cmd-bar-track {
+          flex: 1; width: 100%; background: rgba(255,255,255,0.05);
+          border-radius: 8px; display: flex; align-items: flex-end; overflow: hidden;
+          transition: background 0.2s ease;
+        }
+        .cl-cmd-bar-col:hover .cl-cmd-bar-track {
+          background: rgba(52, 211, 153, 0.1);
+        }
+        .cl-cmd-bar-fill {
+          width: 100%; background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+          border-radius: 8px;
+          transform-origin: bottom;
+          animation: grow-bar 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          transition: filter 0.3s ease, background 0.2s ease;
+        }
+        @keyframes grow-bar {
+          from { transform: scaleY(0); }
+          to { transform: scaleY(1); }
+        }
+        .cl-cmd-bar-time {
+          font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.4); margin-top: 8px;
+          white-space: nowrap;
+        }
+
+        /* Consultation Duration */
+        .cl-cmd-duration-val {
+          margin: 16px 0 12px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .cl-cmd-duration-num {
+          font-size: 42px; font-weight: 900; color: #ffffff; letter-spacing: -0.03em; line-height: 1;
+        }
+        .cl-cmd-badge-pill {
+          display: inline-flex; align-items: center; gap: 6px;
+          background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.25);
+          color: #34d399; padding: 4px 12px; border-radius: 20px;
+          font-size: 12px; font-weight: 700; width: fit-content;
+        }
+
+        /* Branch Chips Row */
+        .cl-cmd-branches-row {
+          grid-column: span 2;
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 8px;
+        }
+        .cl-cmd-branch-chip {
+          background: rgba(13, 51, 39, 0.7);
+          border: 1px solid rgba(52, 211, 153, 0.14);
+          border-radius: 18px; padding: 18px 22px;
+          display: flex; justify-content: space-between; align-items: center;
+          transition: all 0.3s ease; cursor: cell;
+        }
+        .cl-cmd-branch-chip:hover {
+          background: rgba(16, 62, 48, 0.9);
+          border-color: rgba(52, 211, 153, 0.4);
+          transform: translateY(-3px);
+          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+        }
+        .cl-cmd-branch-name {
+          font-size: 15px; font-weight: 800; color: #ffffff; display: block; margin-bottom: 2px;
+        }
+        .cl-cmd-branch-sub {
+          font-size: 12px; color: rgba(241, 245, 249, 0.55); font-weight: 500;
+        }
+        .cl-cmd-tag {
+          padding: 4px 10px; border-radius: 8px; font-size: 11.5px; font-weight: 800;
+        }
+        .cl-cmd-tag.tag-green { background: rgba(52, 211, 153, 0.18); color: #34d399; }
+        .cl-cmd-tag.tag-gold { background: rgba(251, 191, 36, 0.2); color: #f59e0b; }
 
         /* ── CTA SECTION ── */
         .cl-cta-sec {
-          background: linear-gradient(135deg, #064e3b 0%, #065F46 60%, #047857 100%);
-          border-radius: 24px;
-          padding: 88px 40px;
+          background: #082a20;
+          border: 1px solid rgba(52, 211, 153, 0.2);
+          border-radius: 36px;
+          padding: 100px 48px 84px;
           text-align: center;
           position: relative;
           overflow: hidden;
-          margin-bottom: 0;
+          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cl-cta-sec:hover {
+          border-color: rgba(52, 211, 153, 0.45);
+          box-shadow: 0 35px 90px rgba(0, 0, 0, 0.55), 0 0 40px rgba(52, 211, 153, 0.15);
         }
         .cl-cta-sec::before {
           content: '';
           position: absolute; inset: 0;
           background:
-            radial-gradient(circle at 80% 20%, rgba(52,211,153,0.15), transparent 50%),
-            radial-gradient(circle at 20% 80%, rgba(16,185,129,0.1), transparent 50%);
-          pointer-events: none;
-        }
-        .cl-cta-bg-icon {
-          position: absolute; opacity: 0.06;
+            radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15), transparent 70%),
+            radial-gradient(circle at 10% 90%, rgba(52, 211, 153, 0.08), transparent 50%),
+            radial-gradient(circle at 90% 10%, rgba(52, 211, 153, 0.08), transparent 50%);
           pointer-events: none;
           transition: opacity 0.4s ease;
         }
-        .cl-cta-sec:hover .cl-cta-bg-icon { opacity: 0.1; }
+        .cl-cta-sec:hover::before {
+          opacity: 1.3;
+        }
+        .cl-cta-grid-bg {
+          position: absolute; inset: 0;
+          background-image: radial-gradient(rgba(52, 211, 153, 0.12) 1px, transparent 1px);
+          background-size: 24px 24px;
+          opacity: 0.5;
+          pointer-events: none;
+          transition: opacity 0.4s ease;
+        }
+        .cl-cta-sec:hover .cl-cta-grid-bg {
+          opacity: 0.75;
+        }
+        .cl-cta-wave-svg {
+          position: absolute; inset: 0; width: 100%; height: 100%;
+          opacity: 0.18; pointer-events: none;
+          transition: transform 0.6s ease, opacity 0.4s ease;
+        }
+        .cl-cta-sec:hover .cl-cta-wave-svg {
+          opacity: 0.32;
+          transform: scale(1.02);
+        }
         .cl-cta-h2 {
-          font-size: 40px; font-weight: 900; color: #fff;
-          margin-bottom: 16px; position: relative; z-index: 2;
-          letter-spacing: -0.03em; line-height: 1.2;
+          font-size: 56px; font-weight: 900; color: #ffffff;
+          margin-bottom: 20px; position: relative; z-index: 2;
+          letter-spacing: -0.035em; line-height: 1.12;
+          max-width: 840px; margin-inline: auto;
+          transition: transform 0.3s ease;
+        }
+        .cl-cta-sec:hover .cl-cta-h2 {
+          transform: translateY(-2px);
         }
         .cl-cta-p {
-          font-size: 17px; color: rgba(167,243,208,0.9);
-          margin-bottom: 40px; max-width: 500px;
+          font-size: 18px; color: rgba(241, 245, 249, 0.75);
+          margin-bottom: 44px; max-width: 580px;
           margin-inline: auto; position: relative; z-index: 2;
-          line-height: 1.65;
+          line-height: 1.65; font-weight: 400;
+        }
+        .cl-cta-group {
+          display: flex; align-items: center; justify-content: center; gap: 16px;
+          margin-bottom: 48px; position: relative; z-index: 2; flex-wrap: wrap;
         }
         .cl-cta-btn-primary {
-          background: #fff; color: #065F46;
-          border: none; padding: 14px 30px;
-          border-radius: 12px; font-weight: 800;
-          font-size: 15px; cursor: pointer; font-family: inherit;
+          background: #ffffff; color: #082a20;
+          border: none; padding: 16px 36px;
+          border-radius: 14px; font-weight: 800;
+          font-size: 16px; cursor: pointer; font-family: inherit;
           transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-          display: inline-flex; align-items: center; gap: 8px;
-          position: relative; z-index: 2;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+          display: inline-flex; align-items: center; gap: 10px;
         }
         .cl-cta-btn-primary:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+          transform: translateY(-4px) scale(1.03);
+          box-shadow: 0 14px 40px rgba(255, 255, 255, 0.35), 0 0 20px rgba(52, 211, 153, 0.4);
+          background: #ffffff;
+        }
+        .cl-cta-btn-primary svg {
+          transition: transform 0.25s ease;
+        }
+        .cl-cta-btn-primary:hover svg {
+          transform: translateX(4px);
         }
         .cl-cta-btn-ghost {
-          background: rgba(255,255,255,0.12); color: #fff;
-          border: 1.5px solid rgba(255,255,255,0.25); padding: 14px 24px;
-          border-radius: 12px; font-weight: 600; font-size: 15px;
+          background: rgba(13, 51, 39, 0.6); color: #ffffff;
+          border: 1px solid rgba(52, 211, 153, 0.3); padding: 16px 32px;
+          border-radius: 14px; font-weight: 700; font-size: 16px;
           cursor: pointer; font-family: inherit;
-          transition: all 0.22s ease;
-          display: inline-flex; align-items: center; gap: 7px;
-          position: relative; z-index: 2;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          display: inline-flex; align-items: center; gap: 9px;
+          backdrop-filter: blur(8px);
         }
         .cl-cta-btn-ghost:hover {
-          background: rgba(255,255,255,0.2);
-          border-color: rgba(255,255,255,0.4);
+          background: rgba(16, 62, 48, 0.95);
+          border-color: rgba(52, 211, 153, 0.7);
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), 0 0 20px rgba(52, 211, 153, 0.2);
+          color: #34d399;
+        }
+        .cl-cta-trust-row {
+          display: flex; align-items: center; justify-content: center; gap: 32px;
+          font-size: 13.5px; font-weight: 600; color: rgba(241, 245, 249, 0.65);
+          position: relative; z-index: 2; flex-wrap: wrap;
+        }
+        .cl-cta-trust-item {
+          display: flex; align-items: center; gap: 8px;
+          padding: 6px 14px; border-radius: 20px;
+          transition: all 0.25s ease; cursor: default;
+        }
+        .cl-cta-trust-item:hover {
+          background: rgba(52, 211, 153, 0.12);
+          color: #ffffff;
+          transform: translateY(-2px);
+        }
+        .cl-cta-trust-icon {
+          width: 18px; height: 18px; color: #34d399; display: flex; align-items: center; justify-content: center;
+          transition: transform 0.25s ease;
+        }
+        .cl-cta-trust-item:hover .cl-cta-trust-icon {
+          transform: scale(1.2);
+        }
+
+        /* ── REQUEST DEMO MODAL POPUP ── */
+        .cl-modal-overlay {
+          position: fixed; inset: 0; z-index: 9999;
+          background: rgba(4, 30, 23, 0.82);
+          backdrop-filter: blur(10px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 20px;
+        }
+        .cl-modal-card {
+          background: #082a20;
+          border: 1.5px solid rgba(52, 211, 153, 0.3);
+          border-radius: 28px;
+          padding: 40px 36px;
+          max-width: 460px; width: 100%;
+          position: relative;
+          box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 30px rgba(52,211,153,0.15);
+        }
+        .cl-modal-close {
+          position: absolute; top: 20px; right: 24px;
+          background: rgba(255,255,255,0.08); border: none;
+          color: rgba(255,255,255,0.7); font-size: 24px; font-weight: 300;
+          width: 36px; height: 36px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: all 0.2s ease;
+        }
+        .cl-modal-close:hover {
+          background: rgba(255,255,255,0.2); color: #fff;
+        }
+        .cl-modal-icon-wrap {
+          width: 60px; height: 60px; border-radius: 18px;
+          background: rgba(52, 211, 153, 0.12);
+          border: 1px solid rgba(52, 211, 153, 0.25);
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 20px;
+        }
+        .cl-modal-title {
+          font-size: 26px; font-weight: 900; color: #ffffff;
+          letter-spacing: -0.02em; margin-bottom: 8px;
+        }
+        .cl-modal-sub {
+          font-size: 14px; color: rgba(241, 245, 249, 0.72);
+          line-height: 1.6; margin-bottom: 24px;
+        }
+        .cl-modal-form {
+          display: flex; flex-direction: column; gap: 16px;
+        }
+        .cl-modal-input-wrap {
+          position: relative; width: 100%;
+        }
+        .cl-modal-mail-icon {
+          position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+          color: rgba(255, 255, 255, 0.45); pointer-events: none;
+        }
+        .cl-modal-input {
+          width: 100%; background: rgba(255, 255, 255, 0.06);
+          border: 1.5px solid rgba(52, 211, 153, 0.25);
+          border-radius: 14px; padding: 14px 16px 14px 46px;
+          font-size: 15px; color: #ffffff; font-family: inherit;
+          outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .cl-modal-input:focus {
+          border-color: #34d399;
+          box-shadow: 0 0 16px rgba(52, 211, 153, 0.3);
+        }
+        .cl-modal-input::placeholder {
+          color: rgba(255, 255, 255, 0.38);
+        }
+        .cl-modal-btn {
+          width: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: #ffffff; border: none; padding: 15px 24px;
+          border-radius: 14px; font-weight: 800; font-size: 15.5px;
+          font-family: inherit; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+          transition: all 0.2s ease;
+        }
+        .cl-modal-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 32px rgba(16, 185, 129, 0.45);
         }
 
         /* ── FOOTER ── */
@@ -1758,29 +2407,336 @@ export default function ClinicLandingPage({ config }) {
         .cl-footer a { color: rgba(6,95,70,0.7); text-decoration: none; transition: color 0.2s; }
         .cl-footer a:hover { color: #065F46; }
 
-        /* ── RESPONSIVE ── */
-        @media (max-width: 960px) {
-          .cl-roles-grid { grid-template-columns: 1fr; gap: 14px; }
-          .cl-how-grid { grid-template-columns: 1fr; gap: 14px; }
-          .cl-how-connector { display: none; }
-          .cl-feat-grid { grid-template-columns: 1fr; }
-          .cl-test-grid { grid-template-columns: 1fr; gap: 14px; }
-          .cl-stats-inner { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        /* ── ROLES MOBILE SLIDER ── */
+        /* Desktop shows the grid, slider is hidden */
+        .cl-roles-slider-wrap { display: none; }
+        .cl-roles-desktop { display: grid; }
+        .cl-roles-slider {
+          display: flex;
+          overflow-x: scroll;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+          gap: 16px;
+          padding: 4px 4px 8px;
+          scrollbar-width: none;
         }
-        @media (max-width: 640px) {
-          .cl-nav-links { gap: 14px; font-size: 13px; }
-          .cl-h1 { font-size: 34px; }
+        .cl-roles-slider::-webkit-scrollbar { display: none; }
+        .cl-roles-slide {
+          flex: 0 0 calc(85vw);
+          max-width: 340px;
+          scroll-snap-align: center;
+          background: #ffffff;
+          border-radius: 22px;
+          padding: 32px 26px 28px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 12px 32px rgba(4, 40, 28, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .cl-roles-dots {
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 20px;
+        }
+        .cl-roles-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.35);
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          transition: background 0.3s ease, transform 0.3s ease, width 0.3s ease;
+        }
+        .cl-roles-dot.active {
+          background: #34d399;
+          width: 24px;
+          border-radius: 4px;
+          transform: none;
+        }
+
+        /* ── MOBILE MENU ── */
+        .cl-hamburger {
+          display: none;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          gap: 5.5px;
+          width: 42px;
+          height: 42px;
+          cursor: pointer;
+          border: 1.5px solid rgba(6, 95, 70, 0.14);
+          background: #f0faf5;
+          padding: 4px;
+          border-radius: 11px;
+          transition: background 0.2s ease, border-color 0.2s ease;
+          z-index: 100001;
+          position: relative;
+          flex-shrink: 0;
+          margin-left: auto;
+        }
+        .cl-hamburger:hover { background: #dcfce7; border-color: rgba(6, 95, 70, 0.28); }
+        .cl-ham-bar {
+          width: 22px;
+          height: 2.5px;
+          background: #065F46;
+          border-radius: 4px;
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                      opacity 0.25s ease, width 0.3s ease;
+          transform-origin: center;
+        }
+        .cl-hamburger.open .cl-ham-bar:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+        .cl-hamburger.open .cl-ham-bar:nth-child(2) { opacity: 0; width: 0; }
+        .cl-hamburger.open .cl-ham-bar:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+        /* Mobile Backdrop */
+        .cl-mobile-backdrop {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(10, 30, 20, 0.45);
+          z-index: 99997;
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+        }
+        .cl-mobile-backdrop.open {
+          display: block;
+          animation: cl-fade-in 0.3s ease forwards;
+        }
+        @keyframes cl-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Mobile Drawer */
+        .cl-mobile-drawer {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 99998;
+          background: #ffffff;
+          border-bottom-left-radius: 24px;
+          border-bottom-right-radius: 24px;
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+          padding: 0 20px 28px;
+          transform: translateY(-110%);
+          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          will-change: transform;
+        }
+        .cl-mobile-drawer.open { transform: translateY(0); }
+        .cl-drawer-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          height: 64px;
+          border-bottom: 1.5px solid rgba(6, 95, 70, 0.08);
+          margin-bottom: 8px;
+        }
+        .cl-drawer-links {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-bottom: 20px;
+        }
+        .cl-drawer-link {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          border-radius: 14px;
+          font-size: 15.5px;
+          font-weight: 700;
+          color: #0d2b1e;
+          cursor: pointer;
+          transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+        .cl-drawer-link:hover { background: #f0faf5; color: #065F46; transform: translateX(4px); }
+        .cl-drawer-link-dot {
+          width: 8px; height: 8px;
+          border-radius: 50%;
+          background: #10b981;
+          flex-shrink: 0;
+        }
+        .cl-drawer-cta {
+          background: #065F46;
+          color: #ffffff;
+          border: none;
+          border-radius: 14px;
+          padding: 15px 20px;
+          font-size: 15.5px;
+          font-weight: 800;
+          width: 100%;
+          cursor: pointer;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+          box-shadow: 0 4px 18px rgba(6, 95, 70, 0.3);
+        }
+        .cl-drawer-cta:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(6, 95, 70, 0.4); }
+        .cl-drawer-find {
+          margin-top: 10px;
+          width: 100%;
+          background: transparent;
+          border: 1.5px solid rgba(6, 95, 70, 0.2);
+          border-radius: 14px;
+          padding: 13px 20px;
+          font-size: 14.5px;
+          font-weight: 700;
+          color: #065F46;
+          cursor: pointer;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .cl-drawer-find:hover { background: rgba(6, 95, 70, 0.05); border-color: rgba(6, 95, 70, 0.35); }
+
+        /* ══════════════════════════════
+           RESPONSIVE — TABLET (≤960px)
+        ══════════════════════════════ */
+        @media (max-width: 960px) {
+          /* Nav */
+          .cl-nav-inner { height: 60px; padding: 10px 16px; }
+          .cl-nav-links { gap: 18px; font-size: 13px; }
+          .cl-nav-cta { padding: 8px 16px; font-size: 13px; }
+
+          /* Hero */
+          .cl-hero-wrap { padding-top: 88px; }
+          .cl-hero { padding: 48px 20px 40px; }
+          .cl-h1 { font-size: 42px; }
           .cl-sub { font-size: 16px; }
-          .cl-hero { padding: 64px 20px 48px; }
-          .cl-sec { padding: 72px 20px; }
-          .cl-sec-title { font-size: 27px; }
-          .cl-cta-h2 { font-size: 27px; }
-          .cl-cta-sec { padding: 60px 22px; border-radius: 18px; }
-          .cl-stats-inner { grid-template-columns: repeat(2, 1fr); }
-          .cl-stat-n { font-size: 30px; }
-          .cl-cta-group { flex-direction: column; width: 100%; }
-          .cl-btn-primary, .cl-btn-ghost { width: 100%; justify-content: center; }
-          .cl-feat-card { min-height: auto; }
+
+          /* Stats */
+          .cl-stats-inner { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+
+          /* Roles — keep grid on tablet, hide slider */
+          .cl-roles-section { padding: 60px 0; }
+          .cl-roles-wrapper { padding: 0 20px; }
+          .cl-roles-grid { grid-template-columns: 1fr; gap: 18px; }
+          .cl-journey-path-svg, .cl-token-pill { display: none; }
+          .cl-card-notch { display: none; }
+          .cl-roles-slider-wrap { display: none; }
+          .cl-roles-desktop { display: grid; }
+
+          /* Timeline / How it works */
+          .cl-timeline-layout { grid-template-columns: 1fr; gap: 40px; }
+          .cl-phone-wrap { display: none; }
+          .cl-how-section { padding: 60px 20px 80px; }
+          .cl-timeline-card { width: 100%; }
+
+          /* Features bento → 2-col */
+          .cl-feat-grid { grid-template-columns: repeat(2, 1fr); }
+          .cl-feat-card.feat-rect-1,
+          .cl-feat-card.feat-sq-1,
+          .cl-feat-card.feat-sq-2,
+          .cl-feat-card.feat-rect-2 { grid-column: span 1; }
+
+          /* Testimonials */
+          .cl-test-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+
+          /* Command Center Tablet */
+          .cl-command-section { padding: 70px 0 80px; margin-top: 50px; margin-bottom: 50px; }
+          .cl-command-title { font-size: 32px; }
+          .cl-command-grid { grid-template-columns: 1fr; }
+          .cl-cmd-branches-row { grid-column: span 1; grid-template-columns: 1fr; }
+
+          /* Section padding */
+          .cl-sec { padding: 64px 20px; }
+        }
+
+        /* ══════════════════════════════
+           RESPONSIVE — MOBILE (≤640px)
+        ══════════════════════════════ */
+        @media (max-width: 640px) {
+          /* Topbar */
+          .cl-topbar { font-size: 11.5px; padding: 7px 14px; gap: 4px; }
+
+          /* Nav — hide desktop links, show hamburger */
+          .cl-nav-inner { height: 56px; padding: 8px 16px; }
+          .cl-nav-links { display: none; }
+          .cl-nav-cta { display: none; }
+          .cl-hamburger { display: flex; }
+
+          /* Hero */
+          .cl-hero-wrap { padding-top: 80px; min-height: auto; }
+          .cl-hero { padding: 40px 16px 32px; }
+          .cl-h1 { font-size: 30px; letter-spacing: -0.02em; line-height: 1.2; }
+          .cl-sub { font-size: 15px; margin-bottom: 28px; }
+          .cl-badge { font-size: 11.5px; padding: 5px 12px; margin-bottom: 20px; }
+
+          /* Search */
+          .cl-search-box { padding: 5px 5px 5px 14px; max-width: 100%; }
+          .cl-search-input { font-size: 14px; }
+          .cl-search-btn { padding: 9px 14px; font-size: 13px; }
+
+          /* CTA Buttons */
+          .cl-cta-group { flex-direction: column; width: 100%; gap: 10px; }
+          .cl-btn-primary, .cl-btn-ghost { width: 100%; justify-content: center; font-size: 15px; padding: 14px 20px; }
+
+          /* Stats strip */
+          .cl-stats-strip { padding: 28px 16px; }
+          .cl-stats-inner { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+          .cl-stat-n { font-size: 28px; }
+          .cl-stat-l { font-size: 12px; }
+
+          /* Roles band — SWITCH TO SLIDER */
+          .cl-roles-section { padding: 48px 0; }
+          .cl-roles-wrapper { padding: 0 16px; }
+          .cl-roles-header { margin-bottom: 28px; }
+          .cl-roles-desktop { display: none !important; }
+          .cl-journey-path-svg, .cl-token-pill, .cl-card-notch { display: none; }
+          .cl-roles-slider-wrap { display: block; }
+          .cl-roles-slide { flex: 0 0 82vw; max-width: 310px; padding: 26px 20px 22px; }
+          .cl-role-h3 { font-size: 18px; }
+          .cl-role-p { font-size: 14px; }
+
+          /* How it works / Setup Timeline */
+          .cl-how-section { padding: 48px 16px 64px; }
+          .cl-timeline-layout { grid-template-columns: 1fr; gap: 32px; }
+          .cl-phone-wrap { display: none; }
+          .cl-timeline-container { padding: 0; }
+          .cl-timeline-step { margin-bottom: 20px; }
+          .cl-timeline-card { padding: 20px 18px; border-radius: 16px; }
+
+          /* Sections */
+          .cl-sec { padding: 48px 16px; }
+          .cl-sec-title { font-size: 24px; margin-bottom: 10px; }
+          .cl-sec-sub { font-size: 14.5px; margin-bottom: 32px; }
+          .cl-eyebrow { font-size: 10.5px; }
+
+          /* Features → switch to mobile slider */
+          .cl-feat-desktop { display: none !important; }
+          .cl-feat-slider-wrap { display: block; }
+          .cl-feat-title { font-size: 18px; margin-bottom: 14px; }
+          .cl-feat-bullet { font-size: 13.5px; }
+
+          /* Testimonials → single column */
+          .cl-test-grid { grid-template-columns: 1fr; gap: 12px; }
+          .cl-test-card { padding: 22px 20px; }
+
+          /* CTA section */
+          .cl-cta-h2 { font-size: 24px; }
+          .cl-cta-sec { padding: 44px 20px; border-radius: 20px; }
+          .cl-cta-btn-ghost { display: none; }
+
+          /* Footer */
+          .cl-footer { padding: 28px 16px; font-size: 12.5px; }
+        }
+
+        /* ══════════════════════════════
+           RESPONSIVE — SMALL (≤480px)
+        ══════════════════════════════ */
+        @media (max-width: 480px) {
+          .cl-h1 { font-size: 26px; }
+          .cl-stat-n { font-size: 24px; }
+          .cl-role-h3 { font-size: 17px; }
+          .cl-sec-title { font-size: 22px; }
+          .cl-feat-title { font-size: 17px; }
         }
       `}</style>
 
@@ -1794,11 +2750,12 @@ export default function ClinicLandingPage({ config }) {
       <nav className={`cl-nav${scrolled ? " scrolled" : ""}`}>
         <div className="cl-nav-inner">
           <img
-            src="/logo-nav.svg"
+            src="/logo-clinic-nav.svg"
             alt="TokenPe"
-            style={{ height: 34, width: "auto", cursor: "pointer" }}
+            style={{ height: 38, width: "auto", cursor: "pointer" }}
             onClick={() => router.push("/")}
           />
+          {/* Desktop Links */}
           <div className="cl-nav-links">
             <span className="cl-nl" onClick={() => go("roles")}>Benefits</span>
             <span className="cl-nl" onClick={() => go("how")}>How it works</span>
@@ -1808,8 +2765,58 @@ export default function ClinicLandingPage({ config }) {
           <button className="cl-nav-cta" onClick={() => router.push("/login?mode=register")}>
             Get Started
           </button>
+          {/* Hamburger (mobile only) */}
+          <button
+            className={`cl-hamburger${menuOpen ? " open" : ""}`}
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label="Toggle menu"
+          >
+            <span className="cl-ham-bar" />
+            <span className="cl-ham-bar" />
+            <span className="cl-ham-bar" />
+          </button>
         </div>
       </nav>
+
+      {/* ── Mobile Backdrop ── */}
+      <div
+        className={`cl-mobile-backdrop${menuOpen ? " open" : ""}`}
+        onClick={() => setMenuOpen(false)}
+      />
+
+      {/* ── Mobile Drawer ── */}
+      <div className={`cl-mobile-drawer${menuOpen ? " open" : ""}`}>
+        <div className="cl-drawer-header">
+          <img src="/logo-clinic-nav.svg" alt="TokenPe" style={{ height: 34, width: "auto" }} />
+          <button
+            className={`cl-hamburger${menuOpen ? " open" : ""}`}
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close menu"
+          >
+            <span className="cl-ham-bar" />
+            <span className="cl-ham-bar" />
+            <span className="cl-ham-bar" />
+          </button>
+        </div>
+        <div className="cl-drawer-links">
+          {[
+            { label: "Benefits", action: () => { go("roles"); setMenuOpen(false); } },
+            { label: "How it works", action: () => { go("how"); setMenuOpen(false); } },
+            { label: "Features", action: () => { go("features"); setMenuOpen(false); } },
+          ].map(({ label, action }) => (
+            <div key={label} className="cl-drawer-link" onClick={action}>
+              <span className="cl-drawer-link-dot" />
+              {label}
+            </div>
+          ))}
+        </div>
+        <button className="cl-drawer-cta" onClick={() => { router.push("/login?mode=register"); setMenuOpen(false); }}>
+          Get Started Free →
+        </button>
+        <button className="cl-drawer-find" onClick={() => { router.push("/find"); setMenuOpen(false); }}>
+          🏥 Find a Clinic
+        </button>
+      </div>
 
       {/* ── Hero ── */}
       <div className="cl-hero-wrap">
@@ -1895,6 +2902,30 @@ export default function ClinicLandingPage({ config }) {
         </div>
       </div>
 
+      {/* ── Infinite Looping Ticker Strip ── */}
+      <div className="cl-ticker-strip">
+        <div className="cl-ticker-track">
+          {[...Array(2)].map((_, setIdx) => (
+            <div className="cl-ticker-set" key={setIdx}>
+              <span>EXPRESS RECEPTION</span>
+              <span className="cl-ticker-dot">•</span>
+              <span>AUTOMATED REMINDERS</span>
+              <span className="cl-ticker-dot">•</span>
+              <span>SMART PATIENT CALLING</span>
+              <span className="cl-ticker-dot">•</span>
+              <span>WHATSAPP QUEUE UPDATES</span>
+              <span className="cl-ticker-dot">•</span>
+              <span>QR CHECK-IN</span>
+              <span className="cl-ticker-dot">•</span>
+              <span>REAL-TIME DASHBOARD</span>
+              <span className="cl-ticker-dot">•</span>
+              <span>MULTI-LANGUAGE ANNOUNCEMENTS</span>
+              <span className="cl-ticker-dot">•</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── Roles / Benefits — The Token Journey ── */}
       <RolesTokenJourneySection ROLES={ROLES} />
 
@@ -1910,7 +2941,8 @@ export default function ClinicLandingPage({ config }) {
             Built specifically for Indian clinics — from solo GPs to large multi-specialty hospitals.
           </p>
         </Reveal>
-        <div className="cl-feat-grid">
+        {/* Desktop Bento Grid */}
+        <div className="cl-feat-grid cl-feat-desktop">
           {FEATURES.map((f, i) => {
             const bentoClass = i === 0 ? "feat-rect-1" : i === 1 ? "feat-sq-1" : i === 2 ? "feat-sq-2" : "feat-rect-2";
             return (
@@ -1934,6 +2966,308 @@ export default function ClinicLandingPage({ config }) {
               </Reveal>
             );
           })}
+        </div>
+
+        {/* Mobile Snap Slider */}
+        <div className="cl-feat-slider-wrap">
+          <div
+            className="cl-feat-slider"
+            ref={featSliderRef}
+            onScroll={handleFeatSliderScroll}
+            onTouchStart={handleFeatTouchStart}
+            onTouchEnd={handleFeatTouchEnd}
+          >
+            {FEATURES.map((f, i) => (
+              <div key={i} className="cl-feat-slide">
+                <div className="cl-feat-ghost">
+                  <f.Ghost />
+                </div>
+                <div>
+                  <div className="cl-feat-icon">{f.icon}</div>
+                  <div className="cl-feat-title">{f.title}</div>
+                  <ul className="cl-feat-bullets">
+                    {f.bullets.map((b, j) => (
+                      <li key={j} className="cl-feat-bullet">
+                        <CheckCircle2 size={15} className="cl-feat-check" color="#10b981" style={{ flexShrink: 0 }} />
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Dot Indicators */}
+          <div className="cl-feat-dots">
+            {FEATURES.map((_, i) => (
+              <button
+                key={i}
+                className={`cl-feat-dot${featSlideIndex === i ? " active" : ""}`}
+                onClick={() => scrollToFeatSlide(i)}
+                aria-label={`Feature slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Command Center Full-Width Section ── */}
+      <section className="cl-command-section" id="analytics">
+        <div className="cl-command-container">
+          <Reveal>
+            <div className="cl-command-header">
+              <span className="cl-command-badge">04 ──── ANALYTICS CENTRE</span>
+              <h2 className="cl-command-title">Every queue, measured. Every minute, accounted for.</h2>
+              <p className="cl-command-sub">
+                A live analytics layer your reception and doctors actually enjoy looking at.
+              </p>
+            </div>
+          </Reveal>
+
+          {/* Analytics Dashboard Grid */}
+          <div className="cl-command-grid">
+            {/* Card 1: Queue Trend */}
+            <Reveal delay={0.1}>
+              <div className="cl-cmd-card cl-cmd-trend">
+                <div className="cl-cmd-card-header">
+                  <span className="cl-cmd-card-label">QUEUE TREND — THIS WEEK</span>
+                  <div className="cl-cmd-legend">
+                    <span><span className="cl-cmd-dot dot-served" /> Served</span>
+                    <span><span className="cl-cmd-dot dot-waiting" /> Waiting</span>
+                  </div>
+                </div>
+                {/* SVG Curve Chart */}
+                <div className="cl-cmd-chart-wrap" onMouseMove={handleTrendMouseMove}>
+                  <svg className="cl-cmd-chart-svg" viewBox="0 0 500 160" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="servedGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#34d399" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Horizontal Grid lines */}
+                    <line x1="20" y1="20" x2="480" y2="20" stroke="rgba(255,255,255,0.06)" />
+                    <line x1="20" y1="55" x2="480" y2="55" stroke="rgba(255,255,255,0.06)" />
+                    <line x1="20" y1="90" x2="480" y2="90" stroke="rgba(255,255,255,0.06)" />
+                    <line x1="20" y1="125" x2="480" y2="125" stroke="rgba(255,255,255,0.06)" />
+
+                    {/* Gradient Fill under Served Curve */}
+                    <path
+                      d="M 30,90 C 80,75 120,40 180,45 C 240,50 280,60 330,35 C 380,15 430,45 480,95 L 480,140 L 30,140 Z"
+                      fill="url(#servedGrad)"
+                    />
+
+                    {/* Waiting Curve (Dashed White) */}
+                    <path
+                      d="M 30,60 C 70,80 120,85 170,40 C 220,10 270,75 330,65 C 380,55 430,85 480,105"
+                      fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeDasharray="5 5"
+                    />
+
+                    {/* Served Curve (Solid Glowing Green) */}
+                    <path
+                      d="M 30,90 C 80,75 120,40 180,45 C 240,50 280,60 330,35 C 380,15 430,45 480,95"
+                      fill="none" stroke="#34d399" strokeWidth="3"
+                    />
+
+                    {/* Interactive Days Hover Columns & Dots (Mon-Sat, exclude Sun hover) */}
+                    {[
+                      { day: "Mon", x: 30, servedY: 90, waitingY: 60, served: 30, waiting: 34 },
+                      { day: "Tue", x: 105, servedY: 72, waitingY: 75, served: 35, waiting: 28 },
+                      { day: "Wed", x: 180, servedY: 45, waitingY: 40, served: 42, waiting: 40 },
+                      { day: "Thu", x: 255, servedY: 56, waitingY: 66, served: 38, waiting: 26 },
+                      { day: "Fri", x: 330, servedY: 35, waitingY: 65, served: 45, waiting: 32 },
+                      { day: "Sat", x: 405, servedY: 40, waitingY: 82, served: 40, waiting: 22 },
+                    ].map((pt, pIdx) => (
+                      <g
+                        key={pIdx}
+                        className="cl-cmd-chart-pt"
+                        onMouseEnter={() => setHoveredTrendIdx(pIdx)}
+                        onMouseLeave={() => setHoveredTrendIdx(null)}
+                      >
+                        {/* Transparent full height hit box for smooth hover */}
+                        <rect x={pt.x - 30} y="0" width="60" height="140" fill="transparent" />
+
+                        {/* Full height vertical guide line when hovered */}
+                        {hoveredTrendIdx === pIdx && (
+                          <line x1={pt.x} y1="10" x2={pt.x} y2="135" stroke="rgba(255, 255, 255, 0.35)" strokeWidth="1" />
+                        )}
+
+                        {/* White Circular Nodes on lines when hovered */}
+                        {hoveredTrendIdx === pIdx && (
+                          <>
+                            <circle cx={pt.x} cy={pt.servedY} r="5" fill="#ffffff" stroke="#34d399" strokeWidth="2.5" />
+                            <circle cx={pt.x} cy={pt.waitingY} r="5" fill="#ffffff" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" />
+                          </>
+                        )}
+                      </g>
+                    ))}
+                  </svg>
+
+                  {/* Floating Dark Glass Tooltip Popup */}
+                  {hoveredTrendIdx !== null && hoveredTrendIdx < 6 && (() => {
+                    const DATA = [
+                      { day: "Mon", served: 30, waiting: 34 },
+                      { day: "Tue", served: 35, waiting: 28 },
+                      { day: "Wed", served: 42, waiting: 40 },
+                      { day: "Thu", served: 38, waiting: 26 },
+                      { day: "Fri", served: 45, waiting: 32 },
+                      { day: "Sat", served: 40, waiting: 22 },
+                    ];
+                    const item = DATA[hoveredTrendIdx];
+                    const leftPos = `calc(${6 + hoveredTrendIdx * 14.8}% + 12px)`;
+                    return (
+                      <div
+                        className="cl-cmd-tooltip cl-cmd-tooltip-trend"
+                        style={{ left: leftPos, top: `${trendMouseY}px` }}
+                      >
+                        <div className="cl-tooltip-title">{item.day}</div>
+                        <div className="cl-tooltip-row"><span className="dot dot-served" /> served : <strong>{item.served}</strong></div>
+                        <div className="cl-tooltip-row"><span className="dot dot-waiting" /> waiting : <strong>{item.waiting}</strong></div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Axis Labels */}
+                  <div className="cl-cmd-axis-y">
+                    <span>60</span><span>45</span><span>30</span><span>15</span><span>0</span>
+                  </div>
+                  <div className="cl-cmd-axis-x">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Card 2: Reception Efficiency */}
+            <Reveal delay={0.15}>
+              <div className="cl-cmd-card cl-cmd-efficiency">
+                <span className="cl-cmd-card-label">RECEPTION EFFICIENCY</span>
+                <div className="cl-cmd-gauge-wrap">
+                  <svg className="cl-cmd-gauge-svg" viewBox="0 0 160 160">
+                    <circle cx="80" cy="80" r="62" stroke="rgba(52, 211, 153, 0.15)" strokeWidth="14" fill="none" />
+                    <motion.circle
+                      cx="80" cy="80" r="62"
+                      stroke="#10b981" strokeWidth="14" fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray="390"
+                      initial={{ strokeDashoffset: 390 }}
+                      whileInView={{ strokeDashoffset: 24 }}
+                      viewport={{ once: true, margin: "-40px" }}
+                      transition={{ duration: 1.6, ease: EASE, delay: 0.2 }}
+                    />
+                  </svg>
+                  <div className="cl-cmd-gauge-val">
+                    <span className="cl-cmd-gauge-num">
+                      <CountUp target={94} suffix="%" duration={1.6} />
+                    </span>
+                    <span className="cl-cmd-gauge-sub">EFFICIENCY</span>
+                  </div>
+                </div>
+                <p className="cl-cmd-gauge-desc">Tokens called on time, across all counters</p>
+              </div>
+            </Reveal>
+
+            {/* Card 3: Hourly Patient Load */}
+            <Reveal delay={0.2}>
+              <div className="cl-cmd-card cl-cmd-hourly">
+                <span className="cl-cmd-card-label">HOURLY PATIENT LOAD</span>
+                <div className="cl-cmd-bars-wrap" onMouseMove={handleBarMouseMove}>
+                  {[
+                    { h: "20%", count: 12, timeLabel: "8 AM", shortTime: "8am" },
+                    { h: "42%", count: 28, timeLabel: "9 AM", shortTime: "9am" },
+                    { h: "70%", count: 44, timeLabel: "10 AM", shortTime: "10am" },
+                    { h: "85%", count: 52, timeLabel: "11 AM", shortTime: "11am" },
+                    { h: "60%", count: 38, timeLabel: "12 PM", shortTime: "12pm" },
+                    { h: "35%", count: 22, timeLabel: "1 PM", shortTime: "1pm" },
+                    { h: "58%", count: 34, timeLabel: "4 PM", shortTime: "4pm" },
+                    { h: "75%", count: 48, timeLabel: "5 PM", shortTime: "5pm" },
+                    { h: "64%", count: 40, timeLabel: "6 PM", shortTime: "6pm" },
+                    { h: "25%", count: 18, timeLabel: "7 PM", shortTime: "7pm" },
+                  ].map((bar, bIdx) => (
+                    <div
+                      key={bIdx}
+                      className={`cl-cmd-bar-col${hoveredBar === bIdx ? " active" : ""}`}
+                      onMouseEnter={() => setHoveredBar(bIdx)}
+                      onMouseLeave={() => setHoveredBar(null)}
+                    >
+                      {/* Floating Tooltip */}
+                      {hoveredBar === bIdx && (
+                        <div className="cl-cmd-tooltip cl-cmd-tooltip-bar" style={{ top: `${barMouseY}px` }}>
+                          <div className="cl-tooltip-title">{bar.shortTime}</div>
+                          <div className="cl-tooltip-row">p : <strong>{bar.count}</strong></div>
+                        </div>
+                      )}
+                      <div className="cl-cmd-bar-track">
+                        <motion.div
+                          className="cl-cmd-bar-fill"
+                          style={{ height: bar.h }}
+                          initial={{ scaleY: 0 }}
+                          whileInView={{ scaleY: 1 }}
+                          viewport={{ once: true, margin: "-40px" }}
+                          transition={{ duration: 1.2, ease: EASE, delay: 0.1 * bIdx }}
+                        />
+                      </div>
+                      <span className="cl-cmd-bar-time">{bar.timeLabel}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Card 4: Avg Consultation Duration */}
+            <Reveal delay={0.25}>
+              <div className="cl-cmd-card cl-cmd-duration">
+                <span className="cl-cmd-card-label">AVG CONSULTATION DURATION</span>
+                <div className="cl-cmd-duration-val">
+                  <span className="cl-cmd-duration-num">
+                    <DurationCountUp targetMin={9} targetSec={42} />
+                  </span>
+                  <div className="cl-cmd-badge-pill">
+                    <span>↘ 18% shorter than last month</span>
+                  </div>
+                </div>
+                <div className="cl-cmd-mini-wave">
+                  <svg viewBox="0 0 300 60" preserveAspectRatio="none" style={{ width: "100%", height: 45 }}>
+                    <path d="M 0,45 Q 75,48 150,30 T 300,20" fill="none" stroke="#34d399" strokeWidth="3" />
+                  </svg>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Row 3: Branch Chips */}
+            <div className="cl-cmd-branches-row">
+              <Reveal delay={0.3}>
+                <div className="cl-cmd-branch-chip">
+                  <div>
+                    <div className="cl-cmd-branch-name">Andheri Branch</div>
+                    <div className="cl-cmd-branch-sub">Avg wait 11 min · 86 patients today</div>
+                  </div>
+                  <span className="cl-cmd-tag tag-gold">↘ -12%</span>
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.35}>
+                <div className="cl-cmd-branch-chip">
+                  <div>
+                    <div className="cl-cmd-branch-name">Powai Branch</div>
+                    <div className="cl-cmd-branch-sub">Avg wait 14 min · 64 patients today</div>
+                  </div>
+                  <span className="cl-cmd-tag tag-green">↗ +6%</span>
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.4}>
+                <div className="cl-cmd-branch-chip">
+                  <div>
+                    <div className="cl-cmd-branch-name">Thane Branch</div>
+                    <div className="cl-cmd-branch-sub">Avg wait 9 min · 51 patients today</div>
+                  </div>
+                  <span className="cl-cmd-tag tag-gold">↘ -12%</span>
+                </div>
+              </Reveal>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1964,30 +3298,117 @@ export default function ClinicLandingPage({ config }) {
         </div>
       </section>
 
-      {/* ── Final CTA ── */}
-      <div style={{ padding: "0 24px 100px", maxWidth: 1160, margin: "0 auto" }}>
+      {/* ── Final CTA Banner ── */}
+      <div style={{ padding: "0 24px 120px", maxWidth: 1320, margin: "0 auto" }}>
         <Reveal>
           <div className="cl-cta-sec">
-            <Stethoscope className="cl-cta-bg-icon" size={280} style={{ top: -40, left: -40, transform: "rotate(-15deg)" }} color="white" />
-            <Hospital className="cl-cta-bg-icon" size={300} style={{ bottom: -60, right: -40, transform: "rotate(10deg)" }} color="white" />
+            <div className="cl-cta-grid-bg" />
+            <svg className="cl-cta-wave-svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
+              <path d="M 0,220 Q 300,140 600,240 T 1200,180" fill="none" stroke="#34d399" strokeWidth="1.5" opacity="0.6" />
+              <path d="M 0,280 Q 350,180 700,300 T 1200,240" fill="none" stroke="#10b981" strokeWidth="1.5" opacity="0.4" />
+              <path d="M 0,160 Q 250,260 550,140 T 1200,220" fill="none" stroke="#34d399" strokeWidth="1" opacity="0.3" />
+            </svg>
+
             <div style={{ position: "relative", zIndex: 2 }}>
-              <span className="cl-eyebrow" style={{ color: "rgba(167,243,208,0.8)" }}>Ready to start?</span>
-              <h2 className="cl-cta-h2">Modernize your clinic today.</h2>
+              <h2 className="cl-cta-h2">Ready to Modernize Your Clinic?</h2>
               <p className="cl-cta-p">
-                Join 4,200+ clinics across India who trust TokenPe to manage their daily OPD queues — effortlessly.
+                Start your free 7-day trial and experience faster queues, happier patients, and a calmer reception desk.
               </p>
+              
               <div className="cl-cta-group">
                 <button className="cl-cta-btn-primary" onClick={() => router.push("/login?mode=register")}>
-                  Start 7-Day Free Trial <ArrowRight size={16} />
+                  Start Free Trial <ArrowRight size={18} />
                 </button>
-                <button className="cl-cta-btn-ghost" onClick={() => router.push("/find")}>
-                  <Search size={15} /> Find a clinic near you
+                <button className="cl-cta-btn-ghost" onClick={openDemoModal}>
+                  <Calendar size={18} /> Book a Live Demo
                 </button>
+              </div>
+
+              {/* Bottom Trust Indicators */}
+              <div className="cl-cta-trust-row">
+                <div className="cl-cta-trust-item">
+                  <Shield className="cl-cta-trust-icon" />
+                  <span>Secure & encrypted</span>
+                </div>
+                <div className="cl-cta-trust-item">
+                  <CheckCircle2 className="cl-cta-trust-icon" />
+                  <span>Cancel anytime</span>
+                </div>
+                <div className="cl-cta-trust-item">
+                  <Users className="cl-cta-trust-icon" />
+                  <span>Dedicated onboarding support</span>
+                </div>
               </div>
             </div>
           </div>
         </Reveal>
       </div>
+
+      {/* ── Request Demo Modal Popup ── */}
+      <AnimatePresence>
+        {demoModalOpen && (
+          <motion.div
+            className="cl-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setDemoModalOpen(false)}
+          >
+            <motion.div
+              className="cl-modal-card"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.25, ease: EASE }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className="cl-modal-close" onClick={() => setDemoModalOpen(false)}>×</button>
+
+              {!demoSubmitted ? (
+                <>
+                  <div className="cl-modal-icon-wrap">
+                    <Calendar size={28} color="#34d399" />
+                  </div>
+                  <h3 className="cl-modal-title">Request a Live Demo</h3>
+                  <p className="cl-modal-sub">
+                    Enter your email below. Our team will reach out within 2 hours to schedule a 1-on-1 personalized clinic walkthrough.
+                  </p>
+                  <form onSubmit={handleDemoSubmit} className="cl-modal-form">
+                    <div className="cl-modal-input-wrap">
+                      <Mail size={18} className="cl-modal-mail-icon" />
+                      <input
+                        type="email"
+                        required
+                        placeholder="Enter your doctor / clinic email"
+                        value={demoEmail}
+                        onChange={(e) => setDemoEmail(e.target.value)}
+                        className="cl-modal-input"
+                        autoFocus
+                      />
+                    </div>
+                    <button type="submit" disabled={demoLoading} className="cl-modal-btn">
+                      {demoLoading ? "Scheduling..." : "Submit Request"} <ArrowRight size={16} />
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <div style={{ textAlign: "center", padding: "10px 0" }}>
+                  <div className="cl-modal-icon-wrap" style={{ background: "rgba(52, 211, 153, 0.15)" }}>
+                    <CheckCircle2 size={36} color="#34d399" />
+                  </div>
+                  <h3 className="cl-modal-title" style={{ marginTop: 12 }}>Demo Request Sent!</h3>
+                  <p className="cl-modal-sub">
+                    Thank you! We have sent a confirmation email to <strong>{demoEmail}</strong>. One of our OPD specialists will contact you shortly.
+                  </p>
+                  <button className="cl-modal-btn" onClick={() => setDemoModalOpen(false)} style={{ marginTop: 16 }}>
+                    Got it, thanks!
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Footer ── */}
       <footer className="cl-footer">

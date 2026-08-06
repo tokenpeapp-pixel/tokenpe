@@ -8,8 +8,7 @@ export default function CookieConsent() {
     // Only show if user hasn't already accepted
     const accepted = localStorage.getItem("tokenpe_cookie_consent");
     if (!accepted) {
-      // Small delay so the page renders first
-      const timer = setTimeout(() => setVisible(true), 1500);
+      const timer = setTimeout(() => setVisible(true), 1200);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -24,55 +23,69 @@ export default function CookieConsent() {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
+      bottom: '24px',
+      left: '50%',
+      transform: 'translateX(-50%)',
       zIndex: 9999,
-      background: 'rgba(15, 23, 42, 0.97)',
-      backdropFilter: 'blur(12px)',
-      borderTop: '1px solid rgba(124, 58, 237, 0.3)',
-      padding: '16px 24px',
+      background: 'rgba(8, 42, 32, 0.94)',
+      backdropFilter: 'blur(16px)',
+      border: '1.5px solid rgba(52, 211, 153, 0.3)',
+      borderRadius: '20px',
+      padding: '14px 22px',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: '16px',
-      flexWrap: 'wrap',
-      animation: 'slideUp 0.4s ease-out',
-      fontFamily: "'Inter', sans-serif",
+      justifyContent: 'space-between',
+      gap: '20px',
+      maxWidth: '680px',
+      width: 'calc(100% - 32px)',
+      boxShadow: '0 20px 48px rgba(0, 0, 0, 0.5), 0 0 24px rgba(52, 211, 153, 0.15)',
+      animation: 'cookieSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+      fontFamily: "inherit",
     }}>
       <style>{`
-        @keyframes slideUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+        @keyframes cookieSlideUp {
+          from { transform: translate(-50%, 40px); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
         }
       `}</style>
-      <p style={{
-        color: 'rgba(255,255,255,0.75)',
-        fontSize: '13px',
-        margin: 0,
-        lineHeight: 1.5,
-        maxWidth: 600,
-      }}>
-        🍪 We use essential cookies to keep you logged in and remember your preferences. No tracking or advertising cookies are used.{' '}
-        <a href="/privacy" style={{ color: '#a78bfa', textDecoration: 'underline' }}>Privacy Policy</a>
-      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontSize: '18px' }}>🍪</span>
+        <p style={{
+          color: 'rgba(241, 245, 249, 0.88)',
+          fontSize: '13px',
+          margin: 0,
+          lineHeight: 1.5,
+          fontWeight: 500,
+        }}>
+          We use essential cookies for secure login & preferences. No ads or tracking.{' '}
+          <a href="/privacy" style={{ color: '#34d399', textDecoration: 'none', fontWeight: 700 }}>
+            Privacy Policy
+          </a>
+        </p>
+      </div>
       <button
         onClick={accept}
         style={{
-          background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
-          color: '#fff',
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: '#ffffff',
           border: 'none',
-          padding: '10px 24px',
-          borderRadius: '10px',
+          padding: '9px 20px',
+          borderRadius: '12px',
           fontSize: '13px',
-          fontWeight: 700,
+          fontWeight: 800,
           cursor: 'pointer',
           whiteSpace: 'nowrap',
-          boxShadow: '0 4px 16px rgba(124,58,237,0.35)',
-          transition: 'opacity 0.2s',
+          boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
+          transition: 'all 0.2s ease',
         }}
-        onMouseOver={e => e.currentTarget.style.opacity = '0.9'}
-        onMouseOut={e => e.currentTarget.style.opacity = '1'}
+        onMouseOver={e => {
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.5)';
+        }}
+        onMouseOut={e => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.35)';
+        }}
       >
         Got it
       </button>

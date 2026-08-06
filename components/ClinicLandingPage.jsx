@@ -1725,10 +1725,11 @@ export default function ClinicLandingPage({ config }) {
           justify-content: space-between;
         }
         /* Asymmetric Bento Layout: Rectangle (7 cols), Square (5 cols), Square (5 cols), Rectangle (7 cols) */
-        .cl-feat-card.feat-rect-1 { grid-column: span 7; }
-        .cl-feat-card.feat-sq-1   { grid-column: span 5; }
-        .cl-feat-card.feat-sq-2   { grid-column: span 5; }
-        .cl-feat-card.feat-rect-2 { grid-column: span 7; }
+        .cl-feat-col.feat-rect-1 { grid-column: span 7; }
+        .cl-feat-col.feat-sq-1   { grid-column: span 5; }
+        .cl-feat-col.feat-sq-2   { grid-column: span 5; }
+        .cl-feat-col.feat-rect-2 { grid-column: span 7; }
+        .cl-feat-card { width: 100%; height: 100%; }
         .cl-feat-card:hover {
           transform: translateY(-5px);
           background: linear-gradient(145deg, #ffffff 40%, #dcfce7 100%);
@@ -1844,29 +1845,31 @@ export default function ClinicLandingPage({ config }) {
         }
 
         /* ── FEATURES MOBILE SLIDER ── */
-        .cl-feat-slider-wrap { display: none; }
+        .cl-feat-slider-wrap { display: none; margin-top: 10px; }
         .cl-feat-desktop { display: grid; }
         .cl-feat-slider {
           display: flex;
-          overflow-x: scroll;
+          overflow-x: auto;
           scroll-snap-type: x mandatory;
           -webkit-overflow-scrolling: touch;
           scroll-behavior: smooth;
-          gap: 16px;
-          padding: 4px 4px 12px;
+          gap: 14px;
+          padding: 8px 16px 20px;
+          margin: 0 -16px;
           scrollbar-width: none;
         }
         .cl-feat-slider::-webkit-scrollbar { display: none; }
         .cl-feat-slide {
-          flex: 0 0 calc(85vw);
+          flex: 0 0 85vw;
           max-width: 320px;
           scroll-snap-align: center;
+          scroll-snap-stop: always;
           background: #ffffff;
           border-radius: 24px;
           padding: 28px 24px 24px;
           position: relative;
           overflow: hidden;
-          box-shadow: 0 8px 24px rgba(6, 95, 70, 0.05);
+          box-shadow: 0 8px 24px rgba(6, 95, 70, 0.08);
           border: 1.5px solid rgba(6, 95, 70, 0.1);
           display: flex;
           flex-direction: column;
@@ -1877,27 +1880,27 @@ export default function ClinicLandingPage({ config }) {
           display: flex;
           justify-content: center;
           align-items: center;
-          gap: 10px;
-          margin-top: 22px;
-          padding: 6px 0;
+          gap: 8px;
+          margin-top: 16px;
+          padding: 10px 0;
           position: relative;
           z-index: 10;
         }
         .cl-feat-dot {
-          width: 10px;
-          height: 10px;
+          width: 8px;
+          height: 8px;
           border-radius: 50%;
           background: rgba(6, 95, 70, 0.25);
-          border: 1px solid rgba(6, 95, 70, 0.15);
+          border: none;
           cursor: pointer;
           padding: 0;
-          transition: background 0.3s ease, width 0.3s ease, transform 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .cl-feat-dot.active {
           background: #059669;
-          width: 28px;
-          border-radius: 6px;
-          box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35);
+          width: 24px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
         }
 
         /* ── COMMAND CENTER ANALYTICS (FULL-WIDTH MATTE TEAL BAND) ── */
@@ -2709,20 +2712,56 @@ export default function ClinicLandingPage({ config }) {
           .cl-sec-sub { font-size: 14.5px; margin-bottom: 32px; }
           .cl-eyebrow { font-size: 10.5px; }
 
-          /* Features → switch to mobile slider */
-          .cl-feat-desktop { display: none !important; }
-          .cl-feat-slider-wrap { display: block; }
-          .cl-feat-title { font-size: 18px; margin-bottom: 14px; }
+          /* Features → 1-col stack on mobile */
+          .cl-feat-grid { display: flex !important; flex-direction: column; gap: 16px; width: 100%; }
+          .cl-feat-card { width: 100% !important; grid-column: span 12 !important; padding: 26px 20px; min-height: auto; border-radius: 20px; }
+          .cl-feat-desktop { display: flex !important; }
+          .cl-feat-slider-wrap { display: none !important; }
+          .cl-feat-title { font-size: 18px; margin-bottom: 12px; }
+          .cl-feat-bullets { gap: 10px; }
           .cl-feat-bullet { font-size: 13.5px; }
 
           /* Testimonials → single column */
           .cl-test-grid { grid-template-columns: 1fr; gap: 12px; }
           .cl-test-card { padding: 22px 20px; }
 
-          /* CTA section */
-          .cl-cta-h2 { font-size: 24px; }
-          .cl-cta-sec { padding: 44px 20px; border-radius: 20px; }
-          .cl-cta-btn-ghost { display: none; }
+          /* CTA section Mobile */
+          .cl-cta-h2 { font-size: 32px; margin-bottom: 14px; }
+          .cl-cta-p { font-size: 15px; margin-bottom: 32px; }
+          .cl-cta-sec { padding: 56px 20px 48px; border-radius: 24px; }
+          .cl-cta-btn-primary, .cl-cta-btn-ghost { width: 100%; justify-content: center; font-size: 15px; padding: 14px 20px; }
+          .cl-cta-btn-ghost { display: flex !important; }
+          .cl-cta-trust-row { gap: 16px; flex-direction: column; align-items: center; }
+
+          /* Command Center Mobile Fixes (Eliminate 100vw horizontal overflow) */
+          .cl-command-section {
+            width: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            padding: 48px 0 60px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+            overflow-x: hidden;
+          }
+          .cl-command-container { padding: 0 16px; max-width: 100%; box-sizing: border-box; }
+          .cl-command-title { font-size: 26px; margin-bottom: 12px; }
+          .cl-command-sub { font-size: 14.5px; }
+          .cl-command-grid { grid-template-columns: 1fr; gap: 16px; width: 100%; max-width: 100%; box-sizing: border-box; }
+          .cl-cmd-card { padding: 22px 16px; border-radius: 20px; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+          .cl-cmd-chart-wrap { padding-top: 5px; width: 100%; max-width: 100%; overflow: hidden; }
+          .cl-cmd-chart-svg { width: 100%; max-width: 100%; height: 120px; }
+          .cl-cmd-axis-y { font-size: 9.5px; left: 0px; }
+          .cl-cmd-axis-x { font-size: 9.5px; padding-left: 20px; margin-top: 6px; }
+          .cl-cmd-bars-wrap { gap: 4px; height: 120px; margin-top: 14px; width: 100%; max-width: 100%; box-sizing: border-box; }
+          .cl-cmd-bar-time { font-size: 9px; margin-top: 6px; }
+          .cl-cmd-branches-row { grid-template-columns: 1fr; gap: 12px; margin-top: 0; width: 100%; max-width: 100%; box-sizing: border-box; }
+          .cl-cmd-branch-chip { padding: 14px 16px; border-radius: 14px; width: 100%; max-width: 100%; box-sizing: border-box; }
+
+          /* Modal Popup Mobile */
+          .cl-modal-card { padding: 28px 20px; border-radius: 22px; }
+          .cl-modal-title { font-size: 22px; }
 
           /* Footer */
           .cl-footer { padding: 28px 16px; font-size: 12.5px; }
@@ -2732,7 +2771,8 @@ export default function ClinicLandingPage({ config }) {
            RESPONSIVE — SMALL (≤480px)
         ══════════════════════════════ */
         @media (max-width: 480px) {
-          .cl-h1 { font-size: 26px; }
+          .cl-h1 { font-size: 28px; }
+          .cl-cta-h2 { font-size: 26px; }
           .cl-stat-n { font-size: 24px; }
           .cl-role-h3 { font-size: 17px; }
           .cl-sec-title { font-size: 22px; }
@@ -2814,7 +2854,7 @@ export default function ClinicLandingPage({ config }) {
           Get Started Free →
         </button>
         <button className="cl-drawer-find" onClick={() => { router.push("/find"); setMenuOpen(false); }}>
-          🏥 Find a Clinic
+          <Search size={16} /> Find a Clinic
         </button>
       </div>
 
@@ -2946,7 +2986,7 @@ export default function ClinicLandingPage({ config }) {
           {FEATURES.map((f, i) => {
             const bentoClass = i === 0 ? "feat-rect-1" : i === 1 ? "feat-sq-1" : i === 2 ? "feat-sq-2" : "feat-rect-2";
             return (
-              <Reveal key={i} delay={Math.floor(i / 2) * 0.08 + (i % 2) * 0.06} style={{ gridColumn: i === 0 || i === 3 ? "span 7" : "span 5" }}>
+              <Reveal key={i} delay={Math.floor(i / 2) * 0.08 + (i % 2) * 0.06} className={`cl-feat-col ${bentoClass}`}>
                 <div className={`cl-feat-card ${bentoClass}`}>
                   {/* Ghost SVG illustration in bottom-right */}
                   <div className="cl-feat-ghost">

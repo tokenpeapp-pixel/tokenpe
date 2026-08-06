@@ -589,6 +589,34 @@ function SchoolCommandCenterInner() {
   const [toasts, setToasts] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyPatients, setHistoryPatients] = useState([])
+  const [newPatientAlert, setNewPatientAlert] = useState(null)
+  const [historySearch, setHistorySearch] = useState('')
+  const [historyFilter, setHistoryFilter] = useState('all')
+
+  // ── Upgrade / billing state ────────────────────────────────────────────────
+  const [upgrading, setUpgrading] = useState(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(null)
+
+  // ── Branch management state ────────────────────────────────────────────────
+  const [showManageBranches, setShowManageBranches] = useState(false)
+  const [editingBranchId, setEditingBranchId] = useState(null)
+  const [editingBranchName, setEditingBranchName] = useState('')
+  const [newBranchName, setNewBranchName] = useState('')
+  const [addingBranch, setAddingBranch] = useState(false)
+  const [managingBranch, setManagingBranch] = useState(false)
+  const [closingClinic, setClosingClinic] = useState(false)
+
+  // ── Profile complete modal state ───────────────────────────────────────────
+  const [saving, setSaving] = useState(false)
+  const [clinicName, setClinicName] = useState(null)
+  const [specialty, setSpecialty] = useState(null)
+  const [customSpecialty, setCustomSpecialty] = useState('')
+  const [city, setCity] = useState(null)
+  const [area, setArea] = useState(null)
+  const [phone, setPhone] = useState(null)
+  const [lat, setLat] = useState(null)
+  const [lng, setLng] = useState(null)
 
   async function handleSave() {
     const finalSpecialty = specialty === 'Other' ? (customSpecialty || 'Other') : specialty

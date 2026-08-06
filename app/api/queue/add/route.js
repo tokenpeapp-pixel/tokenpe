@@ -4,6 +4,41 @@ import { sanitizeName, validatePhone } from '../../../../lib/validate'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 import { after } from 'next/server'
 
+// ── INDUSTRY SPECIFIC VOCABULARY ─────────────────────────────────────────────
+function getIndustryVocab(vertical, purpose) {
+    switch (vertical) {
+        case 'clinic':
+            return {
+                title: 'Walk-in Confirmed',
+                person: 'Patient',
+                icon: '🏥'
+            }
+        case 'school':
+            return {
+                title: 'Token Confirmed',
+                person: purpose ? 'Student/Parent' : 'Visitor',
+                icon: '🏢'
+            }
+        case 'salon':
+            return {
+                title: 'Appointment Confirmed',
+                person: 'Customer',
+                icon: '✂️'
+            }
+        case 'restaurant':
+            return {
+                title: 'Waitlist Confirmed',
+                person: 'Guest',
+                icon: '🍽️'
+            }
+        default:
+            return {
+                title: 'Token Confirmed',
+                person: 'Visitor',
+                icon: '🏢'
+            }
+    }
+}
 export async function POST(req) {
     try {
         const session = await getSession()
@@ -12,28 +47,34 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { businessId, name, token, language, phone } = body
+        const { businessId, name, token, language, phone, purpose } = body
 
         if (!businessId || !token) {
             return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
         }
 
         if (businessId !== session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
+            return Response.json({ success: false, message: 'Unauthorized access' }, { status: 403 })
         }
 
         const cleanName = sanitizeName(name)
         const cleanPhone = validatePhone(phone) || '0000000000'
 
         const today = getISTDateString()
-        
-        // Fetch clinic plan limits AND closed status
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, closed_today_date').eq('id', businessId).single()
-        const planId = clinic?.plan_id || 'starter'
+
+        // ── Look up business plan from the unified businesses table ──────
+        const { data: business } = await supabaseAdmin
+            .from('businesses')
+            .select('name, plan_id, closed_today_date, type')
+            .eq('id', businessId)
+            .single()
+            
+        const planId = business?.plan_id || 'starter'
+        const vertical = business?.type || 'clinic'
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
 
-        // ── Block walk-ins if the clinic is closed for today ──────────────
-        if (clinic?.closed_today_date) {
+        // ── Block walk-ins if business is closed for today (clinic-only for now) ──
+        if (vertical === 'clinic' && business?.closed_today_date) {
             return Response.json({
                 success: false,
                 message: 'Clinic is closed for today. No new patients can be added.'
@@ -51,7 +92,7 @@ export async function POST(req) {
         if (currentTotal >= limit) {
             return Response.json({
                 success: false,
-                message: `Queue Full: The clinic has reached its daily limit of ${limit} patients.`
+                message: `Queue Full: Daily limit of ${limit} entries reached.`
             }, { status: 403 })
         }
 
@@ -79,15 +120,19 @@ export async function POST(req) {
             }
         }
 
+        const vocab = getIndustryVocab(vertical, purpose)
+        const fallbackName = `${vocab.person} ${token}`
+
         const newPatient = {
             business_id: businessId,
-            name: cleanName || `Patient ${token}`,
+            name: cleanName || fallbackName,
             phone: cleanPhone,
             token: token,
             status: 'waiting',
             date: today,
-            language: language || 'hi',
-            joined_at: new Date().toISOString()
+            language: language || 'en',
+            joined_at: new Date().toISOString(),
+            purpose: purpose || null
         }
 
         const { data, error } = await supabaseAdmin.from('queue_entries').insert([newPatient]).select()
@@ -99,14 +144,12 @@ export async function POST(req) {
 
         const patient = data[0]
 
-        // Send WhatsApp confirmation text + voice note in background (non-blocking)
+        // Send WhatsApp confirmation in background (non-blocking)
         if (cleanPhone !== '0000000000') {
             after(async () => {
                 try {
-                    // Fetch clinic info for messaging
-                    const { data: clinic } = await supabaseAdmin.from('clinics').select('name, plan_id, subscription_status').eq('id', businessId).single()
-                    const planId = clinic?.plan_id || 'starter'
-                    const clinicName = clinic?.name || 'the clinic'
+                    const businessName = business?.name || 'the business'
+                    const v = getIndustryVocab(vertical, purpose)
 
                     // Count people ahead
                     const { count: aheadCount } = await supabaseAdmin
@@ -119,10 +162,10 @@ export async function POST(req) {
 
                     const peopleAhead = aheadCount || 0
 
-                    const confirmMsg = `✅ *Walk-in Confirmed, ${patient.name}!*
+                    const confirmMsg = `✅ *${v.title}, ${patient.name}!*
 
 🎟 Your Token: *${token}*
-🏥 ${clinicName}
+${v.icon} ${businessName}${purpose ? `\n📋 Purpose: ${purpose}` : ''}
 👥 People ahead: *${peopleAhead}*
 ⏳ Est. wait: ~${peopleAhead * 7} mins
 
@@ -135,11 +178,11 @@ _Powered by TokenPe_`
                     if (planId !== 'starter') {
                         alerts.push(sendVoice({
                             phone: cleanPhone,
-                            language: language || 'hi',
+                            language: language || 'en',
                             event: 'joined',
                             token,
                             position: peopleAhead,
-                            clinicName
+                            clinicName: businessName
                         }))
                     }
 

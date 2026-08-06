@@ -29,14 +29,14 @@ function AuthCallbackContent() {
                     setStatus('Logging you in securely...')
                 }
 
-                // Call our secure backend API to handle all clinic checks, creation, and JWT logic
+                // Call our secure backend API to handle all checks, creation, and JWT logic
                 const res = await fetch('/api/business-auth/googleCallback', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ intent })
+                    body: JSON.stringify({ intent, vertical: vertical || 'clinic' })
                 })
                 
                 const data = await res.json()
@@ -50,12 +50,23 @@ function AuthCallbackContent() {
                 const finalClinicData = data.clinic
                 localStorage.setItem('businessCode', finalClinicData.code)
                 localStorage.setItem('businessPhone', finalClinicData.phone || '0000000000')
-                localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinicData))
+                
+                if (vertical === 'school') {
+                    localStorage.setItem('tokenpe_school_business', JSON.stringify(finalClinicData))
+                } else if (vertical === 'salon') {
+                    localStorage.setItem('tokenpe_salon', JSON.stringify(finalClinicData))
+                } else if (vertical === 'restaurant') {
+                    localStorage.setItem('tokenpe_restaurant', JSON.stringify(finalClinicData))
+                } else {
+                    localStorage.setItem('tokenpe_clinic', JSON.stringify(finalClinicData))
+                }
+                localStorage.setItem('tokenpe_business', JSON.stringify(finalClinicData))
+                
                 if (data.userClinics) {
                     localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
                 }
 
-                const targetDashboard = vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : '/dashboard'
+                const targetDashboard = vertical === 'school' ? '/school-dashboard' : vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : '/dashboard'
 
                 if (data.isNewRegistration) {
                     setCelebration({ clinicName: finalClinicData.name, trialEnd: finalClinicData.trial_ends_at })
@@ -73,7 +84,7 @@ function AuthCallbackContent() {
 
     if (celebration) {
         const vertical = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_vertical') : null
-        const targetDashboard = vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : '/dashboard'
+        const targetDashboard = vertical === 'school' ? '/school-dashboard' : vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : '/dashboard'
         return <CelebrationScreen clinicName={celebration.clinicName} trialEnd={celebration.trialEnd} onDone={() => router.replace(targetDashboard)} />
     }
 

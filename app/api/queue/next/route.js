@@ -8,16 +8,42 @@ import { getSession } from '../../../../lib/auth'
 import { after } from 'next/server'
 
 // ── Message text for each event ──────────────────────────────────────────────
-function getMessage(event, name, token, currentToken, clinicName) {
+function getMessage(event, name, token, currentToken, businessName, vertical, purpose) {
+    let location = 'the clinic'
+    let goMsg = "Start making your way to the clinic!"
+    let readyMsg = "Please be ready near the cabin!"
+    let finalMsg = "Proceed to the doctor's cabin immediately! 🏥"
+    let icon = "🏥"
+
+    if (vertical === 'school' || vertical === 'college') {
+        location = 'the campus / office'
+        goMsg = "Start making your way to the office!"
+        readyMsg = "Please be ready near the front desk!"
+        finalMsg = "Proceed to the front desk immediately! 🏢"
+        icon = "🏢"
+    } else if (vertical === 'salon' || vertical === 'barbershop') {
+        location = 'the salon'
+        goMsg = "Start making your way to the salon!"
+        readyMsg = "Please be ready near the waiting area!"
+        finalMsg = "Your stylist is ready! Please proceed! ✂️"
+        icon = "✂️"
+    } else if (vertical === 'restaurant') {
+        location = 'the restaurant'
+        goMsg = "Start making your way to the restaurant!"
+        readyMsg = "Please be ready near the host stand!"
+        finalMsg = "Your table is ready! Please proceed to the host! 🍽️"
+        icon = "🍽️"
+    }
+
     switch (event) {
         case 'ten_away':
             return `🔔 *Heads up, ${name}!*
 
 📍 Now Serving: *${currentToken}*
 🎟 Your Token: *${token}*
-🏥 ${clinicName}
+${icon} ${businessName}${purpose ? `\n📋 Purpose: ${purpose}` : ''}
 
-About 10 tokens to go. Start making your way to the clinic! 🏃
+About 10 tokens to go. ${goMsg} 🏃
 
 _Powered by TokenPe_`
 
@@ -26,9 +52,9 @@ _Powered by TokenPe_`
 
 📍 Now Serving: *${currentToken}*
 🎟 Your Token: *${token}*
-🏥 ${clinicName}
+${icon} ${businessName}${purpose ? `\n📋 Purpose: ${purpose}` : ''}
 
-Only 5 tokens away. Please be ready near the cabin! 🙏
+Only 5 tokens away. ${readyMsg} 🙏
 
 _Powered by TokenPe_`
 
@@ -36,9 +62,9 @@ _Powered by TokenPe_`
             return `🚨 *It's YOUR turn, ${name}!*
 
 🎟 Token *${token}* — Please go now!
-🏥 ${clinicName}
+${icon} ${businessName}${purpose ? `\n📋 Purpose: ${purpose}` : ''}
 
-Proceed to the doctor's cabin immediately! 🏥
+${finalMsg}
 Thank you for your patience 🙏
 
 _Powered by TokenPe_`
@@ -58,24 +84,26 @@ export async function POST(req) {
 
         const {
             businessId,
-            clinicName,
+            clinicName, // Fallback key from old frontend
+            businessName,
             patientId,
             patientPhone,
             patientName,
             token,
             language
         } = await req.json()
+        const finalBusinessName = businessName || clinicName || 'TokenPe Business'
 
         if (businessId !== session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
+            return Response.json({ success: false, message: 'Unauthorized access' }, { status: 403 })
         }
 
         const today = getISTDateString()
         const phone = cleanPhone(patientPhone)
 
-        // 1. Fetch clinic to check plan, Mark patient as CALLED, fetch waiting list — in parallel
-        const [ { data: clinic }, , { data: waitingPatients }] = await Promise.all([
-            supabaseAdmin.from('clinics').select('plan_id').eq('id', businessId).single(),
+        // 1. Fetch business to check plan/type, Mark patient as CALLED, fetch waiting list — in parallel
+        const [ { data: business }, , { data: waitingPatients }] = await Promise.all([
+            supabaseAdmin.from('businesses').select('plan_id, type').eq('id', businessId).single(),
             supabaseAdmin.from('queue_entries').update({ status: 'called' }).eq('id', patientId),
             supabaseAdmin.from('queue_entries').select('*')
                 .eq('business_id', businessId)
@@ -84,15 +112,20 @@ export async function POST(req) {
                 .order('joined_at', { ascending: true })
         ])
 
-        const planId = clinic?.plan_id || 'starter'
+        const planId = business?.plan_id || 'starter'
+        const vertical = business?.type || 'clinic'
 
         // Fire all messaging asynchronously so the dashboard UI updates instantly and doesn't crash on TTS failure
         after(async () => {
             try {
+                // Find current patient's purpose if any
+                const { data: currentPatient } = await supabaseAdmin.from('queue_entries').select('purpose').eq('id', patientId).single()
+                const currentPurpose = currentPatient?.purpose || null
+
                 // 2. Send "Your Turn" text + voice (if pro/elite) in parallel
-                const nowAlerts = [sendText(phone, getMessage('your_turn', patientName || 'Patient', token, token, clinicName))]
+                const nowAlerts = [sendText(phone, getMessage('your_turn', patientName || 'Visitor', token, token, finalBusinessName, vertical, currentPurpose))]
                 if (planId !== 'starter') {
-                    nowAlerts.push(sendVoice({ phone, language: language || 'en', event: 'now', token, clinicName }))
+                    nowAlerts.push(sendVoice({ phone, language: language || 'en', event: 'now', token, clinicName: finalBusinessName }))
                 }
                 await Promise.allSettled(nowAlerts)
 
@@ -104,17 +137,17 @@ export async function POST(req) {
 
                         if (position === 10) {
                             console.log(`[10-Away] Alerting ${p.name} (${p.token})`)
-                            sideAlerts.push(sendText(cleanPhone(p.phone), getMessage('ten_away', p.name || 'Patient', p.token, token, clinicName)))
+                            sideAlerts.push(sendText(cleanPhone(p.phone), getMessage('ten_away', p.name || 'Visitor', p.token, token, finalBusinessName, vertical, p.purpose)))
                             if (planId !== 'starter') {
-                                sideAlerts.push(sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'ten_away', token: p.token, currentToken: token, clinicName }))
+                                sideAlerts.push(sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'ten_away', token: p.token, currentToken: token, clinicName: finalBusinessName }))
                             }
                         }
 
                         if (position === 5) {
                             console.log(`[5-Away] Alerting ${p.name} (${p.token})`)
-                            sideAlerts.push(sendText(cleanPhone(p.phone), getMessage('five_away', p.name || 'Patient', p.token, token, clinicName)))
+                            sideAlerts.push(sendText(cleanPhone(p.phone), getMessage('five_away', p.name || 'Visitor', p.token, token, finalBusinessName, vertical, p.purpose)))
                             if (planId !== 'starter') {
-                                sideAlerts.push(sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'five_away', token: p.token, currentToken: token, clinicName }))
+                                sideAlerts.push(sendVoice({ phone: cleanPhone(p.phone), language: p.language || 'en', event: 'five_away', token: p.token, currentToken: token, clinicName: finalBusinessName }))
                             }
                         }
                     })

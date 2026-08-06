@@ -22,11 +22,12 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Invalid Supabase token' }, { status: 401 })
         }
 
-        // Fetch user clinics via admin (bypassing RLS)
+        // Fetch user businesses via admin (bypassing RLS)
         const { data: clinics, error: clinicError } = await supabaseAdmin
             .from(tableName)
             .select('*')
             .eq('email', user.email)
+            .eq('type', vertical)
             .order('created_at', { ascending: true })
 
         let finalClinicData = null
@@ -79,13 +80,14 @@ export async function POST(req) {
             trialEndsAt.setDate(trialEndsAt.getDate() + 7)
 
             const newClinicData = {
-                name: user.user_metadata?.full_name || (vertical === 'salon' ? 'My Salon' : 'My Clinic'),
+                name: user.user_metadata?.full_name || (vertical === 'salon' ? 'My Salon' : vertical === 'school' ? 'My Institution' : vertical === 'restaurant' ? 'My Restaurant' : 'My Clinic'),
                 email: user.email,
                 code: newCode,
                 phone: '0000000000',
                 plan_id: 'elite',
                 subscription_status: 'trialing',
-                trial_ends_at: trialEndsAt.toISOString()
+                trial_ends_at: trialEndsAt.toISOString(),
+                type: vertical
             }
 
             const { data: insertedClinic, error: insertError } = await supabaseAdmin
@@ -111,7 +113,9 @@ export async function POST(req) {
         const sessionPayload = {
             businessId: finalClinicData.id,
             businessCode: finalClinicData.code,
-            phone: finalClinicData.phone || '0000000000'
+            phone: finalClinicData.phone || '0000000000',
+            type: finalClinicData.type,
+            vertical: finalClinicData.type
         }
         const token = await signToken(sessionPayload)
 

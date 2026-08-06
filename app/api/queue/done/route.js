@@ -17,23 +17,26 @@ export async function POST(req) {
 
         const {
             businessId,
-            clinicName,
+            clinicName, // Fallback
+            businessName,
             patientId,
             patientPhone,
             patientName,
             token,
             language
         } = await req.json()
+        const finalBusinessName = businessName || clinicName || 'TokenPe Business'
 
         if (businessId !== session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
+            return Response.json({ success: false, message: 'Unauthorized access' }, { status: 403 })
         }
 
         const phone = cleanPhone(patientPhone)
 
-        // 1. Fetch clinic to check plan
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id, code, subscription_status').eq('id', businessId).single()
-        const planId = clinic?.plan_id || 'starter'
+        // 1. Fetch business to check plan/type
+        const { data: business } = await supabaseAdmin.from('businesses').select('plan_id, code, subscription_status, type').eq('id', businessId).single()
+        const planId = business?.plan_id || 'starter'
+        const vertical = business?.type || 'clinic'
 
         // 2. Mark done in DB immediately (block on this so UI updates accurately)
         const { error: dbError } = await supabaseAdmin
@@ -43,21 +46,34 @@ export async function POST(req) {
 
         if (dbError) throw dbError
 
-        // 3. Fire all messaging asynchronously so the dashboard UI updates instantly and doesn't crash on TTS failure
+        // 3. Fire all messaging asynchronously so the dashboard UI updates instantly
         after(async () => {
             try {
-                const doneMsg = `✅ *Consultation Completed, ${patientName || 'Patient'}!*\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_`
+                let completionTitle = "Consultation Completed"
+                let person = "Patient"
+                if (vertical === 'school' || vertical === 'college') {
+                    completionTitle = "Visit Completed"
+                    person = "Visitor"
+                } else if (vertical === 'salon' || vertical === 'barbershop') {
+                    completionTitle = "Service Completed"
+                    person = "Customer"
+                } else if (vertical === 'restaurant') {
+                    completionTitle = "Dining Completed"
+                    person = "Guest"
+                }
+
+                const doneMsg = `✅ *${completionTitle}, ${patientName || person}!*\n\nPlease don't hesitate to reach out if you have any questions.\n\n_Powered by TokenPe_`
                 const alerts = [sendText(phone, doneMsg)]
 
                 if (planId !== 'starter') {
-                    alerts.push(sendVoice({ phone, language: language || 'en', event: 'done', token, clinicName }))
+                    alerts.push(sendVoice({ phone, language: language || 'en', event: 'done', token, clinicName: finalBusinessName }))
                 }
 
                 await Promise.allSettled(alerts)
 
-                // Send Interactive List via Interakt — patient taps a star → Interakt fires incoming webhook → we save rating
+                // Send Interactive List via Interakt
                 await new Promise(r => setTimeout(r, 500))
-                await sendInteractiveRating(phone, clinicName, language || 'en')
+                await sendInteractiveRating(phone, finalBusinessName, language || 'en')
             } catch (err) {
                 console.error('[queue/done] Background messaging error:', err)
             }

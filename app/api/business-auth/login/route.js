@@ -38,7 +38,7 @@ export async function POST(req) {
             .select('*')
             .ilike('email', cleanEmail)
             .eq('phone', cleanPhone)
-            .eq('vertical', cleanVertical)   // ← only match correct industry
+            .eq('type', cleanVertical)   // ← businesses table uses 'type' column, not 'vertical'
             .order('created_at', { ascending: true })
             .limit(1)
 
@@ -59,7 +59,7 @@ export async function POST(req) {
 
         // Create JWT session using existing clinic data (no code rotation — doctors set custom codes)
         const sessionPayload = {
-            businessId: data.id, businessCode: data.code, phone: data.phone, type: data.type, role: activeRole
+            businessId: data.id, businessCode: data.code, phone: data.phone, type: data.type, vertical: data.type
         }
         const token = await signToken(sessionPayload)
 

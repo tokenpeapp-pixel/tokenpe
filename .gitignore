@@ -48,3 +48,6 @@ resize.ps1
 
 # 🔒 Private / Secret files - NEVER push to GitHub
 /private/
+
+.vercel
+.env*

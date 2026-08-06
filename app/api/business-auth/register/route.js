@@ -32,7 +32,7 @@ export async function POST(req) {
             .select('id')
             .eq('phone', cleanPhone)
             .eq('email', cleanEmail)
-            .eq('vertical', cleanVertical)   // ← scoped to this industry only
+            .eq('type', cleanVertical)   // ← businesses table uses 'type' column, not 'vertical'
             .limit(1)
 
         if (existingClinic?.length > 0) {
@@ -60,7 +60,7 @@ export async function POST(req) {
             specialty: specialty || null,
             city: city ? city.trim() : null,
             is_public: true,
-            vertical: cleanVertical,
+            type: cleanVertical,        // 'type' is the actual column in businesses table
         }
 
         if (lat !== undefined && lng !== undefined && lat !== null && lng !== null) {
@@ -77,7 +77,13 @@ export async function POST(req) {
             .select().single()
 
         if (error) {
-            return Response.json({ success: false, message: 'Failed to create clinic. Phone may already be registered.' }, { status: 500 })
+            // Log the full Supabase error so it appears in Vercel function logs
+            console.error('[Register API] Supabase insert error:', JSON.stringify(error))
+            // Detect unique constraint violations (code 23505 = PostgreSQL unique_violation)
+            if (error.code === '23505') {
+                return Response.json({ success: false, message: 'An account with this email or phone already exists. Please log in instead.' }, { status: 409 })
+            }
+            return Response.json({ success: false, message: 'Failed to create account. Please try again.' }, { status: 500 })
         }
 
         // Send welcome email in background so registration UI is instant
@@ -87,7 +93,7 @@ export async function POST(req) {
 
         // Create JWT session
         const sessionPayload = {
-            businessId: data.id, businessCode: data.code, phone: data.phone, type: data.type
+            businessId: data.id, businessCode: data.code, phone: data.phone, type: data.type, vertical: data.type
         }
         const token = await signToken(sessionPayload)
 

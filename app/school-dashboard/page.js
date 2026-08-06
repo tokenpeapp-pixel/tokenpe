@@ -623,8 +623,12 @@ function SchoolCommandCenterInner() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('tokenpe_active_room', val)
       if (clinic?.id && clinic.id !== 'demo-school-id') {
-        supabase.from('schools').update({ location: val }).eq('id', clinic.id).then(() => {}).catch(() => {})
-        supabase.from('public_schools').update({ location: val }).eq('id', clinic.id).then(() => {}).catch(() => {})
+        // Write via authenticated API route — never directly from anon client
+        fetch('/api/school/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: { location: val } })
+        }).catch(() => {})
       }
     }
     setLocationNoticeToast('✓ Location updated successfully!')
@@ -666,9 +670,12 @@ function SchoolCommandCenterInner() {
     setArrivals(reRanked)
     try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(reRanked)) } catch (e) {}
     try {
-      const schoolId = await getRealSchoolId()
-      if (schoolId && schoolId !== 'demo-school-id') {
-        await supabase.from('school_queue').update({ status: 'cancelled' }).eq('id', id).catch(() => {})
+      if (clinic?.id && clinic.id !== 'demo-school-id') {
+        await fetch('/api/school/queue-cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entryId: id })
+        }).catch(() => {})
       }
     } catch (e) {}
     setSkipTarget(null)
@@ -684,13 +691,16 @@ function SchoolCommandCenterInner() {
       confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } })
       localStorage.setItem('tokenpe_active_notice', msg)
       if (clinic?.id && clinic.id !== 'demo-school-id') {
-        await supabase.from('schools').update({ active_notice: msg }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('public_schools').update({ active_notice: msg }).eq('id', clinic.id).catch(() => {})
+        await fetch('/api/school/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: { active_notice: msg } })
+        }).catch(() => {})
       }
     } catch (err) {}
     setShowBroadcastModal(false)
     setBroadcastMsgText('')
-    alert(`ðŸ“¢ Notice Broadcast Sent to Queue:\n\n"${msg}"`)
+    alert(`📢 Notice Broadcast Sent to Queue:\n\n"${msg}"`)
   }
 
   function handleLogoUpload(e) {
@@ -707,10 +717,13 @@ function SchoolCommandCenterInner() {
       const updatedClinic = { ...clinic, logo_url: base64Logo }
       setSchool(updatedClinic)
       try {
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+        localStorage.setItem('tokenpe_school_business', JSON.stringify(updatedClinic))
         if (clinic?.id && clinic.id !== 'demo-school-id') {
-          await supabase.from('schools').update({ logo_url: base64Logo }).eq('id', clinic.id).catch(() => {})
-          await supabase.from('public_schools').update({ logo_url: base64Logo }).eq('id', clinic.id).catch(() => {})
+          await fetch('/api/school/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates: { logo_url: base64Logo } })
+          }).catch(() => {})
         }
       } catch (err) {}
     }
@@ -725,11 +738,14 @@ function SchoolCommandCenterInner() {
     const updatedClinic = { ...clinic, name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }
     setSchool(updatedClinic)
     try {
-      localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+      localStorage.setItem('tokenpe_school_business', JSON.stringify(updatedClinic))
       localStorage.setItem('tokenpe_school_subtitle', schoolSubtitle)
       if (clinic?.id && clinic.id !== 'demo-school-id') {
-        await supabase.from('schools').update({ name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('public_schools').update({ name: updatedName, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }).eq('id', clinic.id).catch(() => {})
+        await fetch('/api/school/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: { name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url } })
+        }).catch(() => {})
       }
     } catch (err) {}
     setShowEditSchoolModal(false)
@@ -768,111 +784,66 @@ function SchoolCommandCenterInner() {
     return []
   })
 
-  // Helper to ensure we have a valid real Supabase school ID for all DB operations
-  async function getRealSchoolId() {
-    if (clinic?.id && clinic.id !== 'demo-school-id') return clinic.id
-    try {
-      const stored = localStorage.getItem('tokenpe_clinic')
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        if (parsed?.id && parsed.id !== 'demo-school-id') {
-          setSchool(parsed)
-          return parsed.id
-        }
-      }
-    } catch (_) {}
-
-    try {
-      const { data: dbSchool } = await supabase.from('schools').select('*').limit(1).maybeSingle()
-      if (dbSchool) {
-        setSchool(dbSchool)
-        try { localStorage.setItem('tokenpe_clinic', JSON.stringify(dbSchool)) } catch (_) {}
-        return dbSchool.id
-      }
-    } catch (e) {}
-
-    try {
-      const { data: dbPub } = await supabase.from('public_schools').select('*').limit(1).maybeSingle()
-      if (dbPub) {
-        setSchool(dbPub)
-        try { localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub)) } catch (_) {}
-        return dbPub.id
-      }
-    } catch (e) {}
-
+  function getRealSchoolId() {
     return clinic?.id
   }
 
-  // â”€â”€ 1. DYNAMIC INITIALIZATION & REAL DB FETCH â”€â”€
+  // ── 1. DYNAMIC INITIALIZATION & SERVER-AUTH VERIFICATION ──
+  // NOTE: localStorage is used only as a fast paint cache.
+  // The server session (/api/business-auth/me?vertical=school) is the ONLY
+  // authoritative source of which school account is active.
   useEffect(() => {
     if (typeof window === 'undefined') return
     const savedRoom = localStorage.getItem('tokenpe_active_room')
     if (savedRoom) setActiveRoom(savedRoom)
 
-    const stored = localStorage.getItem('tokenpe_clinic')
-    let currentSchool = null
-
+    // Fast paint: show cached data immediately (paint cache only, not auth source)
+    const stored = localStorage.getItem('tokenpe_school_business')
     if (stored) {
       try {
-        currentSchool = JSON.parse(stored)
-        setSchool(currentSchool)
+        const cached = JSON.parse(stored)
+        setSchool(cached)
+        if (cached?.logo_url) setSchoolLogo(cached.logo_url)
       } catch (_) {}
     }
 
-    if (currentSchool?.logo_url) setSchoolLogo(currentSchool.logo_url)
-
-    // Real DB fetch from Supabase
-    async function loadDynamicData() {
+    // Always re-verify session on mount with vertical guard.
+    // If the session belongs to a different vertical (or doesn't exist),
+    // the API returns { authenticated: false } and we redirect to school-login.
+    async function verifyAndLoad() {
       try {
-        let targetId = currentSchool?.id
-        if (!targetId || targetId === 'demo-school-id') {
-          const { data: dbSchool } = await supabase.from('schools').select('*').limit(1).maybeSingle()
-          if (dbSchool) {
-            currentSchool = dbSchool
-            targetId = dbSchool.id
-            setSchool(dbSchool)
-            if (dbSchool.logo_url) setSchoolLogo(dbSchool.logo_url)
-            if (dbSchool.location && !localStorage.getItem('tokenpe_active_room')) {
-              setActiveRoom(dbSchool.location)
-              localStorage.setItem('tokenpe_active_room', dbSchool.location)
-            }
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(dbSchool))
-          } else {
-            const { data: dbPub } = await supabase.from('public_schools').select('*').limit(1).maybeSingle()
-            if (dbPub) {
-              currentSchool = dbPub
-              targetId = dbPub.id
-              setSchool(dbPub)
-              if (dbPub.logo_url) setSchoolLogo(dbPub.logo_url)
-              if (dbPub.location && !localStorage.getItem('tokenpe_active_room')) {
-                setActiveRoom(dbPub.location)
-                localStorage.setItem('tokenpe_active_room', dbPub.location)
-              }
-              localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub))
-            }
-          }
-        }
+        const res = await fetch('/api/business-auth/me?vertical=school')
+        const data = await res.json()
 
-        if (!currentSchool) {
-          const vertical = localStorage.getItem('tokenpe_vertical')
-          if (vertical === 'salon') router.push('/salon-login')
-          else if (vertical === 'restaurant') router.push('/restaurant-login')
-          else if (vertical === 'school') router.push('/school-login')
-          else if (vertical === 'other') router.push('/business-login')
-          else router.push('/school-login')
+        if (!data.authenticated || !data.clinic) {
+          // No valid school session — clear any stale cache and redirect
+          localStorage.removeItem('tokenpe_school_business')
+          router.push('/school-login')
           return
         }
+
+        // Server confirmed a valid school session
+        const schoolData = data.clinic
+        setSchool(schoolData)
+        if (schoolData.logo_url) setSchoolLogo(schoolData.logo_url)
+        if (schoolData.location && !localStorage.getItem('tokenpe_active_room')) {
+          setActiveRoom(schoolData.location)
+          localStorage.setItem('tokenpe_active_room', schoolData.location)
+        }
+        // Update the paint cache with fresh server data
+        localStorage.setItem('tokenpe_school_business', JSON.stringify(schoolData))
       } catch (err) {
-        console.warn('Supabase real DB load:', err)
+        console.warn('[school-dashboard] Auth verify error:', err)
+        // Network error — do not redirect; keep cached paint so dashboard stays usable offline
       } finally {
         setLoading(false)
       }
     }
 
-    loadDynamicData()
+    verifyAndLoad()
 
-    // â”€â”€ Real-time polling every 4s for queue updates â”€â”€
-    const interval = setInterval(loadDynamicData, 4000)
+    // ── Lightweight polling every 30s to refresh session/school data ──
+    const interval = setInterval(verifyAndLoad, 30000)
     return () => clearInterval(interval)
   }, [])
 

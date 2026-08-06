@@ -23,6 +23,7 @@ export default function LoginPage() {
             
             if (isLoggedOut) {
                 localStorage.removeItem('tokenpe_clinic')
+                localStorage.removeItem('tokenpe_school_business')
                 localStorage.removeItem('tokenpe_user_clinics')
                 localStorage.removeItem('clinicCode')
                 localStorage.removeItem('clinicPhone')
@@ -30,16 +31,18 @@ export default function LoginPage() {
                 return
             }
 
-            // Check session via API instead of localStorage directly to be secure
-            fetch('/api/business-auth/me')
+            // Check session via API with vertical guard so a clinic session is rejected here
+            fetch('/api/business-auth/me?vertical=school')
                 .then(res => res.json())
                 .then(data => {
                     if (data.authenticated && data.clinic) {
+                        localStorage.setItem('tokenpe_school_business', JSON.stringify(data.clinic))
                         localStorage.setItem('tokenpe_business', JSON.stringify(data.clinic))
                         localStorage.setItem('businessCode', data.clinic.code)
                         localStorage.setItem('businessPhone', data.clinic.phone)
                         router.replace('/school-dashboard')
                     } else {
+                        localStorage.removeItem('tokenpe_school_business')
                         localStorage.removeItem('tokenpe_business')
                         localStorage.removeItem('tokenpe_user_businesses')
                     }
@@ -155,6 +158,8 @@ export default function LoginPage() {
                 return
             }
 
+            // Write to both the namespaced school key and the general business key
+            localStorage.setItem('tokenpe_school_business', JSON.stringify(result.clinic))
             localStorage.setItem('tokenpe_business', JSON.stringify(result.clinic))
             localStorage.setItem('businessCode', result.clinic.code)
             localStorage.setItem('businessPhone', result.clinic.phone)
@@ -209,7 +214,8 @@ export default function LoginPage() {
 
             setLoading(false)
             
-            // Set localStorage 
+            // Write to both the namespaced school key and the general business key
+            localStorage.setItem('tokenpe_school_business', JSON.stringify(result.clinic))
             localStorage.setItem('tokenpe_business', JSON.stringify(result.clinic))
             localStorage.setItem('businessCode', result.clinic.code)
             localStorage.setItem('businessPhone', result.clinic.phone)

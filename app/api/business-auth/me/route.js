@@ -19,6 +19,21 @@ export async function GET(req) {
             return Response.json({ authenticated: false }, { status: 401 })
         }
 
+        // ── Vertical guard ──────────────────────────────────────────────────────
+        // If the caller specifies ?vertical=school (or any vertical), reject the
+        // session if it belongs to a different vertical. This prevents a clinic
+        // session from being silently accepted by the school dashboard.
+        // Callers that omit ?vertical= (e.g. the clinic dashboard) are unaffected.
+        const { searchParams } = new URL(req.url)
+        const requestedVertical = searchParams.get('vertical')
+        if (requestedVertical && clinic.type !== requestedVertical) {
+            return Response.json(
+                { authenticated: false, reason: 'vertical_mismatch' },
+                { status: 401 }
+            )
+        }
+        // ───────────────────────────────────────────────────────────────────────
+
         // Do not leak the pin back to the frontend
         delete clinic.pin
 

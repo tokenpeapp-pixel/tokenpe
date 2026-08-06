@@ -752,6 +752,7 @@ function ShieldGhost() {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════ */
 export default function ClinicLandingPage({ config }) {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2398,17 +2399,95 @@ export default function ClinicLandingPage({ config }) {
           box-shadow: 0 12px 32px rgba(16, 185, 129, 0.45);
         }
 
-        /* ── FOOTER ── */
+        /* ── FOOTER (PREMIUM DARK MATTE EMERALD) ── */
         .cl-footer {
-          border-top: 1px solid rgba(6,95,70,0.08);
-          padding: 40px 24px;
-          text-align: center;
-          color: rgba(26,61,43,0.45);
-          font-size: 13.5px;
-          background: #f0faf6;
+          background: #041e17;
+          color: rgba(241, 245, 249, 0.75);
+          border-top: 1px solid rgba(52, 211, 153, 0.15);
+          padding: 80px 24px 36px;
+          position: relative;
+          overflow: hidden;
         }
-        .cl-footer a { color: rgba(6,95,70,0.7); text-decoration: none; transition: color 0.2s; }
-        .cl-footer a:hover { color: #065F46; }
+        .cl-footer::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: radial-gradient(circle at 50% 0%, rgba(52, 211, 153, 0.08), transparent 70%);
+          pointer-events: none;
+        }
+        .cl-footer-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          position: relative;
+          z-index: 2;
+        }
+        .cl-footer-top {
+          display: grid;
+          grid-template-columns: 1.8fr 1fr 1fr 1.2fr;
+          gap: 48px;
+          margin-bottom: 60px;
+        }
+        .cl-footer-brand-desc {
+          font-size: 14.5px;
+          color: rgba(241, 245, 249, 0.65);
+          line-height: 1.65;
+          margin-top: 16px;
+          max-width: 320px;
+        }
+        .cl-footer-status {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: rgba(52, 211, 153, 0.1);
+          border: 1px solid rgba(52, 211, 153, 0.25);
+          color: #34d399; padding: 5px 12px; border-radius: 20px;
+          font-size: 12px; font-weight: 700; margin-top: 20px;
+        }
+        .cl-footer-status-dot {
+          width: 7px; height: 7px; border-radius: 50%; background: #34d399;
+          box-shadow: 0 0 8px #34d399;
+        }
+        .cl-footer-heading {
+          font-size: 13px; font-weight: 800; color: #ffffff;
+          letter-spacing: 0.12em; text-transform: uppercase;
+          margin-bottom: 20px;
+        }
+        .cl-footer-links {
+          list-style: none; display: flex; flex-direction: column; gap: 12px;
+        }
+        .cl-footer-link {
+          font-size: 14px; color: rgba(241, 245, 249, 0.65);
+          text-decoration: none; transition: all 0.2s ease;
+          cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .cl-footer-link:hover {
+          color: #34d399; transform: translateX(3px);
+        }
+        .cl-footer-contact-card {
+          background: rgba(13, 51, 39, 0.6);
+          border: 1px solid rgba(52, 211, 153, 0.2);
+          border-radius: 18px; padding: 20px;
+        }
+        .cl-footer-contact-title {
+          font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 6px;
+        }
+        .cl-footer-contact-email {
+          font-size: 13.5px; color: #34d399; text-decoration: none; font-weight: 700;
+          display: flex; align-items: center; gap: 6px; word-break: break-all;
+          transition: opacity 0.2s ease;
+        }
+        .cl-footer-contact-email:hover { opacity: 0.85; text-decoration: underline; }
+        .cl-footer-bottom {
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          padding-top: 28px;
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 16px;
+          font-size: 13px; color: rgba(241, 245, 249, 0.5);
+        }
+        .cl-footer-bottom-links {
+          display: flex; align-items: center; gap: 24px;
+        }
+        .cl-footer-bottom-links a {
+          color: rgba(241, 245, 249, 0.6); text-decoration: none; transition: color 0.2s ease;
+        }
+        .cl-footer-bottom-links a:hover { color: #34d399; }
 
         /* ── ROLES MOBILE SLIDER ── */
         /* Desktop shows the grid, slider is hidden */
@@ -2763,8 +2842,13 @@ export default function ClinicLandingPage({ config }) {
           .cl-modal-card { padding: 28px 20px; border-radius: 22px; }
           .cl-modal-title { font-size: 22px; }
 
-          /* Footer */
-          .cl-footer { padding: 28px 16px; font-size: 12.5px; }
+          /* Footer Mobile */
+          .cl-footer { padding: 56px 20px 110px; }
+          .cl-footer-top { grid-template-columns: 1fr; gap: 36px; margin-bottom: 44px; }
+          .cl-footer-brand-desc { max-width: 100%; }
+          .cl-footer-bottom { flex-direction: column; align-items: flex-start; gap: 14px; }
+          .cl-footer-bottom-links { display: flex; flex-wrap: nowrap; gap: 16px; font-size: 12.5px; width: 100%; justify-content: space-between; }
+          .cl-footer-bottom-links a { white-space: nowrap; }
         }
 
         /* ══════════════════════════════
@@ -3452,12 +3536,67 @@ export default function ClinicLandingPage({ config }) {
 
       {/* ── Footer ── */}
       <footer className="cl-footer">
-        <div style={{ marginBottom: 6 }}>
-          © {new Date().getFullYear()} TokenPe · Built for Indian clinics ·{" "}
-          <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a>
-        </div>
-        <div>
-          Questions? <a href="mailto:tokenpe.online@gmail.com">tokenpe.online@gmail.com</a>
+        <div className="cl-footer-inner">
+          <div className="cl-footer-top">
+            {/* Column 1: Brand & Status */}
+            <div>
+              <img src="/logo-nav.svg" alt="TokenPe" style={{ height: 38, width: "auto" }} />
+              <p className="cl-footer-brand-desc">
+                TokenPe replaces chaotic paper OPD queues with real-time WhatsApp digital queues. Built specifically for Indian clinics & hospitals.
+              </p>
+              <div className="cl-footer-status">
+                <span className="cl-footer-status-dot" />
+                <span>All WhatsApp Queue Systems Operational</span>
+              </div>
+            </div>
+
+            {/* Column 2: Navigation Links */}
+            <div>
+              <h4 className="cl-footer-heading">Platform</h4>
+              <ul className="cl-footer-links">
+                <li><span className="cl-footer-link" onClick={() => go("roles")}>For Doctors & Staff</span></li>
+                <li><span className="cl-footer-link" onClick={() => go("how")}>How Queue Works</span></li>
+                <li><span className="cl-footer-link" onClick={() => go("features")}>OPD Features</span></li>
+                <li><span className="cl-footer-link" onClick={() => go("analytics")}>Analytics Center</span></li>
+              </ul>
+            </div>
+
+            {/* Column 3: Quick Access */}
+            <div>
+              <h4 className="cl-footer-heading">Quick Links</h4>
+              <ul className="cl-footer-links">
+                <li><a className="cl-footer-link" href="/find">Find a Clinic</a></li>
+                <li><a className="cl-footer-link" href="/login?mode=register">Clinic Registration</a></li>
+                <li><a className="cl-footer-link" href="/login">Staff Login</a></li>
+                <li><span className="cl-footer-link" onClick={openDemoModal}>Request Demo</span></li>
+              </ul>
+            </div>
+
+            {/* Column 4: Contact Card */}
+            <div>
+              <div className="cl-footer-contact-card">
+                <h4 className="cl-footer-contact-title">Doctor Support Line</h4>
+                <p style={{ fontSize: 13, color: "rgba(241, 245, 249, 0.65)", marginBottom: 12 }}>
+                  Need assistance setting up your clinic QR code?
+                </p>
+                <a href="mailto:tokenpe.online@gmail.com" className="cl-footer-contact-email">
+                  <Mail size={15} /> tokenpe.online@gmail.com
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="cl-footer-bottom">
+            <div>
+              © {new Date().getFullYear()} TokenPe · Smart WhatsApp Queues for Indian Clinics
+            </div>
+            <div className="cl-footer-bottom-links">
+              <a href="/privacy">Privacy Policy</a>
+              <a href="/terms">Terms of Service</a>
+              <a href="mailto:tokenpe.online@gmail.com">Contact Support</a>
+            </div>
+          </div>
         </div>
       </footer>
     </>

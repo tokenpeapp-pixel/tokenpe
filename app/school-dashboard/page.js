@@ -813,7 +813,13 @@ function SchoolCommandCenterInner() {
     async function verifyAndLoad() {
       try {
         const res = await fetch('/api/business-auth/me?vertical=school')
-        const data = await res.json()
+        
+        if (!res.ok) {
+          console.warn(`[school-dashboard] API returned status ${res.status}`)
+          // Fall through to redirect logic below
+        }
+
+        const data = res.ok ? await res.json() : { authenticated: false }
 
         if (!data.authenticated || !data.clinic) {
           // No valid school session — clear any stale cache and redirect

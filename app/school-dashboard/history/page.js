@@ -44,12 +44,12 @@ export default function HistoryPage() {
   const [lastUpdated, setLastUpdated]   = useState(null)
 
   // Filters
-  const [activeRange, setActiveRange]   = useState(0) // index into QUICK_RANGES (0=Today)
+  const [activeRange, setActiveRange]   = useState(0)
   const [customStart, setCustomStart]   = useState('')
   const [customEnd, setCustomEnd]       = useState('')
   const [showCalendar, setShowCalendar] = useState(false)
   const [search, setSearch]             = useState('')
-  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'done' | 'cancelled'
+  const [statusFilter, setStatusFilter] = useState('all')
 
   // Stats derived from records
   const totalCount      = records.length
@@ -68,7 +68,7 @@ export default function HistoryPage() {
     setLoading(true)
     setError(null)
     try {
-      const stored = localStorage.getItem('tokenpe_clinic')
+      const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business') || localStorage.getItem('tokenpe_clinic')
       const clinic = stored ? JSON.parse(stored) : null
       const schoolId = clinic?.id
       if (!schoolId) { setError('No school found. Please log in.'); setLoading(false); return }
@@ -95,7 +95,6 @@ export default function HistoryPage() {
     }
   }, [])
 
-  // Load on mount and whenever range changes
   useEffect(() => {
     if (customStart && customEnd) {
       loadHistory(null, customStart, customEnd)
@@ -107,7 +106,7 @@ export default function HistoryPage() {
   function applyCustomRange() {
     if (!customStart || !customEnd) return
     if (customStart > customEnd) return alert('Start date must be before end date')
-    setActiveRange(-1) // deselect quick range
+    setActiveRange(-1)
     setShowCalendar(false)
     loadHistory(null, customStart, customEnd)
   }
@@ -119,7 +118,6 @@ export default function HistoryPage() {
     setShowCalendar(false)
   }
 
-  // Client-side search + status filter
   const filtered = records.filter(r => {
     const matchSearch =
       !search ||
@@ -132,7 +130,6 @@ export default function HistoryPage() {
     return matchSearch && matchStatus
   })
 
-  // Export CSV
   function exportCSV() {
     if (!filtered.length) return
     const rows = [
@@ -160,9 +157,33 @@ export default function HistoryPage() {
     <div style={{ minHeight: '100vh', background: '#F4F7FB', ...S }}>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
 
+      {/* Styles for hover & interactive polish */}
+      <style>{`
+        .hover-btn {
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .hover-btn:hover {
+          transform: translateY(-1.5px) !important;
+          box-shadow: 0 4px 14px rgba(27, 42, 74, 0.15) !important;
+        }
+        .hover-card {
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .hover-card:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 8px 24px rgba(27, 42, 74, 0.1) !important;
+        }
+        .table-row-hover {
+          transition: background 0.18s ease-in-out !important;
+        }
+        .table-row-hover:hover {
+          background: #EFF6FF !important;
+        }
+      `}</style>
+
       {/* ── HEADER ── */}
       <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: isMobile ? '10px 12px' : '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
-        <button onClick={() => router.push('/school-dashboard')} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
+        <button onClick={() => router.push('/school-dashboard')} className="hover-btn" style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
           <ChevronLeft size={16} />{isMobile ? null : ' Back'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -177,10 +198,10 @@ export default function HistoryPage() {
           </div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button onClick={() => loadHistory(activeRange >= 0 ? QUICK_RANGES[activeRange].days : null, customStart, customEnd)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#5A6E85', fontWeight: 700, fontSize: '0.75rem' }}>
+          <button onClick={() => loadHistory(activeRange >= 0 ? QUICK_RANGES[activeRange].days : null, customStart, customEnd)} className="hover-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#5A6E85', fontWeight: 700, fontSize: '0.75rem' }}>
             <RefreshCw size={13} /> Refresh
           </button>
-          <button onClick={exportCSV} disabled={!filtered.length} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1B2A4A', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: filtered.length ? 'pointer' : 'not-allowed', color: '#FFF', fontWeight: 700, fontSize: '0.75rem', opacity: filtered.length ? 1 : 0.5 }}>
+          <button onClick={exportCSV} disabled={!filtered.length} className="hover-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#1B2A4A', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: filtered.length ? 'pointer' : 'not-allowed', color: '#FFF', fontWeight: 700, fontSize: '0.75rem', opacity: filtered.length ? 1 : 0.5 }}>
             <Download size={13} />{isMobile ? null : ' Export CSV'}
           </button>
         </div>
@@ -195,7 +216,7 @@ export default function HistoryPage() {
             { label: 'Completed',     value: completedCount, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0', icon: <CheckCircle2 size={16}/> },
             { label: 'Cancelled',     value: cancelledCount, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA', icon: <XCircle size={16}/> },
           ].map((k, i) => (
-            <div key={i} style={{ background: '#FFFFFF', border: `1.5px solid ${k.border}`, borderRadius: 10, padding: isMobile ? '8px' : '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 4px 12px rgba(27,42,74,0.04)' }}>
+            <div key={i} className="hover-card" style={{ background: '#FFFFFF', border: `1.5px solid ${k.border}`, borderRadius: 10, padding: isMobile ? '8px' : '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 4px 12px rgba(27,42,74,0.04)', cursor: 'default' }}>
               <div style={{ background: k.bg, color: k.color, borderRadius: 8, padding: 8, display: 'flex', flexShrink: 0 }}>{k.icon}</div>
               <div>
                 <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.7rem', fontWeight: 700, color: '#1B2A4A', lineHeight: 1 }}>{loading ? '—' : k.value}</div>
@@ -211,11 +232,11 @@ export default function HistoryPage() {
           {/* Quick range buttons */}
           <div style={{ display: 'flex', gap: 6 }}>
             {QUICK_RANGES.map((r, i) => (
-              <button key={i} onClick={() => selectQuickRange(i)} style={{
+              <button key={i} onClick={() => selectQuickRange(i)} className="hover-btn" style={{
                 padding: '6px 14px', borderRadius: 7, border: `1.5px solid ${activeRange === i ? '#1B2A4A' : '#E2E8F0'}`,
                 background: activeRange === i ? '#1B2A4A' : '#F8FAFC',
                 color: activeRange === i ? '#FFF' : '#5A6E85',
-                fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s ease',
+                fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit',
               }}>
                 {isMobile ? r.label.replace(' Days', 'D').replace(' Today', 'Today') : r.label}
               </button>
@@ -224,7 +245,7 @@ export default function HistoryPage() {
 
           {/* Custom date picker */}
           <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowCalendar(!showCalendar)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 7, border: `1.5px solid ${activeRange === -1 ? '#2563EB' : '#E2E8F0'}`, background: activeRange === -1 ? '#EFF6FF' : '#F8FAFC', color: activeRange === -1 ? '#2563EB' : '#5A6E85', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={() => setShowCalendar(!showCalendar)} className="hover-btn" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 7, border: `1.5px solid ${activeRange === -1 ? '#2563EB' : '#E2E8F0'}`, background: activeRange === -1 ? '#EFF6FF' : '#F8FAFC', color: activeRange === -1 ? '#2563EB' : '#5A6E85', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit' }}>
               <Calendar size={13} />
               {activeRange === -1 && customStart ? `${customStart} → ${customEnd}` : 'Custom Range'}
               <ChevronDown size={12} />
@@ -244,10 +265,10 @@ export default function HistoryPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={applyCustomRange} disabled={!customStart || !customEnd} style={{ flex: 1, padding: '8px 0', background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 7, fontWeight: 800, fontSize: '0.8rem', cursor: (!customStart || !customEnd) ? 'not-allowed' : 'pointer', opacity: (!customStart || !customEnd) ? 0.5 : 1, fontFamily: 'inherit' }}>
+                  <button onClick={applyCustomRange} disabled={!customStart || !customEnd} className="hover-btn" style={{ flex: 1, padding: '8px 0', background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 7, fontWeight: 800, fontSize: '0.8rem', cursor: (!customStart || !customEnd) ? 'not-allowed' : 'pointer', opacity: (!customStart || !customEnd) ? 0.5 : 1, fontFamily: 'inherit' }}>
                     Apply
                   </button>
-                  <button onClick={() => setShowCalendar(false)} style={{ padding: '8px 14px', background: '#F1F5F9', color: '#5A6E85', border: '1px solid #E2E8F0', borderRadius: 7, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <button onClick={() => setShowCalendar(false)} className="hover-btn" style={{ padding: '8px 14px', background: '#F1F5F9', color: '#5A6E85', border: '1px solid #E2E8F0', borderRadius: 7, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit' }}>
                     Cancel
                   </button>
                 </div>
@@ -261,7 +282,7 @@ export default function HistoryPage() {
           {/* Search */}
           <div style={{ flex: 1, minWidth: 180, position: 'relative' }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, grade, guardian…" style={{ width: '100%', padding: '7px 12px 7px 30px', border: '1.5px solid #E2E8F0', borderRadius: 7, outline: 'none', background: '#F8FAFC', fontSize: '0.82rem', color: '#1B2A4A', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, grade, guardian…" style={{ width: '100%', padding: '7px 12px 7px 30px', border: '1.5px solid #E2E8F0', borderRadius: 7, outline: 'none', background: '#F8FAFC', fontSize: '0.82rem', color: '#1B2A4A', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'all 0.2s ease' }} />
           </div>
 
           {/* Status filter */}
@@ -307,7 +328,7 @@ export default function HistoryPage() {
                     const isDone = r.status === 'done'
                     const isCancelled = r.status === 'cancelled'
                     return (
-                      <div key={r.id} style={{ background: idx%2===0?'#FFF':'#FAFBFD', border: '1px solid #F1F5F9', borderRadius: 10, padding: '12px 14px' }}>
+                      <div key={r.id} className="hover-card" style={{ background: idx%2===0?'#FFF':'#FAFBFD', border: '1px solid #F1F5F9', borderRadius: 10, padding: '12px 14px' }}>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 8 }}>
                           <div style={{ fontFamily:'Playfair Display, serif', fontWeight:700, fontSize:'0.95rem', color:'#1B2A4A' }}>{r.student_name}</div>
                           {isDone ? (
@@ -338,15 +359,11 @@ export default function HistoryPage() {
                 const isCancelled = r.status === 'cancelled'
                 const dateLabel   = r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
                 return (
-                  <div key={r.id} style={{
+                  <div key={r.id} className="table-row-hover" style={{
                     display: 'grid', gridTemplateColumns: '40px 1fr 120px 120px 90px 100px', gap: 0,
                     padding: '13px 18px', borderBottom: idx < filtered.length - 1 ? '1px solid #F1F5F9' : 'none',
-                    alignItems: 'center', transition: 'background 0.1s',
-                    background: idx % 2 === 0 ? '#FFFFFF' : '#FAFBFD',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#F0F7FF'}
-                    onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? '#FFFFFF' : '#FAFBFD'}
-                  >
+                    alignItems: 'center', background: idx % 2 === 0 ? '#FFFFFF' : '#FAFBFD',
+                  }}>
                     {/* # */}
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#CBD5E1' }}>
                       {String(idx + 1).padStart(2, '0')}
@@ -405,7 +422,6 @@ export default function HistoryPage() {
         )}
       </div>
 
-      {/* Close calendar on outside click */}
       {showCalendar && <div onClick={() => setShowCalendar(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />}
     </div>
   )

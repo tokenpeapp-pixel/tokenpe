@@ -55,26 +55,23 @@ export default function SchoolCRMPage() {
 
   useEffect(() => {
     async function load() {
-      const stored = localStorage.getItem('tokenpe_business')
+      const stored = localStorage.getItem('tokenpe_clinic')
       if (!stored) { router.push('/school-login'); return }
-
       const c = JSON.parse(stored)
 
       // Try to fetch fresh clinic data
       let freshClinic = c
       try {
-        const res = await fetch(`/api/business/get?id=${c.id}`)
+        const res = await fetch(`/api/clinics/get?id=${c.id}`)
         if (res.ok) {
           const data = await res.json()
           if (data.success && data.clinic) freshClinic = data.clinic
         }
       } catch (e) {}
 
-      // Load all branches for the branch selector
-      try {
-        const storedClinics = localStorage.getItem('tokenpe_user_businesses')
-        if (storedClinics) setUserClinics(JSON.parse(storedClinics))
-      } catch (e) { /* ignore */ }
+      setClinic(freshClinic)
+      setWelcomeMsg(freshClinic.welcome_message || '')
+      setFollowupRecall(freshClinic.smart_recall_enabled || false)
 
       // Load student directory from school_history (deduplicated)
       await loadDirectory(freshClinic.id)
@@ -85,45 +82,69 @@ export default function SchoolCRMPage() {
 
   async function loadDirectory(schoolId) {
     try {
-      const res = await fetch(`/api/business/get?id=${selected.id}`)
-      if (res.ok) {
-        const data = await res.json()
-        if (data.success) freshClinic = data.clinic
-      }
-    } catch (e) {}
-    
-    const finalClinic = freshClinic || selected
-    
-    setClinic(finalClinic)
-    setWelcomeMsg(finalClinic.welcome_message || '')
-    setFollowupRecall(finalClinic.smart_recall_enabled || false)
-    setFollowupMeds(finalClinic.smart_meds_enabled || false)
-    setTotalPatients(0)
-    setMedsReachable(0)
-    setRecallReachable(0)
-    setAvgRating(0)
-    setRecentFeedbacks([])
-    
-    await loadCRMStats(finalClinic)
-    setLoading(false)
+      const { data } = await supabase
+        .from('school_history')
+        .select('student_name, grade_class, guardian_name, time_label, created_at, status')
+        .eq('school_id', schoolId)
+        .order('created_at', { ascending: false })
+        .limit(500)
+
+      const rows = data || []
+
+      // Deduplicate by student name — aggregate visits, keep latest
+      const map = new Map()
+      rows.forEach(r => {
+        const key = (r.student_name || '').toLowerCase().trim()
+        if (!map.has(key)) {
+          map.set(key, {
+            name: r.student_name,
+            grade: r.grade_class || 'Unknown',
+            guardian: r.guardian_name || '—',
+            lastVisit: r.time_label || new Date(r.created_at).toLocaleDateString('en-IN'),
+            visits: 1,
+            status: r.status,
+          })
+        } else {
+          map.get(key).visits++
+        }
+      })
+
+      const list = Array.from(map.values()).sort((a, b) => b.visits - a.visits)
+      setStudents(list)
+      setTotalStudents(list.length)
+
+      // Count reachable (those with guardian phone — from school_queue)
+      const { data: queueData } = await supabase
+        .from('school_queue')
+        .select('phone')
+        .eq('school_id', schoolId)
+        .neq('phone', null)
+        .neq('phone', '')
+      const uniquePhones = new Set((queueData || []).map(q => q.phone).filter(Boolean))
+      setReachable(uniquePhones.size)
+      setBroadcastCount(uniquePhones.size)
+
+    } catch (e) {
+      console.error('Failed to load directory:', e)
+    }
   }
 
   async function saveWelcomeMessage() {
     setSavingWelcome(true)
     setWelcomeSuccess(false)
     try {
-      const res = await fetch('/api/business/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch('/api/clinics/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clinicId: clinic.id, welcomeMessage: welcomeMsg })
       })
       const data = await res.json()
       if (res.ok && data.success) {
         setWelcomeSuccess(true)
-        setTimeout(() => setWelcomeSuccess(false), 3000)
-        const updated = { ...clinic, welcome_message: welcomeMsg }
-        setClinic(updated)
-        localStorage.setItem('tokenpe_business', JSON.stringify(updated))
+        setTimeout(() => setWelcomeSuccess(false), 4000)
+        const stored = localStorage.getItem('tokenpe_clinic')
+        if (stored) localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), welcome_message: welcomeMsg }))
+      } else {
+        alert(data.error || 'Failed to save welcome message')
       }
     } catch (err) { alert('Error saving welcome message') }
     setSavingWelcome(false)
@@ -172,38 +193,20 @@ export default function SchoolCRMPage() {
     setSendingBroadcast(false)
   }
 
-  async function saveFollowupConfig(field, value) {
-    setSavingFollowups(true)
-    try {
-      const payload = { clinicId: clinic.id }
-      if (field === 'recall') payload.smartRecallEnabled = value
-      if (field === 'meds') payload.smartMedsEnabled = value
-      
-      const res = await fetch('/api/business/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      const data = await res.json()
-      
-      if (res.ok && data.success) {
-        if (field === 'recall') setFollowupRecall(value)
-        if (field === 'meds') setFollowupMeds(value)
-        
-        const updates = field === 'recall' ? { smart_recall_enabled: value } : { smart_meds_enabled: value }
-        const stored = localStorage.getItem('tokenpe_business')
-        if (stored) {
-          localStorage.setItem('tokenpe_business', JSON.stringify({ ...JSON.parse(stored), ...updates }))
-        }
-      } else {
-        alert(data.error || 'Failed to save follow-up configuration')
-      }
-    } catch (err) {
-      console.error(err)
-      alert('Error saving configuration')
-    }
-    setSavingFollowups(false)
-  }
+  const isElite = clinic?.plan_id === 'elite' || clinic?.plan_id === 'elite_monthly' || clinic?.plan_id === 'elite_yearly' || clinic?.plan_id === 'elite_custom' || clinic?.subscription_status === 'trialing' || clinic?.subscription_status === 'active'
+
+  const grades = ['All', ...new Set(students.map(s => s.grade).filter(Boolean))]
+  const filtered = students.filter(s => {
+    const m = s.name?.toLowerCase().includes(search.toLowerCase()) || s.guardian?.includes(search) || s.grade?.toLowerCase().includes(search.toLowerCase())
+    const g = filterGrade === 'All' || s.grade === filterGrade
+    return m && g
+  })
+
+  const tabs = [
+    { id: 'directory', label: 'Student Directory', icon: <Users size={15} /> },
+    { id: 'broadcast', label: 'WhatsApp Broadcast', icon: <Megaphone size={15} /> },
+    { id: 'welcome',   label: 'Welcome Message',   icon: <MessageSquare size={15} /> },
+  ]
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#F4F7FB', display: 'flex', alignItems: 'center', justifyContent: 'center', ...S }}>

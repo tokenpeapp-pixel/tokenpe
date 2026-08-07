@@ -521,10 +521,23 @@ function SchoolCommandCenterContent() {
   async function togglePauseQueue() {
     const nextState = !queuePaused
     setQueuePaused(nextState)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`tokenpe_queue_paused_${clinic?.id || 'global'}`, String(nextState))
+        localStorage.setItem('tokenpe_queue_paused_global', String(nextState))
+      } catch (e) {}
+    }
     if (clinic?.id && clinic.id !== 'demo-school-id') {
       try {
         await supabase.from('schools').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
         await supabase.from('public_schools').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
+        await supabase.from('clinics').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
+        await supabase.from('businesses').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
+        await fetch('/api/business/pause', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId: clinic.id, paused: nextState })
+        }).catch(() => {})
       } catch (err) {
         console.warn('Toggle pause queue error:', err)
       }
@@ -1036,6 +1049,11 @@ function SchoolCommandCenterContent() {
   // ── 3. DYNAMIC MANUAL CHECK-IN ──
   async function handleManualCheckIn(e) {
     e.preventDefault()
+    if (queuePaused) {
+      alert('Queue is currently paused. Please click "Resume Queue" to enable check-ins.')
+      setShowAddModal(false)
+      return
+    }
     if (!studentName.trim()) return
     sounds.call()
 
@@ -2144,6 +2162,66 @@ function SchoolCommandCenterContent() {
       `}</style>
 
       <div className="cmd-root">
+        {/* ── TOP QUEUE PAUSED ALERT BANNER ── */}
+        <AnimatePresence>
+          {queuePaused && (
+            <motion.div
+              initial={{ opacity: 0, y: -16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              style={{
+                background: 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)',
+                border: '1.5px solid #FCA5A5',
+                borderRadius: 10,
+                padding: '14px 20px',
+                marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'space-between',
+                boxShadow: '0 6px 20px rgba(220, 38, 38, 0.15)',
+                gap: 16,
+                flexWrap: 'wrap'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ background: '#DC2626', color: '#FFFFFF', borderRadius: '50%', padding: 8, display: 'flex', flexShrink: 0 }}>
+                  <Pause size={18} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, color: '#991B1B', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    QUEUE IS CURRENTLY PAUSED
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#B91C1C', fontWeight: 600, marginTop: 2 }}>
+                    New student check-ins and WhatsApp joins are temporarily disabled. Click "Resume Queue Now" to start accepting tokens again.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={togglePauseQueue}
+                style={{
+                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '9px 18px',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                <Play size={14} />
+                <span>Resume Queue Now →</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Toast Popup Notification for Location update */}
         <AnimatePresence>
           {locationNoticeToast && (
@@ -2379,23 +2457,67 @@ function SchoolCommandCenterContent() {
                 <QrCode style={{ width: 15, height: 15 }} />
                 <span>Display Campus QR Code</span>
               </button>
-              <button className="cmd-btn-outline" onClick={() => setShowAddModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <button
+                className="cmd-btn-outline"
+                onClick={() => {
+                  if (queuePaused) {
+                    alert('Queue is currently paused. Please click "Resume Queue" to accept new check-ins.')
+                    return
+                  }
+                  setShowAddModal(true)
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  opacity: queuePaused ? 0.6 : 1,
+                  cursor: queuePaused ? 'not-allowed' : 'pointer'
+                }}
+                title={queuePaused ? 'Queue is paused. Resume queue to add students.' : 'Manual Check-in'}
+              >
                 <UserPlus style={{ width: 14, height: 14 }} />
-                <span>Manual Check-in</span>
+                <span>{queuePaused ? 'Check-in (Paused)' : 'Manual Check-in'}</span>
               </button>
               <button className="cmd-btn-outline" onClick={() => setShowBroadcastModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: '#3B82F6', color: '#1D4ED8', background: '#EFF6FF', fontWeight: 700 }}>
                 <Megaphone style={{ width: 15, height: 15, color: '#2563EB' }} />
                 <span>Broadcast Notice to Queue</span>
               </button>
               {queuePaused ? (
-                <button className="cmd-btn-outline" onClick={togglePauseQueue} title="Click to resume queue" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: '#EF4444', color: '#DC2626', background: '#FEF2F2', fontWeight: 700 }}>
-                  <Pause style={{ width: 14, height: 14, color: '#EF4444' }} />
-                  <span>Queue is paused</span>
+                <button
+                  className="cmd-btn-outline"
+                  onClick={togglePauseQueue}
+                  title="Click to resume queue"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    borderColor: '#DC2626',
+                    color: '#DC2626',
+                    background: '#FEF2F2',
+                    fontWeight: 800,
+                    boxShadow: '0 2px 8px rgba(220,38,38,0.2)'
+                  }}
+                >
+                  <Pause style={{ width: 14, height: 14, color: '#DC2626' }} />
+                  <span>Queue is Paused (Click to Resume)</span>
                 </button>
               ) : (
-                <button className="cmd-btn-outline" onClick={togglePauseQueue} title="Click to pause queue" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: '#10B981', color: '#059669', background: '#ECFDF5', fontWeight: 700 }}>
+                <button
+                  className="cmd-btn-outline"
+                  onClick={togglePauseQueue}
+                  title="Click to pause queue"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    borderColor: '#10B981',
+                    color: '#059669',
+                    background: '#ECFDF5',
+                    fontWeight: 700
+                  }}
+                >
                   <Play style={{ width: 14, height: 14, color: '#10B981' }} />
-                  <span>Queue is active</span>
+                  <span>Pause Queue</span>
                 </button>
               )}
             </div>

@@ -1141,13 +1141,15 @@ export default function ClinicLandingPage({ config }) {
         .cl-h1 {
           font-size: 55px;
           font-weight: 900;
-          line-height: 1.13;
+          line-height: 1.18;
           letter-spacing: -0.03em;
           margin-bottom: 20px;
           color: #0d2b1e;
+          min-height: 2.36em;
         }
         .cl-h1-accent {
           color: #065F46;
+          display: inline-block;
         }
         .cl-sub {
           font-size: 18px;
@@ -2969,7 +2971,7 @@ export default function ClinicLandingPage({ config }) {
 
           <Reveal delay={0.08}>
             <h1 className="cl-h1">
-              Your patients deserve{" "}
+              Your patients deserve<br />
               <span className="cl-h1-accent">
                 <Typewriter words={["zero wait time.", "live updates.", "calm queues.", "WhatsApp alerts."]} />
               </span>

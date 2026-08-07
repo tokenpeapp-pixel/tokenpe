@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { 
   GraduationCap, Phone, CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, 
   Bell, Download, Printer, Star, Mic, AlertTriangle, Hourglass, RefreshCw, Sparkles, 
@@ -504,8 +504,8 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
   )
 }
 
-// ─── MAIN SCHOOL COMMAND CENTER PAGE ───
-export default function SchoolCommandCenter() {
+// ─── MAIN SCHOOL COMMAND CENTER PAGE CONTENT ───
+function SchoolCommandCenterContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeTabFromUrl = searchParams.get('tab') || 'arrivals'
@@ -535,6 +535,7 @@ export default function SchoolCommandCenter() {
   const [studentName, setStudentName] = useState('')
   const [gradeClass, setGradeClass] = useState('')
   const [reason, setReason] = useState('')
+  const [guardianName, setGuardianName] = useState('')
   const [activeRoom, setActiveRoom] = useState('Room 101 / Main Gate')
   const [locationNoticeToast, setLocationNoticeToast] = useState(null)
 
@@ -662,7 +663,7 @@ export default function SchoolCommandCenter() {
   async function handleLogout() {
     try {
       localStorage.clear()
-      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+      await fetch('/api/business-auth/logout', { method: 'POST' }).catch(() => {})
       await supabase.auth.signOut().catch(() => {})
     } catch (e) {}
     window.location.href = '/school-login?logged_out=true'
@@ -696,7 +697,7 @@ export default function SchoolCommandCenter() {
   async function getRealSchoolId() {
     if (clinic?.id && clinic.id !== 'demo-school-id') return clinic.id
     try {
-      const stored = localStorage.getItem('tokenpe_clinic')
+      const stored = localStorage.getItem('tokenpe_clinic') || localStorage.getItem('tokenpe_school_business')
       if (stored) {
         const parsed = JSON.parse(stored)
         if (parsed?.id && parsed.id !== 'demo-school-id') {
@@ -733,7 +734,7 @@ export default function SchoolCommandCenter() {
     const savedRoom = localStorage.getItem('tokenpe_active_room')
     if (savedRoom) setActiveRoom(savedRoom)
 
-    const stored = localStorage.getItem('tokenpe_clinic')
+    const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business') || localStorage.getItem('tokenpe_clinic')
     let currentSchool = null
 
     if (stored) {
@@ -747,6 +748,25 @@ export default function SchoolCommandCenter() {
     }
 
     if (currentSchool?.logo_url) setSchoolLogo(currentSchool.logo_url)
+
+    // Auth session validation
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/business-auth/me?vertical=school')
+        const data = await res.json()
+        if (data.authenticated && data.clinic) {
+          setSchool(data.clinic)
+          localStorage.setItem('tokenpe_school_business', JSON.stringify(data.clinic))
+          localStorage.setItem('tokenpe_business', JSON.stringify(data.clinic))
+          localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
+          currentSchool = data.clinic
+        } else if (!data.authenticated) {
+          router.push('/school-login')
+          return
+        }
+      } catch (e) {}
+    }
+    checkAuth()
 
     // Real DB fetch from Supabase
     async function loadDynamicData() {
@@ -1706,7 +1726,7 @@ export default function SchoolCommandCenter() {
           .cmd-btn-group button, .cmd-btn-solid, .cmd-btn-outline { width: 100%; justify-content: center; text-align: center; padding: 9px 12px !important; }
           .cmd-card-actions { flex-direction: row; gap: 6px !important; }
           .btn-admit, .btn-notify, .btn-skip { flex: 1; padding: 8px 6px !important; font-size: 0.68rem !important; }
-          .cmd-tabs { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; width: 100% !important; gap: 6px !important; margin-bottom: 16px !important; overflow: hidden !important; border-bottom: 1.5px solid var(--acc-border) !important; }
+          .cmd-tabs { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; width: 100% !important; gap: 6px !important; margin-bottom: 16px !important; overflow: hidden !important; border-bottom: 1.5px solid var(--acc-border) !important; }
           .cmd-tab { padding: 6px 4px !important; text-align: center !important; justify-content: center !important; display: flex !important; flex-direction: column !important; align-items: center !important; }
           .cmd-tab-title { font-size: 0.68rem !important; letter-spacing: 0.03em !important; line-height: 1.15 !important; }
           .cmd-tab-sub { font-size: 0.6rem !important; margin-top: 2px !important; }
@@ -2282,7 +2302,7 @@ export default function SchoolCommandCenter() {
           </div>
         </motion.header>
 
-        {/* ── STATS ROW (ELEVATED HERO CARDS) ── */}
+        {/* ── STATS ROW (ELEVATED HERO NUMBERS) ── */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="cmd-stats-row">
           {/* Card 1 */}
           <div className="cmd-stat-card">
@@ -2917,5 +2937,17 @@ export default function SchoolCommandCenter() {
         )}
       </AnimatePresence>
     </>
+  )
+}
+
+export default function SchoolCommandCenter() {
+  return (
+    <Suspense fallback={
+      <div style={{ background: '#EFF4FA', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid #1B2A4A', borderTopColor: '#7FA8D9', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+      </div>
+    }>
+      <SchoolCommandCenterContent />
+    </Suspense>
   )
 }

@@ -6,7 +6,7 @@ import Lenis from "lenis";
 import {
   Search, Stethoscope, Users, Zap, Bell,
   Hospital, QrCode, MessageSquare, ArrowRight,
-  Star, Globe2, Shield, BarChart3, CheckCircle2, Mic, Clock, Calendar, Mail,
+  Star, Globe2, Shield, BarChart3, CheckCircle2, Mic, Clock, Calendar, Mail, Bot, Sparkles, PhoneCall,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════
@@ -989,6 +989,48 @@ export default function ClinicLandingPage({ config }) {
         </div>
       ),
     },
+    {
+      icon: <Mic size={20} />,
+      title: "AI Voice Calling Agent",
+      badge: "COMING SOON",
+      bullets: ["Automated patient name & token calling", "Multi-lingual OPD voice announcements (Hindi, English, Regional)", "Hands-free reception desk workflow"],
+      Ghost: () => (
+        <div style={{ position: "relative", width: 220, height: 140 }}>
+          <div style={{ position: "absolute", bottom: 12, left: -10, display: "flex", gap: 4, alignItems: "center", opacity: 0.15 }}>
+            {[14, 24, 40, 18, 32, 48, 20, 36, 16, 28, 42, 14, 30].map((h, i) => (
+              <div key={i} style={{ width: 4, height: h, borderRadius: 2, background: "#065F46" }} />
+            ))}
+          </div>
+          <svg width="180" height="150" viewBox="0 0 24 24" fill="none" stroke="#065F46" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", bottom: -25, right: -20, opacity: 0.08 }}>
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="22" />
+          </svg>
+        </div>
+      ),
+    },
+    {
+      icon: <Bot size={20} />,
+      title: "WhatsApp AI Chatbot",
+      badge: "COMING SOON",
+      bullets: ["24/7 automated patient query replies", "Instant live queue status & token lookup", "Zero manual receptionist typing"],
+      Ghost: () => (
+        <div style={{ position: "relative", width: 220, height: 140 }}>
+          <div style={{ position: "absolute", bottom: 15, left: 0, display: "flex", gap: 6, opacity: 0.15 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#065F46" }} />
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#065F46" }} />
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#065F46" }} />
+          </div>
+          <svg width="190" height="160" viewBox="0 0 24 24" fill="none" stroke="#065F46" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", bottom: -30, right: -25, opacity: 0.08 }}>
+            <rect x="3" y="11" width="18" height="10" rx="2" />
+            <circle cx="12" cy="5" r="2" />
+            <path d="M12 7v4" />
+            <line x1="8" y1="16" x2="8.01" y2="16" />
+            <line x1="16" y1="16" x2="16.01" y2="16" />
+          </svg>
+        </div>
+      ),
+    },
   ];
 
   const TESTIMONIALS = [
@@ -1727,11 +1769,13 @@ export default function ClinicLandingPage({ config }) {
           flex-direction: column;
           justify-content: space-between;
         }
-        /* Asymmetric Bento Layout: Rectangle (7 cols), Square (5 cols), Square (5 cols), Rectangle (7 cols) */
+        /* Asymmetric Bento Layout: Row 1 (7+5), Row 2 (5+7), Row 3 (7+5) */
         .cl-feat-col.feat-rect-1 { grid-column: span 7; }
         .cl-feat-col.feat-sq-1   { grid-column: span 5; }
         .cl-feat-col.feat-sq-2   { grid-column: span 5; }
         .cl-feat-col.feat-rect-2 { grid-column: span 7; }
+        .cl-feat-col.feat-rect-3 { grid-column: span 7; }
+        .cl-feat-col.feat-sq-3   { grid-column: span 5; }
         .cl-feat-card { width: 100%; height: 100%; }
         .cl-feat-card:hover {
           transform: translateY(-5px);
@@ -2718,7 +2762,9 @@ export default function ClinicLandingPage({ config }) {
           .cl-feat-card.feat-rect-1,
           .cl-feat-card.feat-sq-1,
           .cl-feat-card.feat-sq-2,
-          .cl-feat-card.feat-rect-2 { grid-column: span 1; }
+          .cl-feat-card.feat-rect-2,
+          .cl-feat-card.feat-rect-3,
+          .cl-feat-card.feat-sq-3 { grid-column: span 1; }
 
           /* Testimonials */
           .cl-test-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
@@ -3070,7 +3116,8 @@ export default function ClinicLandingPage({ config }) {
         {/* Desktop Bento Grid */}
         <div className="cl-feat-grid cl-feat-desktop">
           {FEATURES.map((f, i) => {
-            const bentoClass = i === 0 ? "feat-rect-1" : i === 1 ? "feat-sq-1" : i === 2 ? "feat-sq-2" : "feat-rect-2";
+            const bentoClasses = ["feat-rect-1", "feat-sq-1", "feat-sq-2", "feat-rect-2", "feat-rect-3", "feat-sq-3"];
+            const bentoClass = bentoClasses[i] || "feat-rect-1";
             return (
               <Reveal key={i} delay={Math.floor(i / 2) * 0.08 + (i % 2) * 0.06} className={`cl-feat-col ${bentoClass}`}>
                 <div className={`cl-feat-card ${bentoClass}`}>
@@ -3078,7 +3125,26 @@ export default function ClinicLandingPage({ config }) {
                   <div className="cl-feat-ghost">
                     <f.Ghost />
                   </div>
-                  <div className="cl-feat-icon">{f.icon}</div>
+                  {/* Header Row: Icon & Badge */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+                    <div className="cl-feat-icon" style={{ marginBottom: 0 }}>{f.icon}</div>
+                    {f.badge && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #dcfce7, #a7f3d0)',
+                        border: '1.5px solid #34d399',
+                        color: '#065F46',
+                        fontSize: '0.64rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.06em',
+                        padding: '4px 10px',
+                        borderRadius: 100,
+                        textTransform: 'uppercase',
+                        boxShadow: '0 2px 8px rgba(6, 95, 70, 0.12)'
+                      }}>
+                        {f.badge}
+                      </span>
+                    )}
+                  </div>
                   <div className="cl-feat-title">{f.title}</div>
                   <ul className="cl-feat-bullets">
                     {f.bullets.map((b, j) => (
@@ -3109,7 +3175,25 @@ export default function ClinicLandingPage({ config }) {
                   <f.Ghost />
                 </div>
                 <div>
-                  <div className="cl-feat-icon">{f.icon}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+                    <div className="cl-feat-icon" style={{ marginBottom: 0 }}>{f.icon}</div>
+                    {f.badge && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #dcfce7, #a7f3d0)',
+                        border: '1.5px solid #34d399',
+                        color: '#065F46',
+                        fontSize: '0.64rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.06em',
+                        padding: '4px 10px',
+                        borderRadius: 100,
+                        textTransform: 'uppercase',
+                        boxShadow: '0 2px 8px rgba(6, 95, 70, 0.12)'
+                      }}>
+                        {f.badge}
+                      </span>
+                    )}
+                  </div>
                   <div className="cl-feat-title">{f.title}</div>
                   <ul className="cl-feat-bullets">
                     {f.bullets.map((b, j) => (

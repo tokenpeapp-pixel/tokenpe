@@ -4,7 +4,6 @@ import { sanitizeName, validatePhone } from '../../../../lib/validate'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 import { after } from 'next/server'
 
-// ── INDUSTRY SPECIFIC VOCABULARY ─────────────────────────────────────────────
 function getIndustryVocab(vertical, purpose) {
     switch (vertical) {
         case 'clinic':
@@ -39,6 +38,7 @@ function getIndustryVocab(vertical, purpose) {
             }
     }
 }
+
 export async function POST(req) {
     try {
         const session = await getSession()
@@ -59,13 +59,11 @@ export async function POST(req) {
 
         const cleanName = sanitizeName(name)
         const cleanPhone = validatePhone(phone) || '0000000000'
-
         const today = getISTDateString()
 
-        // ── Look up business plan from the unified businesses table ──────
         const { data: business } = await supabaseAdmin
             .from('businesses')
-            .select('name, plan_id, closed_today_date, type')
+            .select('name, plan_id, closed_today_date, type, queue_paused')
             .eq('id', businessId)
             .single()
             
@@ -73,7 +71,13 @@ export async function POST(req) {
         const vertical = business?.type || 'clinic'
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
 
-        // ── Block walk-ins if business is closed for today (clinic-only for now) ──
+        if (business?.queue_paused) {
+            return Response.json({
+                success: false,
+                message: 'Queue is currently paused by the administrator. No new entries can be added right now.'
+            }, { status: 403 })
+        }
+
         if (vertical === 'clinic' && business?.closed_today_date) {
             return Response.json({
                 success: false,
@@ -81,7 +85,6 @@ export async function POST(req) {
             }, { status: 403 })
         }
 
-        // Count total patients today
         const { count } = await supabaseAdmin
             .from('queue_entries')
             .select('*', { count: 'exact', head: true })
@@ -96,7 +99,6 @@ export async function POST(req) {
             }, { status: 403 })
         }
 
-        // Rate limit joins (3 per phone per day, unique names)
         if (cleanPhone !== '0000000000') {
             const { data: existingJoins } = await supabase
                 .from('queue_entries')
@@ -144,14 +146,12 @@ export async function POST(req) {
 
         const patient = data[0]
 
-        // Send WhatsApp confirmation in background (non-blocking)
         if (cleanPhone !== '0000000000') {
             after(async () => {
                 try {
                     const businessName = business?.name || 'the business'
                     const v = getIndustryVocab(vertical, purpose)
 
-                    // Count people ahead
                     const { count: aheadCount } = await supabaseAdmin
                         .from('queue_entries')
                         .select('*', { count: 'exact', head: true })

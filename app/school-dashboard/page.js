@@ -517,6 +517,13 @@ function SchoolCommandCenterContent() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [queuePaused, setQueuePaused] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   async function togglePauseQueue() {
     const nextState = !queuePaused
@@ -1673,18 +1680,41 @@ function SchoolCommandCenterContent() {
           .cmd-desktop-only { display: none !important; }
           .cmd-root { padding: 12px 10px; }
           .cmd-meta-bar {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 6px !important;
+            padding: 8px 10px !important;
+            margin-bottom: 16px !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+          }
+          .cmd-meta-group {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            flex-shrink: 1 !important;
+            min-width: 0 !important;
+          }
+          .cmd-meta-label {
+            font-size: 0.64rem !important;
+            white-space: nowrap !important;
+            letter-spacing: 0.02em !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+          }
+          .cmd-meta-label span {
+            white-space: nowrap !important;
           }
           .cmd-meta-pill-input {
-            min-width: 120px;
-            max-width: 155px;
-            padding: 5px 8px 5px 26px;
-            font-size: 0.72rem;
+            width: 100% !important;
+            min-width: 75px !important;
+            max-width: 120px !important;
+            padding: 4px 6px 4px 24px !important;
+            font-size: 0.72rem !important;
+            height: 28px !important;
           }
           .cmd-header {
             display: flex;
@@ -2258,8 +2288,8 @@ function SchoolCommandCenterContent() {
           {/* Left Group: Live Date */}
           <div className="cmd-meta-group">
             <div className="cmd-meta-label">
-              <Calendar style={{ width: 14, height: 14, color: '#3B82F6' }} />
-              <span>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              <Calendar style={{ width: 14, height: 14, color: '#3B82F6', flexShrink: 0 }} />
+              <span style={{ whiteSpace: 'nowrap' }}>{new Date().toLocaleDateString('en-GB', { weekday: isMobile ? 'short' : 'long', day: '2-digit', month: 'short', year: isMobile ? undefined : 'numeric' })}</span>
             </div>
           </div>
 
@@ -2276,7 +2306,7 @@ function SchoolCommandCenterContent() {
 
           {/* Right Group: Active Queue Location Refined Input Pill */}
           <div className="cmd-meta-group">
-            <span className="cmd-meta-label" style={{ color: '#5A6E85' }}>LOCATION:</span>
+            <span className="cmd-meta-label" style={{ color: '#5A6E85', whiteSpace: 'nowrap' }}>{isMobile ? 'LOC:' : 'LOCATION:'}</span>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <MapPin style={{ width: 14, height: 14, color: '#3B82F6', position: 'absolute', left: 10, pointerEvents: 'none' }} />

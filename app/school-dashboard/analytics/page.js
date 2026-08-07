@@ -10,18 +10,7 @@ export default function AnalyticsPage() {
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [selectedDate, setSelectedDate] = useState(getISTDateString()) // "YYYY-MM-DD"
-  const [patients, setPatients] = useState([])
-  const [loadingAi, setLoadingAi] = useState(false)
-  const [aiInsights, setAiInsights] = useState(null)
-  const [userClinics, setUserClinics] = useState([])
-  const [clinic, setClinic] = useState(null)
-  const [dateRange, setDateRange] = useState('7')
-  const [customStart, setCustomStart] = useState('')
-  const [customEnd, setCustomEnd] = useState('')
-  const [lastPeriodPatients, setLastPeriodPatients] = useState([])
-  const [overallFeedback, setOverallFeedback] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
-  
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
@@ -29,298 +18,216 @@ export default function AnalyticsPage() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  const todayStr = getISTDateString()
-  const isToday = selectedDate === todayStr
+  // Raw data
+  const [historyToday, setHistoryToday] = useState([])
+  const [queueToday, setQueueToday] = useState([])
+  const [queueAllTime, setQueueAllTime] = useState([])
 
-  const loadData = useCallback(async (date) => {
+  // Computed stats
+  const [stats, setStats] = useState({
+    totalServedToday: 0,
+    completedToday: 0,
+    cancelledToday: 0,
+    currentInQueue: 0,
+    peakHour: 'N/A',
+    avgWaitMin: 0,
+    satisfactionRate: 0,
+    totalAllTime: 0,
+  })
+  const [hourlyBuckets, setHourlyBuckets] = useState(Array(14).fill(0)) // 7am–8pm
+  const [reasonBreakdown, setReasonBreakdown] = useState([])
+  const [gradeBreakdown, setGradeBreakdown] = useState([])
+
+  const loadData = useCallback(async (dateStr) => {
     try {
-      setLoading(true)
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_clinic') : null
-      const school = stored ? JSON.parse(stored) : null
-      const schoolId = school?.id
+      const stored = localStorage.getItem('tokenpe_clinic')
+      const clinic = stored ? JSON.parse(stored) : null
+      const schoolId = clinic?.id
 
-      let query = supabase.from('queue_entries').select('*')
-      if (schoolId) query = query.eq('business_id', schoolId)
-      if (date) query = query.eq('date', date)
-
-      const { data, error } = await query
-      if (!error && data) {
-        setPatients(data)
+      if (!schoolId || schoolId === 'demo-school-id') {
+        setError('No school found. Please log in again.')
+        setLoading(false)
+        return
       }
-      setLastUpdated(new Date().toLocaleTimeString())
-    } catch (e) {
-      console.error(e)
+
+      const targetDate = dateStr || getISTDateString()
+      const startOfDay = `${targetDate}T00:00:00+05:30`
+      const endOfDay = `${targetDate}T23:59:59+05:30`
+
+      // ── 1. Fetch today's school_history (completed/cancelled) ──
+      const { data: histData, error: histErr } = await supabase
+        .from('school_history')
+        .select('id, student_name, grade_class, time_label, status, created_at, completed_at, guardian_name')
+        .eq('school_id', schoolId)
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .order('created_at', { ascending: true })
+
+      if (histErr) throw histErr
+      const history = histData || []
+      setHistoryToday(history)
+
+      // ── 2. Fetch today's queue entries (all statuses) ──
+      const { data: qData } = await supabase
+        .from('school_queue')
+        .select('id, name, status, created_at, completed_at, notes, phone')
+        .eq('school_id', schoolId)
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .order('created_at', { ascending: true })
+      const queue = qData || []
+      setQueueToday(queue)
+
+      // Also fetch all-time total from queues table
+      const { count: allTimeCount } = await supabase
+        .from('school_queue')
+        .select('id', { count: 'exact', head: true })
+        .eq('school_id', schoolId)
+      setQueueAllTime(allTimeCount || 0)
+
+      // ── 3. Compute stats ──
+      const allEntries = [...history, ...queue.filter(q => !history.find(h => h.id === q.id))]
+
+      const completed = history.filter(h => h.status === 'done').length
+      const cancelled = [...history, ...queue].filter(r => r.status === 'cancelled').length
+      const currentWaiting = queue.filter(q => q.status === 'waiting' || q.status === 'with_staff').length
+      const totalToday = Math.max(history.length, queue.length)
+
+      // Hourly buckets: 7am = index 0, 8pm = index 13
+      const buckets = Array(14).fill(0)
+      const allCreated = [...history, ...queue]
+      allCreated.forEach(r => {
+        if (!r.created_at) return
+        // Parse IST hour
+        const d = new Date(r.created_at)
+        const istHour = (d.getUTCHours() + 5 + Math.floor((d.getUTCMinutes() + 30) / 60)) % 24
+        const idx = istHour - 7
+        if (idx >= 0 && idx < 14) buckets[idx]++
+      })
+      setHourlyBuckets(buckets)
+
+      // Peak hour
+      const peakIdx = buckets.indexOf(Math.max(...buckets))
+      const peakHourRaw = peakIdx + 7
+      const peakHour = buckets[peakIdx] > 0
+        ? `${peakHourRaw > 12 ? peakHourRaw - 12 : peakHourRaw}:00 ${peakHourRaw >= 12 ? 'PM' : 'AM'}`
+        : 'N/A'
+
+      // Avg wait time (completed_at - created_at where both exist)
+      const waitTimes = history
+        .filter(h => h.completed_at && h.created_at)
+        .map(h => (new Date(h.completed_at) - new Date(h.created_at)) / 60000)
+        .filter(m => m > 0 && m < 120)
+      const avgWait = waitTimes.length > 0 ? Math.round(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length) : null
+
+      // Satisfaction = completed / (completed + cancelled) * 100
+      const satisfaction = (completed + cancelled) > 0
+        ? Math.round((completed / (completed + cancelled)) * 100)
+        : null
+
+      setStats({
+        totalServedToday: totalToday,
+        completedToday: completed,
+        cancelledToday: cancelled,
+        currentInQueue: currentWaiting,
+        peakHour,
+        avgWaitMin: avgWait,
+        satisfactionRate: satisfaction,
+        totalAllTime: allTimeCount || 0,
+      })
+
+      // ── 4. Reason breakdown ──
+      const reasonMap = {}
+      queue.forEach(q => {
+        const raw = q.notes || ''
+        const reason = raw.includes('|') ? raw.split('|')[1]?.trim() : (raw || 'General')
+        reasonMap[reason] = (reasonMap[reason] || 0) + 1
+      })
+      const reasonArr = Object.entries(reasonMap).sort((a, b) => b[1] - a[1]).slice(0, 5)
+      setReasonBreakdown(reasonArr)
+
+      // ── 5. Grade breakdown ──
+      const gradeMap = {}
+      history.forEach(h => {
+        const g = h.grade_class || 'Unknown'
+        gradeMap[g] = (gradeMap[g] || 0) + 1
+      })
+      queue.forEach(q => {
+        const raw = q.notes || ''
+        const g = raw.includes('|') ? raw.split('|')[0]?.trim() : 'Unknown'
+        if (g) gradeMap[g] = (gradeMap[g] || 0) + 1
+      })
+      const gradeArr = Object.entries(gradeMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
+      setGradeBreakdown(gradeArr)
+
+      setLastUpdated(new Date())
+      setError(null)
+    } catch (err) {
+      console.error('Analytics load error:', err)
+      setError('Failed to load analytics data. Check your connection.')
     } finally {
       setLoading(false)
     }
   }, [])
 
+  const todayStr = getISTDateString()
+  const isToday = selectedDate === todayStr
+
   useEffect(() => {
     setLoading(true)
     loadData(selectedDate)
-    if (!isToday) return
+    if (!isToday) return // no auto-refresh for past dates
     const interval = setInterval(() => loadData(selectedDate), 30000)
     return () => clearInterval(interval)
   }, [selectedDate, loadData, isToday])
 
-  const hourlyBuckets = new Array(14).fill(0)
-  patients.forEach(p => {
-    if (p.joined_at) {
-      const h = new Date(p.joined_at).getHours()
-      if (h >= 7 && h <= 20) hourlyBuckets[h - 7]++
-    }
-  })
-
   const hours = ['7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm']
   const maxH = Math.max(...hourlyBuckets, 1)
 
-
-  async function fetchAiInsights(data) {
-    setLoadingAi(true)
-    try {
-      const totalPatients = data.length
-      const waitTimes = data.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
-      const avgWaitTime = waitTimes.length ? Math.round(waitTimes.reduce((a,b)=>a+b,0)/waitTimes.length) : 0
-      
-      // Calculate peak hour
-      const hourCounts = {}
-      data.forEach(p => {
-        if(p.joined_at) {
-          const h = new Date(p.joined_at).getHours()
-          hourCounts[h] = (hourCounts[h]||0)+1
-        }
-      })
-      let peakHour = 'N/A'
-      let maxH = 0
-      Object.keys(hourCounts).forEach(h => {
-        if(hourCounts[h] > maxH) { maxH = hourCounts[h]; peakHour = h + ':00' }
-      })
-
-      const payload = { totalPatients, avgWaitTime, peakHour }
-      const res = await fetch('/api/insights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      const result = await res.json()
-      if (result.success) setAiInsights(result.insights)
-    } catch(e) {
-      console.error(e)
-    }
-    setLoadingAi(false)
-  }
-
-  // Plan-based max allowed lookback (in days)
-  function getMaxDays(planId) {
-    if (planId === 'starter') return 7
-    if (planId === 'pro') return 30
-    return 3650 // Elite: ~10 years
-  }
-
-  function handleBranchChange(e) {
-    const selectedId = e.target.value
-    const selected = userClinics.find(c => c.id === selectedId)
-    if (!selected) return
-    setClinic(selected)
-    setPatients([])
-    setLastPeriodPatients([])
-    setAiInsights(null)
-    const range = selected.plan_id === 'starter' ? '7' : '30'
-    setDateRange(range)
-    fetchAnalytics(selected, range)
-  }
-
-  function handleDateChange(e) {
-    const val = e.target.value
-    if (val === 'custom') {
-      setDateRange('custom')
-      // Pre-fill with sensible defaults
-      const today = getISTDateString(new Date())
-      const maxDays = getMaxDays(clinic.plan_id)
-      const dAgo = new Date(); dAgo.setDate(dAgo.getDate() - Math.min(7, maxDays))
-      setCustomStart(getISTDateString(dAgo))
-      setCustomEnd(today)
-      return
-    }
-    if (clinic.plan_id === 'starter' && val !== 'today' && val !== '7') return alert('Upgrade to Pro to view this date range.')
-    if (clinic.plan_id === 'pro' && !['today','7','30'].includes(val)) return alert('Upgrade to Elite to view this date range.')
-    setDateRange(val)
-    fetchAnalytics(clinic, val)
-  }
-
-  function applyCustomRange() {
-    if (!customStart || !customEnd) return alert('Please select both start and end dates.')
-    if (customStart > customEnd) return alert('Start date cannot be after end date.')
-
-    const maxDays = getMaxDays(clinic.plan_id)
-    const today = new Date()
-    const startD = new Date(customStart)
-    const diffDays = Math.ceil((today - startD) / (1000 * 60 * 60 * 24))
-
-    if (diffDays > maxDays) {
-      const planName = clinic.plan_id === 'starter' ? 'Starter (7 days)' : 'Pro (30 days)'
-      return alert(`Your ${planName} plan allows viewing up to ${maxDays} days of history. Upgrade to unlock more!`)
-    }
-
-    fetchAnalytics(clinic, 'custom', customStart, customEnd)
-  }
-
-  function exportCSV() {
-    if (!patients.length) return alert('No patient data to export.')
-    const headers = ['Date', 'Time Joined', 'Token', 'Patient Name', 'Phone', 'Status', 'Wait Time (Mins)']
-    const rows = patients.map(p => {
-      const waitTime = p.completed_at ? Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000) : 'N/A'
-      return [
-        p.date,
-        new Date(p.joined_at).toLocaleTimeString('en-IN'),
-        p.token,
-        `"${p.name || 'Walk-in'}"`,
-        p.phone ? maskPhone(p.phone) : '',
-        p.status.toUpperCase(),
-        waitTime
-      ]
-    })
-    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `${clinic?.name?.replace(/\s+/g, '_')}_Analytics.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  // --- DATA PROCESSING ---
-  const currentTodayStr = getISTDateString(new Date())
-  const todayData = patients.filter(p => p.date === currentTodayStr)
-  
-  // Section 1: Today
-  const todayTotal = todayData.length
-  const todayCompleted = todayData.filter(p => p.status === 'done').length
-  const todaySkipped = todayData.filter(p => p.status === 'skipped').length
-  const todayWaitTimes = todayData.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
-  const todayAvgWait = todayWaitTimes.length ? Math.round(todayWaitTimes.reduce((a,b)=>a+b,0)/todayWaitTimes.length) : 0
-  const todayCompletedPct = todayTotal ? Math.round((todayCompleted / todayTotal) * 100) : 0
-
-  // Section 2 & 3: Selected Range
-  const rangeTotal = patients.length
-  const rangeCompleted = patients.filter(p => p.status === 'done').length
-  const rangeSkipped = patients.filter(p => p.status === 'skipped').length
-  const rangeWaitTimes = patients.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
-  const rangeAvgWait = rangeWaitTimes.length ? Math.round(rangeWaitTimes.reduce((a,b)=>a+b,0)/rangeWaitTimes.length) : 0
-  
-  const phoneCounts = {}
-  let walkIns = 0
-  let exactAlertsSent = 0
-  let exactVoicesGenerated = 0
-  
-  patients.forEach(p => {
-    if(p.phone) phoneCounts[p.phone] = (phoneCounts[p.phone]||0)+1
-    if(!p.joined_at || p.is_manual) walkIns++
-    
-    if (p.phone && !p.is_manual) {
-      // 1. Joined
-      exactAlertsSent++
-      if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
-      
-      // 2. Called/Done/Skipped (they get a 'Now' or 'Skipped' alert)
-      if (['called', 'done', 'skipped'].includes(p.status)) {
-        exactAlertsSent++
-        if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
-      }
-      
-      // 3. Done
-      if (p.status === 'done') {
-        exactAlertsSent++
-        if (clinic?.plan_id !== 'starter') exactVoicesGenerated++
-      }
-    }
-  })
-  const returningCount = Object.values(phoneCounts).filter(c => c > 1).length
-  const returningPct = rangeTotal ? Math.round((returningCount / rangeTotal) * 100) : 0
-  const newPct = rangeTotal ? 100 - returningPct : 0
-  const whatsappCount = rangeTotal - walkIns
-  const daysInRange = dateRange === 'today' ? 1 : dateRange === 'custom' ? Math.max(1, Math.ceil((new Date(customEnd) - new Date(customStart)) / (1000 * 60 * 60 * 24)) + 1) : parseInt(dateRange)
-  const avgPerDay = Math.round(rangeTotal / daysInRange)
-
-  // Section 4: Heatmap (Mon-Sun, 24 Hours)
-  const heatmap = Array(7).fill(0).map(() => Array(24).fill(0))
-  let heatmapMax = 0
-  patients.forEach(p => {
-    if(p.joined_at) {
-      const d = new Date(p.joined_at)
-      let day = d.getDay() - 1 // Mon=0, Sun=6
-      if (day === -1) day = 6
-      const hour = d.getHours()
-      heatmap[day][hour]++
-      if (heatmap[day][hour] > heatmapMax) heatmapMax = heatmap[day][hour]
-    }
-  })
-  const daysOfWeek = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-
-  // Section 5: Language Breakdown
-  const langCounts = {}
-  patients.forEach(p => {
-    const l = p.language || 'en'
-    langCounts[l] = (langCounts[l]||0)+1
-  })
-  const langMap = { hi:'हिंदी', en:'English', mr:'मराठी', gu:'ગુજરાતી', pa:'ਪੰਜਾਬੀ', ta:'தமிழ்', te:'తెలుగు', bn:'বাংলা', kn:'ಕನ್ನಡ', ml:'മലയാളം' }
-  const sortedLangs = Object.entries(langCounts).sort((a,b)=>b[1]-a[1])
-
-  // Section 6: Monthly Comparison (only makes sense if > today)
-  const lastTotal = lastPeriodPatients.length
-  const lastCompleted = lastPeriodPatients.filter(p => p.status === 'done').length
-  const lastCompletedPct = lastTotal ? Math.round((lastCompleted / lastTotal) * 100) : 0
-  const lastWaitTimes = lastPeriodPatients.filter(p => p.completed_at).map(p => Math.floor((new Date(p.completed_at) - new Date(p.joined_at)) / 60000))
-  const lastAvgWait = lastWaitTimes.length ? Math.round(lastWaitTimes.reduce((a,b)=>a+b,0)/lastWaitTimes.length) : 0
-  
-  const totalChange = lastTotal ? Math.round(((rangeTotal - lastTotal)/lastTotal)*100) : 0
-
-  // Section 7: Feedback
-  const ratings = overallFeedback?.ratings || {5:0, 4:0, 3:0, 2:0, 1:0}
-  const avgRating = overallFeedback?.avgRating || "0.0"
-  const ratingCount = overallFeedback?.ratingCount || 0
-
-  if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-[#065F46]">
-      <div className="w-10 h-10 border-4 border-white/10 border-t-[#F59E0B] rounded-full animate-spin"></div>
-    </div>
-  )
-
-  const isStarter = clinic?.plan_id === 'starter'
-  const isPro = clinic?.plan_id === 'pro'
-  const isElite = clinic?.plan_id === 'elite'
-
-  const LockCard = ({ title, planRequired }) => (
-    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl border border-[#E2E8F0]">
-      <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center text-center max-w-sm">
-        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4"><Lock className="w-6 h-6 text-slate-500" /></div>
-        <h3 className="text-xl font-bold text-[#065F46] mb-2">Unlock {title}</h3>
-        <p className="text-slate-500 mb-6 text-sm">Upgrade to the {planRequired} plan to access advanced analytics and grow your clinic.</p>
-        <button onClick={() => router.push('/dashboard/billing')} className="bg-[#10B981] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#059669]">
-          Upgrade Now
-        </button>
-      </div>
-    </div>
-  )
-
-  const getSnapshotTitle = () => {
-    if (dateRange === 'today') return "Today's Snapshot"
-    if (dateRange === '7') return "7 Days Snapshot"
-    if (dateRange === '30') return "30 Days Snapshot"
-    if (dateRange === '90') return "90 Days Snapshot"
-    if (dateRange === '180') return "6 Months Snapshot"
-    if (dateRange === '365') return "1 Year Snapshot"
-    if (dateRange === 'custom') {
-      if (!customStart || !customEnd) return "Custom Period Snapshot"
-      const formatOpts = { day: '2-digit', month: 'short', year: 'numeric' }
-      const s = new Date(customStart).toLocaleDateString('en-IN', formatOpts)
-      const e = new Date(customEnd).toLocaleDateString('en-IN', formatOpts)
-      return `${s} - ${e} Snapshot`
-    }
-    return 'Period Snapshot'
-  }
+  const kpiCards = [
+    {
+      label: 'Served Today',
+      value: stats.totalServedToday,
+      icon: <Users size={18} />,
+      color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE',
+      sub: `${stats.currentInQueue} currently in queue`,
+    },
+    {
+      label: 'Completed',
+      value: stats.completedToday,
+      icon: <Activity size={18} />,
+      color: '#059669', bg: '#ECFDF5', border: '#A7F3D0',
+      sub: stats.totalServedToday > 0 ? `${Math.round((stats.completedToday / stats.totalServedToday) * 100)}% completion rate` : 'No data yet',
+    },
+    {
+      label: 'Avg. Wait Time',
+      value: stats.avgWaitMin !== null ? `${stats.avgWaitMin}m` : '—',
+      icon: <Clock size={18} />,
+      color: '#D97706', bg: '#FFFBEB', border: '#FDE68A',
+      sub: stats.avgWaitMin !== null ? (stats.avgWaitMin <= 10 ? '✓ Within target' : '↑ Above 10min target') : 'Insufficient data',
+    },
+    {
+      label: 'Peak Hour',
+      value: stats.peakHour,
+      icon: <Zap size={18} />,
+      color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE',
+      sub: `${Math.max(...hourlyBuckets)} at busiest`,
+    },
+    {
+      label: 'Satisfaction',
+      value: stats.satisfactionRate !== null ? `${stats.satisfactionRate}%` : '—',
+      icon: <Star size={18} />,
+      color: '#DB2777', bg: '#FDF2F8', border: '#FBCFE8',
+      sub: 'Completed vs cancelled ratio',
+    },
+    {
+      label: 'Cancelled',
+      value: stats.cancelledToday,
+      icon: <TrendingUp size={18} />,
+      color: '#DC2626', bg: '#FEF2F2', border: '#FECACA',
+      sub: stats.totalServedToday > 0 ? `${Math.round((stats.cancelledToday / stats.totalServedToday) * 100)}% drop-off rate` : 'No data yet',
+    },
+  ]
 
   return (
     <div style={{ minHeight: '100vh', background: '#F4F7FB', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>

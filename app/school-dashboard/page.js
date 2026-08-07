@@ -5,7 +5,7 @@ import {
   Bell, Download, Printer, Star, Mic, AlertTriangle, Hourglass, RefreshCw, Sparkles, 
   Plus, LogOut, Check, ChevronRight, Search, X, Settings, History, BarChart2, 
   CreditCard, DoorOpen, QrCode, Clock, Calendar, UserCheck, ChevronDown,
-  Building, ShieldCheck, UserPlus, Layers, Users, Activity, ArrowRight, MapPin, Pencil, Menu, Camera, Upload, Image as ImageIcon, Smartphone, Pause, Play, User, HelpCircle, Hash
+  Building, ShieldCheck, UserPlus, Layers, Users, Activity, ArrowRight, MapPin, Pencil, Menu, Camera, Upload, Image as ImageIcon, Smartphone, Pause, Play, User, HelpCircle, Hash, MessageCircle
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString } from '../../lib/supabase'
@@ -600,6 +600,9 @@ function SchoolCommandCenterContent() {
     return ''
   })
 
+  // Selected Detail Record for Completed Modal
+  const [selectedDetailRecord, setSelectedDetailRecord] = useState(null)
+
   // Skip / Remove Confirmation Modal State
   const [skipTarget, setSkipTarget] = useState(null)
 
@@ -917,8 +920,10 @@ function SchoolCommandCenterContent() {
             const mappedHistory = historyData.map(h => ({
               id: h.id,
               name: h.student_name,
-              grade: h.grade_class,
-              guardian: `Guardian: ${h.guardian_name || 'Parent'}`,
+              grade: h.grade_class || 'General',
+              reason: h.reason || 'Arrival',
+              guardian: h.guardian_name || '',
+              phone: h.guardian_name || '',
               time: h.time_label || '12:15'
             }))
             setDismissals(mappedHistory)
@@ -1005,7 +1010,15 @@ function SchoolCommandCenterContent() {
       try { localStorage.setItem('tokenpe_with_staff_queue', JSON.stringify(updatedWithStaff)) } catch (e) {}
 
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      setDismissals(prev => [{ name: target.name, grade: target.grade, guardian: `Guardian: ${target.guardian || 'N/A'}`, time: timeStr }, ...prev])
+      setDismissals(prev => [{
+        id: target.id || String(Date.now()),
+        name: target.name,
+        grade: target.grade || 'General',
+        reason: target.reason || 'Arrival',
+        guardian: target.guardian || target.phone || '',
+        phone: target.guardian || target.phone || '',
+        time: timeStr
+      }, ...prev])
 
       // DB Dynamic Updates
       try {
@@ -2765,18 +2778,48 @@ function SchoolCommandCenterContent() {
                   No completed records logged today
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-                  {dismissals.map((d, idx) => (
-                    <div key={idx} style={{ padding: '12px 16px', background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 8px rgba(27,42,74,0.04)' }}>
-                      <div>
-                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: 700, color: '#1B2A4A' }}>{d.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#5A6E85', marginTop: 2 }}>{d.grade || 'General'} • {d.guardian || 'N/A'}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 12 }}>
+                  {dismissals.map((d, idx) => {
+                    const cleanPhone = String(d.guardian || d.phone || '').replace(/Guardian:\s*/gi, '')
+                    return (
+                      <div key={idx} style={{ padding: '14px 16px', background: '#FFFFFF', border: '1.5px solid rgba(27,42,74,0.1)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 8px rgba(27,42,74,0.04)', gap: 12 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: 700, color: '#1B2A4A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#5A6E85', marginTop: 2, fontWeight: 600 }}>
+                            {d.grade || 'General'}{cleanPhone ? ` • ${cleanPhone}` : ''}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDetailRecord(d)}
+                            style={{
+                              background: '#EFF6FF',
+                              border: '1.5px solid #BFDBFE',
+                              color: '#2563EB',
+                              borderRadius: 6,
+                              padding: '5px 10px',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              transition: 'all 0.2s ease'
+                            }}
+                            title="View student details"
+                          >
+                            <Search size={12} />
+                            <span>View Details</span>
+                          </button>
+                          <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', fontWeight: 800, color: '#059669', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '4px 8px', borderRadius: 6 }}>
+                            {d.time}
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', fontWeight: 800, color: '#059669', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '4px 8px', borderRadius: 6 }}>
-                        {d.time}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -2839,6 +2882,115 @@ function SchoolCommandCenterContent() {
 
       {/* QR MODAL */}
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} />}
+
+      {/* ── MODAL: COMPLETED STUDENT DETAILS ── */}
+      <AnimatePresence>
+        {selectedDetailRecord && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(27, 42, 74, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setSelectedDetailRecord(null)}>
+            <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }} style={{ background: '#FFFFFF', border: '1.5px solid #1B2A4A', borderRadius: 16, padding: 26, maxWidth: 440, width: '100%', boxShadow: '0 24px 60px rgba(27, 42, 74, 0.3)' }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid #E2E8F0', paddingBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg, #1B2A4A, #2563EB)', border: '1.5px solid #1B2A4A', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0 }}>
+                    {selectedDetailRecord.name?.charAt(0)?.toUpperCase() || 'S'}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', fontWeight: 700, color: '#1B2A4A' }}>
+                      {selectedDetailRecord.name}
+                    </h3>
+                    <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <CheckCircle2 size={13} /> Completed Record
+                    </div>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedDetailRecord(null)} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', color: '#5A6E85' }}>
+                  <X style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                <div style={{ background: '#F8FAFC', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: '0.64rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <GraduationCap size={11} color="#3B82F6" /> Class / Grade
+                  </div>
+                  <div style={{ fontWeight: 700, color: '#1B2A4A', fontSize: '0.88rem' }}>{selectedDetailRecord.grade || 'General'}</div>
+                </div>
+
+                <div style={{ background: '#F8FAFC', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: '0.64rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <HelpCircle size={11} color="#3B82F6" /> Visit Reason
+                  </div>
+                  <div style={{ fontWeight: 700, color: '#0284C7', fontSize: '0.88rem' }}>{selectedDetailRecord.reason || 'Arrival'}</div>
+                </div>
+
+                <div style={{ background: '#F8FAFC', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: '0.64rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Phone size={11} color="#3B82F6" /> Contact Number
+                  </div>
+                  <div style={{ fontWeight: 800, color: '#1B2A4A', fontFamily: 'monospace', fontSize: '0.88rem' }}>
+                    {String(selectedDetailRecord.guardian || selectedDetailRecord.phone || '').replace(/Guardian:\s*/gi, '') || 'N/A'}
+                  </div>
+                </div>
+
+                <div style={{ background: '#F8FAFC', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: '0.64rem', fontWeight: 800, color: '#5A6E85', textTransform: 'uppercase', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Clock size={11} color="#3B82F6" /> Time Completed
+                  </div>
+                  <div style={{ fontWeight: 800, color: '#059669', fontFamily: 'monospace', fontSize: '0.88rem' }}>{selectedDetailRecord.time || 'Today'}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                {selectedDetailRecord.guardian && String(selectedDetailRecord.guardian).replace(/[^0-9]/g, '').length >= 10 && (
+                  <a
+                    href={`https://wa.me/91${String(selectedDetailRecord.guardian).replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ flex: 1, textDecoration: 'none' }}
+                  >
+                    <button
+                      type="button"
+                      style={{
+                        width: '100%',
+                        padding: '10px 0',
+                        background: '#059669',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: 8,
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6
+                      }}
+                    >
+                      <MessageCircle size={15} /> WhatsApp
+                    </button>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedDetailRecord(null)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 0',
+                    background: '#1B2A4A',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close Details
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* SUPPORT & REPORT ISSUE MODAL */}
       {showSupportModal && (

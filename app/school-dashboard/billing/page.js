@@ -52,21 +52,29 @@ export default function SchoolBillingPage() {
     }
 
     async function load() {
-      const stored = localStorage.getItem('tokenpe_clinic')
+      const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business') || localStorage.getItem('tokenpe_clinic')
       if (!stored) { router.push('/school-login'); return }
       const clinicData = JSON.parse(stored)
 
       const today = getISTDateString()
+
+      const userClinics = JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]')
+      let queryParam = `clinicId=${clinicData.id}`
+      if (userClinics.length > 0) {
+        queryParam = `clinicIds=${userClinics.map(c => c.id).join(',')}`
+      }
+
       const [freshRes, countRes] = await Promise.all([
-        fetch(`/api/clinics/get?id=${clinicData.id}`).catch(() => null),
-        fetch(`/api/analytics/count?clinicId=${clinicData.id}&date=${today}`).catch(() => null)
+        fetch(`/api/business/get?id=${clinicData.id}`),
+        fetch(`/api/analytics/count?${queryParam}&date=${today}`)
       ])
       const freshData  = freshRes?.ok  ? await freshRes.json()  : null
       const countData  = countRes?.ok  ? await countRes.json()  : null
 
       if (freshData?.success && freshData.clinic) {
         setClinic(freshData.clinic)
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
+        localStorage.setItem('tokenpe_school_business', JSON.stringify(freshData.clinic))
+        localStorage.setItem('tokenpe_business', JSON.stringify(freshData.clinic))
       } else {
         setClinic(clinicData)
       }
@@ -81,13 +89,14 @@ export default function SchoolBillingPage() {
     let attempts = 0
     const poll = async () => {
       attempts++
-      const res = await fetch(`/api/clinics/get?id=${clinicId}`)
+      const res = await fetch(`/api/business/get?id=${clinicId}`)
       if (res.ok) {
         const data = await res.json()
         if (data.success && data.clinic) {
           const fresh = data.clinic
           setClinic(fresh)
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
+          localStorage.setItem('tokenpe_school_business', JSON.stringify(fresh))
+          localStorage.setItem('tokenpe_business', JSON.stringify(fresh))
           const isActivated = fresh.subscription_status === 'active' && fresh.plan_id === newPlanTier
           if (isActivated || attempts >= maxAttempts) {
             setUpgrading(null)
@@ -106,68 +115,50 @@ export default function SchoolBillingPage() {
     setTimeout(poll, 2000)
   }, [])
 
-  const planId    = clinic?.plan_id || 'elite'
-  const meta      = PLAN_META[planId] || PLAN_META.elite
-  const planName  = meta.name
-  const subStatus = clinic?.subscription_status || 'trialing'
-
-  const trialEnd        = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
-  const isTrial         = subStatus === 'trialing' && trialEnd && trialEnd > currentDate
-  const isTrialExpired  = subStatus === 'trialing' && trialEnd && trialEnd <= currentDate
-  const isCanceled      = subStatus === 'canceled'
-  const isCancelPending = subStatus === 'cancel_pending'
-  const isActive        = subStatus === 'active'
-  const planEndDate     = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
-  const daysLeft        = trialEnd
-    ? Math.max(0, Math.ceil((trialEnd.getTime() - (currentDate?.getTime() || 0)) / 86400000))
-    : 0
-
   async function handleUpgrade(planTier) {
-    if (upgrading) return
+    if (!clinic) return
     setUpgrading(planTier)
     try {
-      if (planTier === 'elite_custom') {
-        const amount   = customDays * 178
-        const orderRes = await fetch('/api/razorpay/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount, clinicId: clinic.id, days: customDays, notes: { plan_tier: 'elite_custom', days: customDays } })
-        })
-        const orderData = await orderRes.json()
-        if (!orderRes.ok || !orderData.success) { alert(orderData.error || 'Failed to initialize payment'); setUpgrading(null); return }
-
-        new window.Razorpay({
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: orderData.amount, currency: orderData.currency,
-          name: 'TokenPe', description: `Elite Custom Plan (${customDays} Days)`,
-          order_id: orderData.orderId,
-          prefill: { name: clinic?.name || '', email: clinic?.email || '', contact: clinic?.phone || '' },
-          theme: { color: '#1B2A4A' },
-          handler: () => pollForUpdate(clinic.id, 'elite'),
-          modal: { ondismiss: () => setUpgrading(null) }
-        }).open()
-        return
-      }
-
-      const res  = await fetch('/api/razorpay/create-subscription', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planTier, clinicId: clinic.id })
+      const res = await fetch('/api/razorpay/create-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, planTier, customDays: planTier === 'elite_custom' ? customDays : undefined })
       })
       const data = await res.json()
-      if (!res.ok || !data.success) { alert(data.error || 'Failed to initialize subscription'); setUpgrading(null); return }
+      if (!res.ok || !data.subscriptionId) {
+        throw new Error(data.message || data.error || 'Failed to create subscription')
+      }
 
-      new window.Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      const options = {
+        key: data.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         subscription_id: data.subscriptionId,
-        name: 'TokenPe', description: `Upgrade to ${PLAN_META[planTier]?.name || planTier}`,
-        prefill: { name: clinic?.name || '', email: clinic?.email || '', contact: clinic?.phone || '' },
+        name: 'TokenPe School',
+        description: `Upgrade to ${PLAN_META[planTier]?.name || planTier}`,
+        handler: async function (response) {
+          pollForUpdate(clinic.id, planTier)
+        },
+        prefill: {
+          name: clinic.name || '',
+          email: clinic.email || '',
+          contact: clinic.phone || ''
+        },
         theme: { color: '#1B2A4A' },
-        handler: () => pollForUpdate(clinic.id, planTier),
-        modal: { ondismiss: () => setUpgrading(null) }
-      }).open()
+        modal: {
+          ondismiss: function () {
+            setUpgrading(null)
+          }
+        }
+      }
+
+      if (window.Razorpay) {
+        const rzp = new window.Razorpay(options)
+        rzp.open()
+      } else {
+        alert('Razorpay SDK failed to load. Please check your internet connection.')
+        setUpgrading(null)
+      }
     } catch (err) {
-      console.error(err)
-      alert('An unexpected error occurred. Please try again.')
+      alert(`Error: ${err.message}`)
       setUpgrading(null)
     }
   }
@@ -180,20 +171,60 @@ export default function SchoolBillingPage() {
         body: JSON.stringify({ clinicId: clinic.id, reason: cancelReason })
       })
       const data = await res.json()
-      if (res.ok && data.success) {
-        setShowCancelModal(false)
-        setClinic(prev => ({ ...prev, subscription_status: 'cancel_pending' }))
-        const stored = localStorage.getItem('tokenpe_clinic')
-        if (stored) localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), subscription_status: 'cancel_pending' }))
-        alert('Cancellation scheduled. Full access retained until end of period.')
-      } else {
-        alert(data.error || 'Failed to cancel subscription')
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to cancel')
+
+      const res2 = await fetch(`/api/business/get?id=${clinic.id}`)
+      if (res2.ok) {
+        const data2 = await res2.json()
+        if (data2.success && data2.clinic) {
+          setClinic(data2.clinic)
+          localStorage.setItem('tokenpe_business', JSON.stringify(data2.clinic))
+        }
       }
+      setShowCancelModal(false)
     } catch (err) {
-      console.error(err); alert('An unexpected error occurred')
+      alert(`Error: ${err.message}`)
+    } finally {
+      setUpgrading(null)
+      setIsCanceling(false)
     }
-    setIsCanceling(false)
   }
+
+  const S = { fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }
+
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#F4F7FB', display: 'flex', alignItems: 'center', justifyContent: 'center', ...S }}>
+      <div style={{ width: 36, height: 36, border: '3px solid #E2E8F0', borderTopColor: '#2563EB', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+
+  const planId       = clinic?.plan_id || 'starter'
+  const planMeta     = PLAN_META[planId] || PLAN_META['starter']
+  const planName     = planMeta.name
+
+  const status          = clinic?.subscription_status || 'trialing'
+  const isTrial         = status === 'trialing'
+  const isActive        = status === 'active'
+  const isCancelPending = status === 'cancel_at_period_end'
+  const isCanceled      = status === 'canceled'
+
+  const userClinics = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]') : []
+  const oldestClinic = userClinics.length > 0
+    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0])
+    : clinic
+
+  const trialEnd = oldestClinic?.trial_ends_at
+    ? new Date(oldestClinic.trial_ends_at)
+    : (oldestClinic?.created_at ? new Date(new Date(oldestClinic.created_at).getTime() + 7 * 24 * 60 * 60 * 1000) : null)
+
+  const realDaysLeft    = trialEnd && currentDate ? Math.ceil((trialEnd - currentDate) / (1000 * 60 * 60 * 24)) : 0
+  const daysLeft        = isTrial ? Math.max(0, realDaysLeft) : null
+  const isTrialExpired  = isTrial && trialEnd && realDaysLeft < 0
+
+  const planEndDate = clinic?.current_period_end
+    ? new Date(clinic.current_period_end)
+    : (clinic?.subscription_end ? new Date(clinic.subscription_end) : null)
 
   const plans = [
     {
@@ -241,22 +272,37 @@ export default function SchoolBillingPage() {
     { q: 'Do you offer refunds?', a: 'We do not issue partial refunds, but your service remains fully active until the end of your paid duration.' },
   ]
 
-  const S = { fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }
-
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#F4F7FB', display: 'flex', alignItems: 'center', justifyContent: 'center', ...S }}>
-      <div style={{ width: 36, height: 36, border: '3px solid #E2E8F0', borderTopColor: '#2563EB', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  )
-
   return (
     <div style={{ minHeight: '100vh', background: '#F4F7FB', ...S }}>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
 
+      <style>{`
+        .plan-card {
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .plan-card:hover {
+          transform: translateY(-4px) !important;
+          box-shadow: 0 14px 36px rgba(27, 42, 74, 0.12) !important;
+        }
+        .hover-btn {
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .hover-btn:hover {
+          transform: translateY(-1.5px) !important;
+          box-shadow: 0 4px 14px rgba(27, 42, 74, 0.18) !important;
+          filter: brightness(1.06) !important;
+        }
+        .faq-item {
+          transition: background 0.15s ease !important;
+        }
+        .faq-item:hover {
+          background: #F8FAFC !important;
+        }
+      `}</style>
+
       {/* ── HEADER ── */}
       <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(27,42,74,0.08)', padding: isMobile ? '10px 12px' : '14px 24px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(27,42,74,0.06)' }}>
-        <button onClick={() => router.push('/school-dashboard')} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
+        <button onClick={() => router.push('/school-dashboard')} className="hover-btn" style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#1B2A4A', fontWeight: 700, fontSize: '0.8rem' }}>
           <ChevronLeft size={16} />{isMobile ? null : ' Back'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -310,7 +356,7 @@ export default function SchoolBillingPage() {
                   : isTrial
                     ? `Trial valid through ${trialEnd?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. All Elite features enabled.`
                     : isCancelPending
-                      ? <span style={{ color: '#FCA5A5', fontWeight: 600 }}>Cancellation scheduled — access until {planEndDate?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}.</span>
+                      ? <span style={{ color: '#FCA5A5', fontWeight: 600 }}>Cancellation scheduled — access until {planEndDate ? planEndDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'end of period'}.</span>
                       : isActive
                         ? <span style={{ color: '#6EE7B7', fontWeight: 600 }}>Plan active. All features fully unlocked.</span>
                         : 'Checking plan status...'}
@@ -319,11 +365,11 @@ export default function SchoolBillingPage() {
 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {isActive && !isCancelPending && (
-                <button onClick={() => setShowCancelModal(true)} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#FCA5A5', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'inherit' }}>
+                <button onClick={() => setShowCancelModal(true)} className="hover-btn" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#FCA5A5', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'inherit' }}>
                   Cancel Plan
                 </button>
               )}
-              <button onClick={() => setShowDetails(true)} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'inherit' }}>
+              <button onClick={() => setShowDetails(true)} className="hover-btn" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'inherit' }}>
                 View Feature Specs
               </button>
             </div>
@@ -343,7 +389,7 @@ export default function SchoolBillingPage() {
               const isCustom  = plan.tier === 'elite_custom'
 
               return (
-                <div key={plan.tier} style={{
+                <div key={plan.tier} className="plan-card" style={{
                   position: 'relative', background: '#FFFFFF',
                   border: isCurrent ? `2px solid ${plan.accent}` : `1.5px solid ${plan.border}`,
                   borderRadius: 14, padding: '28px 24px 24px',
@@ -373,17 +419,17 @@ export default function SchoolBillingPage() {
                         <div style={{ background: '#F5F3FF', border: '1px solid #DDD6FE', padding: 12, borderRadius: 10 }}>
                           <div style={{ fontSize: '0.7rem', color: '#5A6E85', fontWeight: 600, marginBottom: 6 }}>Select Number of Days:</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                            <button onClick={() => setCustomDays(d => Math.max(1, d - 1))} style={{ background: '#FFF', border: '1px solid #DDD6FE', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontWeight: 800, color: '#7C3AED', fontSize: '1rem' }}>−</button>
+                            <button onClick={() => setCustomDays(d => Math.max(1, d - 1))} className="hover-btn" style={{ background: '#FFF', border: '1px solid #DDD6FE', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontWeight: 800, color: '#7C3AED', fontSize: '1rem' }}>−</button>
                             <input
                               type="number" min={1} max={365} value={customDays}
                               onChange={e => setCustomDays(Math.min(365, Math.max(1, parseInt(e.target.value) || 1)))}
                               style={{ width: 64, textAlign: 'center', background: '#FFF', border: '1px solid #DDD6FE', color: '#7C3AED', fontWeight: 700, padding: '4px 0', borderRadius: 6, fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' }}
                             />
-                            <button onClick={() => setCustomDays(d => Math.min(365, d + 1))} style={{ background: '#FFF', border: '1px solid #DDD6FE', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontWeight: 800, color: '#7C3AED', fontSize: '1rem' }}>+</button>
+                            <button onClick={() => setCustomDays(d => Math.min(365, d + 1))} className="hover-btn" style={{ background: '#FFF', border: '1px solid #DDD6FE', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontWeight: 800, color: '#7C3AED', fontSize: '1rem' }}>+</button>
                           </div>
                           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                             {[7, 14, 30, 90].map(d => (
-                              <button key={d} onClick={() => setCustomDays(d)} style={{ padding: '3px 10px', fontSize: '0.68rem', fontWeight: 700, border: `1px solid ${customDays === d ? '#7C3AED' : '#DDD6FE'}`, color: customDays === d ? '#7C3AED' : '#94A3B8', background: customDays === d ? '#F5F3FF' : '#FFF', borderRadius: 5, cursor: 'pointer', fontFamily: 'inherit' }}>
+                              <button key={d} onClick={() => setCustomDays(d)} className="hover-btn" style={{ padding: '3px 10px', fontSize: '0.68rem', fontWeight: 700, border: `1px solid ${customDays === d ? '#7C3AED' : '#DDD6FE'}`, color: customDays === d ? '#7C3AED' : '#94A3B8', background: customDays === d ? '#F5F3FF' : '#FFF', borderRadius: 5, cursor: 'pointer', fontFamily: 'inherit' }}>
                                 {d}d
                               </button>
                             ))}
@@ -406,6 +452,7 @@ export default function SchoolBillingPage() {
                     <button
                       disabled={isCurrent || (!!upgrading && upgrading !== plan.tier)}
                       onClick={() => !isCurrent && !upgrading && handleUpgrade(plan.tier)}
+                      className={isCurrent ? '' : 'hover-btn'}
                       style={{
                         width: '100%', padding: '12px 0', border: 'none', borderRadius: 8,
                         background: isCurrent ? '#F1F5F9' : plan.accent,
@@ -414,7 +461,7 @@ export default function SchoolBillingPage() {
                         opacity: (isCurrent || (!!upgrading && upgrading !== plan.tier)) ? 0.65 : 1,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                         boxShadow: isCurrent ? 'none' : `0 4px 14px ${plan.accent}44`,
-                        fontFamily: 'inherit', transition: 'all 0.2s ease',
+                        fontFamily: 'inherit',
                       }}
                     >
                       <Zap size={14} />
@@ -434,7 +481,7 @@ export default function SchoolBillingPage() {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {faqs.map((faq, i) => (
-              <div key={i} style={{ border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
+              <div key={i} className="faq-item" style={{ border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
                 <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 16px', background: 'transparent', border: 'none', color: '#1B2A4A', fontWeight: 700, fontSize: '0.83rem', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
                   <span>{faq.q}</span>
                   <span style={{ transform: openFaq === i ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#2563EB', fontSize: '0.7rem' }}>▼</span>
@@ -459,7 +506,7 @@ export default function SchoolBillingPage() {
             <p style={{ fontSize: '0.85rem', color: '#5A6E85', marginBottom: 20 }}>
               <strong style={{ color: '#059669' }}>{showSuccessModal}</strong> is now active. All features are unlocked for your school.
             </p>
-            <button onClick={() => setShowSuccessModal(null)} style={{ background: '#059669', color: '#FFF', border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem', fontFamily: 'inherit' }}>
+            <button onClick={() => setShowSuccessModal(null)} className="hover-btn" style={{ background: '#059669', color: '#FFF', border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem', fontFamily: 'inherit' }}>
               Awesome! 🚀
             </button>
           </div>
@@ -522,10 +569,10 @@ export default function SchoolBillingPage() {
               <option value="other">Other reason</option>
             </select>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button onClick={() => setShowCancelModal(false)} disabled={isCanceling} style={{ padding: '11px 0', background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+              <button onClick={() => setShowCancelModal(false)} disabled={isCanceling} className="hover-btn" style={{ padding: '11px 0', background: '#1B2A4A', color: '#FFF', border: 'none', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Keep My Subscription
               </button>
-              <button onClick={executeCancel} disabled={isCanceling} style={{ padding: '11px 0', background: '#FEF2F2', color: '#DC2626', border: '1.5px solid #FECACA', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem', cursor: isCanceling ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+              <button onClick={executeCancel} disabled={isCanceling} className="hover-btn" style={{ padding: '11px 0', background: '#FEF2F2', color: '#DC2626', border: '1.5px solid #FECACA', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem', cursor: isCanceling ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
                 {isCanceling ? 'Canceling...' : 'Confirm Cancellation'}
               </button>
             </div>

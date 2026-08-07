@@ -26,9 +26,13 @@ export async function POST(req) {
         const cleanPhone = validatePhone(phone) || '0000000000'
         const today = getISTDateString()
         
-        const { data: business } = await supabaseAdmin.from('businesses').select('name, type, plan_id, closed_today_date').eq('id', businessId).single()
+        const { data: business } = await supabaseAdmin.from('businesses').select('name, type, plan_id, closed_today_date, queue_paused').eq('id', businessId).single()
         const planId = business?.plan_id || 'starter'
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
+
+        if (business?.queue_paused) {
+            return Response.json({ success: false, message: 'Queue is currently paused. No new entries can be added right now.' }, { status: 403 })
+        }
 
         if (business?.closed_today_date) {
             return Response.json({ success: false, message: 'Business is closed for today. No new entries can be added.' }, { status: 403 })
@@ -82,7 +86,6 @@ export async function POST(req) {
 
         const entry = data[0]
 
-        // Add to crm_customers
         if (cleanPhone !== '0000000000') {
              after(async () => {
                 const { data: existingCustomer } = await supabaseAdmin
@@ -103,8 +106,6 @@ export async function POST(req) {
                         total_visits: 1
                     })
                 } else {
-                    // Update total visits? We need an RPC or we just update via RPC for safe concurrency.
-                    // Let's just update last_visit for now.
                     const { data: currentCustomer } = await supabaseAdmin.from('crm_customers').select('total_visits').eq('id', existingCustomer.id).single()
                     await supabaseAdmin.from('crm_customers').update({ 
                         last_visit: today,
@@ -149,7 +150,7 @@ _Powered by TokenPe_`
             })
         }
 
-        return Response.json({ success: true, patient: entry }, { status: 200 }) // Keep key as patient for frontend compatibility
+        return Response.json({ success: true, patient: entry }, { status: 200 })
     } catch (error) {
         console.error('[generic-queue/add] Error:', error)
         return Response.json({ success: false, message: 'Internal Server Error' }, { status: 500 })

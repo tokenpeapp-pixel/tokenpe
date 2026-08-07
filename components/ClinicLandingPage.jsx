@@ -2121,7 +2121,7 @@ export default function ClinicLandingPage({ config }) {
           border-radius: 12px;
           padding: 8px 12px;
           color: #ffffff;
-          box-shadow: 0 10px 28px rgba(0,0,0,0.5), 0 0 16px rgba(52,211,153,0.2);
+          box-shadow: 0 10px 28px rgba(0,0,0,0.5), 0 0 16px rgba(52, 211, 153, 0.2);
           pointer-events: none;
           z-index: 20;
           min-width: 90px;
@@ -3453,7 +3453,7 @@ export default function ClinicLandingPage({ config }) {
                     <div className="cl-cmd-branch-name">Andheri Branch</div>
                     <div className="cl-cmd-branch-sub">Avg wait 11 min · 86 patients today</div>
                   </div>
-                  <span className="cl-cmd-tag tag-gold">↘ -12%</span>
+                  <span className="cl-cmd-tag tag-green">↘ -12%</span>
                 </div>
               </Reveal>
 
@@ -3463,7 +3463,7 @@ export default function ClinicLandingPage({ config }) {
                     <div className="cl-cmd-branch-name">Powai Branch</div>
                     <div className="cl-cmd-branch-sub">Avg wait 14 min · 64 patients today</div>
                   </div>
-                  <span className="cl-cmd-tag tag-green">↗ +6%</span>
+                  <span className="cl-cmd-tag tag-gold">↗ +6%</span>
                 </div>
               </Reveal>
 
@@ -3473,7 +3473,7 @@ export default function ClinicLandingPage({ config }) {
                     <div className="cl-cmd-branch-name">Thane Branch</div>
                     <div className="cl-cmd-branch-sub">Avg wait 9 min · 51 patients today</div>
                   </div>
-                  <span className="cl-cmd-tag tag-gold">↘ -12%</span>
+                  <span className="cl-cmd-tag tag-green">↘ -12%</span>
                 </div>
               </Reveal>
             </div>

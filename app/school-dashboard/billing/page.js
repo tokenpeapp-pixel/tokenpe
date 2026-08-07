@@ -52,28 +52,21 @@ export default function SchoolBillingPage() {
     }
 
     async function load() {
-      const stored = localStorage.getItem('tokenpe_business')
+      const stored = localStorage.getItem('tokenpe_clinic')
       if (!stored) { router.push('/school-login'); return }
       const clinicData = JSON.parse(stored)
 
       const today = getISTDateString()
-
-      const userClinics = JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]')
-      let queryParam = `clinicId=${clinicData.id}`
-      if (userClinics.length > 0) {
-        queryParam = `clinicIds=${userClinics.map(c => c.id).join(',')}`
-      }
-
       const [freshRes, countRes] = await Promise.all([
-        fetch(`/api/business/get?id=${clinicData.id}`),
-        fetch(`/api/analytics/count?${queryParam}&date=${today}`)
+        fetch(`/api/clinics/get?id=${clinicData.id}`).catch(() => null),
+        fetch(`/api/analytics/count?clinicId=${clinicData.id}&date=${today}`).catch(() => null)
       ])
       const freshData  = freshRes?.ok  ? await freshRes.json()  : null
       const countData  = countRes?.ok  ? await countRes.json()  : null
 
       if (freshData?.success && freshData.clinic) {
         setClinic(freshData.clinic)
-        localStorage.setItem('tokenpe_business', JSON.stringify(freshData.clinic))
+        localStorage.setItem('tokenpe_clinic', JSON.stringify(freshData.clinic))
       } else {
         setClinic(clinicData)
       }
@@ -88,13 +81,13 @@ export default function SchoolBillingPage() {
     let attempts = 0
     const poll = async () => {
       attempts++
-      const res = await fetch(`/api/business/get?id=${clinicId}`)
+      const res = await fetch(`/api/clinics/get?id=${clinicId}`)
       if (res.ok) {
         const data = await res.json()
         if (data.success && data.clinic) {
           const fresh = data.clinic
           setClinic(fresh)
-          localStorage.setItem('tokenpe_business', JSON.stringify(fresh))
+          localStorage.setItem('tokenpe_clinic', JSON.stringify(fresh))
           const isActivated = fresh.subscription_status === 'active' && fresh.plan_id === newPlanTier
           if (isActivated || attempts >= maxAttempts) {
             setUpgrading(null)
@@ -113,7 +106,71 @@ export default function SchoolBillingPage() {
     setTimeout(poll, 2000)
   }, [])
 
+  const planId    = clinic?.plan_id || 'elite'
+  const meta      = PLAN_META[planId] || PLAN_META.elite
+  const planName  = meta.name
+  const subStatus = clinic?.subscription_status || 'trialing'
 
+  const trialEnd        = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
+  const isTrial         = subStatus === 'trialing' && trialEnd && trialEnd > currentDate
+  const isTrialExpired  = subStatus === 'trialing' && trialEnd && trialEnd <= currentDate
+  const isCanceled      = subStatus === 'canceled'
+  const isCancelPending = subStatus === 'cancel_pending'
+  const isActive        = subStatus === 'active'
+  const planEndDate     = clinic?.trial_ends_at ? new Date(clinic.trial_ends_at) : null
+  const daysLeft        = trialEnd
+    ? Math.max(0, Math.ceil((trialEnd.getTime() - (currentDate?.getTime() || 0)) / 86400000))
+    : 0
+
+  async function handleUpgrade(planTier) {
+    if (upgrading) return
+    setUpgrading(planTier)
+    try {
+      if (planTier === 'elite_custom') {
+        const amount   = customDays * 178
+        const orderRes = await fetch('/api/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount, clinicId: clinic.id, days: customDays, notes: { plan_tier: 'elite_custom', days: customDays } })
+        })
+        const orderData = await orderRes.json()
+        if (!orderRes.ok || !orderData.success) { alert(orderData.error || 'Failed to initialize payment'); setUpgrading(null); return }
+
+        new window.Razorpay({
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: orderData.amount, currency: orderData.currency,
+          name: 'TokenPe', description: `Elite Custom Plan (${customDays} Days)`,
+          order_id: orderData.orderId,
+          prefill: { name: clinic?.name || '', email: clinic?.email || '', contact: clinic?.phone || '' },
+          theme: { color: '#1B2A4A' },
+          handler: () => pollForUpdate(clinic.id, 'elite'),
+          modal: { ondismiss: () => setUpgrading(null) }
+        }).open()
+        return
+      }
+
+      const res  = await fetch('/api/razorpay/create-subscription', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planTier, clinicId: clinic.id })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) { alert(data.error || 'Failed to initialize subscription'); setUpgrading(null); return }
+
+      new window.Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        subscription_id: data.subscriptionId,
+        name: 'TokenPe', description: `Upgrade to ${PLAN_META[planTier]?.name || planTier}`,
+        prefill: { name: clinic?.name || '', email: clinic?.email || '', contact: clinic?.phone || '' },
+        theme: { color: '#1B2A4A' },
+        handler: () => pollForUpdate(clinic.id, planTier),
+        modal: { ondismiss: () => setUpgrading(null) }
+      }).open()
+    } catch (err) {
+      console.error(err)
+      alert('An unexpected error occurred. Please try again.')
+      setUpgrading(null)
+    }
+  }
 
   async function executeCancel() {
     setIsCanceling(true)
@@ -123,89 +180,20 @@ export default function SchoolBillingPage() {
         body: JSON.stringify({ clinicId: clinic.id, reason: cancelReason })
       })
       const data = await res.json()
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to cancel')
-
-      const res2 = await fetch(`/api/business/get?id=${clinic.id}`)
-      if (res2.ok) {
-        const data2 = await res2.json()
-        if (data2.success && data2.clinic) {
-          setClinic(data2.clinic)
-          localStorage.setItem('tokenpe_business', JSON.stringify(data2.clinic))
-        }
-      }
-      setShowCancelModal(false)
-    } catch (err) {
-      alert(`Error: ${err.message}`)
-    } finally {
-      setUpgrading(null)
-      setIsCanceling(false)
-    }
-  }
-
-  const executeResume = async () => {
-    setUpgrading('resume')
-    try {
-      const res = await fetch('/api/razorpay/resume-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id })
-      })
-      const data = await res.json()
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to reactivate')
-
-      const res2 = await fetch(`/api/business/get?id=${clinic.id}`)
-      if (res2.ok) {
-        const data2 = await res2.json()
-        if (data2.success && data2.clinic) {
-          setClinic(data2.clinic)
-          localStorage.setItem('tokenpe_business', JSON.stringify(data2.clinic))
-        }
+      if (res.ok && data.success) {
+        setShowCancelModal(false)
+        setClinic(prev => ({ ...prev, subscription_status: 'cancel_pending' }))
+        const stored = localStorage.getItem('tokenpe_clinic')
+        if (stored) localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), subscription_status: 'cancel_pending' }))
+        alert('Cancellation scheduled. Full access retained until end of period.')
+      } else {
+        alert(data.error || 'Failed to cancel subscription')
       }
     } catch (err) {
       console.error(err); alert('An unexpected error occurred')
     }
     setIsCanceling(false)
   }
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAF8]">
-      <div className="w-10 h-10 border-4 border-[#E5E7EB] border-t-[#065F46] rounded-full animate-spin"></div>
-    </div>
-  )
-
-  // ── Derived state ──────────────────────────────────────────────────────────
-  const planId       = clinic?.plan_id || 'starter'
-  const planMeta     = PLAN_META[planId] || PLAN_META['starter']
-  const planName     = planMeta.name
-  const planLimit    = planMeta.limit
-  const planPrice    = planMeta.price
-
-  const status          = clinic?.subscription_status || 'trialing'
-  const isTrial         = status === 'trialing'
-  const isActive        = status === 'active'
-  const isCancelPending = status === 'cancel_at_period_end'
-  const isCanceled      = status === 'canceled'
-
-  const percentage = planLimit === Infinity ? 0 : Math.min((todayCount / planLimit) * 100, 100)
-
-  const userClinics = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('tokenpe_user_businesses') || '[]') : []
-  const oldestClinic = userClinics.length > 0
-    ? userClinics.reduce((oldest, c) => new Date(c.created_at) < new Date(oldest.created_at) ? c : oldest, userClinics[0])
-    : clinic
-
-  const trialEnd = oldestClinic?.trial_ends_at
-    ? new Date(oldestClinic.trial_ends_at)
-    : (oldestClinic?.created_at ? new Date(new Date(oldestClinic.created_at).getTime() + 7 * 24 * 60 * 60 * 1000) : null)
-
-  const realDaysLeft    = trialEnd && currentDate ? Math.ceil((trialEnd - currentDate) / (1000 * 60 * 60 * 24)) : 0
-  const daysLeft        = isTrial ? Math.max(0, realDaysLeft) : null
-  const isTrialExpired  = isTrial && trialEnd && realDaysLeft < 0
-
-  // Tier level map — normalise pro/professional
-  const tierLevels = { starter: 1, pro: 2, professional: 2, elite: 3 }
-  const currentLevel = tierLevels[planId] || 1
-
-  // No downgrade support — only upgrades and reactivation
 
   const plans = [
     {

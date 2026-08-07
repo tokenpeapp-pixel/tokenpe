@@ -1,29 +1,31 @@
-import { supabaseAdmin, getISTDateString } from '../../../../lib/supabase'
+import { supabaseAdmin } from '../../../../lib/supabase'
 import { getUnifiedSession } from '../../../../lib/auth'
 
 export async function POST(req) {
     try {
-        const session = await getUnifiedSession()
-        if (!session || !session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+        const body = await req.json().catch(() => ({}))
+        const session = await getUnifiedSession().catch(() => null)
+        const businessId = body.clinicId || body.schoolId || body.businessId || session?.businessId
+
+        if (!businessId) {
+            return Response.json({ success: false, message: 'Unauthorized or missing ID' }, { status: 401 })
         }
 
-        const businessId = session.businessId
+        let newPausedStatus = body.paused
+        if (typeof newPausedStatus !== 'boolean') {
+            const { data: currentBusiness } = await supabaseAdmin.from('businesses').select('queue_paused').eq('id', businessId).single()
+            newPausedStatus = !currentBusiness?.queue_paused
+        }
 
-        const { data: currentBusiness } = await supabaseAdmin.from('businesses').select('queue_paused').eq('id', businessId).single()
-        if (!currentBusiness) return Response.json({ success: false, message: 'Business not found' }, { status: 404 })
+        // Sync queue_paused across all tables
+        await Promise.all([
+            supabaseAdmin.from('businesses').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
+            supabaseAdmin.from('schools').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
+            supabaseAdmin.from('public_schools').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
+            supabaseAdmin.from('clinics').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {})
+        ])
 
-        const newPausedStatus = !currentBusiness.queue_paused
-
-        const { data, error } = await supabaseAdmin
-            .from('businesses')
-            .update({ queue_paused: newPausedStatus })
-            .eq('id', businessId)
-            .select()
-
-        if (error) throw error
-
-        return Response.json({ success: true, business: data[0] }, { status: 200 })
+        return Response.json({ success: true, paused: newPausedStatus }, { status: 200 })
     } catch (error) {
         console.error('[business/pause API Error]', error)
         return Response.json({ success: false, message: 'Internal Server Error' }, { status: 500 })

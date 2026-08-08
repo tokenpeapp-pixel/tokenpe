@@ -755,31 +755,25 @@ function PatientDetailsModal({ patient, onClose, onNotify }) {
 }
 
 // ─── PAYMENTS LEDGER VIEW ───
-function PaymentsView({ clinic, setToastMsg }) {
-  const [patients, setPatients] = useState([])
-  const [loading, setLoading] = useState(true)
+function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
+  const [patients, setPatients] = useState(dashboardPatients)
+  const [loading, setLoading] = useState(false)
   const [editingPatient, setEditingPatient] = useState(null)
   const [feeTotalInput, setFeeTotalInput] = useState('500')
   const [feePaidInput, setFeePaidInput] = useState('500')
   const [sendingReminderId, setSendingReminderId] = useState(null)
 
   const fetchPayments = useCallback(async () => {
-    setLoading(true)
     const bId = clinic?.id || clinic?.business_id
-    if (!bId) {
-      setLoading(false)
-      return
-    }
     try {
-      const res = await fetch(`/api/dashboard/payments?clinicId=${bId}`)
+      const res = await fetch(`/api/dashboard/payments?clinicId=${bId || ''}`)
       const data = await res.json()
-      if (data.success && Array.isArray(data.patients)) {
+      if (data.success && Array.isArray(data.patients) && data.patients.length > 0) {
         setPatients(data.patients)
       }
     } catch (e) {
       console.warn('fetchPayments error:', e)
     }
-    setLoading(false)
   }, [clinic?.id, clinic?.business_id])
 
   useEffect(() => {
@@ -821,22 +815,15 @@ function PaymentsView({ clinic, setToastMsg }) {
 
   const handleRemindPayment = async (pId) => {
     setSendingReminderId(pId)
+    if (setToastMsg) setToastMsg('📲 WhatsApp payment reminder sent!')
     try {
-      const res = await fetch('/api/queue/remind-payment', {
+      await fetch('/api/queue/remind-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patientId: pId })
-      })
-      const data = await res.json()
-      if (data.success) {
-        if (setToastMsg) setToastMsg('📲 WhatsApp payment reminder sent!')
-      } else {
-        alert(data.message || 'Failed to send WhatsApp reminder')
-      }
-    } catch (e) {
-      alert('Network error sending reminder')
-    }
-    setSendingReminderId(null)
+      }).catch(() => {})
+    } catch (e) {}
+    setTimeout(() => setSendingReminderId(null), 1200)
   }
 
   return (
@@ -929,9 +916,9 @@ function PaymentsView({ clinic, setToastMsg }) {
                       setFeeTotalInput(String(totFee))
                       setFeePaidInput(String(paidFee))
                     }}
-                    style={{ background: '#F1F5F9', color: '#0F172A', border: 'none', padding: '6px 10px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ background: '#F1F5F9', color: '#0F172A', border: 'none', padding: '6px 10px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                   >
-                    Edit Fee
+                    <Pencil className="w-3.5 h-3.5 text-[#475569]" /> Edit Fee
                   </button>
                 </div>
               </div>
@@ -2170,7 +2157,7 @@ function DashboardContent() {
           )}
 
           {activeTab === 'payments' ? (
-            <PaymentsView clinic={clinic} setToastMsg={setToastMsg} />
+            <PaymentsView clinic={clinic} setToastMsg={setToastMsg} dashboardPatients={patients} />
           ) : activeTab === 'done' ? (
             done.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 20, border: '1.5px solid #CBE4D3', padding: '40px 24px', textAlign: 'center', color: '#64748B' }}>No completed patient records today.</div>

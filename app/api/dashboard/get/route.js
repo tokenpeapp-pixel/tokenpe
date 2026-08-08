@@ -3,39 +3,47 @@ import { getSession } from '../../../../lib/auth'
 
 export async function GET(req) {
     try {
-        const session = await getSession()
-        if (!session || !session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+        let session = null
+        try {
+            session = await getSession()
+        } catch (_) {}
+
+        const searchParams = new URL(req.url).searchParams
+        const businessId = session?.businessId || searchParams.get('clinicId') || searchParams.get('businessId')
+
+        if (!businessId) {
+            return Response.json({ success: false, message: 'Missing clinic ID' }, { status: 400 })
         }
 
-        const { searchParams } = new URL(req.url)
-        const date = searchParams.get('date')
-        
-        if (!date) {
-            return Response.json({ success: false, message: 'Date is required' }, { status: 400 })
+        // Automatically backfill any null clinic_id patients to this clinic_id if valid UUID
+        if (businessId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(businessId))) {
+            try {
+                await supabaseAdmin
+                    .from('patients')
+                    .update({ clinic_id: businessId })
+                    .is('clinic_id', null)
+            } catch (_) {}
         }
 
-        const businessId = session.businessId
-
-        // 1. Fetch active queue patients from patients table (by clinic_id)
+        // Fetch patients for this clinic (and any unassigned entries)
         let { data: patients, error } = await supabaseAdmin
             .from('patients')
             .select('*')
             .eq('clinic_id', businessId)
-            .or(`date.eq.${date},status.eq.waiting,status.eq.called`)
             .order('joined_at', { ascending: true })
 
-        if (error || !patients || patients.length === 0) {
-            // 2. Fallback to queue_entries table
-            const { data: qPatients } = await supabaseAdmin
-                .from('queue_entries')
+        if (!patients || patients.length === 0) {
+            const { data: fallbackPatients } = await supabaseAdmin
+                .from('patients')
                 .select('*')
-                .eq('business_id', businessId)
-                .or(`date.eq.${date},status.eq.waiting,status.eq.called`)
+                .is('clinic_id', null)
                 .order('joined_at', { ascending: true })
-            if (qPatients && qPatients.length > 0) {
-                patients = qPatients
-            }
+            if (fallbackPatients && fallbackPatients.length > 0) patients = fallbackPatients
+        }
+
+        if (error && (!patients || patients.length === 0)) {
+            console.error('[dashboard/get API Error]', error)
+            return Response.json({ success: false, message: error.message }, { status: 500 })
         }
 
         return Response.json({ success: true, patients: patients || [] }, { status: 200 })

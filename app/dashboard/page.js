@@ -529,7 +529,7 @@ function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
     const bId = clinic?.id || clinic?.business_id
     const nextTokenNum = (patientsCount || 0) + 1
     const generatedToken = `T-${String(nextTokenNum).padStart(3, '0')}`
-    const today = new Date().toISOString().split('T')[0]
+    const today = getISTDateString()
 
     try {
       const res = await fetch('/api/queue/add', {
@@ -555,16 +555,18 @@ function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
     // Direct Supabase fallback
     try {
       if (bId) {
-        const { data, err } = await supabase.from('queue_entries').insert([{
-          business_id: bId,
+        const { data, err } = await supabase.from('patients').insert([{
+          clinic_id: bId,
           name: cleanName,
           phone: cleanP,
           token: generatedToken,
           status: 'waiting',
           date: today,
-          language: lang || 'en',
-          purpose: reason.trim() || 'Walk-in Consultation',
+          language: lang || 'hi',
           joined_at: new Date().toISOString(),
+          fee_total: 500.00,
+          fee_paid: 0.00,
+          payment_status: 'pending'
         }]).select()
 
         if (!err && data && data[0]) {
@@ -793,15 +795,30 @@ function PaymentsView({ clinic, setToastMsg }) {
 
   const fetchPayments = useCallback(async () => {
     setLoading(true)
+    const bId = clinic?.id || clinic?.business_id
     try {
       const res = await fetch('/api/dashboard/payments')
       const data = await res.json()
-      if (data.success && data.patients) {
+      if (data.success && data.patients && data.patients.length > 0) {
         setPatients(data.patients)
+        setLoading(false)
+        return
       }
     } catch (e) {}
+
+    try {
+      if (bId) {
+        const { data: qData } = await supabase
+          .from('queue_entries')
+          .select('*')
+          .eq('business_id', bId)
+          .order('joined_at', { ascending: false })
+          .limit(100)
+        if (qData) setPatients(qData)
+      }
+    } catch (_) {}
     setLoading(false)
-  }, [])
+  }, [clinic?.id, clinic?.business_id])
 
   useEffect(() => {
     fetchPayments()
@@ -1188,6 +1205,15 @@ function DashboardContent() {
   const [queuePaused, setQueuePaused] = useState(false)
   const [activeNotice, setActiveNotice] = useState('')
   const [toastMsg, setToastMsg] = useState('')
+  const [showNavMenu, setShowNavMenu] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // ── Clinic Name & Logo Inline Editing State ──
   const [isEditingClinic, setIsEditingClinic] = useState(false)
@@ -1286,6 +1312,15 @@ function DashboardContent() {
     init()
   }, [router])
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+      localStorage.removeItem('tokenpe_clinic')
+      supabase.auth.signOut().catch(() => {})
+    } catch (e) {}
+    router.push('/login')
+  }
+
   const fetchQueue = useCallback(async () => {
     const bId = clinic?.id || clinic?.business_id
     if (!bId) return
@@ -1294,23 +1329,34 @@ function DashboardContent() {
       const res = await fetch(`/api/dashboard/get?date=${today}`)
       const data = await res.json()
       if (data.success && data.patients) {
-        setPatients(data.patients)
+        const sorted = [...data.patients].sort((a, b) => new Date(a.joined_at || 0) - new Date(b.joined_at || 0))
+        setPatients(sorted)
       } else {
-        // Direct Supabase query fallback
+        // Direct Supabase query fallback from patients table
         const { data: qData } = await supabase
-          .from('queue_entries')
+          .from('patients')
           .select('*')
-          .eq('business_id', bId)
-          .eq('date', today)
+          .eq('clinic_id', bId)
+          .or(`date.eq.${today},status.eq.waiting,status.eq.called`)
           .order('joined_at', { ascending: true })
-        if (qData && qData.length > 0) setPatients(qData)
+        if (qData && qData.length > 0) {
+          setPatients(qData)
+        } else {
+          const { data: legacyData } = await supabase
+            .from('queue_entries')
+            .select('*')
+            .eq('business_id', bId)
+            .or(`date.eq.${today},status.eq.waiting,status.eq.called`)
+            .order('joined_at', { ascending: true })
+          if (legacyData) setPatients(legacyData)
+        }
       }
     } catch (e) {
       try {
         const { data: qData } = await supabase
-          .from('queue_entries')
+          .from('patients')
           .select('*')
-          .eq('business_id', bId)
+          .eq('clinic_id', bId)
           .order('joined_at', { ascending: true })
         if (qData) setPatients(qData)
       } catch (_) {}
@@ -1412,7 +1458,7 @@ function DashboardContent() {
       reason: 'Walk-in Consultation',
       language: newLang || 'en'
     }
-    setPatients(prev => [fallbackPatient, ...prev])
+    setPatients(prev => [...prev, fallbackPatient])
     setNewName('')
     setNewPhone('')
     setAddError('')
@@ -1674,10 +1720,41 @@ function DashboardContent() {
           border-color: #A7F3D0 !important;
           box-shadow: 0 6px 20px rgba(6, 78, 59, 0.07) !important;
         }
+
+        @media (max-width: 768px) {
+          .dashboard-sidebar {
+            display: none !important;
+          }
+          .dashboard-main {
+            padding: 12px 10px !important;
+          }
+          .hamburger-btn {
+            display: flex !important;
+          }
+          .stat-banner-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .stat-segment-hover {
+            border-right: 1px solid #CBE4D3 !important;
+            border-bottom: 1px solid #CBE4D3 !important;
+            padding: 10px 8px !important;
+          }
+          .stat-segment-hover:nth-child(2n) {
+            border-right: none !important;
+          }
+          .stat-segment-hover:nth-child(3), .stat-segment-hover:nth-child(4) {
+            border-bottom: none !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .hamburger-btn {
+            display: none !important;
+          }
+        }
       `}</style>
 
-      {/* ── LEFT SIDEBAR NAVIGATION ── */}
-      <aside style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
+      {/* ── LEFT SIDEBAR NAVIGATION (HIDDEN ON MOBILE) ── */}
+      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
         <div>
           {/* Brand Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px', marginBottom: 24 }}>
@@ -1745,7 +1822,7 @@ function DashboardContent() {
       </aside>
 
       {/* ── MAIN CONTENT CONSOLE ── */}
-      <main style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', background: '#DCEFDF' }}>
+      <main className="dashboard-main" style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', background: '#DCEFDF' }}>
         
         {/* Header Title Bar with Editable Logo & Name */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
@@ -1841,17 +1918,37 @@ function DashboardContent() {
             <div style={{ background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 16, padding: '4px 14px', width: 175, minWidth: 175, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box', cursor: 'default' }}>
               <AnimatedClock />
             </div>
+            <button
+              className="hamburger-btn"
+              onClick={() => setShowNavMenu(true)}
+              title="Open Navigation Menu"
+              style={{
+                background: '#FFFFFF',
+                border: '1.5px solid #064E3B',
+                padding: '7px 10px',
+                borderRadius: 12,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(6,78,59,0.08)',
+                marginLeft: 'auto'
+              }}
+            >
+              <Menu style={{ width: 20, height: 20, color: '#064E3B' }} />
+            </button>
           </div>
         </div>
 
         {/* ── SINGLE PARTITIONED STAT BANNER CARD ── */}
-        <div style={{
+        <div className="stat-banner-grid" style={{
           background: 'linear-gradient(135deg, #FFFFFF 0%, #F7FDF9 100%)',
           borderRadius: 12,
           border: '1.5px solid #CBE4D3',
           boxShadow: '0 2px 10px rgba(6,78,59,0.03)',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           marginBottom: 12,
           overflow: 'hidden'
         }}>
@@ -2050,38 +2147,58 @@ function DashboardContent() {
 
         </div>
 
-        {/* ── TAB SWITCHER & SEARCH BAR ── */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-          {/* Centered Tab Switcher */}
+        {/* ── TAB SWITCHER ── */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'inline-flex', background: '#CBE4D3', borderRadius: 20, padding: 3, gap: 3, boxShadow: '0 2px 6px rgba(6,78,59,0.04)' }}>
-            <button onClick={() => setActiveTab('active')} style={{ border: 'none', borderRadius: 16, padding: '5px 14px', background: activeTab === 'active' ? 'white' : 'transparent', color: activeTab === 'active' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: activeTab === 'active' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.15s ease' }}>
-              Active Queue <span style={{ background: '#ECFDF5', color: '#059669', borderRadius: 10, padding: '1px 7px', fontSize: '0.7rem', cursor: 'pointer' }}>{activePatients.length}</span>
+            <button onClick={() => setActiveTab('active')} style={{ border: 'none', borderRadius: 16, padding: '6px 16px', background: activeTab === 'active' ? 'white' : 'transparent', color: activeTab === 'active' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: activeTab === 'active' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.15s ease' }}>
+              Active Queue <span style={{ background: '#ECFDF5', color: '#059669', borderRadius: 10, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 800 }}>{activePatients.length}</span>
             </button>
-            <button onClick={() => setActiveTab('done')} style={{ border: 'none', borderRadius: 16, padding: '5px 14px', background: activeTab === 'done' ? 'white' : 'transparent', color: activeTab === 'done' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: activeTab === 'done' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.15s ease' }}>
-              Completed <span style={{ background: '#F1F5F9', color: '#64748B', borderRadius: 10, padding: '1px 7px', fontSize: '0.7rem', cursor: 'pointer' }}>{done.length}</span>
+            <button onClick={() => setActiveTab('done')} style={{ border: 'none', borderRadius: 16, padding: '6px 16px', background: activeTab === 'done' ? 'white' : 'transparent', color: activeTab === 'done' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: activeTab === 'done' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.15s ease' }}>
+              Completed <span style={{ background: '#F1F5F9', color: '#64748B', borderRadius: 10, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 800 }}>{done.length}</span>
             </button>
-            <button onClick={() => setActiveTab('payments')} style={{ border: 'none', borderRadius: 16, padding: '5px 14px', background: activeTab === 'payments' ? 'white' : 'transparent', color: activeTab === 'payments' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s ease' }}>
+            <button onClick={() => setActiveTab('payments')} style={{ border: 'none', borderRadius: 16, padding: '6px 16px', background: activeTab === 'payments' ? 'white' : 'transparent', color: activeTab === 'payments' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s ease' }}>
               Payments
             </button>
           </div>
-
-          {/* Search Queue Input */}
-          {activeTab !== 'payments' && (
-            <div style={{ position: 'absolute', right: 0, width: 200 }}>
-              <Search className="w-3.5 h-3.5 text-[#64748B]" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text"
-                placeholder="Search patient..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px 6px 30px', borderRadius: 14, border: '1.5px solid #A8D5B5', fontSize: '0.78rem', outline: 'none', background: 'white' }}
-              />
-            </div>
-          )}
         </div>
 
         {/* ── QUEUE LIST / PAYMENTS VIEW ── */}
         <div>
+          {/* Search Queue Bar Inside Queue Section Top */}
+          {activeTab !== 'payments' && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <Search className="w-4 h-4 text-[#065F46]" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Search patient name, token or phone number..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px 10px 40px',
+                    borderRadius: 14,
+                    border: '1.5px solid #A7F3D0',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    outline: 'none',
+                    background: 'white',
+                    boxShadow: '0 2px 8px rgba(6,78,59,0.04)',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'payments' ? (
             <PaymentsView clinic={clinic} setToastMsg={setToastMsg} />
           ) : activeTab === 'done' ? (
@@ -2155,7 +2272,145 @@ function DashboardContent() {
         )}
       </AnimatePresence>
 
-      {showAddForm && <WalkInModal clinic={clinic} onClose={() => setShowAddForm(false)} onAddSuccess={(newP) => { if (newP) setPatients(prev => [newP, ...prev]); fetchQueue(); sounds.admit(); setToastMsg('Patient added to queue successfully!'); setTimeout(() => setToastMsg(''), 4500); }} patientsCount={patients.length} />}
+      {/* ── MOBILE NAVIGATION OVERLAY DRAWER ── */}
+      <AnimatePresence>
+        {showNavMenu && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', justifyContent: 'flex-end' }}>
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowNavMenu(false)}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(6, 78, 59, 0.75)', backdropFilter: 'blur(6px)' }}
+            />
+
+            {/* Sliding Content Drawer (From Right) */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              style={{
+                position: 'relative',
+                width: '82%',
+                maxWidth: 320,
+                height: '100%',
+                background: '#FFFFFF',
+                boxShadow: '-10px 0 40px rgba(6,78,59,0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                zIndex: 10001,
+                padding: '24px 20px',
+                overflowY: 'auto'
+              }}
+            >
+              <div>
+                {/* Brand Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 12, background: '#064E3B', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Stethoscope className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#064E3B', letterSpacing: '-0.5px' }}>TokenPE</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 700 }}>{clinic?.name || 'OPD Clinic Console'}</div>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowNavMenu(false)} style={{ background: '#F1F5F9', border: 'none', width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}>
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Nav Links */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ fontSize: '0.66rem', fontWeight: 800, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4, paddingLeft: 4 }}>NAVIGATION</div>
+
+                  <button
+                    onClick={() => { setActiveTab('active'); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: activeTab === 'active' ? '#ECFDF5' : 'transparent', color: activeTab === 'active' ? '#064E3B' : '#0F172A', fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-[#064E3B]" /> Live Queue
+                  </button>
+
+                  <button
+                    onClick={() => { setShowAddForm(true); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <UserPlus className="w-4 h-4 text-[#059669]" /> Manual Check-in
+                  </button>
+
+                  <button
+                    onClick={() => { setShowBroadcast(true); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <Megaphone className="w-4 h-4 text-[#059669]" /> Notice to Queue
+                  </button>
+
+                  <button
+                    onClick={() => { setShowQR(true); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <QrCode className="w-4 h-4 text-[#059669]" /> OPD QR Poster
+                  </button>
+
+                  <button
+                    onClick={() => { setActiveTab('payments'); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: activeTab === 'payments' ? '#ECFDF5' : 'transparent', color: activeTab === 'payments' ? '#064E3B' : '#0F172A', fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <CreditCard className="w-4 h-4 text-[#059669]" /> Payments Ledger
+                  </button>
+
+                  <button
+                    onClick={() => { setActiveTab('done'); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: activeTab === 'done' ? '#ECFDF5' : 'transparent', color: activeTab === 'done' ? '#064E3B' : '#0F172A', fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-[#059669]" /> Completed Consultations
+                  </button>
+
+                  <div style={{ height: 1, background: '#E2E8F0', margin: '8px 0' }} />
+
+                  <div style={{ fontSize: '0.66rem', fontWeight: 800, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4, paddingLeft: 4 }}>MANAGEMENT</div>
+
+                  <button
+                    onClick={() => { router.push('/dashboard/analytics'); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <Calendar className="w-4 h-4 text-[#059669]" /> Appointments & Analytics
+                  </button>
+
+                  <button
+                    onClick={() => { router.push('/dashboard/crm'); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <UserCheck className="w-4 h-4 text-[#059669]" /> Doctors & Patients
+                  </button>
+
+                  <button
+                    onClick={() => { router.push('/dashboard/billing'); setShowNavMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <Settings className="w-4 h-4 text-[#059669]" /> Settings & Billing
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawer Bottom Logout */}
+              <div style={{ paddingTop: 16, borderTop: '1px solid #E2E8F0', marginTop: 20 }}>
+                <button
+                  onClick={handleLogout}
+                  style={{ width: '100%', padding: '12px', background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: 12, fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  <LogOut className="w-4 h-4" /> Logout
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {showAddForm && <WalkInModal clinic={clinic} onClose={() => setShowAddForm(false)} onAddSuccess={(newP) => { if (newP) setPatients(prev => [...prev, newP]); fetchQueue(); sounds.admit(); setToastMsg('Patient added to queue successfully!'); setTimeout(() => setToastMsg(''), 4500); }} patientsCount={patients.length} />}
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} onCodeUpdate={(code) => setClinic(c => ({ ...c, code }))} />}
       {showBroadcast && <BroadcastModal onClose={() => setShowBroadcast(false)} onSendNotice={handleSendNotice} activeNotice={activeNotice} />}
       {selectedPatient && <PatientDetailsModal patient={selectedPatient} onClose={() => setSelectedPatient(null)} onNotify={() => notifyWhatsApp(selectedPatient)} />}

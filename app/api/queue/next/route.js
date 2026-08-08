@@ -12,60 +12,56 @@ function getMessage(event, name, token, currentToken, businessName, vertical, pu
     let location = 'the clinic'
     let goMsg = "Start making your way to the clinic!"
     let readyMsg = "Please be ready near the cabin!"
-    let finalMsg = "Proceed to the doctor's cabin immediately! 🏥"
-    let icon = "🏥"
+    let finalMsg = "Proceed to the doctor's cabin immediately!"
 
     if (vertical === 'school' || vertical === 'college') {
         location = 'the campus / office'
         goMsg = "Start making your way to the office!"
         readyMsg = "Please be ready near the front desk!"
-        finalMsg = "Proceed to the front desk immediately! 🏢"
-        icon = "🏢"
+        finalMsg = "Proceed to the front desk immediately!"
     } else if (vertical === 'salon' || vertical === 'barbershop') {
         location = 'the salon'
         goMsg = "Start making your way to the salon!"
         readyMsg = "Please be ready near the waiting area!"
-        finalMsg = "Your stylist is ready! Please proceed! ✂️"
-        icon = "✂️"
+        finalMsg = "Your stylist is ready! Please proceed!"
     } else if (vertical === 'restaurant') {
         location = 'the restaurant'
         goMsg = "Start making your way to the restaurant!"
         readyMsg = "Please be ready near the host stand!"
-        finalMsg = "Your table is ready! Please proceed to the host! 🍽️"
-        icon = "🍽️"
+        finalMsg = "Your table is ready! Please proceed to the host!"
     }
 
     switch (event) {
         case 'ten_away':
-            return `🔔 *Heads up, ${name}!*
+            return `*Heads up, ${name}!*
 
-📍 Now Serving: *${currentToken}*
-🎟 Your Token: *${token}*
-${icon} ${businessName}${purpose ? `\n📋 Purpose: ${purpose}` : ''}
+Now Serving: *${currentToken}*
+Your Token: *${token}*
+${businessName}${purpose ? `\nPurpose: ${purpose}` : ''}
 
-About 10 tokens to go. ${goMsg} 🏃
+About 10 tokens to go. ${goMsg}
 
 _Powered by TokenPe_`
 
         case 'five_away':
-            return `⚡ *Almost your turn, ${name}!*
+            return `*Almost your turn, ${name}!*
 
-📍 Now Serving: *${currentToken}*
-🎟 Your Token: *${token}*
-${icon} ${businessName}${purpose ? `\n📋 Purpose: ${purpose}` : ''}
+Now Serving: *${currentToken}*
+Your Token: *${token}*
+${businessName}${purpose ? `\nPurpose: ${purpose}` : ''}
 
-Only 5 tokens away. ${readyMsg} 🙏
+Only 5 tokens away. ${readyMsg}
 
 _Powered by TokenPe_`
 
         case 'your_turn':
-            return `🚨 *It's YOUR turn, ${name}!*
+            return `*It's YOUR turn, ${name}!*
 
-🎟 Token *${token}* — Please go now!
-${icon} ${businessName}${purpose ? `\n📋 Purpose: ${purpose}` : ''}
+Token *${token}* — Please go now!
+${businessName}${purpose ? `\nPurpose: ${purpose}` : ''}
 
 ${finalMsg}
-Thank you for your patience 🙏
+Thank you for your patience
 
 _Powered by TokenPe_`
 

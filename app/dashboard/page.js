@@ -529,7 +529,6 @@ function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
     const bId = clinic?.id || clinic?.business_id
     const nextTokenNum = (patientsCount || 0) + 1
     const generatedToken = `T-${String(nextTokenNum).padStart(3, '0')}`
-    const today = getISTDateString()
 
     try {
       const res = await fetch('/api/queue/add', {
@@ -540,8 +539,8 @@ function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
           name: cleanName,
           phone: cleanP,
           token: generatedToken,
-          language: lang || 'en',
-          purpose: reason.trim() || 'Walk-in Consultation',
+          language: lang || 'hi',
+          purpose: reason.trim(),
         })
       })
       const data = await res.json()
@@ -549,46 +548,17 @@ function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
         onAddSuccess(data.patient)
         onClose()
         return
+      } else if (data.message) {
+        setError(data.message)
+        setSaving(false)
+        return
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('WalkIn add error:', e)
+    }
 
-    // Direct Supabase fallback
-    try {
-      if (bId) {
-        const { data, err } = await supabase.from('patients').insert([{
-          clinic_id: bId,
-          name: cleanName,
-          phone: cleanP,
-          token: generatedToken,
-          status: 'waiting',
-          date: today,
-          language: lang || 'hi',
-          joined_at: new Date().toISOString(),
-          fee_total: 500.00,
-          fee_paid: 0.00,
-          payment_status: 'pending'
-        }]).select()
-
-        if (!err && data && data[0]) {
-          onAddSuccess(data[0])
-          onClose()
-          return
-        }
-      }
-    } catch (e) {}
-
-    // Fallback trigger
-    onAddSuccess({
-      id: 'walkin-' + Date.now(),
-      name: cleanName,
-      phone: cleanP,
-      token: generatedToken,
-      status: 'waiting',
-      joined_at: new Date().toISOString(),
-      reason: reason.trim() || 'Walk-in Consultation',
-      language: lang || 'en'
-    })
-    onClose()
+    setError('Network error adding patient. Please check connection.')
+    setSaving(false)
   }
 
   return (
@@ -796,27 +766,19 @@ function PaymentsView({ clinic, setToastMsg }) {
   const fetchPayments = useCallback(async () => {
     setLoading(true)
     const bId = clinic?.id || clinic?.business_id
+    if (!bId) {
+      setLoading(false)
+      return
+    }
     try {
-      const res = await fetch('/api/dashboard/payments')
+      const res = await fetch(`/api/dashboard/payments?clinicId=${bId}`)
       const data = await res.json()
-      if (data.success && data.patients && data.patients.length > 0) {
+      if (data.success && Array.isArray(data.patients)) {
         setPatients(data.patients)
-        setLoading(false)
-        return
       }
-    } catch (e) {}
-
-    try {
-      if (bId) {
-        const { data: qData } = await supabase
-          .from('queue_entries')
-          .select('*')
-          .eq('business_id', bId)
-          .order('joined_at', { ascending: false })
-          .limit(100)
-        if (qData) setPatients(qData)
-      }
-    } catch (_) {}
+    } catch (e) {
+      console.warn('fetchPayments error:', e)
+    }
     setLoading(false)
   }, [clinic?.id, clinic?.business_id])
 
@@ -1113,8 +1075,18 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
         </div>
       </div>
 
-      {/* Partition 3: WhatsApp Number */}
-      <div style={{ flex: '1', minWidth: 145, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
+      {/* Partition 3: Reason for Visit */}
+      <div style={{ flex: '1', minWidth: 140, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+          REASON FOR VISIT
+        </span>
+        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: (patient.purpose || patient.reason) ? '#0F172A' : '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
+          {patient.purpose || patient.reason || 'N/A'}
+        </span>
+      </div>
+
+      {/* Partition 4: WhatsApp Number */}
+      <div style={{ flex: '1', minWidth: 140, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
         <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
           WHATSAPP NUMBER
         </span>
@@ -1123,50 +1095,55 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
         </span>
       </div>
 
-      {/* Partition 4: Join Time */}
+      {/* Partition 5: Wait Time */}
       <div style={{ flex: '1', minWidth: 155, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
-          JOIN TIME
+          WAIT TIME
         </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#475569', fontSize: '0.78rem', fontWeight: 600 }}>
-          <Clock className="w-3.5 h-3.5 text-[#94A3B8]" /> Joined {joinedTime} ({waitMins > 0 ? `${waitMins}m ago` : 'just now'})
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#059669', fontSize: '0.82rem', fontWeight: 800 }}>
+            <Clock className="w-3.5 h-3.5 text-[#059669]" /> {waitMins > 0 ? `${waitMins}m waited` : 'Just joined'}
+          </span>
+          <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 600 }}>({joinedTime})</span>
+        </div>
       </div>
 
       {/* Partition 5: Action Controls */}
-      <div
-        style={{
-          borderLeft: '1.5px solid #CBE4D3',
-          padding: '8px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          background: '#FAFCFA',
-          flexShrink: 0,
-        }}
-      >
-        {isCalled ? (
-          <button className="card-btn-admit" onClick={onDone}>
-            <CheckCircle2 className="w-3.5 h-3.5" /> Admit
+      {!isDone && (
+        <div
+          style={{
+            borderLeft: '1.5px solid #CBE4D3',
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: '#FAFCFA',
+            flexShrink: 0,
+          }}
+        >
+          {isCalled ? (
+            <button className="card-btn-admit" onClick={onDone}>
+              <CheckCircle2 className="w-3.5 h-3.5" /> Mark Done
+            </button>
+          ) : (
+            <button className="card-btn-admit" onClick={onPriorityCall}>
+              <CheckCircle2 className="w-3.5 h-3.5" /> Admit
+            </button>
+          )}
+
+          <button className="card-btn-notify" onClick={onNotify}>
+            <Bell className="w-3.5 h-3.5" /> Notify
           </button>
-        ) : (
-          <button className="card-btn-admit" onClick={onPriorityCall}>
-            <CheckCircle2 className="w-3.5 h-3.5" /> Admit
+
+          <button className="card-btn-skip" onClick={onSkip}>
+            <SkipForward className="w-3.5 h-3.5" /> Skip
           </button>
-        )}
 
-        <button className="card-btn-notify" onClick={onNotify}>
-          <Bell className="w-3.5 h-3.5" /> Notify
-        </button>
-
-        <button className="card-btn-skip" onClick={onSkip}>
-          <SkipForward className="w-3.5 h-3.5" /> Skip
-        </button>
-
-        {onViewDetails && (
-          <button onClick={onViewDetails} style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '1.2rem', padding: '4px 6px' }}>⋮</button>
-        )}
-      </div>
+          {onViewDetails && (
+            <button onClick={onViewDetails} style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '1.2rem', padding: '4px 6px' }}>⋮</button>
+          )}
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -1289,6 +1266,13 @@ function DashboardContent() {
       if (storedClinic) {
         try { setClinic(JSON.parse(storedClinic)) } catch (e) {}
       }
+      const cachedPts = localStorage.getItem('tokenpe_cached_patients')
+      if (cachedPts) {
+        try {
+          const parsed = JSON.parse(cachedPts)
+          if (Array.isArray(parsed) && parsed.length > 0) setPatients(parsed)
+        } catch (e) {}
+      }
 
       try {
         const res = await fetch('/api/dashboard/init')
@@ -1316,52 +1300,44 @@ function DashboardContent() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
       localStorage.removeItem('tokenpe_clinic')
+      localStorage.removeItem('tokenpe_cached_patients')
       supabase.auth.signOut().catch(() => {})
     } catch (e) {}
     router.push('/login')
   }
 
+  const updatePatientsState = useCallback((updater) => {
+    setPatients(prev => {
+      const nextVal = typeof updater === 'function' ? updater(prev) : updater
+      try {
+        if (Array.isArray(nextVal)) {
+          localStorage.setItem('tokenpe_cached_patients', JSON.stringify(nextVal))
+        }
+      } catch (_) {}
+      return nextVal
+    })
+  }, [])
+
   const fetchQueue = useCallback(async () => {
-    const bId = clinic?.id || clinic?.business_id
-    if (!bId) return
     const today = getISTDateString()
+    const bId = clinic?.id || clinic?.business_id
     try {
-      const res = await fetch(`/api/dashboard/get?date=${today}`)
+      const res = await fetch(`/api/dashboard/get?date=${today}&clinicId=${bId || ''}`)
       const data = await res.json()
-      if (data.success && data.patients) {
-        const sorted = [...data.patients].sort((a, b) => new Date(a.joined_at || 0) - new Date(b.joined_at || 0))
-        setPatients(sorted)
-      } else {
-        // Direct Supabase query fallback from patients table
+      if (data.success && Array.isArray(data.patients)) {
+        updatePatientsState(data.patients)
+      } else if (bId) {
         const { data: qData } = await supabase
           .from('patients')
           .select('*')
           .eq('clinic_id', bId)
-          .or(`date.eq.${today},status.eq.waiting,status.eq.called`)
           .order('joined_at', { ascending: true })
-        if (qData && qData.length > 0) {
-          setPatients(qData)
-        } else {
-          const { data: legacyData } = await supabase
-            .from('queue_entries')
-            .select('*')
-            .eq('business_id', bId)
-            .or(`date.eq.${today},status.eq.waiting,status.eq.called`)
-            .order('joined_at', { ascending: true })
-          if (legacyData) setPatients(legacyData)
-        }
+        if (qData) updatePatientsState(qData)
       }
     } catch (e) {
-      try {
-        const { data: qData } = await supabase
-          .from('patients')
-          .select('*')
-          .eq('clinic_id', bId)
-          .order('joined_at', { ascending: true })
-        if (qData) setPatients(qData)
-      } catch (_) {}
+      console.warn('fetchQueue error:', e)
     }
-  }, [clinic?.id, clinic?.business_id])
+  }, [clinic?.id, clinic?.business_id, updatePatientsState])
 
   useEffect(() => {
     fetchQueue()
@@ -1469,7 +1445,7 @@ function DashboardContent() {
 
   const admitPatient = async (patientId) => {
     sounds.call()
-    setPatients(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'called' } : p))
+    updatePatientsState(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'called' } : p))
     setToastMsg('Patient admitted to doctor consultation!')
     setTimeout(() => setToastMsg(''), 4000)
 
@@ -1477,9 +1453,7 @@ function DashboardContent() {
       const targetP = patients.find(p => String(p.id) === String(patientId))
       const bId = clinic?.id || clinic?.business_id
 
-      await supabase.from('queue_entries')
-        .update({ status: 'called' })
-        .eq('id', patientId)
+      supabase.from('patients').update({ status: 'called' }).eq('id', patientId).then(() => {})
 
       if (bId && targetP) {
         await fetch('/api/queue/next', {
@@ -1515,15 +1489,13 @@ function DashboardContent() {
 
   const markDone = async (patientId) => {
     sounds.admit()
-    setPatients(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'done' } : p))
+    updatePatientsState(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'done' } : p))
     setToastMsg('Patient consultation marked as Completed!')
     setTimeout(() => setToastMsg(''), 4000)
 
     try {
       const bId = clinic?.id || clinic?.business_id
-      await supabase.from('queue_entries')
-        .update({ status: 'done' })
-        .eq('id', patientId)
+      supabase.from('patients').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId).then(() => {})
 
       await fetch('/api/queue/done', {
         method: 'POST',
@@ -1537,15 +1509,13 @@ function DashboardContent() {
 
   const skipPatient = async (patientId) => {
     sounds.dismiss()
-    setPatients(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'skipped' } : p))
+    updatePatientsState(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'skipped' } : p))
     setToastMsg('Patient token skipped.')
     setTimeout(() => setToastMsg(''), 4000)
 
     try {
       const bId = clinic?.id || clinic?.business_id
-      await supabase.from('queue_entries')
-        .update({ status: 'skipped' })
-        .eq('id', patientId)
+      supabase.from('patients').update({ status: 'skipped' }).eq('id', patientId).then(() => {})
 
       await fetch('/api/queue/skip', {
         method: 'POST',

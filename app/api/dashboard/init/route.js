@@ -10,15 +10,24 @@ export async function GET(req) {
 
         const businessId = session.businessId
 
-        // Fetch the current clinic (source of truth for vertical + identity)
-        const { data: clinic, error: clinicError } = await supabaseAdmin
+        // Strict clinic verification against database
+        let { data: clinic } = await supabaseAdmin
             .from('clinics')
             .select('*')
             .eq('id', businessId)
             .single()
 
-        if (clinicError || !clinic) {
-            return Response.json({ success: false, message: 'Clinic not found' }, { status: 404 })
+        if (!clinic) {
+            const { data: bClinic } = await supabaseAdmin
+                .from('businesses')
+                .select('*')
+                .eq('id', businessId)
+                .single()
+            if (bClinic) clinic = bClinic
+        }
+
+        if (!clinic) {
+            return Response.json({ success: false, message: 'Clinic not found in database. Access denied.' }, { status: 404 })
         }
 
         // Fetch all accounts owned by this user within the SAME vertical only.

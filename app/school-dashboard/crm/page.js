@@ -92,7 +92,7 @@ export default function SchoolCRMPage() {
 
   useEffect(() => {
     async function load() {
-      const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business') || localStorage.getItem('tokenpe_clinic')
+      const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business')
       if (!stored) { router.push('/school-login'); return }
 
       const c = JSON.parse(stored)

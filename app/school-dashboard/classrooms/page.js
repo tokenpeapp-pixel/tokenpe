@@ -44,7 +44,7 @@ export default function ClassroomsPage() {
   }, [])
 
   const loadQueues = useCallback(async () => {
-    const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business') || localStorage.getItem('tokenpe_clinic')
+    const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business')
     if (!stored) { router.push('/school-login'); return }
     const c = JSON.parse(stored)
     setClinic(c)
@@ -133,7 +133,7 @@ export default function ClassroomsPage() {
   function switchToQueue(q) {
     localStorage.setItem('tokenpe_school_business', JSON.stringify(q))
     localStorage.setItem('tokenpe_business', JSON.stringify(q))
-    localStorage.setItem('tokenpe_clinic', JSON.stringify(q))
+    localStorage.setItem('tokenpe_school_business', JSON.stringify(q))
     localStorage.setItem('clinicCode', q.code)
     localStorage.setItem('clinicPhone', q.phone)
     router.push('/school-dashboard')

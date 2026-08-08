@@ -68,7 +68,7 @@ export default function HistoryPage() {
     setLoading(true)
     setError(null)
     try {
-      const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business') || localStorage.getItem('tokenpe_clinic')
+      const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business')
       const clinic = stored ? JSON.parse(stored) : null
       const schoolId = clinic?.id
       if (!schoolId) { setError('No school found. Please log in.'); setLoading(false); return }

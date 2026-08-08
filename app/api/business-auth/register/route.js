@@ -107,6 +107,7 @@ export async function POST(req) {
             path: '/'
         })
 
+        delete data.pin
         return Response.json({ success: true, clinic: data }, { status: 200 })
 
     } catch (error) {

@@ -156,9 +156,9 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
     try {
       localStorage.setItem('tokenpe_active_room', locationInput)
-      const stored = localStorage.getItem('tokenpe_clinic')
+      const stored = localStorage.getItem('tokenpe_school_business')
       if (stored) {
-        try { localStorage.setItem('tokenpe_clinic', JSON.stringify({ ...JSON.parse(stored), code: clean, location: locationInput })) } catch (_) {}
+        try { localStorage.setItem('tokenpe_school_business', JSON.stringify({ ...JSON.parse(stored), code: clean, location: locationInput })) } catch (_) {}
       }
       if (onCodeUpdate) onCodeUpdate(clean)
       setCodeSuccess(true)
@@ -655,7 +655,7 @@ function SchoolCommandCenterContent() {
       const updatedClinic = { ...clinic, logo_url: base64Logo }
       setSchool(updatedClinic)
       try {
-        localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+        localStorage.setItem('tokenpe_school_business', JSON.stringify(updatedClinic))
         if (clinic?.id && clinic.id !== 'demo-school-id') {
           await supabase.from('schools').update({ logo_url: base64Logo }).eq('id', clinic.id).catch(() => {})
           await supabase.from('public_schools').update({ logo_url: base64Logo }).eq('id', clinic.id).catch(() => {})
@@ -673,7 +673,7 @@ function SchoolCommandCenterContent() {
     const updatedClinic = { ...clinic, name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }
     setSchool(updatedClinic)
     try {
-      localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
+      localStorage.setItem('tokenpe_school_business', JSON.stringify(updatedClinic))
       localStorage.setItem('tokenpe_school_subtitle', schoolSubtitle)
       if (clinic?.id && clinic.id !== 'demo-school-id') {
         await supabase.from('schools').update({ name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }).eq('id', clinic.id).catch(() => {})
@@ -720,7 +720,7 @@ function SchoolCommandCenterContent() {
   async function getRealSchoolId() {
     if (clinic?.id && clinic.id !== 'demo-school-id') return clinic.id
     try {
-      const stored = localStorage.getItem('tokenpe_clinic') || localStorage.getItem('tokenpe_school_business')
+      const stored = localStorage.getItem('tokenpe_school_business')
       if (stored) {
         const parsed = JSON.parse(stored)
         if (parsed?.id && parsed.id !== 'demo-school-id') {
@@ -730,25 +730,8 @@ function SchoolCommandCenterContent() {
       }
     } catch (_) {}
 
-    try {
-      const { data: dbSchool } = await supabase.from('schools').select('*').limit(1).maybeSingle()
-      if (dbSchool) {
-        setSchool(dbSchool)
-        try { localStorage.setItem('tokenpe_clinic', JSON.stringify(dbSchool)) } catch (_) {}
-        return dbSchool.id
-      }
-    } catch (e) {}
-
-    try {
-      const { data: dbPub } = await supabase.from('public_schools').select('*').limit(1).maybeSingle()
-      if (dbPub) {
-        setSchool(dbPub)
-        try { localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub)) } catch (_) {}
-        return dbPub.id
-      }
-    } catch (e) {}
-
-    return clinic?.id
+    router.push('/school-login')
+    return null
   }
 
   // ── 1. DYNAMIC INITIALIZATION & REAL DB FETCH ──
@@ -757,17 +740,17 @@ function SchoolCommandCenterContent() {
     const savedRoom = localStorage.getItem('tokenpe_active_room')
     if (savedRoom) setActiveRoom(savedRoom)
 
-    const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business') || localStorage.getItem('tokenpe_clinic')
+    const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business')
     let currentSchool = null
 
     if (stored) {
       try {
-        currentSchool = JSON.parse(stored)
-        setSchool(currentSchool)
+        const parsed = JSON.parse(stored)
+        if (parsed?.type === 'school' || parsed?.vertical === 'school') {
+          currentSchool = parsed
+          setSchool(currentSchool)
+        }
       } catch (e) {}
-    } else {
-      currentSchool = { id: 'demo-school-id', name: 'Ashbourne Academy', code: 'ASHBOURNE', city: 'Karnataka' }
-      setSchool(currentSchool)
     }
 
     if (currentSchool?.logo_url) setSchoolLogo(currentSchool.logo_url)
@@ -781,46 +764,27 @@ function SchoolCommandCenterContent() {
           setSchool(data.clinic)
           localStorage.setItem('tokenpe_school_business', JSON.stringify(data.clinic))
           localStorage.setItem('tokenpe_business', JSON.stringify(data.clinic))
-          localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
           currentSchool = data.clinic
+          return true
         } else if (!data.authenticated) {
           router.push('/school-login')
-          return
+          return false
         }
-      } catch (e) {}
+      } catch (e) {
+        router.push('/school-login')
+        return false
+      }
+      return false
     }
-    checkAuth()
 
     // Real DB fetch from Supabase
     async function loadDynamicData() {
       try {
         let targetId = currentSchool?.id
         if (!targetId || targetId === 'demo-school-id') {
-          const { data: dbSchool } = await supabase.from('schools').select('*').limit(1).maybeSingle()
-          if (dbSchool) {
-            currentSchool = dbSchool
-            targetId = dbSchool.id
-            setSchool(dbSchool)
-            if (dbSchool.logo_url) setSchoolLogo(dbSchool.logo_url)
-            if (dbSchool.location && !localStorage.getItem('tokenpe_active_room')) {
-              setActiveRoom(dbSchool.location)
-              localStorage.setItem('tokenpe_active_room', dbSchool.location)
-            }
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(dbSchool))
-          } else {
-            const { data: dbPub } = await supabase.from('public_schools').select('*').limit(1).maybeSingle()
-            if (dbPub) {
-              currentSchool = dbPub
-              targetId = dbPub.id
-              setSchool(dbPub)
-              if (dbPub.logo_url) setSchoolLogo(dbPub.logo_url)
-              if (dbPub.location && !localStorage.getItem('tokenpe_active_room')) {
-                setActiveRoom(dbPub.location)
-                localStorage.setItem('tokenpe_active_room', dbPub.location)
-              }
-              localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub))
-            }
-          }
+          router.push('/school-login')
+          setLoading(false)
+          return
         } else {
           const { data: dbSchool } = await supabase.from('schools').select('*').eq('id', targetId).maybeSingle()
           if (dbSchool) {
@@ -831,7 +795,7 @@ function SchoolCommandCenterContent() {
               setActiveRoom(dbSchool.location)
               localStorage.setItem('tokenpe_active_room', dbSchool.location)
             }
-            localStorage.setItem('tokenpe_clinic', JSON.stringify(dbSchool))
+            localStorage.setItem('tokenpe_school_business', JSON.stringify(dbSchool))
           } else {
             const { data: dbPub } = await supabase.from('public_schools').select('*').eq('id', targetId).maybeSingle()
             if (dbPub) {
@@ -842,7 +806,7 @@ function SchoolCommandCenterContent() {
                 setActiveRoom(dbPub.location)
                 localStorage.setItem('tokenpe_active_room', dbPub.location)
               }
-              localStorage.setItem('tokenpe_clinic', JSON.stringify(dbPub))
+              localStorage.setItem('tokenpe_school_business', JSON.stringify(dbPub))
             }
           }
         }
@@ -963,11 +927,22 @@ function SchoolCommandCenterContent() {
       }
     }
 
-    loadDynamicData()
+    let interval
+    async function init() {
+      const authed = await checkAuth()
+      if (!authed) {
+        setLoading(false)
+        return
+      }
+      await loadDynamicData()
+      interval = setInterval(loadDynamicData, 4000)
+    }
+    init()
 
     // ── Real-time polling every 4s for queue updates ──
-    const interval = setInterval(loadDynamicData, 4000)
-    return () => clearInterval(interval)
+    return () => {
+      if (interval) clearInterval(interval)
+    }
   }, [])
 
   // ── 2. DYNAMIC ADMIT FUNCTION (MOVES TO WITH STAFF SECTION) ──

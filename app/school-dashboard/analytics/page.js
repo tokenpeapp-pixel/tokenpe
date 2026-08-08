@@ -26,7 +26,7 @@ export default function AnalyticsPage() {
   const loadData = useCallback(async (date) => {
     try {
       setLoading(true)
-      const stored = typeof window !== 'undefined' ? (localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business') || localStorage.getItem('tokenpe_clinic')) : null
+      const stored = typeof window !== 'undefined' ? (localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business')) : null
       const school = stored ? JSON.parse(stored) : null
       const schoolId = school?.id
 

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef, Suspense, useCallback } from 'react'
+import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react'
 import { 
   Stethoscope, Phone, CheckCircle2, XCircle, Megaphone, PlusCircle, SkipForward, 
   Bell, Download, Printer, Star, Mic, AlertTriangle, Hourglass, RefreshCw, Sparkles, 
@@ -10,7 +10,7 @@ import {
   MessageCircle, LayoutDashboard, TrendingUp, IndianRupee, Eye, ExternalLink, Shield
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
 import confetti from 'canvas-confetti'
 import QRCode from 'qrcode'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -45,7 +45,7 @@ function AnimatedClock() {
     return () => clearInterval(timer)
   }, [])
 
-  if (!time) return <span style={{ opacity: 0 }}>00:00:00 AM</span>
+  if (!time) return <span style={{ opacity: 0, fontVariantNumeric: 'tabular-nums' }}>00:00:00 AM</span>
 
   const formatted = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
   const parts = formatted.split(' ')
@@ -54,13 +54,13 @@ function AnimatedClock() {
   const [h, m, s] = timeDigits.split(':')
 
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.9rem', fontWeight: 800, color: '#064E3B', lineHeight: 1 }}>
+    <div style={{ display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, fontFamily: "'Plus Jakarta Sans', sans-serif", fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', fontSize: '1.75rem', fontWeight: 800, color: '#064E3B', lineHeight: 1, whiteSpace: 'nowrap' }}>
       <AnimatedNumber value={h || '00'} />
-      <span style={{ margin: '0 1px', opacity: 0.6 }}>:</span>
+      <span style={{ margin: '0 1px', opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>:</span>
       <AnimatedNumber value={m || '00'} />
-      <span style={{ margin: '0 1px', opacity: 0.6 }}>:</span>
+      <span style={{ margin: '0 1px', opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>:</span>
       <AnimatedNumber value={s || '00'} />
-      <span style={{ fontSize: '0.85rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 6, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <span style={{ fontSize: '0.8rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 4, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
         {ampm}
       </span>
     </div>
@@ -545,8 +545,8 @@ function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
         })
       })
       const data = await res.json()
-      if (data.success) {
-        onAddSuccess()
+      if (data.success && data.patient) {
+        onAddSuccess(data.patient)
         onClose()
         return
       }
@@ -567,8 +567,8 @@ function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
           joined_at: new Date().toISOString(),
         }]).select()
 
-        if (!err && data) {
-          onAddSuccess()
+        if (!err && data && data[0]) {
+          onAddSuccess(data[0])
           onClose()
           return
         }
@@ -709,7 +709,7 @@ function BroadcastModal({ onClose, onSendNotice, activeNotice }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #E2E8F0', paddingBottom: 10 }}>
           <h3 style={{ margin: 0, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.25rem', fontWeight: 800, color: '#064E3B', display: 'flex', alignItems: 'center', gap: 8 }}>
             <Megaphone style={{ width: 20, height: 20, color: '#064E3B' }} />
-            <span>Broadcast Notice to Queue</span>
+            <span>Notice to Queue</span>
           </h3>
           <button onClick={onClose} style={{ background: '#F1F5F9', border: 'none', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold' }}>×</button>
         </div>
@@ -783,58 +783,236 @@ function PatientDetailsModal({ patient, onClose, onNotify }) {
 }
 
 // ─── PAYMENTS LEDGER VIEW ───
-function PaymentsView({ clinic }) {
-  const [payments, setPayments] = useState([])
+function PaymentsView({ clinic, setToastMsg }) {
+  const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
+  const [editingPatient, setEditingPatient] = useState(null)
+  const [feeTotalInput, setFeeTotalInput] = useState('500')
+  const [feePaidInput, setFeePaidInput] = useState('500')
+  const [sendingReminderId, setSendingReminderId] = useState(null)
 
-  useEffect(() => {
-    async function fetchPayments() {
-      try {
-        const res = await fetch('/api/dashboard/payments')
-        const data = await res.json()
-        if (data.success) {
-          setPayments(data.payments || [])
-        }
-      } catch (e) {}
-      setLoading(false)
-    }
-    fetchPayments()
+  const fetchPayments = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/dashboard/payments')
+      const data = await res.json()
+      if (data.success && data.patients) {
+        setPatients(data.patients)
+      }
+    } catch (e) {}
+    setLoading(false)
   }, [])
 
-  const totalCollected = payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0)
+  useEffect(() => {
+    fetchPayments()
+  }, [fetchPayments])
+
+  const totalCollected = patients.reduce((acc, p) => acc + (parseFloat(p.fee_paid) || 0), 0)
+  const totalPending = patients.reduce((acc, p) => {
+    const tot = parseFloat(p.fee_total) || 500
+    const pd = parseFloat(p.fee_paid) || 0
+    return acc + Math.max(0, tot - pd)
+  }, 0)
+
+  const handleUpdatePayment = async (pId, feeTotal, feePaid, status) => {
+    try {
+      const res = await fetch('/api/queue/update-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: pId,
+          updates: {
+            fee_total: feeTotal,
+            fee_paid: feePaid,
+            payment_status: status
+          }
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPatients(prev => prev.map(p => p.id === pId ? { ...p, fee_total: feeTotal, fee_paid: feePaid, payment_status: status } : p))
+        if (setToastMsg) setToastMsg(status === 'completed' ? '✓ Payment received! WhatsApp receipt sent.' : '✓ Payment record updated.')
+      } else {
+        alert(data.message || 'Failed to update payment')
+      }
+    } catch (e) {
+      alert('Network error updating payment')
+    }
+  }
+
+  const handleRemindPayment = async (pId) => {
+    setSendingReminderId(pId)
+    try {
+      const res = await fetch('/api/queue/remind-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: pId })
+      })
+      const data = await res.json()
+      if (data.success) {
+        if (setToastMsg) setToastMsg('📲 WhatsApp payment reminder sent!')
+      } else {
+        alert(data.message || 'Failed to send WhatsApp reminder')
+      }
+    } catch (e) {
+      alert('Network error sending reminder')
+    }
+    setSendingReminderId(null)
+  }
 
   return (
-    <div style={{ background: 'white', borderRadius: 20, padding: 24, border: '1px solid #E2E8F0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div style={{ background: 'white', borderRadius: 16, padding: '20px 24px', border: '1.5px solid #CBE4D3', boxShadow: '0 3px 14px rgba(6,78,59,0.03)' }}>
+      {/* Header Banner */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#064E3B', margin: 0 }}>Consultation Payments Ledger</h2>
-          <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '2px 0 0' }}>Daily collection records & OPD receipts</p>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#064E3B', margin: 0 }}>Consultation Payments & Billing Ledger</h2>
+          <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '2px 0 0' }}>Track OPD patient fees, collected amounts, and instant WhatsApp receipts</p>
         </div>
-        <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 16, padding: '8px 16px', textAlign: 'right' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#065F46', textTransform: 'uppercase' }}>Today's Total</div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#065F46' }}>₹{totalCollected || 1500}</div>
+
+        <div style={{ display: 'flex', gap: 10 }}>
+
+          <div style={{ background: '#ECFDF5', border: '1.5px solid #A7F3D0', borderRadius: 12, padding: '6px 14px', textAlign: 'right' }}>
+            <div style={{ fontSize: '0.64rem', fontWeight: 800, color: '#065F46', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Collected</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#064E3B' }}>₹{totalCollected.toFixed(2)}</div>
+          </div>
+          <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: '6px 14px', textAlign: 'right' }}>
+            <div style={{ fontSize: '0.64rem', fontWeight: 800, color: '#B45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pending Balance</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#B45309' }}>₹{totalPending.toFixed(2)}</div>
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#64748B' }}>Loading ledger...</div>
-      ) : payments.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748B', background: '#F8FAFC', borderRadius: 16, border: '1px dashed #E2E8F0' }}>
+        <div style={{ textAlign: 'center', padding: 40, color: '#64748B', fontSize: '0.84rem' }}>Loading billing records...</div>
+      ) : patients.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748B', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E2E8F0' }}>
           <CreditCard className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
-          <div style={{ fontWeight: 800, color: '#0F172A' }}>No payment receipts recorded today</div>
-          <div style={{ fontSize: '0.78rem', marginTop: 4 }}>Consultation payments will automatically log here.</div>
+          <div style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>No billing records found</div>
+          <div style={{ fontSize: '0.76rem', marginTop: 4 }}>OPD consultations and walk-in check-ins will automatically log here.</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {payments.map((p, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12, border: '1px solid #F1F5F9', background: '#FAFCFB' }}>
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>{p.patient_name || 'Walk-in Patient'}</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748B' }}>Token {p.token} · OPD Consultation Fee</div>
+          {patients.map((p) => {
+            const totFee = parseFloat(p.fee_total) || 500
+            const paidFee = parseFloat(p.fee_paid) || (p.payment_status === 'completed' ? totFee : 0)
+            const isCompleted = p.payment_status === 'completed' || paidFee >= totFee
+            const pendingFee = Math.max(0, totFee - paidFee)
+            const timeStr = new Date(p.joined_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
+
+            return (
+              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12, border: `1.5px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, background: isCompleted ? '#F0FDF4' : '#FFFDF5', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: isCompleted ? '#ECFDF5' : '#FFFBEB', border: `1px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem', color: isCompleted ? '#065F46' : '#B45309', fontFamily: 'monospace' }}>
+                    #{formatToken(p.token)}
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>{p.name || 'Walk-in Patient'}</span>
+                      <span style={{ fontSize: '0.64rem', fontWeight: 800, padding: '2px 8px', borderRadius: 8, background: isCompleted ? '#ECFDF5' : '#FFFBEB', color: isCompleted ? '#059669' : '#D97706', border: `1px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, textTransform: 'uppercase' }}>
+                        {isCompleted ? 'PAID FULL' : `PENDING ₹${pendingFee}`}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: 2 }}>
+                      Phone: +91 {p.phone} · OPD Consultation · {timeStr}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ textAlign: 'right', marginRight: 4 }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 900, color: isCompleted ? '#059669' : '#D97706' }}>
+                      ₹{paidFee} <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>/ ₹{totFee}</span>
+                    </div>
+                  </div>
+
+                  {!isCompleted && (
+                    <>
+                      <button
+                        onClick={() => handleUpdatePayment(p.id, totFee, totFee, 'completed')}
+                        style={{ background: '#059669', color: 'white', border: 'none', padding: '6px 12px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <Check className="w-3.5 h-3.5" /> Mark Paid
+                      </button>
+
+                      <button
+                        onClick={() => handleRemindPayment(p.id)}
+                        disabled={sendingReminderId === p.id}
+                        style={{ background: '#25D366', color: 'white', border: 'none', padding: '6px 12px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" /> {sendingReminderId === p.id ? 'Sending...' : 'WhatsApp Reminder'}
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setEditingPatient(p)
+                      setFeeTotalInput(String(totFee))
+                      setFeePaidInput(String(paidFee))
+                    }}
+                    style={{ background: '#F1F5F9', color: '#0F172A', border: 'none', padding: '6px 10px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Edit Fee
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: '1rem', fontWeight: 900, color: '#059669' }}>+₹{p.amount || 500}</div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Add Payment Modal */}
+
+      {/* Edit Fee Modal */}
+      {editingPatient && (
+        <div onClick={() => setEditingPatient(null)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(6, 78, 59, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 20, padding: 24, maxWidth: 400, width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#064E3B', margin: '0 0 4px' }}>Edit Patient Billing</h3>
+            <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0 0 16px' }}>#{editingPatient.token} · {editingPatient.name || 'Walk-in Patient'}</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#064E3B', marginBottom: 4 }}>TOTAL CONSULTATION FEE (₹)</label>
+                <input
+                  type="number"
+                  value={feeTotalInput}
+                  onChange={e => setFeeTotalInput(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: '1.5px solid #A7F3D0', fontSize: '0.88rem', fontWeight: 800, outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, color: '#064E3B', marginBottom: 4 }}>AMOUNT PAID SO FAR (₹)</label>
+                <input
+                  type="number"
+                  value={feePaidInput}
+                  onChange={e => setFeePaidInput(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: '1.5px solid #A7F3D0', fontSize: '0.88rem', fontWeight: 800, outline: 'none' }}
+                />
+              </div>
             </div>
-          ))}
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => {
+                  const tot = parseFloat(feeTotalInput) || 0
+                  const pd = parseFloat(feePaidInput) || 0
+                  const status = pd >= tot ? 'completed' : 'pending'
+                  handleUpdatePayment(editingPatient.id, tot, pd, status)
+                  setEditingPatient(null)
+                }}
+                style={{ flex: 1, background: '#064E3B', color: 'white', border: 'none', padding: '10px', borderRadius: 10, fontWeight: 800, cursor: 'pointer', fontSize: '0.82rem' }}
+              >
+                Save & Update Receipt
+              </button>
+              <button
+                onClick={() => setEditingPatient(null)}
+                style={{ background: '#F1F5F9', color: '#64748B', border: 'none', padding: '10px 14px', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -884,21 +1062,21 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 1 }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 900, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 1 }}>
           TOKEN
         </span>
-        <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#064E3B', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
+        <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#064E3B', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
           {tokenDisplay}
         </span>
       </div>
 
       {/* Partition 2: Patient Name & Status */}
       <div style={{ flex: '1.2', minWidth: 150, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
-        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
           PATIENT NAME
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0F172A', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <span style={{ fontSize: '0.94rem', fontWeight: 800, color: '#0F172A', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             {name}
           </span>
           <span
@@ -920,7 +1098,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
 
       {/* Partition 3: WhatsApp Number */}
       <div style={{ flex: '1', minWidth: 145, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
-        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
           WHATSAPP NUMBER
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#059669', fontWeight: 700, fontSize: '0.82rem' }}>
@@ -930,7 +1108,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
 
       {/* Partition 4: Join Time */}
       <div style={{ flex: '1', minWidth: 155, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
           JOIN TIME
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#475569', fontSize: '0.78rem', fontWeight: 600 }}>
@@ -1011,6 +1189,58 @@ function DashboardContent() {
   const [activeNotice, setActiveNotice] = useState('')
   const [toastMsg, setToastMsg] = useState('')
 
+  // ── Clinic Name & Logo Inline Editing State ──
+  const [isEditingClinic, setIsEditingClinic] = useState(false)
+  const [editedName, setEditedName] = useState('')
+  const logoInputRef = useRef(null)
+
+  const startEditingClinic = () => {
+    setEditedName(clinic?.name || 'Clinic Command Center')
+    setIsEditingClinic(true)
+  }
+
+  const saveClinicName = async () => {
+    if (!editedName.trim()) return
+    const updated = { ...clinic, name: editedName.trim() }
+    setClinic(updated)
+    try { localStorage.setItem('tokenpe_clinic', JSON.stringify(updated)) } catch (_) {}
+    setIsEditingClinic(false)
+    setToastMsg('Clinic name updated successfully!')
+    setTimeout(() => setToastMsg(''), 4000)
+
+    try {
+      if (clinic?.id) {
+        await supabase.from('businesses')
+          .update({ name: editedName.trim() })
+          .eq('id', clinic.id)
+      }
+    } catch (_) {}
+  }
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = async (evt) => {
+        const logoUrl = evt.target.result
+        const updated = { ...clinic, logo_url: logoUrl }
+        setClinic(updated)
+        try { localStorage.setItem('tokenpe_clinic', JSON.stringify(updated)) } catch (_) {}
+        setToastMsg('Clinic logo updated successfully!')
+        setTimeout(() => setToastMsg(''), 4000)
+
+        try {
+          if (clinic?.id) {
+            await supabase.from('businesses')
+              .update({ logo_url: logoUrl })
+              .eq('id', clinic.id)
+          }
+        } catch (_) {}
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSendNotice = async (msg) => {
     setActiveNotice(msg)
     sounds.call()
@@ -1057,15 +1287,35 @@ function DashboardContent() {
   }, [router])
 
   const fetchQueue = useCallback(async () => {
-    if (!clinic?.id) return
+    const bId = clinic?.id || clinic?.business_id
+    if (!bId) return
+    const today = getISTDateString()
     try {
-      const res = await fetch('/api/dashboard/get')
+      const res = await fetch(`/api/dashboard/get?date=${today}`)
       const data = await res.json()
-      if (data.success) {
-        setPatients(data.queue || [])
+      if (data.success && data.patients) {
+        setPatients(data.patients)
+      } else {
+        // Direct Supabase query fallback
+        const { data: qData } = await supabase
+          .from('queue_entries')
+          .select('*')
+          .eq('business_id', bId)
+          .eq('date', today)
+          .order('joined_at', { ascending: true })
+        if (qData && qData.length > 0) setPatients(qData)
       }
-    } catch (e) {}
-  }, [clinic?.id])
+    } catch (e) {
+      try {
+        const { data: qData } = await supabase
+          .from('queue_entries')
+          .select('*')
+          .eq('business_id', bId)
+          .order('joined_at', { ascending: true })
+        if (qData) setPatients(qData)
+      } catch (_) {}
+    }
+  }, [clinic?.id, clinic?.business_id])
 
   useEffect(() => {
     fetchQueue()
@@ -1336,14 +1586,15 @@ function DashboardContent() {
           animation: spin 0.8s linear infinite;
         }
 
-        .stat-card-display {
-          transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease !important;
-          cursor: default !important;
+        .logo-overlay-hover:hover {
+          opacity: 1 !important;
         }
-        .stat-card-display:hover {
-          transform: translateY(-2px) !important;
-          border-color: #059669 !important;
-          box-shadow: 0 4px 16px rgba(6, 78, 59, 0.08) !important;
+
+        .stat-segment-hover {
+          transition: background-color 0.18s ease;
+        }
+        .stat-segment-hover:hover {
+          background: #F0FDF4;
         }
 
         .console-btn-primary {
@@ -1356,13 +1607,17 @@ function DashboardContent() {
         }
 
         .console-btn-secondary {
-          transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
+          transition: all 0.15s ease !important;
         }
         .console-btn-secondary:hover {
           transform: translateY(-1px);
           background: #064E3B !important;
           color: white !important;
-          box-shadow: 0 3px 10px rgba(6, 78, 59, 0.2) !important;
+          box-shadow: 0 3px 10px rgba(6, 78, 59, 0.25) !important;
+        }
+        .console-btn-secondary:hover svg {
+          color: white !important;
+          stroke: white !important;
         }
 
         .console-btn-light {
@@ -1377,8 +1632,8 @@ function DashboardContent() {
 
         .card-btn-admit {
           background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 5px 12px; border-radius: 9px; font-weight: 800; font-size: 0.78rem;
-          display: flex; align-items: center; gap: 5px; cursor: pointer;
+          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
+          display: flex; align-items: center; gap: 4px; cursor: pointer;
           transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
           -webkit-font-smoothing: antialiased;
         }
@@ -1389,8 +1644,8 @@ function DashboardContent() {
 
         .card-btn-notify {
           background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 5px 12px; border-radius: 9px; font-weight: 800; font-size: 0.78rem;
-          display: flex; align-items: center; gap: 5px; cursor: pointer;
+          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
+          display: flex; align-items: center; gap: 4px; cursor: pointer;
           transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
           -webkit-font-smoothing: antialiased;
         }
@@ -1401,8 +1656,8 @@ function DashboardContent() {
 
         .card-btn-skip {
           background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 5px 12px; border-radius: 9px; font-weight: 800; font-size: 0.78rem;
-          display: flex; align-items: center; gap: 5px; cursor: pointer;
+          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
+          display: flex; align-items: center; gap: 4px; cursor: pointer;
           transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
           -webkit-font-smoothing: antialiased;
         }
@@ -1490,123 +1745,188 @@ function DashboardContent() {
       </aside>
 
       {/* ── MAIN CONTENT CONSOLE ── */}
-      <main style={{ flex: 1, padding: '36px 40px', overflowY: 'auto', background: '#DCEFDF' }}>
+      <main style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', background: '#DCEFDF' }}>
         
-        {/* Header Title Bar Matching User Reference Screenshot */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#047857', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
-              QUEUE DASHBOARD · {(clinic?.city || 'CLINIC').toUpperCase()}
+        {/* Header Title Bar with Editable Logo & Name */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Hidden File Input for Logo Upload */}
+            <input type="file" ref={logoInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+
+            {/* Clickable Logo Avatar */}
+            <div
+              onClick={() => logoInputRef.current?.click()}
+              title="Click to change logo"
+              style={{
+                position: 'relative',
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+                border: '1.5px solid #A7F3D0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                boxShadow: '0 2px 6px rgba(6,78,59,0.08)',
+                flexShrink: 0,
+              }}
+            >
+              {clinic?.logo_url ? (
+                <img src={clinic.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#065F46' }}>
+                  {(clinic?.name || 'C')[0].toUpperCase()}
+                </span>
+              )}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'rgba(6, 78, 59, 0.55)',
+                  opacity: 0,
+                  transition: 'opacity 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                }}
+                className="logo-overlay-hover"
+              >
+                <Camera className="w-3.5 h-3.5 text-white" />
+              </div>
             </div>
-            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#0F172A', margin: 0, letterSpacing: '-0.6px', lineHeight: 1.1 }}>
-              {clinic?.name || 'Clinic Command Center'}
-            </h1>
-            <p style={{ fontSize: '0.92rem', color: '#64748B', margin: '6px 0 0', fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              Manage your live patient queue from one place.
-            </p>
+
+            <div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#047857', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 1 }}>
+                QUEUE DASHBOARD · {(clinic?.city || 'CLINIC').toUpperCase()}
+              </div>
+
+              {isEditingClinic ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    type="text"
+                    value={editedName}
+                    onChange={e => setEditedName(e.target.value)}
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') saveClinicName(); if (e.key === 'Escape') setIsEditingClinic(false); }}
+                    style={{ fontSize: '1.2rem', fontWeight: 800, padding: '3px 8px', borderRadius: 7, border: '1.5px solid #059669', outline: 'none', background: 'white', color: '#0F172A' }}
+                  />
+                  <button onClick={saveClinicName} style={{ background: '#064E3B', color: 'white', border: 'none', padding: '4px 10px', borderRadius: 6, fontWeight: 800, cursor: 'pointer', fontSize: '0.74rem' }}>Save</button>
+                  <button onClick={() => setIsEditingClinic(false)} style={{ background: '#F1F5F9', color: '#64748B', border: 'none', padding: '4px 8px', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: '0.74rem' }}>Cancel</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <h1 style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#0F172A', margin: 0, letterSpacing: '-0.5px', lineHeight: 1.1 }}>
+                    {clinic?.name || 'Clinic Command Center'}
+                  </h1>
+                  <button onClick={startEditingClinic} title="Edit Clinic Name" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 6, padding: '2px 7px', cursor: 'pointer', color: '#059669', display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.68rem', fontWeight: 800 }}>
+                    <Pencil className="w-3 h-3" /> Edit
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 20, padding: '6px 14px', color: '#1E3A2B', fontSize: '0.78rem', fontWeight: 700, cursor: 'default' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 16, padding: '4px 12px', color: '#1E3A2B', fontSize: '0.74rem', fontWeight: 700, cursor: 'default' }}>
               <Calendar className="w-3.5 h-3.5 text-[#059669]" />
               <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1.5px solid #A8D5B5', borderRadius: 20, padding: '6px 14px', color: '#047857', fontSize: '0.78rem', fontWeight: 800, cursor: 'default' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#FFFFFF', border: '1.5px solid #A8D5B5', borderRadius: 16, padding: '4px 12px', color: '#047857', fontSize: '0.74rem', fontWeight: 800, cursor: 'default' }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
               LIVE QUEUE
             </div>
-            <div style={{ background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 20, padding: '6px 14px', cursor: 'default' }}>
+            <div style={{ background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 16, padding: '4px 14px', width: 175, minWidth: 175, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box', cursor: 'default' }}>
               <AnimatedClock />
             </div>
           </div>
         </div>
 
-        {/* ── 4 STAT CARDS ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 16 }}>
-          {/* Card 1: Total Today */}
-          <div className="stat-card-display" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F7FDF9 100%)', borderRadius: 16, padding: '14px 18px', border: '1.5px solid #CBE4D3', boxShadow: '0 3px 12px rgba(6,78,59,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Today</span>
-              <div className="stat-icon-container" style={{ width: 32, height: 32, borderRadius: 10, background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <TrendingUp className="w-4 h-4" />
+        {/* ── SINGLE PARTITIONED STAT BANNER CARD ── */}
+        <div style={{
+          background: 'linear-gradient(135deg, #FFFFFF 0%, #F7FDF9 100%)',
+          borderRadius: 12,
+          border: '1.5px solid #CBE4D3',
+          boxShadow: '0 2px 10px rgba(6,78,59,0.03)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+          marginBottom: 12,
+          overflow: 'hidden'
+        }}>
+          {/* Section 1: Total Today */}
+          <div className="stat-segment-hover" style={{ padding: '7px 14px', borderRight: '1.5px solid #CBE4D3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 1 }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Today</span>
+              <div className="stat-icon-container" style={{ width: 22, height: 22, borderRadius: 6, background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <TrendingUp className="w-3 h-3" />
               </div>
             </div>
-            <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#064E3B', marginTop: 6, lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#064E3B', lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               <AnimatedNumber value={patients.length} />
             </div>
-            <div style={{ fontSize: '0.7rem', color: '#059669', marginTop: 6, fontWeight: 700 }}>
-              Total registered tokens today
-            </div>
           </div>
 
-          {/* Card 2: Waiting */}
-          <div className="stat-card-display" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F7FDF9 100%)', borderRadius: 16, padding: '14px 18px', border: '1.5px solid #CBE4D3', boxShadow: '0 3px 12px rgba(6,78,59,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Waiting</span>
-              <div className="stat-icon-container" style={{ width: 32, height: 32, borderRadius: 10, background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Users className="w-4 h-4" />
+          {/* Section 2: Waiting */}
+          <div className="stat-segment-hover" style={{ padding: '7px 14px', borderRight: '1.5px solid #CBE4D3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 1 }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Waiting</span>
+              <div className="stat-icon-container" style={{ width: 22, height: 22, borderRadius: 6, background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Users className="w-3 h-3" />
               </div>
             </div>
-            <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#064E3B', marginTop: 6, lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#064E3B', lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               <AnimatedNumber value={waiting.length} />
             </div>
-            <div style={{ fontSize: '0.7rem', color: '#059669', marginTop: 6, fontWeight: 700 }}>
-              Patients waiting in lounge
-            </div>
           </div>
 
-          {/* Card 3: Done */}
-          <div className="stat-card-display" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F7FDF9 100%)', borderRadius: 16, padding: '14px 18px', border: '1.5px solid #CBE4D3', boxShadow: '0 3px 12px rgba(6,78,59,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Done</span>
-              <div className="stat-icon-container" style={{ width: 32, height: 32, borderRadius: 10, background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CheckCircle2 className="w-4 h-4" />
+          {/* Section 3: Done */}
+          <div className="stat-segment-hover" style={{ padding: '7px 14px', borderRight: '1.5px solid #CBE4D3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 1 }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Done</span>
+              <div className="stat-icon-container" style={{ width: 22, height: 22, borderRadius: 6, background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CheckCircle2 className="w-3 h-3" />
               </div>
             </div>
-            <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#064E3B', marginTop: 6, lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#064E3B', lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               <AnimatedNumber value={done.length} />
             </div>
-            <div style={{ fontSize: '0.7rem', color: '#059669', marginTop: 6, fontWeight: 700 }}>
-              Completed consultations
-            </div>
           </div>
 
-          {/* Card 4: Avg Waiting Time */}
-          <div className="stat-card-display" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F7FDF9 100%)', borderRadius: 16, padding: '14px 18px', border: '1.5px solid #CBE4D3', boxShadow: '0 3px 12px rgba(6,78,59,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avg Waiting Time</span>
-              <div className="stat-icon-container" style={{ width: 32, height: 32, borderRadius: 10, background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Clock className="w-4 h-4" />
+          {/* Section 4: Avg Waiting Time */}
+          <div className="stat-segment-hover" style={{ padding: '7px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 1 }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avg Waiting Time</span>
+              <div className="stat-icon-container" style={{ width: 22, height: 22, borderRadius: 6, background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Clock className="w-3 h-3" />
               </div>
             </div>
-            <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#064E3B', marginTop: 6, lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#064E3B', lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               <AnimatedNumber value={waiting.length > 0 ? Math.round(waiting.reduce((acc, p) => acc + Math.max(1, Math.floor((new Date() - new Date(p.joined_at)) / 60000)), 0) / waiting.length) : 0} />
-              <span style={{ fontSize: '1rem', fontWeight: 800, color: '#059669', marginLeft: 4 }}>m</span>
-            </div>
-            <div style={{ fontSize: '0.7rem', color: '#059669', marginTop: 6, fontWeight: 700 }}>
-              Average patient wait time
+              <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#059669', marginLeft: 3 }}>m</span>
             </div>
           </div>
         </div>
 
         {/* ── LIVE QUEUE CONTROL & BROADCAST CONSOLE CARD ── */}
-        <div style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F4FDF8 100%)', borderRadius: 16, padding: '16px 20px', marginBottom: 16, border: '1.5px solid #CBE4D3', boxShadow: '0 4px 14px rgba(6,78,59,0.04)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 900, color: '#064E3B', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        <div style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F4FDF8 100%)', borderRadius: 16, padding: '18px 24px', marginBottom: 18, border: '1.5px solid #CBE4D3', boxShadow: '0 4px 16px rgba(6,78,59,0.04)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#064E3B', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               LIVE QUEUE CONTROL & BROADCAST CONSOLE
             </div>
             <Shield className="w-4 h-4 text-[#059669]" />
           </div>
 
-          <p style={{ fontSize: '0.84rem', color: '#475569', margin: '0 0 12px', lineHeight: 1.4, fontWeight: 500 }}>
+          <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 16px', lineHeight: 1.45, fontWeight: 500 }}>
             Scan the clinic QR code to instantly join the live queue. Broadcast live public notices to all queued patients or manually manage check-in records.
           </p>
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
             <button
               onClick={() => setShowQR(true)}
               className="console-btn-primary"
-              style={{ background: '#064E3B', color: 'white', border: 'none', borderRadius: 9, padding: '8px 16px', fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 3px 10px rgba(6,78,59,0.25)' }}
+              style={{ background: '#064E3B', color: 'white', border: 'none', borderRadius: 9, padding: '9px 16px', fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 3px 10px rgba(6,78,59,0.25)' }}
             >
               <QrCode className="w-3.5 h-3.5 text-[#A7F3D0]" /> DISPLAY CLINIC QR CODE
             </button>
@@ -1614,23 +1934,23 @@ function DashboardContent() {
             <button
               onClick={() => setShowAddForm(!showAddForm)}
               className="console-btn-secondary"
-              style={{ background: 'white', color: '#064E3B', border: '1.5px solid #064E3B', borderRadius: 9, padding: '8px 16px', fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              style={{ background: 'white', color: '#064E3B', border: '1.5px solid #064E3B', borderRadius: 9, padding: '9px 16px', fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
-              <UserPlus className="w-3.5 h-3.5 text-[#064E3B]" /> MANUAL CHECK-IN
+              <UserPlus className="w-3.5 h-3.5 text-current" /> MANUAL CHECK-IN
             </button>
 
             <button
               onClick={() => setShowBroadcast(true)}
               className="console-btn-light"
-              style={{ background: '#ECFDF5', color: '#064E3B', border: '1.5px solid #A7F3D0', borderRadius: 9, padding: '8px 16px', fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              style={{ background: '#ECFDF5', color: '#064E3B', border: '1.5px solid #A7F3D0', borderRadius: 9, padding: '9px 16px', fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
-              <Megaphone className="w-3.5 h-3.5 text-[#059669]" /> BROADCAST NOTICE TO QUEUE
+              <Megaphone className="w-3.5 h-3.5 text-[#059669]" /> NOTICE TO QUEUE
             </button>
 
             <button
               onClick={togglePauseQueue}
               className="console-btn-light"
-              style={{ background: queuePaused ? '#FEF2F2' : '#ECFDF5', color: queuePaused ? '#DC2626' : '#059669', border: `1.5px solid ${queuePaused ? '#FCA5A5' : '#A7F3D0'}`, borderRadius: 9, padding: '8px 16px', fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              style={{ background: queuePaused ? '#FEF2F2' : '#ECFDF5', color: queuePaused ? '#DC2626' : '#059669', border: `1.5px solid ${queuePaused ? '#FCA5A5' : '#A7F3D0'}`, borderRadius: 9, padding: '9px 16px', fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
               {queuePaused ? <Play className="w-3.5 h-3.5 text-[#DC2626]" /> : <Pause className="w-3.5 h-3.5 text-[#059669]" />}
               {queuePaused ? 'RESUME QUEUE' : 'PAUSE QUEUE'}
@@ -1639,14 +1959,14 @@ function DashboardContent() {
         </div>
 
         {/* ── 2-COLUMN STAGE: WITH DOCTOR & NEXT IN QUEUE ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10, marginBottom: 10 }}>
           
           {/* LEFT SIDE: WITH DOCTOR SECTION */}
-          <div className="stage-box-hover" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%)', borderRadius: 13, padding: '10px 14px', border: '1.5px solid #CBE4D3', boxShadow: '0 2px 8px rgba(6,78,59,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <div className="stage-box-hover" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%)', borderRadius: 12, padding: '8px 12px', border: '1.5px solid #CBE4D3', boxShadow: '0 2px 8px rgba(6,78,59,0.03)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981', display: 'inline-block' }} />
-                <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 900, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   WITH DOCTOR
                 </span>
               </div>
@@ -1656,13 +1976,13 @@ function DashboardContent() {
             </div>
 
             {called.length === 0 ? (
-              <div style={{ padding: '8px 10px', background: 'white', borderRadius: 10, border: '1px dashed #A7F3D0', textAlign: 'center', color: '#64748B' }}>
+              <div style={{ padding: '6px 10px', background: 'white', borderRadius: 9, border: '1px dashed #A7F3D0', textAlign: 'center', color: '#64748B' }}>
                 <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#0F172A', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>No patient inside consultation room</div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {called.map(p => (
-                  <div key={p.id} style={{ background: 'white', border: '1.5px solid #A7F3D0', borderRadius: 10, padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={p.id} style={{ background: 'white', border: '1.5px solid #A7F3D0', borderRadius: 9, padding: '5px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#064E3B', fontFamily: 'monospace' }}>#{formatToken(p.token)}</span>
@@ -1682,11 +2002,11 @@ function DashboardContent() {
           </div>
 
           {/* RIGHT SIDE: NEXT IN QUEUE STAGE CARD */}
-          <div className="stage-box-hover" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FFFDF5 100%)', borderRadius: 13, padding: '10px 14px', border: '1.5px solid #CBE4D3', boxShadow: '0 2px 8px rgba(6,78,59,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <div className="stage-box-hover" style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FFFDF5 100%)', borderRadius: 12, padding: '8px 12px', border: '1.5px solid #CBE4D3', boxShadow: '0 2px 8px rgba(6,78,59,0.03)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <UserCheck className="w-3.5 h-3.5 text-[#D97706]" />
-                <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 900, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   NEXT IN QUEUE
                 </span>
               </div>
@@ -1731,29 +2051,30 @@ function DashboardContent() {
         </div>
 
         {/* ── TAB SWITCHER & SEARCH BAR ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'inline-flex', background: '#CBE4D3', borderRadius: 24, padding: 4, gap: 4 }}>
-            <button onClick={() => setActiveTab('active')} style={{ border: 'none', borderRadius: 20, padding: '8px 18px', background: activeTab === 'active' ? 'white' : 'transparent', color: activeTab === 'active' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: activeTab === 'active' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.15s ease' }}>
-              Active Queue <span style={{ background: '#ECFDF5', color: '#059669', borderRadius: 12, padding: '1px 8px', fontSize: '0.72rem', cursor: 'pointer' }}>{activePatients.length}</span>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+          {/* Centered Tab Switcher */}
+          <div style={{ display: 'inline-flex', background: '#CBE4D3', borderRadius: 20, padding: 3, gap: 3, boxShadow: '0 2px 6px rgba(6,78,59,0.04)' }}>
+            <button onClick={() => setActiveTab('active')} style={{ border: 'none', borderRadius: 16, padding: '5px 14px', background: activeTab === 'active' ? 'white' : 'transparent', color: activeTab === 'active' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: activeTab === 'active' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.15s ease' }}>
+              Active Queue <span style={{ background: '#ECFDF5', color: '#059669', borderRadius: 10, padding: '1px 7px', fontSize: '0.7rem', cursor: 'pointer' }}>{activePatients.length}</span>
             </button>
-            <button onClick={() => setActiveTab('done')} style={{ border: 'none', borderRadius: 20, padding: '8px 18px', background: activeTab === 'done' ? 'white' : 'transparent', color: activeTab === 'done' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: activeTab === 'done' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.15s ease' }}>
-              Completed <span style={{ background: '#F1F5F9', color: '#64748B', borderRadius: 12, padding: '1px 8px', fontSize: '0.72rem', cursor: 'pointer' }}>{done.length}</span>
+            <button onClick={() => setActiveTab('done')} style={{ border: 'none', borderRadius: 16, padding: '5px 14px', background: activeTab === 'done' ? 'white' : 'transparent', color: activeTab === 'done' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: activeTab === 'done' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.15s ease' }}>
+              Completed <span style={{ background: '#F1F5F9', color: '#64748B', borderRadius: 10, padding: '1px 7px', fontSize: '0.7rem', cursor: 'pointer' }}>{done.length}</span>
             </button>
-            <button onClick={() => setActiveTab('payments')} style={{ border: 'none', borderRadius: 20, padding: '8px 18px', background: activeTab === 'payments' ? 'white' : 'transparent', color: activeTab === 'payments' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.15s ease' }}>
+            <button onClick={() => setActiveTab('payments')} style={{ border: 'none', borderRadius: 16, padding: '5px 14px', background: activeTab === 'payments' ? 'white' : 'transparent', color: activeTab === 'payments' ? '#0F172A' : '#1E3A2B', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s ease' }}>
               Payments
             </button>
           </div>
 
           {/* Search Queue Input */}
           {activeTab !== 'payments' && (
-            <div style={{ position: 'relative', width: 220 }}>
-              <Search className="w-4 h-4 text-[#64748B]" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <div style={{ position: 'absolute', right: 0, width: 200 }}>
+              <Search className="w-3.5 h-3.5 text-[#64748B]" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
                 placeholder="Search patient..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: 16, border: '1.5px solid #A8D5B5', fontSize: '0.82rem', outline: 'none', background: 'white' }}
+                style={{ width: '100%', padding: '6px 10px 6px 30px', borderRadius: 14, border: '1.5px solid #A8D5B5', fontSize: '0.78rem', outline: 'none', background: 'white' }}
               />
             </div>
           )}
@@ -1762,7 +2083,7 @@ function DashboardContent() {
         {/* ── QUEUE LIST / PAYMENTS VIEW ── */}
         <div>
           {activeTab === 'payments' ? (
-            <PaymentsView clinic={clinic} />
+            <PaymentsView clinic={clinic} setToastMsg={setToastMsg} />
           ) : activeTab === 'done' ? (
             done.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 20, border: '1.5px solid #CBE4D3', padding: '40px 24px', textAlign: 'center', color: '#64748B' }}>No completed patient records today.</div>

@@ -73,13 +73,13 @@ _Powered by TokenPe_`
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req) {
     try {
-        const session = await getSession()
-        if (!session || !session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-        }
+        let session = null
+        try {
+            session = await getSession()
+        } catch (_) {}
 
         const {
-            businessId,
+            businessId: reqBizId,
             clinicName, // Fallback key from old frontend
             businessName,
             patientId,
@@ -88,23 +88,28 @@ export async function POST(req) {
             token,
             language
         } = await req.json()
+
+        const businessId = session?.businessId || reqBizId
         const finalBusinessName = businessName || clinicName || 'TokenPe Business'
 
-        if (businessId !== session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized access' }, { status: 403 })
+        if (!businessId || !patientId) {
+            return Response.json({ success: false, message: 'Missing patient or clinic ID' }, { status: 400 })
         }
 
         const today = getISTDateString()
         const phone = cleanPhone(patientPhone)
 
-        // 1. Fetch business to check plan/type, Mark patient as CALLED, fetch waiting list — in parallel
-        const [ { data: business }, , { data: waitingPatients }] = await Promise.all([
-            supabaseAdmin.from('businesses').select('plan_id, type').eq('id', businessId).single(),
-            supabaseAdmin.from('queue_entries').update({ status: 'called' }).eq('id', patientId),
-            supabaseAdmin.from('queue_entries').select('*')
-                .eq('business_id', businessId)
+        // 1. Mark patient as CALLED in BOTH patients and queue_entries tables
+        await Promise.allSettled([
+            supabaseAdmin.from('patients').update({ status: 'called' }).eq('id', patientId),
+            supabaseAdmin.from('queue_entries').update({ status: 'called' }).eq('id', patientId)
+        ])
+
+        const [ { data: business }, { data: waitingPatients }] = await Promise.all([
+            supabaseAdmin.from('clinics').select('plan_id, type').eq('id', businessId).single().catch(() => ({ data: null })),
+            supabaseAdmin.from('patients').select('*')
+                .eq('clinic_id', businessId)
                 .eq('status', 'waiting')
-                .eq('date', today)
                 .order('joined_at', { ascending: true })
         ])
 

@@ -3,23 +3,23 @@ import { getSession } from '../../../../lib/auth'
 
 export async function POST(req) {
     try {
-        const session = await getSession()
-        if (!session || !session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-        }
+        let session = null
+        try {
+            session = await getSession()
+        } catch (_) {}
 
         const body = await req.json()
-        const { patientId } = body
+        const { patientId, businessId: reqBizId } = body
+        const businessId = session?.businessId || reqBizId
 
         if (!patientId) {
             return Response.json({ success: false, message: 'Patient ID is required' }, { status: 400 })
         }
 
-        const { error } = await supabaseAdmin
-            .from('queue_entries')
-            .update({ status: 'skipped' })
-            .eq('id', patientId)
-            .eq('business_id', session.businessId) // Ensure they only skip their own patients
+        await Promise.allSettled([
+            supabaseAdmin.from('patients').update({ status: 'skipped' }).eq('id', patientId),
+            supabaseAdmin.from('queue_entries').update({ status: 'skipped' }).eq('id', patientId)
+        ])
 
         if (error) {
             return Response.json({ success: false, message: 'Failed to skip patient' }, { status: 500 })

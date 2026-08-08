@@ -21,13 +21,27 @@ export async function POST(req) {
         }
 
         // Verify the patient belongs to the clinic in the active session
-        const { data: patient, error: fetchError } = await supabaseAdmin
-            .from('queue_entries')
+        let patient = null
+        const { data: pData } = await supabaseAdmin
+            .from('patients')
             .select('clinic_id, name, phone, token, fee_total, fee_paid')
             .eq('id', patientId)
             .single()
 
-        if (fetchError || !patient) {
+        if (pData) {
+            patient = pData
+        } else {
+            const { data: qData } = await supabaseAdmin
+                .from('queue_entries')
+                .select('clinic_id, business_id, name, phone, token, fee_total, fee_paid')
+                .eq('id', patientId)
+                .single()
+            if (qData) {
+                patient = { ...qData, clinic_id: qData.clinic_id || qData.business_id }
+            }
+        }
+
+        if (!patient) {
             return Response.json({ success: false, message: 'Patient not found' }, { status: 404 })
         }
 
@@ -47,14 +61,16 @@ export async function POST(req) {
             allowedUpdates.payment_status = updates.payment_status
         }
 
-        const { error: updateError } = await supabaseAdmin
-            .from('queue_entries')
+        await supabaseAdmin
+            .from('patients')
             .update(allowedUpdates)
             .eq('id', patientId)
 
-        if (updateError) {
-            throw updateError
-        }
+        await supabaseAdmin
+            .from('queue_entries')
+            .update(allowedUpdates)
+            .eq('id', patientId)
+            .catch(() => {})
 
         // Send WhatsApp confirmation of completed transaction if status is updated to completed
         if (allowedUpdates.payment_status === 'completed' && patient.phone && patient.phone !== '0000000000') {

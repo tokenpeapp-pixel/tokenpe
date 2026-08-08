@@ -4,7 +4,6 @@ import { sanitizeName, validatePhone } from '../../../../lib/validate'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'
 import { after } from 'next/server'
 
-// ── INDUSTRY SPECIFIC VOCABULARY ─────────────────────────────────────────────
 function getIndustryVocab(vertical, purpose) {
     switch (vertical) {
         case 'clinic':
@@ -39,6 +38,7 @@ function getIndustryVocab(vertical, purpose) {
             }
     }
 }
+
 export async function POST(req) {
     try {
         const session = await getSession()
@@ -47,9 +47,9 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { businessId, name, language, phone, purpose } = body
+        const { businessId, name, token, language, phone, purpose } = body
 
-        if (!businessId) {
+        if (!businessId || !token) {
             return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
         }
 
@@ -59,10 +59,8 @@ export async function POST(req) {
 
         const cleanName = sanitizeName(name)
         const cleanPhone = validatePhone(phone) || '0000000000'
-
         const today = getISTDateString()
 
-        // ── Look up business plan from the unified businesses table ──────
         const { data: business } = await supabaseAdmin
             .from('businesses')
             .select('name, plan_id, closed_today_date, type, queue_paused')
@@ -73,7 +71,6 @@ export async function POST(req) {
         const vertical = business?.type || 'clinic'
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
 
-        // ── Block if queue is paused by admin ────────────────────────────
         if (business?.queue_paused) {
             return Response.json({
                 success: false,
@@ -81,7 +78,6 @@ export async function POST(req) {
             }, { status: 403 })
         }
 
-        // ── Block walk-ins if business is closed for today (clinic-only for now) ──
         if (vertical === 'clinic' && business?.closed_today_date) {
             return Response.json({
                 success: false,
@@ -89,7 +85,6 @@ export async function POST(req) {
             }, { status: 403 })
         }
 
-        // Count total patients today
         const { count } = await supabaseAdmin
             .from('queue_entries')
             .select('*', { count: 'exact', head: true })
@@ -104,9 +99,6 @@ export async function POST(req) {
             }, { status: 403 })
         }
 
-        const token = 'T' + String(currentTotal + 1).padStart(3, '0')
-
-        // Rate limit joins (3 per phone per day, unique names)
         if (cleanPhone !== '0000000000') {
             const { data: existingJoins } = await supabase
                 .from('queue_entries')
@@ -154,14 +146,12 @@ export async function POST(req) {
 
         const patient = data[0]
 
-        // Send WhatsApp confirmation in background (non-blocking)
         if (cleanPhone !== '0000000000') {
             after(async () => {
                 try {
                     const businessName = business?.name || 'the business'
                     const v = getIndustryVocab(vertical, purpose)
 
-                    // Count people ahead
                     const { count: aheadCount } = await supabaseAdmin
                         .from('queue_entries')
                         .select('*', { count: 'exact', head: true })
@@ -172,12 +162,12 @@ export async function POST(req) {
 
                     const peopleAhead = aheadCount || 0
 
-                    const confirmMsg = `✅ *${v.title}, ${patient.name}!*
+                    const confirmMsg = `*${v.title}, ${patient.name}!*
 
-🎟 Your Token: *${token}*
-${v.icon} ${businessName}${purpose ? `\n📋 Purpose: ${purpose}` : ''}
-👥 People ahead: *${peopleAhead}*
-⏳ Est. wait: ~${peopleAhead * 7} mins
+Your Token: *${token}*
+${businessName}${purpose ? `\nPurpose: ${purpose}` : ''}
+People ahead: *${peopleAhead}*
+Est. wait: ~${peopleAhead * 7} mins
 
 We'll notify you when your turn is near!
 

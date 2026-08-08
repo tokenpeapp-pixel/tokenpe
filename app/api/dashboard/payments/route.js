@@ -14,43 +14,46 @@ export async function GET(req) {
 
         if (searchQuery) {
             // Global search for patients (for payments view)
-            const { data: patients, error } = await supabaseAdmin
-                .from('queue_entries')
+            let { data: patients, error } = await supabaseAdmin
+                .from('patients')
                 .select('*')
-                .eq('business_id', businessId)
+                .eq('clinic_id', businessId)
                 .or(`name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,token.ilike.%${searchQuery}%`)
                 .order('joined_at', { ascending: false })
                 .limit(100)
 
-            if (error) throw error
+            if (error || !patients || patients.length === 0) {
+                const { data: qPatients } = await supabaseAdmin
+                    .from('queue_entries')
+                    .select('*')
+                    .eq('business_id', businessId)
+                    .or(`name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,token.ilike.%${searchQuery}%`)
+                    .order('joined_at', { ascending: false })
+                    .limit(100)
+                if (qPatients) patients = qPatients
+            }
+
             return Response.json({ success: true, patients: patients || [] }, { status: 200 })
         } else {
-            // Default view: fetch all pending + recent completed
-            const { data: pendingPatients, error: pendingErr } = await supabaseAdmin
-                .from('queue_entries')
+            // Default view: fetch all queue entries for the clinic
+            let { data: patients, error } = await supabaseAdmin
+                .from('patients')
                 .select('*')
-                .eq('business_id', businessId)
-                .neq('payment_status', 'completed')
+                .eq('clinic_id', businessId)
                 .order('joined_at', { ascending: false })
+                .limit(200)
 
-            if (pendingErr) throw pendingErr
+            if (error || !patients || patients.length === 0) {
+                const { data: qPatients } = await supabaseAdmin
+                    .from('queue_entries')
+                    .select('*')
+                    .eq('business_id', businessId)
+                    .order('joined_at', { ascending: false })
+                    .limit(200)
+                if (qPatients) patients = qPatients
+            }
 
-            const { data: completedPatients, error: completedErr } = await supabaseAdmin
-                .from('queue_entries')
-                .select('*')
-                .eq('business_id', businessId)
-                .eq('payment_status', 'completed')
-                .order('joined_at', { ascending: false })
-                .limit(100)
-
-            if (completedErr) throw completedErr
-
-            const combined = [...(pendingPatients || []), ...(completedPatients || [])]
-            
-            // Deduplicate in case a record somehow matches both or just to be safe
-            const uniquePatients = Array.from(new Map(combined.map(item => [item.id, item])).values())
-
-            return Response.json({ success: true, patients: uniquePatients }, { status: 200 })
+            return Response.json({ success: true, patients: patients || [] }, { status: 200 })
         }
     } catch (error) {
         console.error('[dashboard/payments API Error]', error)

@@ -23,11 +23,11 @@ export async function POST(req) {
         // Verify this session is for a school account
         const { data: business, error: bizError } = await supabaseAdmin
             .from('businesses')
-            .select('id, vertical')
+            .select('id, type')
             .eq('id', session.businessId)
             .single()
 
-        if (bizError || !business || business.vertical !== 'school') {
+        if (bizError || !business || business.type !== 'school') {
             return Response.json({ success: false, message: 'Unauthorized: not a school account' }, { status: 403 })
         }
 
@@ -78,6 +78,31 @@ export async function POST(req) {
             if (pubError) {
                 console.error('[school/update] public_schools table error:', pubError)
                 // Non-fatal — public_schools is a denormalized cache
+            }
+        }
+
+        // Write subset of fields to unified 'businesses' table
+        const BUSINESS_FIELDS = ['logo_url', 'name', 'specialty', 'city']
+        const businessUpdate = {}
+        for (const key of BUSINESS_FIELDS) {
+            if (key in sanitized) businessUpdate[key] = sanitized[key]
+        }
+
+        // We also want to support `code` and `address` if they were passed, even though they weren't in ALLOWED_FIELDS originally.
+        // The user mentioned `code` is not saving. Let's add them.
+        if (updates.code) businessUpdate.code = updates.code.toUpperCase().replace(/[^A-Z0-9]/g, '')
+        if (updates.address) businessUpdate.address = updates.address
+
+        if (Object.keys(businessUpdate).length > 0) {
+            const { error: bizUpdateError } = await supabaseAdmin
+                .from('businesses')
+                .update(businessUpdate)
+                .eq('id', schoolId)
+
+            if (bizUpdateError) {
+                console.error('[school/update] businesses table error:', bizUpdateError)
+                // We should probably fail if this doesn't work, since it's the main table.
+                return Response.json({ success: false, message: 'Failed to update business profile' }, { status: 500 })
             }
         }
 

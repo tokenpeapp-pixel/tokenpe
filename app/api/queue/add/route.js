@@ -47,9 +47,9 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { businessId, name, token, language, phone, purpose } = body
+        const { businessId, name, language, phone, purpose } = body
 
-        if (!businessId || !token) {
+        if (!businessId) {
             return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
         }
 
@@ -95,6 +95,8 @@ export async function POST(req) {
                 message: `Queue Full: Daily limit of ${limit} entries reached.`
             }, { status: 403 })
         }
+
+        const token = 'T' + String(currentTotal + 1).padStart(3, '0')
 
         // Rate limit joins (3 per phone per day, unique names)
         if (cleanPhone !== '0000000000') {

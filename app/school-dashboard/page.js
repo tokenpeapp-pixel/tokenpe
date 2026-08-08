@@ -234,17 +234,12 @@ function AddToQueueModal({ school, onClose, onAdded, toast }) {
     if (!name.trim()) return
     setSaving(true)
     try {
-      const today = getISTDate()
-      const res = await fetch(`/api/generic-dashboard/get?date=${today}`)
-      const data = await res.json()
-      const existing = data.patients || []
-      const token = `T${String(existing.length + 1).padStart(3, '0')}`
       const addRes = await fetch('/api/queue/add', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessId: school.id, name: name.trim(), phone: phone.trim() || '0000000000', token, language: 'en', purpose })
+        body: JSON.stringify({ businessId: school.id, name: name.trim(), phone: phone.trim() || '0000000000', language: 'en', purpose })
       })
       const addData = await addRes.json()
-      if (addData.success) { toast(`Token ${token} — ${name.trim()}`, 'success'); onAdded(addData.patient); onClose() }
+      if (addData.success) { toast(`Token ${addData.patient.token} — ${name.trim()}`, 'success'); onAdded(addData.patient); onClose() }
       else toast(addData.message || 'Failed to add', 'error')
     } catch { toast('Network error', 'error') }
     setSaving(false)
@@ -280,6 +275,8 @@ function EditProfileModal({ school, onClose, onSaved, toast }) {
   const [name, setName] = useState(school?.name || '')
   const [city, setCity] = useState(school?.city || '')
   const [type, setType] = useState(school?.specialty || 'School')
+  const [code, setCode] = useState(school?.code || '')
+  const [logoUrl, setLogoUrl] = useState(school?.logo_url || '')
   const [saving, setSaving] = useState(false)
   const TYPES = ['School', 'College', 'University', 'Coaching Institute', 'Kindergarten', 'Training Center']
 
@@ -288,11 +285,12 @@ function EditProfileModal({ school, onClose, onSaved, toast }) {
     if (!name.trim()) return
     setSaving(true)
     try {
+      const payload = { name: name.trim(), city: city.trim(), specialty: type, code: code.trim().toUpperCase(), logo_url: logoUrl.trim() }
       const res = await fetch('/api/school/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates: { name: name.trim(), city: city.trim(), specialty: type } })
+        body: JSON.stringify({ updates: payload })
       })
-      if (res.ok) { toast('Profile updated', 'success'); onSaved({ name: name.trim(), city: city.trim(), specialty: type }); onClose() }
+      if (res.ok) { toast('Profile updated', 'success'); onSaved(payload); onClose() }
       else toast('Failed to save', 'error')
     } catch { toast('Network error', 'error') }
     setSaving(false)
@@ -303,6 +301,9 @@ function EditProfileModal({ school, onClose, onSaved, toast }) {
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Inp label="Institution Name" required value={name} onChange={e => setName(e.target.value)} />
         <Inp label="City" value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" />
+        <Inp label="Queue Code" value={code} onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))} placeholder="e.g. SCHOOL" maxLength={12} />
+        <Inp label="Logo URL" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." />
+        
         <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 5 }}>Institution Type</label>
           <div style={{ position: 'relative' }}>
@@ -703,6 +704,15 @@ function HamburgerMenu({ school, tab, setTab, onLogout, onModal, open, setOpen }
   )
 }
 
+function ClockWidget() {
+  const [time, setTime] = useState('')
+  useEffect(() => {
+    function tick() { setTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })) }
+    tick(); const id = setInterval(tick, 1000); return () => clearInterval(id)
+  }, [])
+  return <div style={{ fontSize: 12, color: C.textMuted, fontFamily: 'monospace', fontWeight: 600 }}>{time}</div>
+}
+
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
 function SchoolDashboardInner() {
   const router = useRouter()
@@ -716,7 +726,6 @@ function SchoolDashboardInner() {
   const [menuOpen, setMenuOpen]   = useState(false)
   const [modal, setModal]         = useState(null)
   const [paused, setPaused]       = useState(false)
-  const [time, setTime]           = useState('')
 
   // Auth boot
   useEffect(() => {
@@ -735,7 +744,7 @@ function SchoolDashboardInner() {
     boot()
   }, [])
 
-  // Queue polling every 15s
+  // Queue realtime sync
   const loadQueue = useCallback(async () => {
     try {
       const res = await fetch(`/api/generic-dashboard/get?date=${getISTDate()}`)
@@ -747,15 +756,15 @@ function SchoolDashboardInner() {
   useEffect(() => {
     if (!school) return
     loadQueue()
-    const id = setInterval(loadQueue, 15000)
-    return () => clearInterval(id)
-  }, [school, loadQueue])
+    
+    const channel = supabase.channel(`queue_school_${school.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'queue_entries', filter: `business_id=eq.${school.id}` }, () => {
+        loadQueue()
+      })
+      .subscribe()
 
-  // Clock
-  useEffect(() => {
-    function tick() { setTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })) }
-    tick(); const id = setInterval(tick, 1000); return () => clearInterval(id)
-  }, [])
+    return () => supabase.removeChannel(channel)
+  }, [school, loadQueue])
 
   async function logout() {
     localStorage.removeItem('tokenpe_school_business')
@@ -823,7 +832,7 @@ function SchoolDashboardInner() {
 
         {/* Right controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <div style={{ fontSize: 12, color: C.textMuted, fontFamily: 'monospace', fontWeight: 600 }}>{time}</div>
+          <ClockWidget />
 
           <button onClick={() => { setPaused(p => !p); toast(paused ? 'Queue resumed' : 'Queue paused', 'info') }} style={{
             display: 'flex', alignItems: 'center', gap: 5,

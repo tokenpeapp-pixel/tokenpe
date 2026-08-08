@@ -113,6 +113,58 @@ export default function SchoolBillingPage() {
     setTimeout(poll, 2000)
   }, [])
 
+  async function handleUpgrade(planTier) {
+    if (!clinic?.id) return
+    setUpgrading(planTier)
+    try {
+      const res = await fetch('/api/razorpay/school-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessId: clinic.id, planTier })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.subscriptionId) {
+        alert(data.error || 'Could not create subscription. Please try again.')
+        setUpgrading(null)
+        return
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        subscription_id: data.subscriptionId,
+        name: 'TokenPe for Schools',
+        description: `${planTier.replace('_', ' ').toUpperCase()} plan — ${clinic.name || 'Your School'}`,
+        image: '/logo-light.svg',
+        prefill: {
+          name: data.businessName || '',
+          email: data.businessEmail || '',
+          contact: data.businessPhone || '',
+        },
+        theme: { color: '#1B2A4A' },
+        handler: function () {
+          // Payment successful — poll until the webhook updates the DB
+          pollForUpdate(clinic.id, planTier)
+        },
+        modal: {
+          ondismiss: function () {
+            setUpgrading(null)
+          }
+        }
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', function (response) {
+        alert('Payment failed: ' + (response.error?.description || 'Unknown error'))
+        setUpgrading(null)
+      })
+      rzp.open()
+    } catch (err) {
+      console.error('[handleUpgrade]', err)
+      alert('Something went wrong. Please try again.')
+      setUpgrading(null)
+    }
+  }
+
 
 
   async function executeCancel() {

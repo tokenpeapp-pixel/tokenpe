@@ -707,10 +707,11 @@ export default function Dashboard() {
     loadPatients()
   }, [clinicId, currentDate])
 
-  // ── Polling ───────────────────────────────────────────────────────────
+  // ── Realtime Sync ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!clinicId) return
-    const interval = setInterval(async () => {
+    
+    async function syncData() {
       try {
         const res = await fetch(`/api/dashboard/get?date=${currentDate}`)
         if (res.ok) {
@@ -718,7 +719,6 @@ export default function Dashboard() {
           if (data.success) {
             setPatients(prev => {
               const newPatients = data.patients || []
-              // Find newly inserted patients for the notification
               const newAdds = newPatients.filter(np => {
                 const isNew = !prev.some(p => p.id === np.id)
                 const isLocal = localAddedPatientIdsRef.current.has(np.id)
@@ -741,8 +741,15 @@ export default function Dashboard() {
           }
         }
       } catch (e) { }
-    }, 5000)
-    return () => clearInterval(interval)
+    }
+
+    const channel = supabase.channel(`queue_clinic_${clinicId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'queue_entries', filter: `business_id=eq.${clinicId}` }, () => {
+        syncData()
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
   }, [clinicId, currentDate])
 
   // ── Date Check ──────────────────────────────────────────────────────────
@@ -1260,17 +1267,14 @@ export default function Dashboard() {
       return
     }
 
-    const token = `T${String(patients.length + 1).padStart(3, '0')}`
-
     try {
       const res = await fetch('/api/queue/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clinicId: clinic.id,
+          businessId: clinic.id,
           name: newName.trim() || null,
           phone: newPhone.trim(),
-          token: token,
           language: newLang || 'hi'
         })
       })
@@ -1284,9 +1288,9 @@ export default function Dashboard() {
 
       setNewName(''); setNewPhone(''); setNewLang('hi')
       setShowAddForm(false)
-      addToast(`${newName || newPhone} added as ${token}`, 'new')
+      addToast(`${newName || newPhone} added as ${result.patient.token}`, 'new')
 
-      // Note: Supabase realtime subscription will pick up the new patient 
+      // Note: Polling will pick up the new patient 
       // and update the patients list automatically, just like it did before.
     } catch (err) {
       console.error(err)

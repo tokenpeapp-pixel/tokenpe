@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, getISTDateString } from '../../../lib/supabase'
+import { getISTDateString } from '../../../lib/supabase'
 import {
   ChevronLeft, History, Calendar, Search, Filter,
   Clock, GraduationCap, Phone, CheckCircle2, XCircle,
@@ -68,24 +68,28 @@ export default function HistoryPage() {
     setLoading(true)
     setError(null)
     try {
-      const stored = localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business')
-      const clinic = stored ? JSON.parse(stored) : null
-      const schoolId = clinic?.id
-      if (!schoolId) { setError('No school found. Please log in.'); setLoading(false); return }
-
       const { start, end } = getDateRange(days, cStart, cEnd)
+      const startDate = start.split('T')[0]
+      const endDate = end.split('T')[0]
 
-      const { data, error: fetchErr } = await supabase
-        .from('school_history')
-        .select('id, student_name, grade_class, guardian_name, time_label, status, created_at, completed_at')
-        .eq('school_id', schoolId)
-        .gte('created_at', start)
-        .lte('created_at', end)
-        .order('created_at', { ascending: false })
-        .limit(500)
+      const res = await fetch(`/api/generic-dashboard/get?start=${startDate}&end=${endDate}&history=true`)
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok || !json.success) {
+        if (res.status === 401) router.push('/school-login')
+        throw new Error(json.message || 'Failed to load history.')
+      }
 
-      if (fetchErr) throw fetchErr
-      setRecords(data || [])
+      const mapped = (json.history || []).slice(0, 500).map(r => ({
+        id: r.id,
+        student_name: r.name,
+        grade_class: r.grade_class || r.grade || r.metadata?.grade || 'General',
+        guardian_name: r.guardian_name || r.metadata?.guardian || r.phone || '',
+        time_label: r.done_at ? new Date(r.done_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+        status: r.status === 'completed' ? 'done' : r.status === 'skipped' ? 'cancelled' : r.status,
+        created_at: r.joined_at || r.created_at,
+        completed_at: r.done_at || r.completed_at,
+      }))
+      setRecords(mapped)
       setLastUpdated(new Date())
     } catch (e) {
       console.error(e)

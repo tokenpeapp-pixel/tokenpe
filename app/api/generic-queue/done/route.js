@@ -18,6 +18,7 @@ export async function POST(req) {
             .from('queue_entries')
             .update({ status: 'completed', done_at: new Date().toISOString() })
             .eq('id', patientId)
+            .eq('business_id', businessId)
             .select()
             
         if (error) throw error

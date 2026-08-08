@@ -7,23 +7,44 @@ export async function POST(req) {
         const session = await getUnifiedSession().catch(() => null)
         const businessId = body.clinicId || body.schoolId || body.businessId || session?.businessId
 
-        if (!businessId) {
+        if (!session?.businessId || !businessId) {
             return Response.json({ success: false, message: 'Unauthorized or missing ID' }, { status: 401 })
         }
 
+        if (businessId !== session.businessId) {
+            return Response.json({ success: false, message: 'Unauthorized business access' }, { status: 403 })
+        }
+
         let newPausedStatus = body.paused
+        const { data: currentBusiness, error: fetchError } = await supabaseAdmin
+            .from('businesses')
+            .select('queue_paused, type')
+            .eq('id', businessId)
+            .single()
+
+        if (fetchError || !currentBusiness) {
+            return Response.json({ success: false, message: 'Business not found' }, { status: 404 })
+        }
+
         if (typeof newPausedStatus !== 'boolean') {
-            const { data: currentBusiness } = await supabaseAdmin.from('businesses').select('queue_paused').eq('id', businessId).single()
             newPausedStatus = !currentBusiness?.queue_paused
         }
 
-        // Sync queue_paused across all tables
-        await Promise.all([
-            supabaseAdmin.from('businesses').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
-            supabaseAdmin.from('schools').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
-            supabaseAdmin.from('public_schools').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
-            supabaseAdmin.from('clinics').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {})
-        ])
+        if (currentBusiness.type === 'school') {
+            const { error } = await supabaseAdmin
+                .from('businesses')
+                .update({ queue_paused: newPausedStatus })
+                .eq('id', businessId)
+            if (error) throw error
+        } else {
+            // Preserve existing non-school behavior.
+            await Promise.all([
+                supabaseAdmin.from('businesses').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
+                supabaseAdmin.from('schools').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
+                supabaseAdmin.from('public_schools').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
+                supabaseAdmin.from('clinics').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {})
+            ])
+        }
 
         return Response.json({ success: true, paused: newPausedStatus }, { status: 200 })
     } catch (error) {

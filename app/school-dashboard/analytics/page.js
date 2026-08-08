@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart2, TrendingUp, Users, Clock, ChevronLeft, Calendar, Activity, RefreshCw, AlertTriangle } from 'lucide-react'
-import { supabase, getISTDateString } from '../../../lib/supabase'
+import { getISTDateString } from '../../../lib/supabase'
 
 export default function AnalyticsPage() {
   const router = useRouter()
@@ -26,31 +26,14 @@ export default function AnalyticsPage() {
   const loadData = useCallback(async (date) => {
     try {
       setLoading(true)
-      const stored = typeof window !== 'undefined' ? (localStorage.getItem('tokenpe_school_business') || localStorage.getItem('tokenpe_business')) : null
-      const school = stored ? JSON.parse(stored) : null
-      const schoolId = school?.id
-
-      if (!schoolId) {
-        setError('No school found. Please log in.')
-        setLoading(false)
-        return
+      const res = await fetch(`/api/generic-dashboard/get?date=${date}&history=true`)
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok || !json.success) {
+        if (res.status === 401) router.push('/school-login')
+        throw new Error(json.message || 'Failed to load analytics.')
       }
 
-      const [queueRes, historyRes] = await Promise.all([
-        supabase.from('school_queue').select('*').eq('school_id', schoolId),
-        supabase.from('school_history').select('*').eq('school_id', schoolId)
-      ])
-
-      let combined = []
-      if (queueRes.data) combined.push(...queueRes.data)
-      if (historyRes.data) combined.push(...historyRes.data)
-
-      if (date) {
-        combined = combined.filter(p => {
-          const itemDate = p.created_at ? p.created_at.split('T')[0] : ''
-          return itemDate === date || p.date === date
-        })
-      }
+      const combined = json.patients || []
 
       setPatients(combined)
       setLastUpdated(new Date().toLocaleTimeString())
@@ -108,14 +91,14 @@ export default function AnalyticsPage() {
 
   const reasonMap = {}
   patients.forEach(p => {
-    const r = p.reason || 'Arrival'
+    const r = p.reason || p.metadata?.reason || 'Arrival'
     reasonMap[r] = (reasonMap[r] || 0) + 1
   })
   const reasonBreakdown = Object.entries(reasonMap).sort((a, b) => b[1] - a[1])
 
   const gradeMap = {}
   patients.forEach(p => {
-    const g = p.grade_class || p.grade || 'General'
+    const g = p.grade_class || p.grade || p.metadata?.grade || 'General'
     gradeMap[g] = (gradeMap[g] || 0) + 1
   })
   const gradeBreakdown = Object.entries(gradeMap).sort((a, b) => b[1] - a[1])

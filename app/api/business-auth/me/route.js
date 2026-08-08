@@ -36,6 +36,8 @@ export async function GET(req) {
 
         // Do not leak the pin back to the frontend
         delete clinic.pin
+        clinic.active_notice = clinic.settings?.active_notice || ''
+        clinic.location_label = clinic.settings?.location || ''
 
         return Response.json({ authenticated: true, clinic }, { status: 200 })
 

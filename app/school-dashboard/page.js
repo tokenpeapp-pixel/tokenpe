@@ -101,6 +101,24 @@ function useSounds() {
   }
 }
 
+function schoolQueueEntry(row, index = 0) {
+  const doneAt = row.done_at || row.completed_at
+  const isHistory = ['completed', 'skipped', 'done', 'cancelled'].includes(row.status)
+  const timeSource = isHistory ? (doneAt || row.joined_at) : (row.joined_at || doneAt)
+  return {
+    id: row.id,
+    rank: row.token || String(index + 1).padStart(2, '0'),
+    name: row.name || row.student_name || 'Student',
+    grade: row.grade_class || row.grade || row.metadata?.grade || 'General',
+    reason: row.reason || row.metadata?.reason || 'Arrival',
+    guardian: row.guardian_name || row.metadata?.guardian || row.phone || '',
+    phone: row.phone || row.guardian_name || row.metadata?.guardian || '',
+    wait: row.wait_time || "1'",
+    status: row.status === 'completed' ? 'done' : row.status === 'skipped' ? 'cancelled' : row.status || 'waiting',
+    time: timeSource ? new Date(timeSource).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00'
+  }
+}
+
 // ─── FULL FEATURED QR POSTER MODAL (RESTAURANT GENERATOR LOGIC + SCHOOL NAVY THEME) ───
 function QRModal({ clinic, onClose, onCodeUpdate }) {
   const [downloading, setDownloading] = useState(false)
@@ -113,7 +131,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
       const saved = localStorage.getItem('tokenpe_active_room')
       if (saved) return saved
     }
-    const raw = clinic?.location || ''
+    const raw = clinic?.location_label || clinic?.settings?.location || clinic?.location || ''
     if (raw.length > 25 && /^[0-9A-F]+$/i.test(raw)) return 'Main Gate / Reception'
     return raw || 'Main Gate / Reception'
   })
@@ -147,12 +165,19 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
     setCodeSaving(true)
     setCodeError('')
 
-    try {
-      if (clinic?.id && clinic.id !== 'demo-school-id') {
-        await supabase.from('schools').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('public_schools').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
+    if (clinic?.id && clinic.id !== 'demo-school-id') {
+      const res = await fetch('/api/business/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: clinic.id, code: clean, location: locationInput })
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.success) {
+        setCodeError(data.error || 'Failed to save code.')
+        setCodeSaving(false)
+        return
       }
-    } catch (_) {}
+    }
 
     try {
       localStorage.setItem('tokenpe_active_room', locationInput)
@@ -536,16 +561,14 @@ function SchoolCommandCenterContent() {
     }
     if (clinic?.id && clinic.id !== 'demo-school-id') {
       try {
-        await supabase.from('schools').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('public_schools').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('clinics').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('businesses').update({ queue_paused: nextState }).eq('id', clinic.id).catch(() => {})
-        await fetch('/api/business/pause', {
+        const res = await fetch('/api/business/pause', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ clinicId: clinic.id, paused: nextState })
-        }).catch(() => {})
+        })
+        if (!res.ok) throw new Error('Failed to update pause status')
       } catch (err) {
+        setQueuePaused(!nextState)
         console.warn('Toggle pause queue error:', err)
       }
     }
@@ -563,13 +586,16 @@ function SchoolCommandCenterContent() {
     setActiveRoom(e.target.value)
   }
 
-  function saveLocation() {
+  async function saveLocation() {
     const val = activeRoom.trim() || 'Main Gate / Reception'
     if (typeof window !== 'undefined') {
       localStorage.setItem('tokenpe_active_room', val)
       if (clinic?.id && clinic.id !== 'demo-school-id') {
-        supabase.from('schools').update({ location: val }).eq('id', clinic.id).then(() => {}).catch(() => {})
-        supabase.from('public_schools').update({ location: val }).eq('id', clinic.id).then(() => {}).catch(() => {})
+        await fetch('/api/business/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId: clinic.id, location: val })
+        }).catch(() => {})
       }
     }
     setLocationNoticeToast('✓ Location updated successfully!')
@@ -612,11 +638,15 @@ function SchoolCommandCenterContent() {
     const updatedQueue = arrivals.filter(a => a.id !== id)
     const reRanked = updatedQueue.map((item, idx) => ({ ...item, rank: String(idx + 1).padStart(2, '0') }))
     setArrivals(reRanked)
-    try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(reRanked)) } catch (e) {}
+    try { localStorage.setItem('tokenpe_school_entries', JSON.stringify(reRanked)) } catch (e) {}
     try {
       const schoolId = await getRealSchoolId()
       if (schoolId && schoolId !== 'demo-school-id') {
-        await supabase.from('school_queue').update({ status: 'cancelled' }).eq('id', id).catch(() => {})
+        await fetch('/api/generic-queue/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientId: id })
+        }).catch(() => {})
       }
     } catch (e) {}
     setSkipTarget(null)
@@ -632,8 +662,11 @@ function SchoolCommandCenterContent() {
       confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } })
       localStorage.setItem('tokenpe_active_notice', msg)
       if (clinic?.id && clinic.id !== 'demo-school-id') {
-        await supabase.from('schools').update({ active_notice: msg }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('public_schools').update({ active_notice: msg }).eq('id', clinic.id).catch(() => {})
+        await fetch('/api/business/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId: clinic.id, active_notice: msg })
+        }).catch(() => {})
       }
     } catch (err) {}
     setShowBroadcastModal(false)
@@ -657,8 +690,11 @@ function SchoolCommandCenterContent() {
       try {
         localStorage.setItem('tokenpe_school_business', JSON.stringify(updatedClinic))
         if (clinic?.id && clinic.id !== 'demo-school-id') {
-          await supabase.from('schools').update({ logo_url: base64Logo }).eq('id', clinic.id).catch(() => {})
-          await supabase.from('public_schools').update({ logo_url: base64Logo }).eq('id', clinic.id).catch(() => {})
+          await fetch('/api/business/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clinicId: clinic.id, logo_url: base64Logo })
+          }).catch(() => {})
         }
       } catch (err) {}
     }
@@ -676,8 +712,11 @@ function SchoolCommandCenterContent() {
       localStorage.setItem('tokenpe_school_business', JSON.stringify(updatedClinic))
       localStorage.setItem('tokenpe_school_subtitle', schoolSubtitle)
       if (clinic?.id && clinic.id !== 'demo-school-id') {
-        await supabase.from('schools').update({ name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }).eq('id', clinic.id).catch(() => {})
-        await supabase.from('public_schools').update({ name: updatedName, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url }).eq('id', clinic.id).catch(() => {})
+        await fetch('/api/business/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId: clinic.id, name: updatedName, specialty: schoolSubtitle, city: updatedCity, logo_url: schoolLogo || clinic?.logo_url })
+        }).catch(() => {})
       }
     } catch (err) {}
     setShowEditSchoolModal(false)
@@ -780,118 +819,57 @@ function SchoolCommandCenterContent() {
     // Real DB fetch from Supabase
     async function loadDynamicData() {
       try {
-        let targetId = currentSchool?.id
+        const targetId = currentSchool?.id
         if (!targetId || targetId === 'demo-school-id') {
           router.push('/school-login')
           setLoading(false)
           return
-        } else {
-          const { data: dbSchool } = await supabase.from('schools').select('*').eq('id', targetId).maybeSingle()
-          if (dbSchool) {
-            setSchool(dbSchool)
-            currentSchool = dbSchool
-            if (dbSchool.logo_url) setSchoolLogo(dbSchool.logo_url)
-            if (dbSchool.location && !localStorage.getItem('tokenpe_active_room')) {
-              setActiveRoom(dbSchool.location)
-              localStorage.setItem('tokenpe_active_room', dbSchool.location)
-            }
-            localStorage.setItem('tokenpe_school_business', JSON.stringify(dbSchool))
-          } else {
-            const { data: dbPub } = await supabase.from('public_schools').select('*').eq('id', targetId).maybeSingle()
-            if (dbPub) {
-              setSchool(dbPub)
-              currentSchool = dbPub
-              if (dbPub.logo_url) setSchoolLogo(dbPub.logo_url)
-              if (dbPub.location && !localStorage.getItem('tokenpe_active_room')) {
-                setActiveRoom(dbPub.location)
-                localStorage.setItem('tokenpe_active_room', dbPub.location)
-              }
-              localStorage.setItem('tokenpe_school_business', JSON.stringify(dbPub))
-            }
-          }
         }
 
         if (targetId && targetId !== 'demo-school-id') {
-          // Fetch Live Queue from school_queue or queues
-          const { data: queueData } = await supabase
-            .from('school_queue')
-            .select('*')
-            .eq('school_id', targetId)
-            .eq('status', 'waiting')
-            .order('created_at', { ascending: true })
+          const today = getISTDateString()
+          const res = await fetch(`/api/generic-dashboard/get?date=${today}&history=true`)
+          const data = await res.json().catch(() => ({}))
+          if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load dashboard data')
 
-          let fetchedQueue = []
-          if (queueData && queueData.length > 0) {
-            fetchedQueue = queueData.map((q, i) => ({
-              id: q.id,
-              rank: q.token || String(i + 1).padStart(2, '0'),
-              name: q.student_name,
-              grade: q.grade_class || 'General',
-              reason: q.reason || 'Arrival',
-              guardian: q.guardian_name || '',
-              wait: q.wait_time || "1'",
-              status: q.status || 'waiting',
-              time: q.joined_at ? new Date(q.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00'
-            }))
-          } else {
-            // Check unified queues table
-            const { data: unifiedData } = await supabase
-              .from('queues')
-              .select('*')
-              .eq('clinic_id', targetId)
-              .eq('status', 'waiting')
-              .order('created_at', { ascending: true })
+          const freshSchool = data.clinic || currentSchool
+          setSchool(freshSchool)
+          currentSchool = freshSchool
+          localStorage.setItem('tokenpe_school_business', JSON.stringify(freshSchool))
+          localStorage.setItem('tokenpe_business', JSON.stringify(freshSchool))
 
-            if (unifiedData && unifiedData.length > 0) {
-              fetchedQueue = unifiedData.map((q, i) => ({
-                id: q.id,
-                rank: String(i + 1).padStart(2, '0'),
-                name: q.name,
-                grade: q.notes ? q.notes.split('|')[0]?.trim() : 'General',
-                reason: q.notes ? q.notes.split('|')[1]?.trim() : 'Arrival',
-                guardian: q.phone || '',
-                wait: "1'",
-                status: 'waiting',
-                time: q.created_at ? new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00'
-              }))
-            }
+          if (freshSchool?.logo_url) setSchoolLogo(freshSchool.logo_url)
+          const savedActiveRoom = localStorage.getItem('tokenpe_active_room')
+          const roomLabel = freshSchool?.location_label || freshSchool?.settings?.location
+          if (roomLabel && !savedActiveRoom) {
+            setActiveRoom(roomLabel)
+            localStorage.setItem('tokenpe_active_room', roomLabel)
           }
+          if (freshSchool?.active_notice) {
+            setActiveNotice(freshSchool.active_notice)
+            localStorage.setItem('tokenpe_active_notice', freshSchool.active_notice)
+          }
+          setQueuePaused(!!freshSchool?.queue_paused)
+
+          const fetchedQueue = (data.queue || []).map(schoolQueueEntry)
 
           let localSaved = []
           try {
-            const storedQ = localStorage.getItem('tokenpe_school_queue')
+            const storedQ = localStorage.getItem('tokenpe_school_entries')
             if (storedQ) localSaved = JSON.parse(storedQ)
           } catch (e) {}
 
           if (fetchedQueue.length > 0) {
             setArrivals(fetchedQueue)
-            try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(fetchedQueue)) } catch (e) {}
+            try { localStorage.setItem('tokenpe_school_entries', JSON.stringify(fetchedQueue)) } catch (e) {}
           } else if (localSaved.length > 0) {
             setArrivals(localSaved)
           } else {
             setArrivals([])
           }
 
-          // Fetch Dismissal History
-          const { data: historyData } = await supabase
-            .from('school_history')
-            .select('*')
-            .eq('school_id', targetId)
-            .order('completed_at', { descending: true })
-            .limit(20)
-
-          if (historyData && historyData.length > 0) {
-            const mappedHistory = historyData.map(h => ({
-              id: h.id,
-              name: h.student_name,
-              grade: h.grade_class || 'General',
-              reason: h.reason || 'Arrival',
-              guardian: h.guardian_name || '',
-              phone: h.guardian_name || '',
-              time: h.time_label || '12:15'
-            }))
-            setDismissals(mappedHistory)
-          }
+          const mappedHistory = (data.history || []).map(schoolQueueEntry)
+          setDismissals(mappedHistory)
 
           // Fetch Classrooms
           const { data: classData } = await supabase
@@ -953,7 +931,7 @@ function SchoolCommandCenterContent() {
     if (target) {
       const updatedArrivals = arrivals.filter(a => a.id !== target.id)
       setArrivals(updatedArrivals)
-      try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(updatedArrivals)) } catch (e) {}
+      try { localStorage.setItem('tokenpe_school_entries', JSON.stringify(updatedArrivals)) } catch (e) {}
 
       // Move student into WITH STAFF section
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -966,7 +944,11 @@ function SchoolCommandCenterContent() {
       try {
         const schoolId = await getRealSchoolId()
         if (schoolId && schoolId !== 'demo-school-id') {
-          await supabase.from('school_queue').update({ status: 'with_staff' }).eq('id', target.id).catch(() => {})
+          await fetch('/api/generic-queue/next', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patientId: target.id })
+          }).catch(() => {})
         }
       } catch (e) {
         console.warn('DB Admit Error:', e)
@@ -999,15 +981,10 @@ function SchoolCommandCenterContent() {
       try {
         const schoolId = await getRealSchoolId()
         if (schoolId && schoolId !== 'demo-school-id') {
-          await supabase.from('school_queue').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', id).catch(() => {})
-          await supabase.from('queues').update({ status: 'done' }).eq('clinic_id', schoolId).eq('name', target.name).catch(() => {})
-          await supabase.from('school_history').insert({
-            school_id: schoolId,
-            student_name: target.name,
-            grade_class: target.grade,
-            guardian_name: target.guardian,
-            time_label: timeStr,
-            status: 'done'
+          await fetch('/api/generic-queue/done', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patientId: id })
           }).catch(() => {})
         }
       } catch (e) {
@@ -1054,7 +1031,7 @@ function SchoolCommandCenterContent() {
 
     const currentLocal = (() => {
       try {
-        const storedQ = localStorage.getItem('tokenpe_school_queue')
+        const storedQ = localStorage.getItem('tokenpe_school_entries')
         return storedQ ? JSON.parse(storedQ) : arrivals
       } catch (e) { return arrivals }
     })()
@@ -1079,7 +1056,7 @@ function SchoolCommandCenterContent() {
 
     const updatedQueue = [newEntry, ...currentLocal]
     setArrivals(updatedQueue)
-    try { localStorage.setItem('tokenpe_school_queue', JSON.stringify(updatedQueue)) } catch (e) {}
+    try { localStorage.setItem('tokenpe_school_entries', JSON.stringify(updatedQueue)) } catch (e) {}
 
     setStudentName('')
     setGradeClass('')
@@ -1091,29 +1068,31 @@ function SchoolCommandCenterContent() {
     try {
       const realId = await getRealSchoolId()
       if (realId && realId !== 'demo-school-id') {
-        // 1. Insert into school_queue
-        await supabase.from('school_queue').insert({
-          school_id: realId,
-          clinic_id: realId,
-          token: rankStr,
-          student_name: savedName,
-          grade_class: savedGrade,
-          reason: savedReason,
-          guardian_name: savedGuardian,
-          wait_time: "1'",
-          status: 'waiting',
-          joined_at: new Date().toISOString()
-        }).catch(() => {})
-
-        // 2. Also insert into unified queues table for universal compatibility
-        await supabase.from('queues').insert({
-          clinic_id: realId,
-          name: savedName,
-          phone: savedGuardian || '',
-          party_size: 1,
-          status: 'waiting',
-          notes: `${savedGrade} | ${savedReason}`
-        }).catch(() => {})
+        const res = await fetch('/api/generic-queue/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessId: realId,
+            name: savedName,
+            phone: savedGuardian || '0000000000',
+            token: rankStr,
+            language: 'hi',
+            metadata: {
+              grade: savedGrade,
+              reason: savedReason,
+              guardian: savedGuardian
+            }
+          })
+        })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data.success && data.patient?.id) {
+          const persisted = schoolQueueEntry(data.patient, currentLocal.length)
+          setArrivals(prev => {
+            const next = prev.map(item => item.id === newEntry.id ? { ...persisted, grade: savedGrade, reason: savedReason, guardian: savedGuardian } : item)
+            try { localStorage.setItem('tokenpe_school_entries', JSON.stringify(next)) } catch (e) {}
+            return next
+          })
+        }
       }
     } catch (err) {
       console.warn('DB Insert Error:', err)

@@ -12,7 +12,7 @@ export async function POST(req) {
         }
 
         const body = await req.json()
-        const { businessId, name, token, language, phone } = body
+        const { businessId, name, token, language, phone, metadata } = body
 
         if (!businessId || !token) {
             return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
@@ -74,10 +74,16 @@ export async function POST(req) {
             status: 'waiting',
             date: today,
             language: language || 'hi',
-            joined_at: new Date().toISOString()
+            joined_at: new Date().toISOString(),
+            metadata: metadata && typeof metadata === 'object' ? metadata : {}
         }
 
-        const { data, error } = await supabaseAdmin.from('queue_entries').insert([newEntry]).select()
+        let { data, error } = await supabaseAdmin.from('queue_entries').insert([newEntry]).select()
+        if (error?.code === 'PGRST204' || error?.code === '42703') {
+            const entryWithoutMetadata = { ...newEntry }
+            delete entryWithoutMetadata.metadata
+            ;({ data, error } = await supabaseAdmin.from('queue_entries').insert([entryWithoutMetadata]).select())
+        }
 
         if (error) {
             console.error('[generic-queue/add] Error inserting:', error)

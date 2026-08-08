@@ -49,18 +49,17 @@ export default function SchoolCRMPage() {
     try {
       if (!schoolId) return
 
-      const [historyRes, queueRes] = await Promise.all([
-        supabase.from('school_history').select('*').eq('school_id', schoolId),
-        supabase.from('school_queue').select('*').eq('school_id', schoolId)
-      ])
+      const res = await fetch('/api/generic-dashboard/get?history=true')
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok || !json.success) throw new Error(json.message || 'Failed to load directory')
 
-      const combined = [...(historyRes.data || []), ...(queueRes.data || [])]
+      const combined = json.patients || []
 
       const studentMap = {}
       combined.forEach(r => {
         const name = r.student_name || r.name
-        const phone = r.guardian_name || r.phone || 'N/A'
-        const grade = r.grade_class || r.grade || 'General'
+        const phone = r.guardian_name || r.metadata?.guardian || r.phone || 'N/A'
+        const grade = r.grade_class || r.grade || r.metadata?.grade || 'General'
         if (!name) return
 
         const key = `${name.toLowerCase()}_${phone}`

@@ -48,6 +48,60 @@ export async function GET(req) {
       return R * c
     }
 
+    if (vertical === 'school') {
+      const { data: schools, error: schoolError } = await supabaseAdmin
+        .from('businesses')
+        .select('id, name, specialty, city, area, code, logo_url, location, lat, lng, queue_paused, closed_today_date')
+        .eq('type', 'school')
+        .eq('is_public', true)
+
+      if (schoolError) {
+        console.error('[Nearby API] School businesses error:', schoolError)
+        return Response.json({ clinics: [] }, { status: 200 })
+      }
+
+      const withCounts = await Promise.all((schools || []).map(async (school) => {
+        const cLat = parseFloat(school.lat)
+        const cLng = parseFloat(school.lng)
+        if (isNaN(cLat) || isNaN(cLng)) return null
+
+        const distMeters = getDistance(lat, lng, cLat, cLng)
+        if (distMeters > safeRadius) return null
+
+        const { count } = await supabaseAdmin
+          .from('queue_entries')
+          .select('id', { count: 'exact', head: true })
+          .eq('business_id', school.id)
+          .eq('status', 'waiting')
+          .eq('date', today)
+
+        return {
+          id: school.id,
+          name: school.name,
+          specialty: school.specialty,
+          city: school.city,
+          area: school.area,
+          code: school.code,
+          photo_url: school.logo_url,
+          logo_url: school.logo_url,
+          location: school.location,
+          lat: cLat,
+          lng: cLng,
+          distance_m: distMeters,
+          distance_km: (distMeters / 1000).toFixed(1),
+          queue_paused: school.queue_paused,
+          is_closed_today: !!school.closed_today_date,
+          waiting_count: count || 0,
+        }
+      }))
+
+      const filteredSchools = withCounts
+        .filter(Boolean)
+        .sort((a, b) => a.distance_m - b.distance_m)
+
+      return Response.json({ clinics: filteredSchools }, { status: 200 })
+    }
+
     // ── Helper: enrich results with closed_today_date from clinics table ──────
     async function enrichWithClosedStatus(clinics) {
       if (!clinics.length) return clinics

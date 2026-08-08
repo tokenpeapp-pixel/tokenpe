@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../../lib/supabase'
 import {
   ChevronLeft, DoorOpen, Plus, QrCode, Users, Clock, CheckCircle2,
   Trash2, RefreshCw, Copy, X, AlertTriangle, Zap, Building2,
@@ -50,43 +49,26 @@ export default function ClassroomsPage() {
     setClinic(c)
 
     try {
-      const [freshRes] = await Promise.all([
-        fetch(`/api/clinics/get?id=${c.id}`),
+      const [freshRes, dashboardRes] = await Promise.all([
+        fetch('/api/business-auth/me?vertical=school'),
+        fetch('/api/generic-dashboard/get?history=true'),
       ])
       const freshData = freshRes.ok ? await freshRes.json() : null
-      const freshClinic = freshData?.success ? freshData.clinic : c
+      const freshClinic = freshData?.authenticated ? freshData.clinic : c
+      const dashboardData = dashboardRes.ok ? await dashboardRes.json() : null
       setClinic(freshClinic)
       localStorage.setItem('tokenpe_school_business', JSON.stringify(freshClinic))
       localStorage.setItem('tokenpe_business', JSON.stringify(freshClinic))
 
-      let query = supabase
-        .from('clinics')
-        .select('id, name, code, email, phone, plan_id, subscription_status, created_at, specialty, vertical')
-        .eq('email', freshClinic.email)
-
-      const targetVertical = freshClinic.vertical || 'school'
-      const { data: siblings, error: sibErr } = await query
-        .or(`vertical.eq.${targetVertical},vertical.is.null`)
-        .order('created_at', { ascending: true })
-
-      if (sibErr) throw sibErr
+      const siblings = [freshClinic]
       setQueues(siblings || [])
-      localStorage.setItem('tokenpe_user_clinics', JSON.stringify(siblings || []))
+      localStorage.setItem('tokenpe_user_businesses', JSON.stringify(siblings || []))
 
-      const todayStr = new Date().toISOString().split('T')[0]
       const stats = {}
-      await Promise.all((siblings || []).map(async (q) => {
-        try {
-          const [activeRes, histRes] = await Promise.all([
-            supabase.from('school_queue').select('id', { count: 'exact', head: true }).eq('school_id', q.id).eq('status', 'waiting'),
-            supabase.from('school_history').select('id', { count: 'exact', head: true }).eq('school_id', q.id).gte('created_at', `${todayStr}T00:00:00+05:30`),
-          ])
-          stats[q.id] = {
-            active: activeRes.count || 0,
-            completed: histRes.count || 0,
-          }
-        } catch { stats[q.id] = { active: 0, completed: 0 } }
-      }))
+      stats[freshClinic.id] = {
+        active: dashboardData?.queue?.length || 0,
+        completed: dashboardData?.history?.length || 0,
+      }
       setQueueStats(stats)
     } catch (e) {
       console.error(e)

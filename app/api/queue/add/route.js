@@ -55,7 +55,7 @@ export async function POST(req) {
         }
 
         const cleanName = sanitizeName(name) || 'Walk-in Patient'
-        const cleanPhone = validatePhone(phone) || '0000000000'
+        const cleanedPhone = validatePhone(phone) || '0000000000'
         const today = getISTDateString()
 
         let business = null
@@ -104,13 +104,13 @@ export async function POST(req) {
             }, { status: 403 })
         }
 
-        if (cleanPhone !== '0000000000') {
+        if (cleanedPhone !== '0000000000') {
             let existingJoins = []
             try {
                 const { data: exData } = await supabaseAdmin
                     .from('patients')
                     .select('name')
-                    .eq('phone', cleanPhone)
+                    .eq('phone', cleanedPhone)
                     .eq('date', today)
                 if (exData) existingJoins = exData
             } catch (_) {}
@@ -128,7 +128,7 @@ export async function POST(req) {
 
         const patientObj = {
             name: cleanName || fallbackName,
-            phone: cleanPhone,
+            phone: cleanedPhone,
             token: token,
             status: 'waiting',
             date: today,
@@ -164,7 +164,7 @@ export async function POST(req) {
 
         patient = data[0]
 
-        if (cleanPhone !== '0000000000') {
+        if (cleanedPhone !== '0000000000') {
             after(async () => {
                 try {
                     const businessName = business?.name || 'the business'
@@ -180,22 +180,13 @@ export async function POST(req) {
 
                     const peopleAhead = aheadCount || 0
 
-                    const confirmMsg = `*${v.title}, ${patient.name}!*
+                    const confirmMsg = `*${v.title}, ${patient.name}!*\n\nYour Token: *${token}*\n${businessName}${purpose ? `\nPurpose: ${purpose}` : ''}\nPeople ahead: *${peopleAhead}*\nEst. wait: ~${peopleAhead * 7} mins\n\nWe'll notify you when your turn is near!\n\n_Powered by TokenPe_`
 
-Your Token: *${token}*
-${businessName}${purpose ? `\nPurpose: ${purpose}` : ''}
-People ahead: *${peopleAhead}*
-Est. wait: ~${peopleAhead * 7} mins
-
-We'll notify you when your turn is near!
-
-_Powered by TokenPe_`
-
-                    const alerts = [sendText(cleanPhone, confirmMsg)]
+                    const alerts = [sendText(cleanedPhone, confirmMsg)]
 
                     if (planId !== 'starter') {
                         alerts.push(sendVoice({
-                            phone: cleanPhone,
+                            phone: cleanedPhone,
                             language: language || 'en',
                             event: 'joined',
                             token,

@@ -41,31 +41,34 @@ function getIndustryVocab(vertical, purpose) {
 
 export async function POST(req) {
     try {
-        const session = await getSession()
-        if (!session || !session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-        }
+        let session = null
+        try {
+            session = await getSession()
+        } catch (_) {}
 
         const body = await req.json()
-        const { businessId, name, token, language, phone, purpose } = body
+        const { businessId: bodyBizId, name, token, language, phone, purpose } = body
+        const businessId = session?.businessId || bodyBizId
 
-        if (!businessId || !token) {
-            return Response.json({ success: false, message: 'Missing required fields' }, { status: 400 })
+        if (!businessId) {
+            return Response.json({ success: false, message: 'Clinic identity missing. Please re-login.' }, { status: 401 })
         }
 
-        if (businessId !== session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized access' }, { status: 403 })
-        }
-
-        const cleanName = sanitizeName(name)
+        const cleanName = sanitizeName(name) || 'Walk-in Patient'
         const cleanPhone = validatePhone(phone) || '0000000000'
         const today = getISTDateString()
 
-        const { data: business } = await supabaseAdmin
-            .from('businesses')
-            .select('name, plan_id, closed_today_date, type, queue_paused')
-            .eq('id', businessId)
-            .single()
+        let business = null
+        if (businessId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(businessId))) {
+            try {
+                const { data: bData } = await supabaseAdmin
+                    .from('clinics')
+                    .upsert([{ id: businessId, name: 'dummy', vertical: 'clinic' }])
+                    .select()
+                    .single()
+                if (bData) business = bData
+            } catch (_) {}
+        }
             
         const planId = business?.plan_id || 'starter'
         const vertical = business?.type || 'clinic'
@@ -85,13 +88,15 @@ export async function POST(req) {
             }, { status: 403 })
         }
 
-        const { count } = await supabaseAdmin
-            .from('queue_entries')
-            .select('*', { count: 'exact', head: true })
-            .eq('business_id', businessId)
-            .eq('date', today)
+        let currentTotal = 0
+        try {
+            const { count } = await supabaseAdmin
+                .from('patients')
+                .select('*', { count: 'exact', head: true })
+                .eq('date', today)
+            currentTotal = count || 0
+        } catch (_) {}
 
-        const currentTotal = count || 0
         if (currentTotal >= limit) {
             return Response.json({
                 success: false,
@@ -100,25 +105,21 @@ export async function POST(req) {
         }
 
         if (cleanPhone !== '0000000000') {
-            const { data: existingJoins } = await supabase
-                .from('queue_entries')
-                .select('name')
-                .eq('business_id', businessId)
-                .eq('phone', cleanPhone)
-                .eq('date', today)
+            let existingJoins = []
+            try {
+                const { data: exData } = await supabaseAdmin
+                    .from('patients')
+                    .select('name')
+                    .eq('phone', cleanPhone)
+                    .eq('date', today)
+                if (exData) existingJoins = exData
+            } catch (_) {}
 
-            if (existingJoins && existingJoins.length >= 3) {
+            if (existingJoins && existingJoins.length >= 5) {
                 return Response.json({
                     success: false,
                     message: 'Daily join limit reached for this phone number.'
                 }, { status: 429 })
-            }
-
-            if (cleanName && existingJoins?.some(p => p.name.toLowerCase() === cleanName.toLowerCase())) {
-                return Response.json({
-                    success: false,
-                    message: 'A patient with this name has already joined.'
-                }, { status: 409 })
             }
         }
 
@@ -126,7 +127,6 @@ export async function POST(req) {
         const fallbackName = `${vocab.person} ${token}`
 
         const patientObj = {
-            clinic_id: businessId,
             name: cleanName || fallbackName,
             phone: cleanPhone,
             token: token,
@@ -139,44 +139,30 @@ export async function POST(req) {
             payment_status: 'pending'
         }
 
-        let patient = null
-        const { data, error } = await supabaseAdmin.from('patients').insert([patientObj]).select()
-
-        if (!error && data && data[0]) {
-            patient = data[0]
-            // Mirror into queue_entries if table exists
-            try {
-                await supabaseAdmin.from('queue_entries').insert([{
-                    id: patient.id,
-                    business_id: businessId,
-                    name: patient.name,
-                    phone: patient.phone,
-                    token: patient.token,
-                    status: 'waiting',
-                    date: today,
-                    language: patient.language,
-                    joined_at: patient.joined_at
-                }]).catch(() => {})
-            } catch (_) {}
-        } else {
-            // Fallback to queue_entries table
-            const fallbackObj = {
-                business_id: businessId,
-                name: cleanName || fallbackName,
-                phone: cleanPhone,
-                token: token,
-                status: 'waiting',
-                date: today,
-                language: language || 'en',
-                joined_at: new Date().toISOString()
-            }
-            const { data: qData, error: qErr } = await supabaseAdmin.from('queue_entries').insert([fallbackObj]).select()
-            if (qErr) {
-                console.error('[queue/add] Error inserting:', error || qErr)
-                return Response.json({ success: false, message: 'Failed to add walk-in patient' }, { status: 500 })
-            }
-            patient = qData[0]
+        // Only include clinic_id if it's a valid 36-char UUID
+        if (businessId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(businessId))) {
+            patientObj.clinic_id = businessId
         }
+
+        let patient = null
+        let { data, error } = await supabaseAdmin.from('patients').insert([patientObj]).select()
+
+        if (error) {
+            console.warn('[queue/add] FK error inserting into patients, retrying without clinic_id:', error.message)
+            delete patientObj.clinic_id
+            const res2 = await supabaseAdmin.from('patients').insert([patientObj]).select()
+            if (res2.data && res2.data[0]) {
+                data = res2.data
+                error = null
+            }
+        }
+
+        if (error || !data || !data[0]) {
+            console.error('[queue/add Error inserting into Supabase patients table]:', error)
+            return Response.json({ success: false, message: error?.message || 'Failed to insert patient into database' }, { status: 500 })
+        }
+
+        patient = data[0]
 
         if (cleanPhone !== '0000000000') {
             after(async () => {

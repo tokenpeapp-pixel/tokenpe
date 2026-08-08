@@ -125,26 +125,58 @@ export async function POST(req) {
         const vocab = getIndustryVocab(vertical, purpose)
         const fallbackName = `${vocab.person} ${token}`
 
-        const newPatient = {
-            business_id: businessId,
+        const patientObj = {
+            clinic_id: businessId,
             name: cleanName || fallbackName,
             phone: cleanPhone,
             token: token,
             status: 'waiting',
             date: today,
-            language: language || 'en',
+            language: language || 'hi',
             joined_at: new Date().toISOString(),
-            purpose: purpose || null
+            fee_total: 500.00,
+            fee_paid: 0.00,
+            payment_status: 'pending'
         }
 
-        const { data, error } = await supabaseAdmin.from('queue_entries').insert([newPatient]).select()
+        let patient = null
+        const { data, error } = await supabaseAdmin.from('patients').insert([patientObj]).select()
 
-        if (error) {
-            console.error('[queue/add] Error inserting:', error)
-            return Response.json({ success: false, message: 'Failed to add walk-in patient' }, { status: 500 })
+        if (!error && data && data[0]) {
+            patient = data[0]
+            // Mirror into queue_entries if table exists
+            try {
+                await supabaseAdmin.from('queue_entries').insert([{
+                    id: patient.id,
+                    business_id: businessId,
+                    name: patient.name,
+                    phone: patient.phone,
+                    token: patient.token,
+                    status: 'waiting',
+                    date: today,
+                    language: patient.language,
+                    joined_at: patient.joined_at
+                }]).catch(() => {})
+            } catch (_) {}
+        } else {
+            // Fallback to queue_entries table
+            const fallbackObj = {
+                business_id: businessId,
+                name: cleanName || fallbackName,
+                phone: cleanPhone,
+                token: token,
+                status: 'waiting',
+                date: today,
+                language: language || 'en',
+                joined_at: new Date().toISOString()
+            }
+            const { data: qData, error: qErr } = await supabaseAdmin.from('queue_entries').insert([fallbackObj]).select()
+            if (qErr) {
+                console.error('[queue/add] Error inserting:', error || qErr)
+                return Response.json({ success: false, message: 'Failed to add walk-in patient' }, { status: 500 })
+            }
+            patient = qData[0]
         }
-
-        const patient = data[0]
 
         if (cleanPhone !== '0000000000') {
             after(async () => {

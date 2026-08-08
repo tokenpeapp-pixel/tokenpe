@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 import CelebrationScreen from '../components/CelebrationScreen'
@@ -13,6 +13,7 @@ export default function LoginPage() {
     const [error, setError] = useState('')
     const [success, setSuccess] = useState('')
     const [celebration, setCelebration] = useState(null)
+    const autoGpsRequestedRef = useRef(false)
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -74,8 +75,12 @@ export default function LoginPage() {
     const [regLng, setRegLng] = useState(null)
     const [gpsStatus, setGpsStatus] = useState('')
 
-    function requestGps() {
-        if (!navigator.geolocation) return
+    const requestGps = useCallback(() => {
+        if (!navigator.geolocation) {
+            setGpsStatus('error')
+            return
+        }
+        if (gpsStatus === 'loading') return
         setGpsStatus('loading')
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -94,13 +99,24 @@ export default function LoginPage() {
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         )
-    }
+    }, [gpsStatus])
 
     useEffect(() => {
-        if (mode === 'register') {
+        if (mode === 'register' && !autoGpsRequestedRef.current) {
+            autoGpsRequestedRef.current = true
             requestGps()
         }
-    }, [mode])
+    }, [mode, requestGps])
+
+    function openRegisterMode() {
+        setMode('register')
+        setError('')
+        setSuccess('')
+        if (!autoGpsRequestedRef.current) {
+            autoGpsRequestedRef.current = true
+            requestGps()
+        }
+    }
 
     // OTP reset flow
     const [otpToken, setOtpToken] = useState('')
@@ -442,7 +458,7 @@ export default function LoginPage() {
                         </div>
                         <div className="flex-1 relative z-10">
                             <button
-                                onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
+                                onClick={openRegisterMode}
                                 className={`w-full py-2.5 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 ${mode === 'register' ? 'text-white' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 <Building className="w-4 h-4" /> New Institution

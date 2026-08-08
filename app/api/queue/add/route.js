@@ -65,13 +65,21 @@ export async function POST(req) {
         // ── Look up business plan from the unified businesses table ──────
         const { data: business } = await supabaseAdmin
             .from('businesses')
-            .select('name, plan_id, closed_today_date, type')
+            .select('name, plan_id, closed_today_date, type, queue_paused')
             .eq('id', businessId)
             .single()
             
         const planId = business?.plan_id || 'starter'
         const vertical = business?.type || 'clinic'
         const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
+
+        // ── Block if queue is paused by admin ────────────────────────────
+        if (business?.queue_paused) {
+            return Response.json({
+                success: false,
+                message: 'Queue is currently paused by the administrator. No new entries can be added right now.'
+            }, { status: 403 })
+        }
 
         // ── Block walk-ins if business is closed for today (clinic-only for now) ──
         if (vertical === 'clinic' && business?.closed_today_date) {

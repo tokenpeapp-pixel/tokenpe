@@ -48,7 +48,7 @@ export async function POST(req) {
 
         const body = await req.json()
         const { businessId: bodyBizId, name, token, language, phone, purpose } = body
-        const businessId = session?.businessId || bodyBizId
+        const businessId = bodyBizId || session?.businessId || session?.clinicId
 
         if (!businessId) {
             return Response.json({ success: false, message: 'Clinic identity missing. Please re-login.' }, { status: 401 })

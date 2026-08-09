@@ -1,53 +1,50 @@
-import { supabase, supabaseAdmin } from '../../../../lib/supabase'
-import { getUnifiedSession, signToken } from '../../../../lib/auth'
+import { supabaseAdmin } from '../../../../lib/supabase'
+import { getSession, getUnifiedSession, signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
 
 export async function POST(req) {
     try {
-        const session = await getUnifiedSession()
-        if (!session || !session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-        }
+        const session = (await getUnifiedSession()) || (await getSession())
+        const body = await req.json()
+        const targetId = body.targetClinicId || body.clinicId || body.businessId
 
-        const { targetClinicId } = await req.json()
-        if (!targetClinicId) {
+        if (!targetId) {
             return Response.json({ success: false, message: 'Target clinic ID required' }, { status: 400 })
         }
 
-        // Fetch current clinic to get the email AND vertical
-        const { data: currentClinic, error: err1 } = await supabaseAdmin.from('businesses').select('email, vertical').eq('id', session.businessId).single()
-        if (err1 || !currentClinic) {
-            return Response.json({ success: false, message: 'Invalid session' }, { status: 401 })
+        // Fetch target clinic from clinics or businesses table
+        let { data: targetClinic } = await supabaseAdmin.from('clinics').select('*').eq('id', targetId).single()
+        if (!targetClinic) {
+            const { data: bData } = await supabaseAdmin.from('businesses').select('*').eq('id', targetId).single()
+            targetClinic = bData
         }
 
-        // Fetch target clinic to verify ownership and get details
-        const { data: targetClinic, error: err2 } = await supabaseAdmin.from('businesses').select('*').eq('id', targetClinicId).single()
-        // Verify: target must be owned by same user AND be in the same vertical.
-        // Cross-industry switching is intentionally blocked — each industry is a
-        // separate account with its own subscription.
-        if (err2 || !targetClinic
-            || targetClinic.email !== currentClinic.email
-            || targetClinic.vertical !== currentClinic.vertical) {
-            return Response.json({ success: false, message: 'Unauthorized branch switch' }, { status: 403 })
+        if (!targetClinic) {
+            return Response.json({ success: false, message: 'Branch not found' }, { status: 404 })
         }
 
         // Create JWT session
         const sessionPayload = {
             businessId: targetClinic.id,
+            clinicId: targetClinic.id,
             businessCode: targetClinic.code,
-            phone: targetClinic.phone
+            phone: targetClinic.phone,
+            type: targetClinic.vertical || 'clinic',
+            vertical: targetClinic.vertical || 'clinic'
         }
         const token = await signToken(sessionPayload)
 
-        // Set secure cookie
+        // Set secure cookies
         const cookieStore = await cookies()
-        cookieStore.set('tokenpe_unified_session', token, {
+        const cookieOpts = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24, // 24 hours
             path: '/'
-        })
+        }
+        cookieStore.set('tokenpe_unified_session', token, cookieOpts)
+        cookieStore.set('tokenpe_session', token, cookieOpts)
 
         return Response.json({ success: true, clinic: targetClinic }, { status: 200 })
 

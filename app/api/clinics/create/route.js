@@ -11,7 +11,6 @@ export async function POST(req) {
     }
 
     const session = (await getUnifiedSession()) || (await getSession())
-    const activeId = session?.businessId || session?.clinicId
 
     let { data: existingClinics } = await supabaseAdmin
       .from('clinics')
@@ -35,7 +34,10 @@ export async function POST(req) {
       ? [...existingClinics].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]
       : null
     
+    const newId = crypto.randomUUID()
+
     const newClinic = {
+      id: newId,
       name: clinicName,
       email: email,
       phone: phone || parentClinic?.phone || '0000000000',
@@ -67,7 +69,7 @@ export async function POST(req) {
       return NextResponse.json({ success: true, clinic: createdB })
     }
 
-    // Sync to businesses table if available
+    // Sync to businesses table with exact same newId
     try {
       await supabaseAdmin.from('businesses').insert({ ...newClinic, logo_url: null, settings: { is_public: true } })
     } catch (_) {}

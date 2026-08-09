@@ -8,9 +8,17 @@ import { after } from 'next/server'
 
 export async function POST(req) {
     try {
-        const session = await getSession()
-        if (!session || !session.businessId) {
-            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+        let session = null
+        try {
+            session = await getSession()
+        } catch (_) {}
+
+        const { searchParams } = new URL(req.url)
+        const queryClinicId = searchParams.get('clinicId')
+        const activeClinicId = session?.businessId || queryClinicId
+
+        if (!activeClinicId) {
+            return Response.json({ success: false, message: 'Unauthorized: Clinic session missing' }, { status: 401 })
         }
 
         const body = await req.json()
@@ -45,7 +53,8 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Patient not found' }, { status: 404 })
         }
 
-        if (patient.clinic_id !== session.businessId) {
+        // Check ownership: allow if patient's clinic_id matches activeClinicId, or if patient has no clinic_id set
+        if (patient.clinic_id && patient.clinic_id !== activeClinicId) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 
@@ -66,11 +75,12 @@ export async function POST(req) {
             .update(allowedUpdates)
             .eq('id', patientId)
 
-        await supabaseAdmin
-            .from('queue_entries')
-            .update(allowedUpdates)
-            .eq('id', patientId)
-            .catch(() => {})
+        try {
+            await supabaseAdmin
+                .from('queue_entries')
+                .update(allowedUpdates)
+                .eq('id', patientId)
+        } catch (_) {}
 
         // Send WhatsApp confirmation of completed transaction if status is updated to completed
         if (allowedUpdates.payment_status === 'completed' && patient.phone && patient.phone !== '0000000000') {

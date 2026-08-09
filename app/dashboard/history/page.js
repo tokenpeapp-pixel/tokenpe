@@ -21,6 +21,15 @@ function formatToken(t) {
   return str.padStart(2, '0')
 }
 
+function formatDateDMY(dateStr) {
+  if (!dateStr) return ''
+  const parts = dateStr.split('-')
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`
+  }
+  return dateStr
+}
+
 export default function HistoryPage() {
   const router = useRouter()
   const [clinic, setClinic] = useState(null)
@@ -33,6 +42,7 @@ export default function HistoryPage() {
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'done', 'cancelled', 'waiting'
   const [sbTooltip, setSbTooltip] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [selectedPatient, setSelectedPatient] = useState(null)
 
   const fetchHistory = useCallback(async (clinicId, preset, cStart, cEnd) => {
     setLoading(true)
@@ -122,11 +132,41 @@ export default function HistoryPage() {
 
         .range-pill {
           padding: 8px 16px; border-radius: 10px; font-size: 0.82rem; font-weight: 700;
-          border: 1px solid #E2E8F0; background: white; color: #475569; cursor: pointer;
-          transition: all 0.15s ease;
+          border: 1px solid #CBD5E1; background: white; color: #475569; cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .range-pill:hover:not(.active) {
+          background: #F1F5F9; color: #0F172A; border-color: #94A3B8; transform: translateY(-1px);
         }
         .range-pill.active {
           background: #1E293B; color: white; border-color: #1E293B; font-weight: 800;
+          box-shadow: 0 4px 12px rgba(30,41,59,0.15);
+        }
+
+        .metric-card-hover {
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .metric-card-hover:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06) !important;
+        }
+
+        .history-row-hover {
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .history-row-hover:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(6, 78, 59, 0.06) !important;
+        }
+
+        .btn-more-details {
+          transition: all 0.18s ease !important;
+        }
+        .btn-more-details:hover {
+          background: #064E3B !important;
+          color: #FFFFFF !important;
+          border-color: #064E3B !important;
+          box-shadow: 0 3px 10px rgba(6, 78, 59, 0.2) !important;
         }
       `}</style>
 
@@ -281,10 +321,10 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* ── TOP METRIC SUMMARY CARDS (Inspo layout) ── */}
+        {/* ── TOP METRIC SUMMARY CARDS ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 20 }}>
           {/* Card 1: Total Records */}
-          <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '20px 24px', border: '1.5px solid #DBEAFE', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 10px rgba(59,130,246,0.03)' }}>
+          <div className="metric-card-hover" style={{ background: '#FFFFFF', borderRadius: 16, padding: '20px 24px', border: '1.5px solid #DBEAFE', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 10px rgba(59,130,246,0.03)', cursor: 'default' }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB', flexShrink: 0 }}>
               <Users className="w-5 h-5" />
             </div>
@@ -295,7 +335,7 @@ export default function HistoryPage() {
           </div>
 
           {/* Card 2: Completed */}
-          <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '20px 24px', border: '1.5px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 10px rgba(34,197,94,0.03)' }}>
+          <div className="metric-card-hover" style={{ background: '#FFFFFF', borderRadius: 16, padding: '20px 24px', border: '1.5px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 10px rgba(34,197,94,0.03)', cursor: 'default' }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A', flexShrink: 0 }}>
               <CheckCircle2 className="w-5 h-5" />
             </div>
@@ -306,7 +346,7 @@ export default function HistoryPage() {
           </div>
 
           {/* Card 3: Cancelled / Skipped */}
-          <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '20px 24px', border: '1.5px solid #FECACA', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 10px rgba(239,68,68,0.03)' }}>
+          <div className="metric-card-hover" style={{ background: '#FFFFFF', borderRadius: 16, padding: '20px 24px', border: '1.5px solid #FECACA', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 10px rgba(239,68,68,0.03)', cursor: 'default' }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', flexShrink: 0 }}>
               <XCircle className="w-5 h-5" />
             </div>
@@ -435,7 +475,7 @@ export default function HistoryPage() {
               const timeStr = new Date(p.joined_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
 
               return (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 14, border: `1.5px solid ${isCompleted ? '#A7F3D0' : isSkipped ? '#FECACA' : '#E2E8F0'}`, background: isCompleted ? '#F0FDF4' : isSkipped ? '#FEF2F2' : '#FFFFFF', flexWrap: 'wrap', gap: 12 }}>
+                <div key={p.id} className="history-row-hover" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 14, border: `1.5px solid ${isCompleted ? '#A7F3D0' : isSkipped ? '#FECACA' : '#E2E8F0'}`, background: isCompleted ? '#F0FDF4' : isSkipped ? '#FEF2F2' : '#FFFFFF', flexWrap: 'wrap', gap: 12 }}>
                   {/* Token & Patient Name */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 200 }}>
                     <div style={{ width: 42, height: 42, borderRadius: 12, background: isCompleted ? '#ECFDF5' : isSkipped ? '#FEE2E2' : '#F8FAFC', border: `1px solid ${isCompleted ? '#A7F3D0' : isSkipped ? '#FECACA' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.9rem', color: isCompleted ? '#065F46' : isSkipped ? '#DC2626' : '#475569', fontFamily: 'monospace', flexShrink: 0 }}>
@@ -473,16 +513,26 @@ export default function HistoryPage() {
                   <div style={{ flex: '1', minWidth: 140, padding: '0 14px', borderLeft: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <span style={{ fontSize: '0.64rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entry Date &amp; Time</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#475569', fontWeight: 700, fontSize: '0.82rem' }}>
-                      <Clock className="w-3.5 h-3.5 text-[#64748B]" /> {p.date} · {timeStr}
+                      <Clock className="w-3.5 h-3.5 text-[#64748B]" /> {formatDateDMY(p.date)} · {timeStr}
                     </span>
                   </div>
 
-                  {/* Payment Info */}
-                  <div style={{ textAlign: 'right', paddingLeft: 14, borderLeft: '1px solid #E2E8F0', flexShrink: 0 }}>
-                    <span style={{ fontSize: '0.64rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', display: 'block' }}>Fee Paid</span>
-                    <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPaid ? '#059669' : '#D97706' }}>
-                      ₹{paidFee} <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>/ ₹{totFee}</span>
-                    </span>
+                  {/* Payment Info & Details Button */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingLeft: 14, borderLeft: '1px solid #E2E8F0', flexShrink: 0 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.64rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', display: 'block' }}>Fee Paid</span>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 900, color: isPaid ? '#059669' : '#D97706' }}>
+                        ₹{paidFee} <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>/ ₹{totFee}</span>
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedPatient(p)}
+                      className="btn-more-details"
+                      style={{ background: '#F1F5F9', color: '#0F172A', border: '1px solid #CBD5E1', padding: '6px 12px', borderRadius: 8, fontSize: '0.76rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      More Details
+                    </button>
                   </div>
                 </div>
               )
@@ -490,6 +540,69 @@ export default function HistoryPage() {
           </div>
         )}
       </main>
+
+      {/* ── PATIENT FULL DETAILS MODAL ── */}
+      {selectedPatient && (
+        <div onClick={() => setSelectedPatient(null)} style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(6, 78, 59, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#FFFFFF', borderRadius: 20, padding: 24, maxWidth: 460, width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid #CBD5E1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 900, fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#064E3B' }}>Patient Consultation Details</div>
+              <button onClick={() => setSelectedPatient(null)} style={{ background: '#F1F5F9', border: 'none', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}>×</button>
+            </div>
+
+            <div style={{ background: '#F8FAFC', borderRadius: 14, padding: 18, border: '1px solid #E2E8F0', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid #E2E8F0', paddingBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{selectedPatient.name || 'Walk-in Patient'}</div>
+                </div>
+                <span style={{ background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', padding: '4px 12px', borderRadius: 12, fontWeight: 900, fontSize: '0.9rem', fontFamily: 'monospace' }}>
+                  #{formatToken(selectedPatient.token)}
+                </span>
+              </div>
+
+              <div style={{ fontSize: '0.84rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong style={{ color: '#64748B' }}>WhatsApp Mobile:</strong>
+                  <span style={{ fontWeight: 800, color: '#059669' }}>+91 {selectedPatient.phone}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong style={{ color: '#64748B' }}>Visit Status:</strong>
+                  <span style={{ fontWeight: 800, textTransform: 'uppercase', color: selectedPatient.status === 'done' ? '#059669' : '#DC2626' }}>{selectedPatient.status}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong style={{ color: '#64748B' }}>Entry Date:</strong>
+                  <span style={{ fontWeight: 700 }}>{formatDateDMY(selectedPatient.date)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong style={{ color: '#64748B' }}>Check-in Time:</strong>
+                  <span style={{ fontWeight: 700 }}>{new Date(selectedPatient.joined_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong style={{ color: '#64748B' }}>Reason for Visit:</strong>
+                  <span style={{ fontWeight: 700, color: (selectedPatient.purpose || selectedPatient.reason) ? '#0F172A' : '#94A3B8' }}>{selectedPatient.purpose || selectedPatient.reason || 'None Specified'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong style={{ color: '#64748B' }}>Preferred Language:</strong>
+                  <span style={{ fontWeight: 700 }}>{selectedPatient.language || 'hi'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CBD5E1', paddingTop: 10, marginTop: 4 }}>
+                  <strong style={{ color: '#64748B' }}>Billing Status:</strong>
+                  <span style={{ fontWeight: 900, color: selectedPatient.payment_status === 'completed' ? '#059669' : '#D97706' }}>
+                    {selectedPatient.payment_status === 'completed' ? 'PAID FULL' : 'PENDING'} (₹{selectedPatient.fee_paid || 0} / ₹{selectedPatient.fee_total || 0})
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setSelectedPatient(null)}
+              style={{ width: '100%', background: '#064E3B', color: 'white', border: 'none', padding: '12px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', fontSize: '0.88rem' }}
+            >
+              Close Details
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

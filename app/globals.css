@@ -159,6 +159,45 @@ input:focus, textarea:focus, select:focus {
   display: inline-block;
 }
 
+/* ── Sidebar Navigation Button ──────────────────────────────────────────── */
+.sidebar-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+  background: transparent;
+  color: #1E3A2B !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  text-align: left !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+.sidebar-btn:hover {
+  background: #BFE3CD !important;
+  color: #064E3B !important;
+  padding-left: 20px !important;
+  box-shadow: 0 4px 12px rgba(6,78,59,0.08) !important;
+}
+.sidebar-btn.active {
+  background: #BFE3CD !important;
+  color: #064E3B !important;
+  font-weight: 800 !important;
+  box-shadow: inset 3px 0 0 #064E3B !important;
+}
+.sidebar-btn .sb-label {
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
 /* ── Reduce motion for accessibility ────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

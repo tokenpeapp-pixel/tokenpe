@@ -5,8 +5,8 @@ import { supabase } from '../../../lib/supabase'
 import {
   Layers, LayoutDashboard, History, BarChart2, Megaphone, CreditCard,
   HelpCircle, User, ArrowLeft, Plus, QrCode, Users, CheckCircle2, Trash2,
-  RefreshCw, Copy, X, AlertTriangle, Building2, Sparkles, ExternalLink,
-  ShieldCheck, ArrowRight, Check
+  X, AlertTriangle, Building2, Sparkles, ShieldCheck, ArrowRight, Check,
+  Brain
 } from 'lucide-react'
 
 const BRANCH_PRESETS = [
@@ -34,9 +34,8 @@ export default function ManageBranchesPage() {
   const [createError, setCreateError]   = useState('')
   const [createSuccess, setCreateSuccess] = useState(null)
 
-  // QR Modal & Copy Toast
+  // QR Modal
   const [showQR, setShowQR]             = useState(null)
-  const [copiedId, setCopiedId]         = useState(null)
 
   // Delete Branch Modal
   const [confirmDelete, setConfirmDelete] = useState(null)
@@ -58,23 +57,27 @@ export default function ManageBranchesPage() {
       }
       setClinic(freshClinic)
 
-      // Fetch all sibling branches sharing the same email
-      let { data: siblings, error: sibErr } = await supabase
-        .from('clinics')
-        .select('id, name, code, email, phone, plan_id, subscription_status, created_at, specialty, city, area')
-        .eq('email', freshClinic.email)
-        .order('created_at', { ascending: true })
-
-      if (!siblings || siblings.length === 0) {
-        const { data: bSiblings } = await supabase
+      // Fetch all sibling branches across both clinics and businesses tables
+      const [cRes, bRes] = await Promise.all([
+        supabase
+          .from('clinics')
+          .select('id, name, code, email, phone, plan_id, subscription_status, created_at, specialty, city, area')
+          .eq('email', freshClinic.email)
+          .order('created_at', { ascending: true }),
+        supabase
           .from('businesses')
           .select('id, name, code, email, phone, plan_id, subscription_status, created_at, specialty, city, area')
           .eq('email', freshClinic.email)
           .order('created_at', { ascending: true })
-        if (bSiblings) siblings = bSiblings
-      }
+      ])
 
-      const branchList = siblings || [freshClinic]
+      const map = new Map()
+      if (freshClinic && freshClinic.id) map.set(freshClinic.id, freshClinic)
+      if (cRes.data) cRes.data.forEach(x => map.set(x.id, x))
+      if (bRes.data) bRes.data.forEach(x => map.set(x.id, x))
+
+      const branchList = Array.from(map.values()).sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+      
       setBranches(branchList)
       localStorage.setItem('tokenpe_user_businesses', JSON.stringify(branchList))
 
@@ -147,12 +150,20 @@ export default function ManageBranchesPage() {
     setCreating(false)
   }
 
-  function handleSwitchBranch(b) {
+  async function handleSwitchBranch(b) {
     localStorage.setItem('tokenpe_clinic', JSON.stringify(b))
     localStorage.setItem('tokenpe_business', JSON.stringify(b))
     localStorage.setItem('clinicCode', b.code)
     localStorage.setItem('clinicPhone', b.phone)
-    router.push('/dashboard')
+    setClinic(b)
+
+    try {
+      await fetch('/api/business-auth/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetClinicId: b.id })
+      })
+    } catch (_) {}
   }
 
   async function handleDeleteBranch(b) {
@@ -169,10 +180,9 @@ export default function ManageBranchesPage() {
       if (res.ok && data.success) {
         setConfirmDelete(null)
         if (b.id === clinic?.id) {
-          // If deleted active branch, switch to remaining branch
           const remaining = branches.filter(x => x.id !== b.id)
           if (remaining.length > 0) {
-            handleSwitchBranch(remaining[0])
+            await handleSwitchBranch(remaining[0])
             return
           }
         }
@@ -184,13 +194,6 @@ export default function ManageBranchesPage() {
       alert('Error deleting branch.')
     }
     setDeleting(false)
-  }
-
-  function copyJoinLink(b) {
-    const url = `${window.location.origin}/j/${b.code}`
-    navigator.clipboard.writeText(url)
-    setCopiedId(b.id)
-    setTimeout(() => setCopiedId(null), 2500)
   }
 
   if (loading) return (
@@ -208,6 +211,7 @@ export default function ManageBranchesPage() {
 
   const totalActive = Object.values(branchStats).reduce((acc, curr) => acc + (curr.active || 0), 0)
   const totalCompleted = Object.values(branchStats).reduce((acc, curr) => acc + (curr.completed || 0), 0)
+  const mainBranchId = branches.length > 0 ? branches[0].id : null
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif", background: '#F2F7F2', overflowX: 'hidden' }}>
@@ -328,7 +332,7 @@ export default function ManageBranchesPage() {
 
       {/* ── Main Content Container ── */}
       <main className="flex-grow lg:overflow-y-auto lg:h-screen">
-        <div className="max-w-[1040px] mx-auto p-4 sm:p-6 lg:p-10 space-y-8">
+        <div className="max-w-[1040px] mx-auto p-4 sm:p-6 lg:p-10 space-y-6">
 
           {/* Top Bar Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -347,6 +351,46 @@ export default function ManageBranchesPage() {
               <Plus className="w-4 h-4" /> Add New Branch
             </button>
           </div>
+
+          {/* ── CURRENTLY ACTIVE BRANCH BANNER ── */}
+          {clinic && (
+            <div className="bg-[#052E20] text-white p-5 rounded-3xl shadow-md border border-[#065F46] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-[#065F46] text-[#A7F3D0] border border-[#10B981]/30 flex-shrink-0">
+                  <Building2 className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#065F46] text-[#A7F3D0] px-2.5 py-0.5 rounded border border-[#10B981]/40">
+                      ⚡ Currently Active Location
+                    </span>
+                    <span className="text-xs font-mono text-[#A7F3D0] font-bold">Code: {clinic.code}</span>
+                  </div>
+                  <div className="text-lg font-black text-white mt-0.5 flex items-center gap-2">
+                    <span>{clinic.name}</span>
+                    {clinic.id === mainBranchId && (
+                      <span className="text-[10px] font-extrabold bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/30 flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-amber-300" /> Main Branch (Primary)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="px-4 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <span>Open OPD Dashboard</span> <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Error Banner */}
           {error && (
@@ -393,35 +437,49 @@ export default function ManageBranchesPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-[#065F46]" />
-                <h2 className="text-lg font-black text-[#111827]">Your Clinic Locations</h2>
+                <h2 className="text-lg font-black text-[#111827]">Your Registered Branches ({branches.length})</h2>
               </div>
-              <span className="text-xs font-bold text-[#6B7280]">{branches.length} Location(s) Registered</span>
+              <span className="text-xs font-bold text-[#6B7280]">Select a branch to activate</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {branches.map((b) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {branches.map((b, index) => {
                 const isActive = b.id === clinic?.id
+                const isMainBranch = b.id === mainBranchId
                 const stats = branchStats[b.id] || { active: 0, completed: 0 }
 
                 return (
                   <div
                     key={b.id}
                     className={`branch-card bg-white rounded-3xl p-6 border transition-all relative flex flex-col justify-between shadow-sm ${
-                      isActive ? 'border-2 border-[#065F46] ring-4 ring-[#ECFDF5]' : 'border-[#E5E7EB]'
+                      isActive ? 'border-2 border-[#065F46] ring-4 ring-[#ECFDF5] bg-[#FAFDFA]' : 'border-[#E5E7EB]'
                     }`}
                   >
                     {isActive && (
                       <div className="absolute -top-3.5 right-6 bg-[#065F46] text-white text-[10px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
-                        <Check className="w-3 h-3 text-[#A7F3D0]" /> Active Branch
+                        <Check className="w-3 h-3 text-[#A7F3D0]" /> Currently Active
                       </div>
                     )}
 
                     <div>
-                      <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-start justify-between gap-2 mb-3">
                         <div>
-                          <span className="text-[10px] font-black text-[#065F46] uppercase tracking-wider bg-[#ECFDF5] px-2.5 py-0.5 rounded-md border border-[#A7F3D0] inline-block mb-1">
-                            {b.specialty || 'General OPD'}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                            {isMainBranch ? (
+                              <span className="text-[10px] font-black text-[#92400E] uppercase tracking-wider bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200 inline-flex items-center gap-1">
+                                <Building2 className="w-3 h-3 text-[#D97706]" /> Main Branch (Primary Account)
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-black text-[#065F46] uppercase tracking-wider bg-[#ECFDF5] px-2.5 py-0.5 rounded-md border border-[#A7F3D0] inline-block">
+                                🏢 Branch #{index}
+                              </span>
+                            )}
+
+                            <span className="text-[10px] font-extrabold text-[#64748B] uppercase tracking-wider bg-gray-100 px-2 py-0.5 rounded-md">
+                              {b.specialty || 'General OPD'}
+                            </span>
+                          </div>
+
                           <h3 className="text-lg font-black text-[#111827]">{b.name}</h3>
                           {b.city && <p className="text-xs text-[#6B7280]">{b.area ? `${b.area}, ` : ''}{b.city}</p>}
                         </div>
@@ -433,7 +491,7 @@ export default function ManageBranchesPage() {
                       </div>
 
                       {/* Live OPD Metrics */}
-                      <div className="grid grid-cols-2 gap-3 my-5">
+                      <div className="grid grid-cols-2 gap-3 my-4">
                         <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-2xl text-center">
                           <div className="text-[10px] font-bold text-[#64748B] uppercase">Waiting Now</div>
                           <div className="text-xl font-black text-[#065F46] mt-0.5">{stats.active}</div>
@@ -457,21 +515,21 @@ export default function ManageBranchesPage() {
                             <span>Switch to Branch</span> <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         ) : (
-                          <div className="flex-1 py-2.5 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-xl font-bold text-xs text-center">
-                            Current Active Session
+                          <div className="flex-1 py-2.5 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-xl font-bold text-xs text-center flex items-center justify-center gap-1.5">
+                            <Check className="w-4 h-4 text-[#059669]" /> Active Session
                           </div>
                         )}
 
                         <button
                           onClick={() => setShowQR(b)}
-                          className="p-2.5 bg-gray-50 border border-[#E2E8F0] text-[#374151] rounded-xl hover:bg-gray-100 transition-all flex items-center gap-1 text-xs font-bold"
+                          className="p-2.5 bg-gray-50 border border-[#E2E8F0] text-[#374151] rounded-xl hover:bg-gray-100 transition-all flex items-center gap-1.5 text-xs font-bold"
                           title="Patient QR Code"
                         >
                           <QrCode className="w-4 h-4 text-[#065F46]" />
                           <span>QR Code</span>
                         </button>
 
-                        {branches.length > 1 && (
+                        {!isMainBranch && (
                           <button
                             onClick={() => setConfirmDelete(b)}
                             className="p-2.5 bg-red-50 border border-red-100 text-red-600 rounded-xl hover:bg-red-100 transition-all"
@@ -503,9 +561,9 @@ export default function ManageBranchesPage() {
 
             <div className="flex items-center gap-2 mb-1 text-[#065F46]">
               <Building2 className="w-5 h-5" />
-              <h3 className="text-xl font-black text-[#111827]">Add New Clinic Branch</h3>
+              <h3 className="text-xl font-black text-[#111827]">Add New Sub-Branch</h3>
             </div>
-            <p className="text-xs text-[#6B7280] mb-6">Create a new OPD counter or secondary clinic location under your account.</p>
+            <p className="text-xs text-[#6B7280] mb-6">Create an additional OPD counter or branch location linked to your primary account brain.</p>
 
             {createError && (
               <div className="mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
@@ -521,7 +579,7 @@ export default function ManageBranchesPage() {
                   required
                   value={branchName}
                   onChange={e => setBranchName(e.target.value)}
-                  placeholder="e.g. City Clinic - Kothrud Branch"
+                  placeholder="e.g. Emergency OPD"
                   className="w-full p-3 border border-[#CBD5E1] rounded-2xl text-xs font-semibold outline-none focus:border-[#065F46] bg-gray-50 focus:bg-white transition-all text-[#111827]"
                 />
               </div>
@@ -563,7 +621,7 @@ export default function ManageBranchesPage() {
 
               <div className="bg-[#ECFDF5] border border-[#A7F3D0] p-3 rounded-2xl text-xs text-[#065F46] flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#059669]" />
-                <span>New branches automatically inherit your active Elite subscription plan and multi-doctor WhatsApp features.</span>
+                <span>New sub-branches start completely fresh and inherit your primary account&apos;s Elite plan features.</span>
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -571,7 +629,7 @@ export default function ManageBranchesPage() {
                   Cancel
                 </button>
                 <button type="submit" disabled={creating} className="flex-1 py-3 bg-[#065F46] text-white rounded-xl font-bold text-xs hover:bg-[#043E2E] shadow-sm flex items-center justify-center gap-1.5">
-                  {creating ? 'Creating Branch...' : <><Plus className="w-4 h-4" /> Create Branch</>}
+                  {creating ? 'Creating Sub-Branch...' : <><Plus className="w-4 h-4" /> Create Sub-Branch</>}
                 </button>
               </div>
             </form>
@@ -615,9 +673,9 @@ export default function ManageBranchesPage() {
             <div className="w-14 h-14 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
               <AlertTriangle className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-black text-[#111827] mb-2">Delete Branch?</h3>
+            <h3 className="text-xl font-black text-[#111827] mb-2">Delete Sub-Branch?</h3>
             <p className="text-xs text-[#6B7280] leading-relaxed mb-6">
-              Are you sure you want to delete <strong className="text-[#111827]">&quot;{confirmDelete.name}&quot;</strong>? This action cannot be undone and will remove associated queue records.
+              Are you sure you want to delete <strong className="text-[#111827]">&quot;{confirmDelete.name}&quot;</strong>? This action cannot be undone and will remove associated queue records for this branch.
             </p>
 
             <div className="flex gap-3">
@@ -634,7 +692,7 @@ export default function ManageBranchesPage() {
                 onClick={() => handleDeleteBranch(confirmDelete)}
                 className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5"
               >
-                {deleting ? 'Deleting...' : <><Trash2 className="w-4 h-4" /> Delete Branch</>}
+                {deleting ? 'Deleting...' : <><Trash2 className="w-4 h-4" /> Delete Sub-Branch</>}
               </button>
             </div>
           </div>

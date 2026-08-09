@@ -36,7 +36,7 @@ export default function CRMPage() {
   const [sbTooltip, setSbTooltip] = useState(null)
 
   async function loadCRMStats(clinicObj) {
-    if (clinicObj.plan_id !== 'elite' && clinicObj.plan_id !== 'pro' && clinicObj.subscription_status !== 'trialing') {
+    if (clinicObj.plan_id !== 'elite' && clinicObj.subscription_status !== 'trialing') {
       return
     }
     try {
@@ -234,7 +234,7 @@ export default function CRMPage() {
 
   const isEliteOrTrial = clinic?.plan_id === 'elite' || clinic?.subscription_status === 'trialing'
 
-  if (clinic?.plan_id !== 'elite' && clinic?.plan_id !== 'pro' && clinic?.subscription_status !== 'trialing') {
+  if (clinic?.plan_id !== 'elite' && clinic?.subscription_status !== 'trialing') {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", background: '#F2F7F2' }}>
         {/* Sidebar */}
@@ -248,9 +248,9 @@ export default function CRMPage() {
             <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trophy size={36} />
             </div>
-            <h2 className="text-2xl font-black text-[#111827] mb-2">Pro & Elite Feature</h2>
+            <h2 className="text-2xl font-black text-[#111827] mb-2">Elite Feature</h2>
             <p className="text-[#6B7280] text-sm leading-relaxed mb-6">
-              Patient CRM and Smart WhatsApp Follow-ups are available on Pro and Elite plans. Upgrade your clinic to start engaging patients!
+              Patient CRM and Smart WhatsApp Follow-ups are available on the Elite plan. Upgrade your clinic to start engaging patients!
             </p>
             <button onClick={() => router.push('/dashboard/billing')} className="w-full bg-[#065F46] hover:bg-[#044E3A] text-white py-3 rounded-xl font-bold mb-3 transition-all shadow-md">
               Upgrade Subscription Plan
@@ -355,7 +355,7 @@ export default function CRMPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {[
               { label: 'Billing & Plans', desc: 'Manage your TokenPe subscription & plan features', icon: <CreditCard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/billing') },
-              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {} },
+              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/help') },
               { label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {} },
             ].map(item => (
               <button

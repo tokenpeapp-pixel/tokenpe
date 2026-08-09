@@ -33,20 +33,30 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Invalid input format.' }, { status: 400 })
         }
 
-        const { data: rows, error } = await supabase
-            .from('businesses')
+        let { data: rows, error } = await supabase
+            .from('clinics')
             .select('*')
             .ilike('email', cleanEmail)
             .eq('phone', cleanPhone)
-            .eq('type', cleanVertical)   // ← businesses table uses 'type' column, not 'vertical'
             .order('created_at', { ascending: true })
             .limit(1)
 
+        if (!rows || rows.length === 0) {
+            const { data: bRows } = await supabase
+                .from('businesses')
+                .select('*')
+                .ilike('email', cleanEmail)
+                .eq('phone', cleanPhone)
+                .order('created_at', { ascending: true })
+                .limit(1)
+            if (bRows) rows = bRows
+        }
+
         const data = rows?.[0] ?? null
 
-        if (error || !data) {
+        if (!data) {
             loginLimiter.recordFailure(ip)
-            return Response.json({ success: false, message: `No ${cleanVertical} account found for these credentials.` }, { status: 401 })
+            return Response.json({ success: false, message: `No ${cleanVertical} account found in database for these credentials.` }, { status: 404 })
         }
 
         if (data.pin !== cleanPin) {
@@ -57,23 +67,29 @@ export async function POST(req) {
         // Success — reset rate limiter
         loginLimiter.reset(ip)
 
-        // Create JWT session using existing clinic data (no code rotation — doctors set custom codes)
+        // Create JWT session using existing clinic data
         const sessionPayload = {
-            businessId: data.id, businessCode: data.code, phone: data.phone, type: data.type, vertical: data.type
+            businessId: data.id,
+            clinicId: data.id,
+            businessCode: data.code,
+            phone: data.phone,
+            type: data.type,
+            vertical: data.type
         }
         const token = await signToken(sessionPayload)
 
-        // Set secure cookie
+        // Set secure cookies
         const cookieStore = await cookies()
-        cookieStore.set('tokenpe_unified_session', token, {
+        const cookieOpts = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24, // 24 hours
             path: '/'
-        })
+        }
+        cookieStore.set('tokenpe_unified_session', token, cookieOpts)
+        cookieStore.set('tokenpe_session', token, cookieOpts)
 
-        delete data.pin
         return Response.json({ success: true, clinic: data }, { status: 200 })
 
     } catch (error) {

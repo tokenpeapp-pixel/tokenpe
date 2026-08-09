@@ -9,7 +9,7 @@ export async function GET(req) {
         } catch (_) {}
 
         const searchParams = new URL(req.url).searchParams
-        const businessId = session?.businessId || searchParams.get('clinicId') || searchParams.get('businessId')
+        const businessId = searchParams.get('clinicId') || searchParams.get('businessId') || session?.businessId
 
         if (!businessId) {
             return Response.json({ success: false, message: 'Missing clinic ID' }, { status: 400 })

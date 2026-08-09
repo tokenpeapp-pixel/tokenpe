@@ -36,9 +36,7 @@ export default function CRMPage() {
   const [sbTooltip, setSbTooltip] = useState(null)
 
   async function loadCRMStats(clinicObj) {
-    if (clinicObj.plan_id !== 'elite' && clinicObj.subscription_status !== 'trialing') {
-      return
-    }
+    if (!clinicObj || !clinicObj.id) return
     try {
       const statsRes = await fetch(`/api/crm/stats?clinicId=${clinicObj.id}`)
       const stats = await statsRes.json()

@@ -782,14 +782,15 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
 
   const totalCollected = patients.reduce((acc, p) => acc + (parseFloat(p.fee_paid) || 0), 0)
   const totalPending = patients.reduce((acc, p) => {
-    const tot = parseFloat(p.fee_total) || 500
+    const tot = p.fee_total !== undefined && p.fee_total !== null ? parseFloat(p.fee_total) : 0
     const pd = parseFloat(p.fee_paid) || 0
     return acc + Math.max(0, tot - pd)
   }, 0)
 
   const handleUpdatePayment = async (pId, feeTotal, feePaid, status) => {
     try {
-      const res = await fetch('/api/queue/update-payment', {
+      const bId = clinic?.id || clinic?.business_id
+      const res = await fetch(`/api/queue/update-payment?clinicId=${bId || ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -859,32 +860,57 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {patients.map((p) => {
-            const totFee = parseFloat(p.fee_total) || 500
+            const totFee = p.fee_total !== undefined && p.fee_total !== null ? parseFloat(p.fee_total) : 0
             const paidFee = parseFloat(p.fee_paid) || (p.payment_status === 'completed' ? totFee : 0)
-            const isCompleted = p.payment_status === 'completed' || paidFee >= totFee
+            const isCompleted = p.payment_status === 'completed' || (totFee > 0 && paidFee >= totFee)
             const pendingFee = Math.max(0, totFee - paidFee)
             const timeStr = new Date(p.joined_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
 
             return (
-              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12, border: `1.5px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, background: isCompleted ? '#F0FDF4' : '#FFFDF5', flexWrap: 'wrap', gap: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 10, background: isCompleted ? '#ECFDF5' : '#FFFBEB', border: `1px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem', color: isCompleted ? '#065F46' : '#B45309', fontFamily: 'monospace' }}>
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderRadius: 14, border: `1.5px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, background: isCompleted ? '#F0FDF4' : '#FFFDF5', flexWrap: 'wrap', gap: 12 }}>
+                {/* Partition 1: Token & Patient Info */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 180 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: isCompleted ? '#ECFDF5' : '#FFFBEB', border: `1px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem', color: isCompleted ? '#065F46' : '#B45309', fontFamily: 'monospace', flexShrink: 0 }}>
                     #{formatToken(p.token)}
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>{p.name || 'Walk-in Patient'}</span>
-                      <span style={{ fontSize: '0.64rem', fontWeight: 800, padding: '2px 8px', borderRadius: 8, background: isCompleted ? '#ECFDF5' : '#FFFBEB', color: isCompleted ? '#059669' : '#D97706', border: `1px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: '0.62rem', fontWeight: 800, padding: '2px 8px', borderRadius: 8, background: isCompleted ? '#ECFDF5' : '#FFFBEB', color: isCompleted ? '#059669' : '#D97706', border: `1px solid ${isCompleted ? '#A7F3D0' : '#FDE68A'}`, textTransform: 'uppercase' }}>
                         {isCompleted ? 'PAID FULL' : `PENDING ₹${pendingFee}`}
                       </span>
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: 2 }}>
-                      Phone: +91 {p.phone} · OPD Consultation · {timeStr}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {/* Partition 2: Reason for Visit (if entered) */}
+                {(p.purpose || p.reason) && (
+                  <div style={{ flex: '1', minWidth: 130, padding: '0 12px', borderLeft: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '0.64rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reason for Visit</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 150 }}>
+                      {p.purpose || p.reason}
+                    </span>
+                  </div>
+                )}
+
+                {/* Partition 3: WhatsApp Number */}
+                <div style={{ flex: '1', minWidth: 140, padding: '0 12px', borderLeft: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '0.64rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp Phone</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#059669', fontWeight: 700, fontSize: '0.8rem' }}>
+                    <Phone className="w-3.5 h-3.5 text-[#059669]" /> {p.phone}
+                  </span>
+                </div>
+
+                {/* Partition 4: Joined Time */}
+                <div style={{ flex: '1', minWidth: 120, padding: '0 12px', borderLeft: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '0.64rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entry Time</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#475569', fontWeight: 700, fontSize: '0.8rem' }}>
+                    <Clock className="w-3.5 h-3.5 text-[#64748B]" /> {timeStr}
+                  </span>
+                </div>
+
+                {/* Partition 5: Amount & Action Controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 12, borderLeft: '1px solid #E2E8F0', flexShrink: 0 }}>
                   <div style={{ textAlign: 'right', marginRight: 4 }}>
                     <div style={{ fontSize: '0.95rem', fontWeight: 900, color: isCompleted ? '#059669' : '#D97706' }}>
                       ₹{paidFee} <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>/ ₹{totFee}</span>
@@ -1062,15 +1088,17 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
         </div>
       </div>
 
-      {/* Partition 3: Reason for Visit */}
-      <div style={{ flex: '1', minWidth: 140, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
-        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
-          REASON FOR VISIT
-        </span>
-        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: (patient.purpose || patient.reason) ? '#0F172A' : '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
-          {patient.purpose || patient.reason || 'N/A'}
-        </span>
-      </div>
+      {/* Partition 3: Reason for Visit (only if entered) */}
+      {(patient.purpose || patient.reason) && (
+        <div style={{ flex: '1', minWidth: 140, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
+          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+            REASON FOR VISIT
+          </span>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
+            {patient.purpose || patient.reason}
+          </span>
+        </div>
+      )}
 
       {/* Partition 4: WhatsApp Number */}
       <div style={{ flex: '1', minWidth: 140, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
@@ -1171,6 +1199,14 @@ function DashboardContent() {
   const [toastMsg, setToastMsg] = useState('')
   const [showNavMenu, setShowNavMenu] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [sbTooltip, setSbTooltip] = useState(null)
+
+  useEffect(() => {
+    if (!toastMsg) return
+    const timer = setTimeout(() => setToastMsg(''), 3000)
+    return () => clearTimeout(timer)
+  }, [toastMsg])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -1558,26 +1594,65 @@ function DashboardContent() {
   )
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", background: '#DCEFDF' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", background: '#DCEFDF', overflowX: 'hidden' }}>
       <UpgradeBanner />
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
         .sidebar-btn {
-          display: flex; alignItems: center; gap: 10px; padding: 10px 14px;
+          display: flex; align-items: center; gap: 10px; padding: 10px 14px;
           border-radius: 12px; background: transparent; color: #1E3A2B;
-          font-weight: 700; font-size: 0.88rem; border: none; cursor: pointer;
+          font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer;
           width: 100%; text-align: left; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          white-space: nowrap; overflow: hidden;
         }
         .sidebar-btn:hover {
-          background: #BFE3CD; color: #064E3B; transform: translateX(5px);
-          box-shadow: 0 4px 12px rgba(6,78,59,0.06);
+          background: #BFE3CD; color: #064E3B; padding-left: 20px;
+          box-shadow: 0 4px 12px rgba(6,78,59,0.08);
         }
         .sidebar-btn.active {
           background: #BFE3CD; color: #064E3B; font-weight: 800;
           box-shadow: inset 3px 0 0 #064E3B;
         }
+        .sidebar-btn .sb-label { font-weight: 700; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .sb-wrap { position: relative; }
+        .sb-tooltip {
+          position: absolute;
+          left: calc(100% + 14px);
+          top: 50%; transform: translateY(-50%) scale(0.95);
+          background: #1E3A2B;
+          color: #E2F5EB;
+          border-radius: 12px;
+          padding: 12px 14px;
+          width: 210px;
+          font-size: 0.78rem;
+          font-weight: 500;
+          line-height: 1.55;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.18s ease, transform 0.18s ease;
+          z-index: 9999;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+          white-space: normal;
+        }
+        .sb-tooltip strong {
+          display: block;
+          font-size: 0.82rem;
+          font-weight: 800;
+          color: #A7F3D0;
+          margin-bottom: 4px;
+        }
+        .sb-tooltip::before {
+          content: '';
+          position: absolute;
+          left: -7px; top: 50%; transform: translateY(-50%);
+          border: 7px solid transparent;
+          border-right-color: #1E3A2B;
+          border-left: 0;
+        }
+        .sb-wrap:hover .sb-tooltip { opacity: 1; transform: translateY(-50%) scale(1); }
 
         .spinner-ring {
           width: 40px;
@@ -1711,72 +1786,140 @@ function DashboardContent() {
       `}</style>
 
       {/* ── LEFT SIDEBAR NAVIGATION (HIDDEN ON MOBILE) ── */}
-      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
-        <div>
+      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflow: 'visible' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto', overflowX: 'hidden', flex: 1, paddingBottom: 8 }}>
           {/* Brand Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px', marginBottom: 24 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#064E3B', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Stethoscope className="w-5 h-5" />
-            </div>
-            <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#064E3B', letterSpacing: '-0.5px' }}>TokenPE</span>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', marginBottom: 28 }}>
+            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
           </div>
 
-          {/* Nav Group 1: Console */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: 1, padding: '0 10px', marginBottom: 8 }}>Console</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <button className="sidebar-btn active">
-                <LayoutDashboard className="w-4 h-4 text-[#064E3B]" /> Dashboard
-              </button>
-              <button onClick={() => setActiveTab('active')} className="sidebar-btn">
-                <List className="w-4 h-4" /> Queue
-              </button>
-              <button onClick={() => setShowAddForm(true)} className="sidebar-btn">
-                <Shield className="w-4 h-4" /> Admin Console
-              </button>
-              <button onClick={() => router.push('/dashboard/analytics')} className="sidebar-btn">
-                <Calendar className="w-4 h-4" /> Appointments
-              </button>
-              <button onClick={() => router.push('/dashboard/crm')} className="sidebar-btn">
-                <UserCheck className="w-4 h-4" /> Doctors
-              </button>
+          {/* Nav Group: Console */}
+          <div style={{ marginBottom: 4 }}>
+            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 10px', marginBottom: 6 }}>Console</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {[
+                { label: 'Dashboard', desc: 'Live queue overview & clinic stats', icon: <LayoutDashboard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {}, active: true },
+                { label: 'Manage Branches', desc: 'Set up & switch between clinic locations under one account', icon: <Layers className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {} },
+                { label: 'History', desc: 'Browse completed & past patient consultation records', icon: <History className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/history') },
+                { label: 'Analytics & Reports', desc: 'Track peak OPD hours, average wait times, reason breakdowns, and patient-wise statistics.', icon: <BarChart2 className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/analytics') },
+                { label: 'Broadcasting & CRM', desc: 'Send bulk WhatsApp alerts & manage patient relationships', icon: <Megaphone className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/crm') },
+              ].map(item => (
+                <button
+                  key={item.label}
+                  onClick={item.onClick}
+                  className={`sidebar-btn${item.active ? ' active' : ''}`}
+                  onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
+                  onMouseLeave={() => setSbTooltip(null)}
+                >
+                  {item.icon}
+                  <span className="sb-label">{item.label}</span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Nav Group 2: Support */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: 1, padding: '0 10px', marginBottom: 8 }}>Support</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <button onClick={() => router.push('/dashboard/billing')} className="sidebar-btn">
-                <Settings className="w-4 h-4" /> Settings
+          {/* Divider */}
+          <div style={{ height: 1, background: '#A8D5B5', margin: '14px 8px' }} />
+
+          {/* Nav Group: Account */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {[
+              { label: 'Billing & Plans', desc: 'Manage your TokenPe subscription & plan features', icon: <CreditCard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/billing') },
+              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {} },
+              { label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {} },
+            ].map(item => (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                className="sidebar-btn"
+                onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
+                onMouseLeave={() => setSbTooltip(null)}
+              >
+                {item.icon}
+                <span className="sb-label">{item.label}</span>
               </button>
-              {/* Mini-Widget: Today's OPD Flow Snapshot */}
-              <div style={{ background: '#FFFFFF', borderRadius: 16, padding: 14, border: '1px solid #A8D5B5', marginBottom: 16, cursor: 'default' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', fontWeight: 800, color: '#064E3B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  <span>Today's Flow</span>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 8 }}>
-                  <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{activePatients.length} active</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669' }}>live queue</span>
-                </div>
-                {/* OPD Completion Progress Bar */}
-                <div style={{ height: 4, background: '#E2F1E8', borderRadius: 10, marginTop: 8, overflow: 'hidden' }}>
-                  <div style={{ width: `${patients.length > 0 ? (done.length / patients.length) * 100 : 0}%`, height: '100%', background: '#059669', borderRadius: 10 }} />
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Bottom Clinic Plan Badge Card */}
-        <div style={{ background: 'white', borderRadius: 16, padding: 14, border: '1px solid #A8D5B5', cursor: 'default' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0F172A' }}>Clinic Plan</div>
-            <span style={{ fontSize: '0.68rem', color: '#059669', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '2px 8px', borderRadius: 12, fontWeight: 800 }}>PRO ACTIVE</span>
-          </div>
+        {/* Exit Console & Logout Button at Bottom */}
+        <div style={{ paddingTop: 12, borderTop: '1px solid #A8D5B5', marginTop: 12 }}>
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="sidebar-btn"
+            style={{ width: '100%', color: '#B91C1C', fontWeight: 800 }}
+          >
+            <LogOut className="w-4 h-4" style={{ color: '#B91C1C' }} /> Exit Console &amp; Logout
+          </button>
         </div>
       </aside>
+
+      {/* ── SIDEBAR FIXED TOOLTIP OVERLAY ── */}
+      {sbTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: 252,
+          top: sbTooltip.y,
+          transform: 'translateY(-50%)',
+          background: '#1E3A2B',
+          color: '#E2F5EB',
+          borderRadius: 12,
+          padding: '12px 14px',
+          width: 220,
+          fontSize: '0.78rem',
+          fontWeight: 500,
+          lineHeight: 1.55,
+          zIndex: 99998,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+          pointerEvents: 'none',
+          whiteSpace: 'normal',
+        }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#A7F3D0', marginBottom: 4 }}>{sbTooltip.label}</div>
+          {sbTooltip.desc}
+          <div style={{
+            position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
+            width: 0, height: 0,
+            borderTop: '7px solid transparent',
+            borderBottom: '7px solid transparent',
+            borderRight: '7px solid #1E3A2B',
+          }} />
+        </div>
+      )}
+
+      {/* ── LOGOUT CONFIRMATION MODAL ── */}
+      {showLogoutConfirm && (
+        <div
+          onClick={() => setShowLogoutConfirm(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(6, 78, 59, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#FFFFFF', borderRadius: 20, padding: 28, maxWidth: 380, width: '100%', boxShadow: '0 25px 60px rgba(0,0,0,0.25)', border: '1.5px solid #CBE4D3', textAlign: 'center' }}
+          >
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#FEF2F2', border: '1.5px solid #FECACA', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <LogOut style={{ width: 22, height: 22, color: '#B91C1C' }} />
+            </div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A', marginBottom: 6, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Exit Console?</div>
+            <div style={{ fontSize: '0.84rem', color: '#64748B', marginBottom: 24, lineHeight: 1.6 }}>
+              You are about to log out of the TokenPe dashboard.<br />All unsaved changes will be lost.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{ flex: 1, background: '#F1F5F9', color: '#0F172A', border: 'none', padding: '11px', borderRadius: 12, fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowLogoutConfirm(false); handleLogout() }}
+                style={{ flex: 1, background: '#B91C1C', color: 'white', border: 'none', padding: '11px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                <LogOut style={{ width: 15, height: 15 }} /> Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── MAIN CONTENT CONSOLE ── */}
       <main className="dashboard-main" style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', background: '#DCEFDF' }}>
@@ -2159,13 +2302,43 @@ function DashboardContent() {
           {activeTab === 'payments' ? (
             <PaymentsView clinic={clinic} setToastMsg={setToastMsg} dashboardPatients={patients} />
           ) : activeTab === 'done' ? (
-            done.length === 0 ? (
-              <div style={{ background: 'white', borderRadius: 20, border: '1.5px solid #CBE4D3', padding: '40px 24px', textAlign: 'center', color: '#64748B' }}>No completed patient records today.</div>
-            ) : (
-              done.map((p) => (
-                <PatientCard key={p.id} patient={p} onDone={() => {}} onSkip={() => {}} onNotify={() => {}} onViewDetails={() => setSelectedPatient(p)} />
-              ))
-            )
+            (() => {
+              const filteredDone = done.filter(p => {
+                if (!searchQuery.trim()) return true
+                const q = searchQuery.toLowerCase()
+                return (p.name && p.name.toLowerCase().includes(q)) ||
+                       (p.phone && p.phone.includes(q)) ||
+                       (p.token && String(p.token).toLowerCase().includes(q))
+              })
+
+              return (
+                <div style={{ background: 'white', borderRadius: 16, padding: '20px 24px', border: '1.5px solid #CBE4D3', boxShadow: '0 3px 14px rgba(6,78,59,0.03)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                    <div>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#064E3B', margin: 0, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Consultation History & Completed Records</h2>
+                      <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '2px 0 0' }}>Log of patients completed today</p>
+                    </div>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 800, background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', padding: '4px 12px', borderRadius: 12 }}>
+                      {done.length} Patients Completed
+                    </span>
+                  </div>
+
+                  {filteredDone.length === 0 ? (
+                    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748B', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E2E8F0' }}>
+                      <History className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
+                      <div style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>No completed records found</div>
+                      <div style={{ fontSize: '0.76rem', marginTop: 4 }}>Patients marked as "Done" will automatically move here.</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {filteredDone.map((p) => (
+                        <PatientCard key={p.id} patient={p} onDone={() => {}} onSkip={() => {}} onNotify={() => {}} onViewDetails={() => setSelectedPatient(p)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })()
           ) : (
             filteredActive.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 20, border: '1.5px solid #CBE4D3', padding: '48px 24px', textAlign: 'center', color: '#64748B' }}>

@@ -11,7 +11,7 @@ export async function GET(req) {
         const { searchParams } = new URL(req.url)
         const startDate = searchParams.get('startDate')
         const endDate = searchParams.get('endDate')
-        const requestedClinicId = searchParams.get('businessId')
+        const requestedClinicId = searchParams.get('businessId') || searchParams.get('clinicId')
 
         let businessId = session.businessId
 
@@ -19,24 +19,23 @@ export async function GET(req) {
             // Verify ownership: both clinics must share the same email
             const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.businessId).single()
             const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', requestedClinicId).single()
-            if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
-                return Response.json({ success: false, message: 'Unauthorized branch access' }, { status: 403 })
+            if (sessionClinic && targetClinic && sessionClinic.email === targetClinic.email) {
+                businessId = requestedClinicId
             }
-            businessId = requestedClinicId
         }
 
         let query = supabaseAdmin
-            .from('queue_entries')
+            .from('patients')
             .select('*')
-            .eq('business_id', businessId)
+            .or(`clinic_id.eq.${businessId},clinic_id.is.null`)
             
         if (startDate && endDate) {
             query = query.gte('date', startDate).lte('date', endDate)
         } else if (startDate) {
-            query = query.eq('date', startDate)
+            query = query.gte('date', startDate)
         }
         
-        const { data: patients, error } = await query.limit(100000)
+        const { data: patients, error } = await query.order('joined_at', { ascending: false }).limit(100000)
 
         if (error) {
             throw error

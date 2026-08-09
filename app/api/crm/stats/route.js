@@ -1,38 +1,54 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '../../../../lib/supabase'
-import { getSession } from '../../../../lib/auth'
+import { getSession, getUnifiedSession } from '../../../../lib/auth'
+
+async function fetchEntityEmail(id) {
+  if (!id) return null
+  try {
+    let { data } = await supabaseAdmin.from('clinics').select('email').eq('id', id).single()
+    if (!data || !data.email) {
+      const { data: bData } = await supabaseAdmin.from('businesses').select('email').eq('id', id).single()
+      data = bData
+    }
+    return data?.email ? data.email.trim().toLowerCase() : null
+  } catch (e) {
+    return null
+  }
+}
 
 export async function GET(req) {
   try {
-    const session = await getSession()
-    if (!session || !session.businessId) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    const session = (await getUnifiedSession()) || (await getSession())
+    const sessionClinicId = session?.businessId || session?.clinicId
+
+    const { searchParams } = new URL(req.url)
+    const requestedClinicId = searchParams.get('clinicId') || searchParams.get('businessId')
+    let businessId = requestedClinicId || sessionClinicId
+
+    if (!businessId) {
+      return NextResponse.json({ success: false, error: 'Clinic ID required' }, { status: 400 })
     }
 
-    // Allow fetching stats for a specific branch (verify ownership via email)
-    const { searchParams } = new URL(req.url)
-    const requestedClinicId = searchParams.get('businessId')
-    let businessId = session.businessId
-
-    if (requestedClinicId && requestedClinicId !== session.businessId) {
-      // Verify ownership: both clinics must share the same email
-      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.businessId).single()
-      const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', requestedClinicId).single()
-      if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
+    if (sessionClinicId && businessId !== sessionClinicId) {
+      const sessionEmail = await fetchEntityEmail(sessionClinicId)
+      const targetEmail = await fetchEntityEmail(businessId)
+      if (sessionEmail && targetEmail && sessionEmail !== targetEmail) {
         return NextResponse.json({ success: false, error: 'Unauthorized branch access' }, { status: 403 })
       }
-      businessId = requestedClinicId
     }
 
-    // Fetch all patients for this clinic to calculate stats
-    // We use supabaseAdmin to bypass RLS securely on the server
-    const { data: patients, error } = await supabaseAdmin
-      .from('queue_entries')
-      .select('phone, crm_rating, feedback_text, feedback_at, name, date, completed_at, status')
-      .eq('business_id', businessId)
+    // Query patients table first (fallback to queue_entries)
+    let { data: patients, error } = await supabaseAdmin
+      .from('patients')
+      .select('phone, name, date, completed_at, status, crm_rating, feedback_text, feedback_at')
+      .eq('clinic_id', businessId)
       
-    if (error) {
-      throw error
+    if (error || !patients) {
+      const { data: qPatients } = await supabaseAdmin
+        .from('queue_entries')
+        .select('phone, crm_rating, feedback_text, feedback_at, name, date, completed_at, status')
+        .eq('business_id', businessId)
+      patients = qPatients || []
     }
 
     if (!patients || patients.length === 0) {
@@ -57,7 +73,7 @@ export async function GET(req) {
       avgRating = (sum / rated.length).toFixed(1)
     }
 
-    // Get recent feedback (sort by feedback_at, then completed_at, then date)
+    // Get recent feedback
     const feedbacks = rated
       .sort((a, b) => {
         const timeA = new Date(a.feedback_at || a.completed_at || a.date).getTime()
@@ -66,13 +82,11 @@ export async function GET(req) {
       })
       .slice(0, 10)
 
-    // Calculate reachable today for meds (3 days ago, status done)
     const threeDaysAgo = new Date()
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
     const dateStr3 = threeDaysAgo.toISOString().split('T')[0]
     const medsReachable = new Set(patients.filter(p => p.date === dateStr3 && p.status === 'done').map(p => p.phone).filter(Boolean)).size
 
-    // Calculate reachable today for recall (90 days ago, status done)
     const ninetyDaysAgo = new Date()
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
     const dateStr90 = ninetyDaysAgo.toISOString().split('T')[0]

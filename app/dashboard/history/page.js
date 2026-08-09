@@ -79,7 +79,7 @@ export default function HistoryPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+      await fetch('/api/business-auth/logout', { method: 'POST' }).catch(() => {})
       localStorage.removeItem('tokenpe_clinic')
       localStorage.removeItem('tokenpe_cached_patients')
       supabase.auth.signOut().catch(() => {})

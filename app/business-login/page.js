@@ -25,7 +25,7 @@ export default function LoginPage() {
                         localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
                         localStorage.setItem('businessCode', data.clinic.code)
                         localStorage.setItem('businessPhone', data.clinic.phone)
-                        router.replace('/business-dashboard')
+                        router.replace('/dashboard')
                     } else {
                         localStorage.removeItem('tokenpe_clinic')
                         localStorage.removeItem('tokenpe_user_businesses')
@@ -147,7 +147,7 @@ export default function LoginPage() {
             localStorage.setItem('businessCode', result.clinic.code)
             localStorage.setItem('businessPhone', result.clinic.phone)
             localStorage.setItem('tokenpe_user_businesses', JSON.stringify([result.clinic]))
-            router.push('/business-dashboard')
+            router.push('/dashboard')
         } catch (err) {
             setError('Something went wrong. Please try again.')
             setLoading(false)
@@ -276,7 +276,7 @@ export default function LoginPage() {
     }
 
     if (celebration) {
-        return <CelebrationScreen clinicName={celebration.clinicName} trialEnd={celebration.trialEnd} onDone={() => router.push('/business-dashboard')} />
+        return <CelebrationScreen clinicName={celebration.clinicName} trialEnd={celebration.trialEnd} onDone={() => router.push('/dashboard')} />
     }
 
     return (

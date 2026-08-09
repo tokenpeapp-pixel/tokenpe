@@ -54,7 +54,7 @@ export default function BillingPage() {
 
     async function load() {
       const stored = localStorage.getItem('tokenpe_clinic')
-      if (!stored) { router.push('/login'); return }
+      if (!stored) { router.push('/business-login'); return }
       const clinicData = JSON.parse(stored)
 
       const today = getISTDateString()

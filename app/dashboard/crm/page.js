@@ -55,7 +55,7 @@ export default function CRMPage() {
   useEffect(() => {
     async function load() {
       const stored = localStorage.getItem('tokenpe_clinic')
-      if (!stored) { router.push('/login'); return }
+      if (!stored) { router.push('/business-login'); return }
 
       const c = JSON.parse(stored)
       

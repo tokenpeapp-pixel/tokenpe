@@ -40,7 +40,7 @@ export async function GET(req) {
                 .from('clinics')
                 .select('*')
                 .eq('email', clinic.email)
-                .eq('vertical', clinic.vertical)   // ← same industry only
+                .eq('type', clinic.type)   // ← same industry only
                 .order('created_at', { ascending: true })
             if (data && data.length > 0) userClinics = data
         } else if (clinic.phone) {
@@ -48,7 +48,7 @@ export async function GET(req) {
                 .from('clinics')
                 .select('*')
                 .eq('phone', clinic.phone)
-                .eq('vertical', clinic.vertical)   // ← same industry only
+                .eq('type', clinic.type)   // ← same industry only
                 .order('created_at', { ascending: true })
             if (data && data.length > 0) userClinics = data
         }

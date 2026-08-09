@@ -494,6 +494,13 @@ function formatToken(tok) {
 function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
   const [noWhatsapp, setNoWhatsapp] = useState(false)
   const [reason, setReason] = useState('')
   const [lang, setLang] = useState('en')
@@ -1321,7 +1328,7 @@ function DashboardContent() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+      await fetch('/api/business-auth/logout', { method: 'POST' }).catch(() => {})
       localStorage.removeItem('tokenpe_clinic')
       localStorage.removeItem('tokenpe_cached_patients')
       supabase.auth.signOut().catch(() => {})
@@ -1589,7 +1596,7 @@ function DashboardContent() {
   const filteredActive = activePatients.filter(p => 
     !searchQuery || 
     (p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (p.token && p.token.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (p.token && String(p.token).toLowerCase().includes(searchQuery.toLowerCase())) ||
     (p.phone && p.phone.includes(searchQuery))
   )
 
@@ -2430,13 +2437,13 @@ function DashboardContent() {
                 boxShadow: '-10px 0 40px rgba(6,78,59,0.3)',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-start',
                 zIndex: 10001,
                 padding: '24px 20px',
                 overflowY: 'auto'
               }}
             >
-              <div>
+              <div style={{ flexGrow: 1 }}>
                 {/* Brand Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid #E2E8F0' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

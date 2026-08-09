@@ -37,7 +37,7 @@ export default function AnalyticsPage() {
     async function load() {
       const stored = localStorage.getItem('tokenpe_clinic')
       if (!stored) {
-        router.push('/login')
+        router.push('/business-login')
         return
       }
       let c = JSON.parse(stored)

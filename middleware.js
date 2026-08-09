@@ -16,7 +16,14 @@ export function middleware(request) {
     ];
 
     // If the path starts with any of the blocked vertical paths (e.g. /salons, /restaurant-login)
-    if (maintenancePaths.some(path => url.startsWith(path))) {
+    const alwaysAllow = ['/business-login', '/business-dashboard', '/business-auth'];
+    if (alwaysAllow.some(p => url.startsWith(p))) return NextResponse.next();
+    
+    const isMaintenancePath = maintenancePaths.some(
+        path => url === path || url.startsWith(path + '/')
+    );
+    
+    if (isMaintenancePath) {
         return NextResponse.rewrite(new URL('/maintenance', request.url));
     }
 

@@ -1,25 +1,41 @@
 import { NextResponse } from 'next/server'
-import { supabase, supabaseAdmin } from '../../../../lib/supabase'
-import { getSession } from '../../../../lib/auth'
+import { supabaseAdmin } from '../../../../lib/supabase'
+import { getSession, getUnifiedSession } from '../../../../lib/auth'
+
+async function getEmail(id) {
+  if (!id) return null
+  try {
+    const { data: c } = await supabaseAdmin.from('clinics').select('email').eq('id', id).single()
+    if (c?.email) return c.email.trim().toLowerCase()
+    const { data: b } = await supabaseAdmin.from('businesses').select('email').eq('id', id).single()
+    return b?.email ? b.email.trim().toLowerCase() : null
+  } catch (e) {
+    return null
+  }
+}
 
 export async function POST(req) {
   try {
-    const session = await getSession()
-    if (!session || !session.clinicId) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    const session = (await getUnifiedSession()) || (await getSession())
+    const sessionClinicId = session?.businessId || session?.clinicId
 
-    const { clinicId, name, welcomeMessage, address, specialty, city, area, isPublic, photoUrl, lat, lng, phone, smartRecallEnabled, smartMedsEnabled } = await req.json()
-    
-    if (!clinicId) {
+    const body = await req.json()
+    const { 
+      clinicId, businessId, name, welcomeMessage, address, specialty, 
+      city, area, isPublic, photoUrl, lat, lng, phone, 
+      smartRecallEnabled, smartMedsEnabled, upiId 
+    } = body
+
+    const targetId = clinicId || businessId || sessionClinicId
+
+    if (!targetId) {
       return NextResponse.json({ success: false, error: 'Clinic ID required' }, { status: 400 })
     }
 
-    // Verify branch ownership via email match
-    if (clinicId !== session.clinicId) {
-      const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.clinicId).single()
-      const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', clinicId).single()
-      if (!sessionClinic || !targetClinic || sessionClinic.email !== targetClinic.email) {
+    if (sessionClinicId && targetId !== sessionClinicId) {
+      const sessionEmail = await getEmail(sessionClinicId)
+      const targetEmail = await getEmail(targetId)
+      if (sessionEmail && targetEmail && sessionEmail !== targetEmail) {
         return NextResponse.json({ success: false, error: 'Unauthorized clinic access' }, { status: 403 })
       }
     }
@@ -41,20 +57,28 @@ export async function POST(req) {
       if (lat === null || lng === null) {
         updates.location = null
       } else {
-        const parsedLat = parseFloat(lat)
-        const parsedLng = parseFloat(lng)
-        if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
-          updates.location = `POINT(${parsedLng} ${parsedLat})`
+        const pLat = parseFloat(lat)
+        const pLng = parseFloat(lng)
+        if (!isNaN(pLat) && !isNaN(pLng)) {
+          updates.location = `POINT(${pLng} ${pLat})`
         }
       }
     }
 
-    const { error } = await supabaseAdmin
-      .from('clinics')
-      .update(updates)
-      .eq('id', clinicId)
+    const { error: clinicErr } = await supabaseAdmin.from('clinics').update(updates).eq('id', targetId)
 
-    if (error) throw error
+    const bUpdates = { ...updates }
+    if (photoUrl !== undefined) {
+      bUpdates.logo_url = photoUrl
+      delete bUpdates.photo_url
+    }
+
+    if (clinicErr) {
+      const { error: bErr } = await supabaseAdmin.from('businesses').update(bUpdates).eq('id', targetId)
+      if (bErr) throw bErr
+    } else {
+      await supabaseAdmin.from('businesses').update(bUpdates).eq('id', targetId)
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {

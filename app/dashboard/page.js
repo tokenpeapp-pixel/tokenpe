@@ -551,12 +551,12 @@ function WalkInModal({ clinic, onClose, onAddSuccess, patientsCount }) {
         })
       })
       const data = await res.json()
-      if (data.success && data.patient) {
-        onAddSuccess(data.patient)
+      if (data.success) {
+        onAddSuccess(data.patient || null)
         onClose()
         return
-      } else if (data.message) {
-        setError(data.message)
+      } else {
+        setError(data.message || 'Failed to add patient to queue. Please try again.')
         setSaving(false)
         return
       }
@@ -2433,6 +2433,8 @@ function DashboardContent() {
                 width: '82%',
                 maxWidth: 320,
                 height: '100%',
+                maxHeight: '100dvh',
+                boxSizing: 'border-box',
                 background: '#FFFFFF',
                 boxShadow: '-10px 0 40px rgba(6,78,59,0.3)',
                 display: 'flex',

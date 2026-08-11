@@ -43,14 +43,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
-.env*
-
 # Temp scripts
 resize.ps1
+scratch*
+test_db.js
+fix-api.js
+old_page.js
+add_rating_voice.js
+school_dashboard_main.js
+migration*.sql
 
 # 🔒 Private / Secret files - NEVER push to GitHub
 /private/
-
-.vercel
-.env*

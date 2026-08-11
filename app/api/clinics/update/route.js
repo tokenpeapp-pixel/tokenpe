@@ -19,6 +19,10 @@ export async function POST(req) {
     const session = (await getUnifiedSession()) || (await getSession())
     const sessionClinicId = session?.businessId || session?.clinicId
 
+    if (!sessionClinicId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized - No valid session found' }, { status: 401 })
+    }
+
     const body = await req.json()
     const { 
       clinicId, businessId, name, welcomeMessage, address, specialty, 

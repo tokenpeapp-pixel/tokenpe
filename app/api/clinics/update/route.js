@@ -23,7 +23,9 @@ export async function POST(req) {
     const { 
       clinicId, businessId, name, welcomeMessage, address, specialty, 
       city, area, isPublic, photoUrl, lat, lng, phone, 
-      smartRecallEnabled, smartMedsEnabled, upiId 
+      smartRecallEnabled, smartMedsEnabled, upiId,
+      botTimings, botLocation, botLocationUrl, botDoctors,
+      googleReviewLink
     } = body
 
     const targetId = clinicId || businessId || sessionClinicId
@@ -52,6 +54,11 @@ export async function POST(req) {
     if (photoUrl !== undefined) updates.photo_url = photoUrl
     if (smartRecallEnabled !== undefined) updates.smart_recall_enabled = smartRecallEnabled
     if (smartMedsEnabled !== undefined) updates.smart_meds_enabled = smartMedsEnabled
+    if (botTimings !== undefined) updates.bot_timings = botTimings
+    if (botLocation !== undefined) updates.bot_location = botLocation
+    if (botLocationUrl !== undefined) updates.bot_location_url = botLocationUrl
+    if (botDoctors !== undefined) updates.bot_doctors = botDoctors
+    if (googleReviewLink !== undefined) updates.google_review_link = googleReviewLink
 
     if (lat !== undefined && lng !== undefined) {
       if (lat === null || lng === null) {

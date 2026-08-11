@@ -31,6 +31,29 @@ function ClinicCard({ clinic, isNearby, onClick, isSelected }) {
             <span className="cc-meta-item" style={{color: '#10b981'}}><MapPin size={14} /> {clinic.distance_km} km</span>
           )}
         </div>
+        
+        {/* Additional Bot Information */}
+        {(clinic.bot_timings || clinic.bot_location) && (
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {clinic.bot_timings && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                <Clock size={12} style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span>{clinic.bot_timings}</span>
+              </div>
+            )}
+            {clinic.bot_location && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                <MapPin size={12} style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span>{clinic.bot_location}</span>
+                {clinic.bot_location_url && (
+                  <a href={clinic.bot_location_url} target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', marginLeft: '4px' }} onClick={e => e.stopPropagation()}>
+                    (Map)
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="cc-right">

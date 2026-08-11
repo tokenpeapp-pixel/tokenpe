@@ -111,10 +111,17 @@ export async function POST(req) {
                     .eq('id', recentPatient.id)
 
                 const { data: clinic } = await supabaseAdmin
-                    .from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
+                    .from('clinics').select('name, google_review_link').eq('id', recentPatient.clinic_id).single()
 
                 const stars = '⭐'.repeat(directRating)
                 await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!\n\nThank you for visiting *${clinic?.name || 'our clinic'}*. We hope you feel better soon! 🌟`)
+                
+                if (directRating >= 4 && clinic?.google_review_link) {
+                    // Send Google Review link for 4 or 5 star ratings
+                    setTimeout(async () => {
+                        await sendText(customerPhone, `We're thrilled you had a great experience! 😊\n\nCould you take 30 seconds to leave us a quick review on Google? It really helps us out! 🙏\n\n👉 ${clinic.google_review_link}`)
+                    }, 2000)
+                }
                 console.log(`[Rating] ✅ Direct Workflow rating ${directRating} saved for patient ${recentPatient.id}`)
             } else {
                 console.warn(`[Rating] ⚠️ No matching done patient found for ${customerPhone} today`)
@@ -153,10 +160,17 @@ export async function POST(req) {
                         .eq('id', recentPatient.id)
 
                     const { data: clinic } = await supabaseAdmin
-                        .from('clinics').select('name').eq('id', recentPatient.clinic_id).single()
+                        .from('clinics').select('name, google_review_link').eq('id', recentPatient.clinic_id).single()
 
                     const stars = '⭐'.repeat(visitRating)
                     await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!\n\nThank you for visiting *${clinic?.name || 'our clinic'}*. We hope you feel better soon! 🌟`)
+                    
+                    if (visitRating >= 4 && clinic?.google_review_link) {
+                        // Send Google Review link for 4 or 5 star ratings
+                        setTimeout(async () => {
+                            await sendText(customerPhone, `We're thrilled you had a great experience! 😊\n\nCould you take 30 seconds to leave us a quick review on Google? It really helps us out! 🙏\n\n👉 ${clinic.google_review_link}`)
+                        }, 2000)
+                    }
                     console.log(`[Rating] ✅ Saved rating ${visitRating} for patient ${recentPatient.id}`)
                 } else {
                     console.warn(`[Rating] ⚠️ No matching done patient found for ${customerPhone} today`)

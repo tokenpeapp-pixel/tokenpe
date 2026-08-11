@@ -25,6 +25,13 @@ export default function EditProfilePage() {
   const [upiId, setUpiId]               = useState('')
   const [isPublic, setIsPublic]         = useState(true)
 
+  // Bot Settings
+  const [botTimings, setBotTimings]     = useState('')
+  const [botLocation, setBotLocation]   = useState('')
+  const [botLocationUrl, setBotLocationUrl] = useState('')
+  const [botDoctors, setBotDoctors]     = useState('')
+  const [googleReviewLink, setGoogleReviewLink] = useState('')
+
   // Status States
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [saving, setSaving]             = useState(false)
@@ -58,6 +65,12 @@ export default function EditProfilePage() {
       setPhotoUrl(fresh.photo_url || fresh.logo_url || '')
       setUpiId(fresh.settings?.upi_id || fresh.upi_id || '')
       setIsPublic(fresh.is_public !== undefined ? fresh.is_public : true)
+      
+      setBotTimings(fresh.bot_timings || '')
+      setBotLocation(fresh.bot_location || '')
+      setBotLocationUrl(fresh.bot_location_url || '')
+      setBotDoctors(fresh.bot_doctors || '')
+      setGoogleReviewLink(fresh.google_review_link || '')
 
       setLoading(false)
     }
@@ -105,7 +118,12 @@ export default function EditProfilePage() {
         area: area.trim(),
         photoUrl: photoUrl,
         isPublic: isPublic,
-        upiId: upiId.trim()
+        upiId: upiId.trim(),
+        botTimings: botTimings.trim(),
+        botLocation: botLocation.trim(),
+        botLocationUrl: botLocationUrl.trim(),
+        botDoctors: botDoctors.trim(),
+        googleReviewLink: googleReviewLink.trim()
       }
 
       // Try clinic update API first, fallback to business update API
@@ -129,7 +147,12 @@ export default function EditProfilePage() {
           photo_url: photoUrl,
           logo_url: photoUrl,
           is_public: isPublic,
-          upi_id: upiId.trim()
+          upi_id: upiId.trim(),
+          bot_timings: botTimings.trim(),
+          bot_location: botLocation.trim(),
+          bot_location_url: botLocationUrl.trim(),
+          bot_doctors: botDoctors.trim(),
+          google_review_link: googleReviewLink.trim()
         }
         setClinic(updatedClinic)
         localStorage.setItem('tokenpe_clinic', JSON.stringify(updatedClinic))
@@ -486,6 +509,77 @@ export default function EditProfilePage() {
               <p className="text-[11px] text-[#64748B] mt-1.5">
                 Patients scanning your TokenPe OPD QR code will be able to transfer consultation fees directly to your bank account with zero platform commission.
               </p>
+            </div>
+          </div>
+
+          {/* ── 5. WHATSAPP BOT CONFIGURATION ── */}
+          <div className="profile-card bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-[#E5E7EB] space-y-6">
+            <div className="flex items-center gap-2 pb-2 border-b border-[#F1F5F9]">
+              <Megaphone className="w-5 h-5 text-[#065F46]" />
+              <div>
+                <h2 className="text-lg font-black text-[#111827]">WhatsApp Patient Assistant</h2>
+                <p className="text-xs text-[#6B7280]">Configure the information your automated WhatsApp bot will send to patients.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-xs font-bold text-[#374151] mb-1.5">Clinic Timings</label>
+                <textarea
+                  rows={2}
+                  value={botTimings}
+                  onChange={e => setBotTimings(e.target.value)}
+                  placeholder="e.g. Mon-Fri: 10 AM - 2 PM, Sat-Sun: Closed"
+                  className="w-full p-3 border border-[#CBD5E1] rounded-2xl text-xs font-semibold outline-none focus:border-[#065F46] bg-gray-50 focus:bg-white transition-all text-[#111827]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#374151] mb-1.5">Doctors Available</label>
+                <textarea
+                  rows={2}
+                  value={botDoctors}
+                  onChange={e => setBotDoctors(e.target.value)}
+                  placeholder="e.g. Dr. Rajesh (Cardiologist), Dr. Neha (Pediatrics)"
+                  className="w-full p-3 border border-[#CBD5E1] rounded-2xl text-xs font-semibold outline-none focus:border-[#065F46] bg-gray-50 focus:bg-white transition-all text-[#111827]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#374151] mb-1.5">Location Instructions</label>
+                <textarea
+                  rows={2}
+                  value={botLocation}
+                  onChange={e => setBotLocation(e.target.value)}
+                  placeholder="e.g. Opposite City Mall, near the Metro Station"
+                  className="w-full p-3 border border-[#CBD5E1] rounded-2xl text-xs font-semibold outline-none focus:border-[#065F46] bg-gray-50 focus:bg-white transition-all text-[#111827]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#374151] mb-1.5">Google Maps Link</label>
+                <input
+                  type="url"
+                  value={botLocationUrl}
+                  onChange={e => setBotLocationUrl(e.target.value)}
+                  placeholder="https://maps.google.com/..."
+                  className="w-full p-3 border border-[#CBD5E1] rounded-2xl text-xs font-semibold outline-none focus:border-[#065F46] bg-gray-50 focus:bg-white transition-all text-[#111827]"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-[#374151] mb-1.5">Google Review Link</label>
+                <input
+                  type="url"
+                  value={googleReviewLink}
+                  onChange={e => setGoogleReviewLink(e.target.value)}
+                  placeholder="https://g.page/review/..."
+                  className="w-full p-3 border border-[#CBD5E1] rounded-2xl text-xs font-semibold outline-none focus:border-[#065F46] bg-gray-50 focus:bg-white transition-all text-[#111827]"
+                />
+                <p className="text-[11px] text-[#64748B] mt-1.5">
+                  If patients leave a 4-star or 5-star rating on WhatsApp, they will automatically be sent this link to rate you publicly on Google!
+                </p>
+              </div>
             </div>
           </div>
 

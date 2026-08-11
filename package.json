@@ -10,10 +10,13 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.41",
+    "@google/genai": "^2.16.0",
     "@next/third-parties": "^16.2.9",
     "@supabase/supabase-js": "^2.105.4",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "ai": "^7.0.59",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "form-data": "^4.0.5",

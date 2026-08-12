@@ -31,11 +31,40 @@ export async function POST(req) {
         const secret = searchParams.get('secret')
 
         const body = await req.json()
-        const action = pick(body, 'action', 'Action', 'event', 'type')
-        const isIncomingMessage = (
-            action === 'message_received' || action === 'message' || action === 'reply' || action === 'feedback' || action === 'rate'
-        ) && (
-            body.data?.customer || body.data?.message || body.customer || body.message || body.text
+        const action = pick(body, 'action', 'Action', 'event', 'type', 'eventName')
+
+        // ── 🔍 FULL PAYLOAD LOG — helps debug variable names ──────────
+        console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
+        console.log(`[whatsapp] ✅ Received action: ${action}`)
+
+        // ── EXTRACT TEXT & PHONE GLOBALLY ────────────────────────────────────────
+        const listReply = extractInteractiveReply(body)
+        let textStr = (
+            body.data?.message?.text?.body ||
+            body.message?.text?.body ||
+            body.data?.text?.body ||
+            body.text?.body ||
+            body.data?.message?.text ||
+            body.text ||
+            body.textMessage ||
+            ''
+        )
+        if (typeof textStr === 'object') {
+            textStr = JSON.stringify(textStr)
+        }
+        
+        const customerPhone = cleanPhone(
+            body.data?.customer?.channel_phone_number ||
+            body.data?.customer?.phone_number ||
+            pick(body, 'customer_phone', 'waPhone', 'phone', 'customer', 'customerNumber', 'sender') ||
+            body.data?.customer?.phone ||
+            body.data?.waPhone ||
+            body.customerNumber ||
+            body.sender
+        )
+
+        const isIncomingMessage = !!listReply || !!textStr || (
+            action === 'message_received' || action === 'message' || action === 'reply' || action === 'feedback' || action === 'rate' || action === 'inbound'
         )
 
         if (!isIncomingMessage) {
@@ -57,39 +86,9 @@ export async function POST(req) {
             }
         }
 
-        // ── 🔍 FULL PAYLOAD LOG — helps debug Interakt variable names ──────────
-        console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
-        console.log(`[whatsapp] ✅ Received action: ${action}`)
-
         const baseUrl = new URL(req.url).origin
 
         // ── RATING / INTERACTIVE REPLY — catch this FIRST before anything else ────
-        // Interakt sends action values like: "message_received", "RECEIVED", "incoming",
-        // or even no action at all for interactive list replies. So we check the payload
-        // shape directly rather than relying on the action string.
-        const listReply = extractInteractiveReply(body)
-        let textStr = (
-            body.data?.message?.text?.body ||
-            body.message?.text?.body ||
-            body.data?.text?.body ||
-            body.text?.body ||
-            body.data?.message?.text ||
-            body.text ||
-            ''
-        )
-        if (typeof textStr === 'object') {
-            textStr = JSON.stringify(textStr)
-        }
-        
-        const customerPhone = cleanPhone(
-            body.data?.customer?.channel_phone_number ||
-            body.data?.customer?.phone_number ||
-            pick(body, 'customer_phone', 'waPhone', 'phone', 'customer', 'customerNumber', 'sender') ||
-            body.data?.customer?.phone ||
-            body.data?.waPhone ||
-            body.customerNumber ||
-            body.sender
-        )
 
         // Also handle the direct Workflow webhook format:
         // { action: "feedback", phone: "{{1}}", rating: "{{2}}" }

@@ -8,7 +8,7 @@ import { sendText, sendVoice, sendTextAndVoice, cleanPhone, buildVoiceText } fro
 import crypto from 'crypto'
 import { maskPhone, maskName, maskSecret } from '../../../lib/mask'
 import { sanitizeName, validatePhone, validateClinicCode, extractInteraktListReply, parseVisitRating, parseCrmRating, parseCrmFeedbackText } from '../../../lib/validate'
-
+import { handleIncomingMessage } from '../../../lib/chatbot'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 
@@ -70,20 +70,27 @@ export async function POST(req) {
         // or even no action at all for interactive list replies. So we check the payload
         // shape directly rather than relying on the action string.
         const listReply = extractInteraktListReply(body)
-        const textStr = (
+        let textStr = (
             body.data?.message?.text?.body ||
             body.message?.text?.body ||
             body.data?.text?.body ||
             body.text?.body ||
             body.data?.message?.text ||
+            body.text ||
             ''
         )
+        if (typeof textStr === 'object') {
+            textStr = JSON.stringify(textStr)
+        }
+        
         const customerPhone = cleanPhone(
             body.data?.customer?.channel_phone_number ||
             body.data?.customer?.phone_number ||
-            pick(body, 'customer_phone', 'waPhone', 'phone', 'customer') ||
+            pick(body, 'customer_phone', 'waPhone', 'phone', 'customer', 'customerNumber', 'sender') ||
             body.data?.customer?.phone ||
-            body.data?.waPhone
+            body.data?.waPhone ||
+            body.customerNumber ||
+            body.sender
         )
 
         // Also handle the direct Interakt Workflow webhook format:
@@ -224,9 +231,18 @@ export async function POST(req) {
             // Has text but not a rating — fall through to other handlers below
         }
 
-        // ── MESSAGE RECEIVED (Acknowledge non-rating messages) ──
-        if (action === 'message_received' || action === 'message' || action === 'rate' || action === 'reply' || action === 'feedback') {
-            return Response.json({ success: true, message: 'Message acknowledged' }, { status: 200 })
+        // ── MESSAGE RECEIVED (Acknowledge non-rating messages & trigger chatbot) ──
+        if (
+            action === 'message_received' || action === 'message' || action === 'rate' || action === 'reply' || action === 'feedback' || action === 'delivered' || action === 'inbound' ||
+            (!action && textStr && customerPhone)
+        ) {
+            if (textStr && customerPhone) {
+                console.log(`[whatsapp] 🤖 Routing inbound message to Chatbot: ${customerPhone} -> ${textStr.substring(0, 50)}`)
+                after(async () => {
+                    await handleIncomingMessage(customerPhone, textStr, body)
+                })
+            }
+            return Response.json({ success: true, message: 'Message acknowledged & routed to bot' }, { status: 200 })
         }
 
         // ── JOIN action ──────────────────────────────────────────────────────────

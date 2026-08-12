@@ -54,7 +54,7 @@ export async function GET(req) {
         }
     }
 
-    // ── Test: simulate an Interakt join webhook ──────────────────────────────
+    // ── Test: simulate an MSG91 join webhook ──────────────────────────────
     const testJoin = searchParams.get('testJoin') // ?testJoin=CLINIC_CODE
     if (testJoin) {
         const origin = new URL(req.url).origin
@@ -98,7 +98,7 @@ export async function GET(req) {
     return Response.json({
         status: '✅ TokenPe Debug',
         env: {
-            INTERAKT_API_KEY:      process.env.INTERAKT_API_KEY     ? '✅ set' : '❌ MISSING',
+            MSG91_AUTHKEY:         process.env.MSG91_AUTHKEY        ? '✅ set' : '❌ MISSING',
             WEBHOOK_VERIFY_TOKEN:  process.env.WEBHOOK_VERIFY_TOKEN  ? '✅ set' : '❌ MISSING',
             NEXT_PUBLIC_APP_URL:   process.env.NEXT_PUBLIC_APP_URL   || '⚠️ not set',
             SARVAM_API_KEY:        process.env.SARVAM_API_KEY        ? '✅ set' : '❌ MISSING',

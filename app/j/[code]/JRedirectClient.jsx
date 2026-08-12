@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Hospital, Search } from '../../../lib/icons'
 
-const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919892875513'
+const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '917977075721'
 
 export default function JRedirectClient({ clinic, code }) {
   const [countdown, setCountdown] = useState(2)

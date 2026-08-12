@@ -7,14 +7,14 @@ import { supabase, supabaseAdmin, getISTDateString } from '../../../lib/supabase
 import { sendText, sendVoice, sendTextAndVoice, cleanPhone, buildVoiceText } from '../../../lib/messaging'
 import crypto from 'crypto'
 import { maskPhone, maskName, maskSecret } from '../../../lib/mask'
-import { sanitizeName, validatePhone, validateClinicCode, extractInteraktListReply, parseVisitRating, parseCrmRating, parseCrmFeedbackText } from '../../../lib/validate'
+import { sanitizeName, validatePhone, validateClinicCode, extractInteractiveReply, parseVisitRating, parseCrmRating, parseCrmFeedbackText } from '../../../lib/validate'
 import { handleIncomingMessage } from '../../../lib/chatbot'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 
 
-// ── Resolve field with multiple possible Interakt variable names ─────────────
-// Interakt Flow variables might come as: customer_phone, phone, Phone, PHONE, etc.
+// ── Resolve field with multiple possible variable names ─────────────
+// Webhook variables might come as: customer_phone, phone, Phone, PHONE, etc.
 function pick(body, ...keys) {
     for (const key of keys) {
         if (body[key] !== undefined && body[key] !== null && body[key] !== '') {
@@ -32,13 +32,13 @@ export async function POST(req) {
 
         const body = await req.json()
         const action = pick(body, 'action', 'Action', 'event', 'type')
-        const isInteraktMessage = (
+        const isIncomingMessage = (
             action === 'message_received' || action === 'message' || action === 'reply' || action === 'feedback' || action === 'rate'
         ) && (
-            body.data?.customer || body.data?.message || body.customer || body.message
+            body.data?.customer || body.data?.message || body.customer || body.message || body.text
         )
 
-        if (!isInteraktMessage) {
+        if (!isIncomingMessage) {
             // For non-message webhooks (join, callnext), require the secret
             const expectedSecret = process.env.WEBHOOK_VERIFY_TOKEN || ''
             const isValid = expectedSecret && secret && 
@@ -57,8 +57,6 @@ export async function POST(req) {
             }
         }
 
-
-
         // ── 🔍 FULL PAYLOAD LOG — helps debug Interakt variable names ──────────
         console.log('[whatsapp] ✅ Received payload:', JSON.stringify(body, null, 2))
         console.log(`[whatsapp] ✅ Received action: ${action}`)
@@ -69,7 +67,7 @@ export async function POST(req) {
         // Interakt sends action values like: "message_received", "RECEIVED", "incoming",
         // or even no action at all for interactive list replies. So we check the payload
         // shape directly rather than relying on the action string.
-        const listReply = extractInteraktListReply(body)
+        const listReply = extractInteractiveReply(body)
         let textStr = (
             body.data?.message?.text?.body ||
             body.message?.text?.body ||
@@ -93,7 +91,7 @@ export async function POST(req) {
             body.sender
         )
 
-        // Also handle the direct Interakt Workflow webhook format:
+        // Also handle the direct Workflow webhook format:
         // { action: "feedback", phone: "{{1}}", rating: "{{2}}" }
         const directRating = body.rating ? parseInt(body.rating) : null
         if (directRating && directRating >= 1 && directRating <= 5 && customerPhone) {
@@ -248,15 +246,15 @@ export async function POST(req) {
         // ── JOIN action ──────────────────────────────────────────────────────────
         if (action === 'join') {
 
-            // Accept multiple possible field names from Interakt Flow
-            const rawPhone   = pick(body, 'phone', 'Phone', 'mobile', 'customer_phone', 'waPhone', 'whatsapp')
+            // Accept multiple possible field names
+            const rawPhone   = pick(body, 'phone', 'Phone', 'mobile', 'customer_phone', 'waPhone', 'whatsapp', 'sender')
             const rawName    = pick(body, 'name', 'Name', 'customer_name', 'patientName', 'fullName', 'full_name')
             const rawLanguage = pick(body, 'language', 'Language', 'lang', 'preferred_language') || 'en'
             
             const phone = validatePhone(rawPhone)
             const name = sanitizeName(rawName) || 'Guest'
 
-            // Map Interakt list position numbers to language codes
+            // Map list position numbers to language codes
             // 1=मराठी 2=हिंदी 3=English 4=ગુજરાતી 5=ਪੰਜਾਬੀ 6=தமிழ் 7=తెలుగు 8=বাংলা 9=ಕನ್ನಡ 10=മലയാളം
             const languageMap = {
                 '1': 'mr', 'marathi': 'mr', 'मराठी': 'mr',
@@ -346,7 +344,7 @@ export async function POST(req) {
                     textMessage: pausedMsg
                 })
                 
-                // Return 200 so Interakt flow continues, but we return token 'PAUSED'
+                // Return 200 so flow continues, but we return token 'PAUSED'
                 return Response.json({
                     success: false,
                     message: 'Queue is currently paused.',
@@ -526,7 +524,7 @@ export async function POST(req) {
                 })
             }
 
-            // 5. Return token info back to Interakt Flow
+            // 5. Return token info back to Flow
             return Response.json({
                 success: true,
                 token: tokenNumber,

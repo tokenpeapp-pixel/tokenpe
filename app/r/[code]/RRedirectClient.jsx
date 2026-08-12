@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Utensils, Search } from 'lucide-react'
 
-const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919892875513'
+const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '917977075721'
 
 export default function RRedirectClient({ restaurant, code }) {
   const [countdown, setCountdown] = useState(2)

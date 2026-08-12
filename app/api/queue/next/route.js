@@ -1,6 +1,6 @@
 // FILE: /app/api/queue/next/route.js
 // Called by dashboard "Call Next" button
-// Sends your-turn + 10-away + 5-away alerts via Interakt text + Sarvam voice — all in parallel
+// Sends your-turn + 10-away + 5-away alerts via MSG91 text + Sarvam voice — all in parallel
 
 import { supabaseAdmin, getISTDateString } from '../../../../lib/supabase'
 import { sendText, sendVoice, cleanPhone } from '../../../../lib/messaging'

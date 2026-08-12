@@ -6,7 +6,7 @@ import {
   MapPin, Search, Clock, Users, Link as LinkIcon, Restaurant, ArrowRight, Star, Utensils, ChefHat
 } from 'lucide-react'
 
-const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919892875513'
+const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '917977075721'
 
 // Dynamically import the Leaflet map component with ssr: false
 const MapComponent = dynamic(() => import('./MapComponent'), {

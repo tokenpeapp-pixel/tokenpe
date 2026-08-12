@@ -76,7 +76,7 @@ export async function POST(req) {
 
                 await Promise.allSettled(alerts)
 
-                // Send Interactive List via Interakt
+                // Send Interactive List via MSG91
                 await new Promise(r => setTimeout(r, 500))
                 await sendInteractiveRating(phone, finalBusinessName, language || 'en')
             } catch (err) {

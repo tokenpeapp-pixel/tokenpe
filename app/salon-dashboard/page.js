@@ -1000,7 +1000,7 @@ export default function SalonDashboard() {
                   <h3 className="text-2xl font-extrabold mb-5 leading-tight" style={{color:'#1A1A1A'}}>{salon?.name || 'Your Salon'}</h3>
                   <div className="inline-block mb-5 rounded-2xl p-3 shadow-sm" style={{border:'1px solid #EFEFEF',background: qrBgColor}}>
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/919892875513?text=JOIN%20${encodeURIComponent(editSalonCode||salon?.code||'SALON')}&bgcolor=${qrBgColor.replace('#','')}&color=${qrFgColor.replace('#','')}&margin=2`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/917977075721?text=JOIN%20${encodeURIComponent(editSalonCode||salon?.code||'SALON')}&bgcolor=${qrBgColor.replace('#','')}&color=${qrFgColor.replace('#','')}&margin=2`}
                       alt="Salon Queue QR" className="w-40 h-40 block" crossOrigin="anonymous"
                     />
                     {qrLogoUrl && (

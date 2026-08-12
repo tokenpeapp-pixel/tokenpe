@@ -277,7 +277,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
       ctx.fillStyle = '#A7F3D0'
       ctx.font = '500 24px "Plus Jakarta Sans", sans-serif'
-      ctx.fillText(`Or WhatsApp JOIN ${liveCode} to +919892875513`, 400, 680)
+      ctx.fillText(`Or WhatsApp JOIN ${liveCode} to +917977075721`, 400, 680)
 
       const boxWidth = 680
       const boxX = 400 - boxWidth / 2
@@ -411,7 +411,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
           {/* WhatsApp Prompt Subtitle */}
           <div style={{ fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 500 }}>
-            Or WhatsApp <span style={{ color: '#34D399', fontWeight: 900, fontFamily: 'monospace' }}>JOIN {liveCode}</span> to <span style={{ color: '#FFFFFF', fontWeight: 900, fontFamily: 'monospace' }}>+919892875513</span>
+            Or WhatsApp <span style={{ color: '#34D399', fontWeight: 900, fontFamily: 'monospace' }}>JOIN {liveCode}</span> to <span style={{ color: '#FFFFFF', fontWeight: 900, fontFamily: 'monospace' }}>+917977075721</span>
           </div>
         </div>
 

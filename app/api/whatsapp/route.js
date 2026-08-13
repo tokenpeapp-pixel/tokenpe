@@ -38,34 +38,50 @@ export async function POST(req) {
         console.log(`[whatsapp] ✅ Received action: ${action}`)
 
         // ── EXTRACT TEXT & PHONE GLOBALLY ────────────────────────────────────────
-        const listReply = extractInteractiveReply(body)
-        let textStr = (
-            body.data?.message?.text?.body ||
-            body.message?.text?.body ||
-            body.data?.text?.body ||
-            body.text?.body ||
-            body.data?.message?.text ||
-            body.text ||
-            body.textMessage ||
-            ''
-        )
-        if (typeof textStr === 'object') {
-            textStr = JSON.stringify(textStr)
-        }
-        
-        const customerPhone = cleanPhone(
-            body.data?.customer?.channel_phone_number ||
-            body.data?.customer?.phone_number ||
-            pick(body, 'customer_phone', 'waPhone', 'phone', 'customer', 'customerNumber', 'sender') ||
-            body.data?.customer?.phone ||
-            body.data?.waPhone ||
-            body.customerNumber ||
-            body.sender
-        )
+        let textStr = ''
+        let customerPhone = ''
+        let listReply = null
+        let isIncomingMessage = false
 
-        const isIncomingMessage = !!listReply || !!textStr || (
-            action === 'message_received' || action === 'message' || action === 'reply' || action === 'feedback' || action === 'rate' || action === 'inbound'
-        )
+        // Check for Meta WhatsApp Cloud API payload
+        const metaMessage = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]
+        
+        if (metaMessage) {
+            isIncomingMessage = true
+            customerPhone = cleanPhone(metaMessage.from)
+            textStr = metaMessage.text?.body || ''
+            listReply = extractInteractiveReply(metaMessage)
+        } else {
+            // Fallback for internal APIs (join, callnext, etc) or old MSG91 tests
+            listReply = extractInteractiveReply(body)
+            textStr = (
+                body.data?.message?.text?.body ||
+                body.message?.text?.body ||
+                body.data?.text?.body ||
+                body.text?.body ||
+                body.data?.message?.text ||
+                body.text ||
+                body.textMessage ||
+                ''
+            )
+            if (typeof textStr === 'object') {
+                textStr = JSON.stringify(textStr)
+            }
+            
+            customerPhone = cleanPhone(
+                body.data?.customer?.channel_phone_number ||
+                body.data?.customer?.phone_number ||
+                pick(body, 'customer_phone', 'waPhone', 'phone', 'customer', 'customerNumber', 'sender') ||
+                body.data?.customer?.phone ||
+                body.data?.waPhone ||
+                body.customerNumber ||
+                body.sender
+            )
+            
+            isIncomingMessage = !!listReply || !!textStr || (
+                action === 'message_received' || action === 'message' || action === 'reply' || action === 'feedback' || action === 'rate' || action === 'inbound'
+            )
+        }
 
         if (!isIncomingMessage) {
             // For non-message webhooks (join, callnext), require the secret

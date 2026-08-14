@@ -49,8 +49,8 @@ export async function POST(req) {
         if (metaMessage) {
             isIncomingMessage = true
             customerPhone = cleanPhone(metaMessage.from)
-            textStr = metaMessage.text?.body || ''
             listReply = extractInteractiveReply(metaMessage)
+            textStr = metaMessage.text?.body || listReply?.id || ''
         } else {
             // Fallback for internal APIs (join, callnext, etc) or old MSG91 tests
             listReply = extractInteractiveReply(body)
@@ -62,6 +62,7 @@ export async function POST(req) {
                 body.data?.message?.text ||
                 body.text ||
                 body.textMessage ||
+                listReply?.id ||
                 ''
             )
             if (typeof textStr === 'object') {

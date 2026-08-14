@@ -97,22 +97,19 @@ export async function POST(req) {
         const finalBusinessName = businessName || clinicName || 'TokenPe Business'
 
         if (!businessId || !patientId) {
-            return Response.json({ success: false, message: 'Missing patient or clinic ID' }, { status: 400 })
+            return Response.json({ success: false, message: 'Missing person or business ID' }, { status: 400 })
         }
 
         const today = getISTDateString()
         const phone = cleanPhone(patientPhone)
 
-        // 1. Mark patient as CALLED in BOTH patients and queue_entries tables
-        await Promise.allSettled([
-            supabaseAdmin.from('patients').update({ status: 'called' }).eq('id', patientId),
-            supabaseAdmin.from('queue_entries').update({ status: 'called' }).eq('id', patientId)
-        ])
+        // 1. Mark person as CALLED in queue_entries table
+        await supabaseAdmin.from('queue_entries').update({ status: 'called' }).eq('id', patientId)
 
         const [ { data: business }, { data: waitingPatients }] = await Promise.all([
-            supabaseAdmin.from('clinics').select('plan_id, type').eq('id', businessId).single().catch(() => ({ data: null })),
-            supabaseAdmin.from('patients').select('*')
-                .eq('clinic_id', businessId)
+            supabaseAdmin.from('businesses').select('plan_id, type').eq('id', businessId).single().catch(() => ({ data: null })),
+            supabaseAdmin.from('queue_entries').select('*')
+                .eq('business_id', businessId)
                 .eq('status', 'waiting')
                 .order('joined_at', { ascending: true })
         ])

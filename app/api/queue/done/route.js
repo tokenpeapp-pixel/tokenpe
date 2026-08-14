@@ -42,18 +42,15 @@ export async function POST(req) {
         // 1. Fetch business to check plan/type
         let business = null
         try {
-            const { data: bData } = await supabaseAdmin.from('clinics').select('plan_id, code, subscription_status, type').eq('id', businessId).single()
+            const { data: bData } = await supabaseAdmin.from('businesses').select('plan_id, code, subscription_status, type').eq('id', businessId).single()
             business = bData
         } catch (_) {}
 
         const planId = business?.plan_id || 'starter'
         const vertical = business?.type || 'clinic'
 
-        // 2. Mark done in DB immediately in BOTH patients and queue_entries tables
-        await Promise.allSettled([
-            supabaseAdmin.from('patients').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId),
-            supabaseAdmin.from('queue_entries').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId)
-        ])
+        // 2. Mark done in DB immediately in queue_entries table
+        await supabaseAdmin.from('queue_entries').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', patientId)
 
         // 3. Fire all messaging asynchronously so the dashboard UI updates instantly
         after(async () => {

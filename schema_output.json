@@ -1,0 +1,139 @@
+{
+  "clinics": {
+    "status": "Exists, readable",
+    "sample": [
+      "id",
+      "name",
+      "phone",
+      "email",
+      "code",
+      "created_at",
+      "plan_id",
+      "subscription_status",
+      "trial_ends_at",
+      "current_period_end",
+      "address",
+      "queue_paused",
+      "pin",
+      "welcome_message",
+      "logo_url",
+      "razorpay_subscription_id",
+      "specialty",
+      "city",
+      "area",
+      "is_public",
+      "avg_rating",
+      "photo_url",
+      "location",
+      "closed_today_date",
+      "smart_recall_enabled",
+      "smart_meds_enabled",
+      "vertical",
+      "upi_id",
+      "bot_timings",
+      "bot_location",
+      "bot_location_url",
+      "bot_doctors",
+      "bot_faqs",
+      "bot_greeting",
+      "google_review_link"
+    ]
+  },
+  "businesses": {
+    "status": "Exists, readable",
+    "sample": [
+      "id",
+      "name",
+      "phone",
+      "email",
+      "code",
+      "pin",
+      "type",
+      "created_at",
+      "updated_at",
+      "address",
+      "city",
+      "area",
+      "location",
+      "plan_id",
+      "subscription_status",
+      "trial_ends_at",
+      "current_period_end",
+      "razorpay_subscription_id",
+      "queue_paused",
+      "welcome_message",
+      "logo_url",
+      "specialty",
+      "is_public",
+      "avg_rating",
+      "photo_url",
+      "closed_today_date",
+      "smart_recall_enabled",
+      "smart_meds_enabled",
+      "upi_id"
+    ]
+  },
+  "patients": {
+    "status": "Exists, readable",
+    "sample": [
+      "id",
+      "clinic_id",
+      "token",
+      "name",
+      "phone",
+      "language",
+      "status",
+      "joined_at",
+      "date",
+      "amount_paid",
+      "completed_at",
+      "rating",
+      "feedback_text",
+      "feedback_at",
+      "crm_rating",
+      "last_message_type",
+      "last_message_sent_at",
+      "fee_total",
+      "fee_paid",
+      "payment_status"
+    ]
+  },
+  "queue_entries": {
+    "status": "Exists, readable",
+    "sample": [
+      "id",
+      "business_id",
+      "business_type",
+      "token",
+      "name",
+      "phone",
+      "language",
+      "status",
+      "date",
+      "joined_at",
+      "done_at",
+      "amount_paid",
+      "rating",
+      "feedback_text",
+      "feedback_at",
+      "fee_total",
+      "fee_paid",
+      "payment_status",
+      "metadata"
+    ]
+  },
+  "leads": {
+    "status": "Exists, readable",
+    "sample": "Empty table, cannot infer columns without postgrest openapi schema"
+  },
+  "school_classrooms": {
+    "error": "Could not find the table 'public.school_classrooms' in the schema cache"
+  },
+  "school_students": {
+    "status": "Exists, readable",
+    "sample": "Empty table, cannot infer columns without postgrest openapi schema"
+  },
+  "support_tickets": {
+    "error": "Could not find the table 'public.support_tickets' in the schema cache"
+  }
+}

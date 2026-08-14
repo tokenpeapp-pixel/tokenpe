@@ -18,9 +18,9 @@ export async function GET(req) {
 
         // Fetch patients specifically belonging to THIS clinic ONLY
         let { data: patientsList, error } = await supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('*')
-            .eq('clinic_id', businessId)
+            .eq('business_id', businessId)
             .order('joined_at', { ascending: false })
 
         if (error || !patientsList) {

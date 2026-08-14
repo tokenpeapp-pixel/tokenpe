@@ -206,7 +206,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
     try {
       if (clinic?.id) {
-        await supabase.from('clinics').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
+        await supabase.from('businesses').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
       }
     } catch (_) {}
 
@@ -1359,9 +1359,10 @@ function DashboardContent() {
         updatePatientsState(data.patients)
       } else if (bId) {
         const { data: qData } = await supabase
-          .from('patients')
+          .from('queue_entries')
           .select('*')
-          .eq('clinic_id', bId)
+          .eq('business_id', bId)
+          .eq('date', today)
           .order('joined_at', { ascending: true })
         if (qData) updatePatientsState(qData)
       }
@@ -1484,7 +1485,7 @@ function DashboardContent() {
       const targetP = patients.find(p => String(p.id) === String(patientId))
       const bId = clinic?.id || clinic?.business_id
 
-      supabase.from('patients').update({ status: 'called' }).eq('id', patientId).then(() => {})
+      supabase.from('queue_entries').update({ status: 'called' }).eq('id', patientId).then(() => {})
 
       if (bId && targetP) {
         await fetch('/api/queue/next', {
@@ -1526,7 +1527,7 @@ function DashboardContent() {
 
     try {
       const bId = clinic?.id || clinic?.business_id
-      supabase.from('patients').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', patientId).then(() => {})
+      supabase.from('queue_entries').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', patientId).then(() => {})
 
       await fetch('/api/queue/done', {
         method: 'POST',
@@ -1546,7 +1547,7 @@ function DashboardContent() {
 
     try {
       const bId = clinic?.id || clinic?.business_id
-      supabase.from('patients').update({ status: 'skipped' }).eq('id', patientId).then(() => {})
+      supabase.from('queue_entries').update({ status: 'skipped' }).eq('id', patientId).then(() => {})
 
       await fetch('/api/queue/skip', {
         method: 'POST',
@@ -1666,6 +1667,8 @@ function DashboardContent() {
           width: 40px;
           height: 40px;
           border-width: 3px;
+          pointer-events: none;
+          z-index: 9999;
           border-style: solid;
           border-color: #065F46 #C3E6D5 #C3E6D5 #C3E6D5;
           border-radius: 50%;
@@ -2402,7 +2405,7 @@ function DashboardContent() {
               fontFamily: "'Plus Jakarta Sans', sans-serif"
             }}
           >
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#ECFDF5', color: '#065F46', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#ECFDF5', color: '#065F46', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerEvents: 'none' }}>
               <Megaphone className="w-4 h-4 text-[#065F46]" />
             </div>
             <span>{toastMsg}</span>
@@ -2410,10 +2413,10 @@ function DashboardContent() {
         )}
       </AnimatePresence>
 
-      {/* ── MOBILE NAVIGATION OVERLAY DRAWER ── */}
+      {/* 📱 MOBILE NAVIGATION OVERLAY DRAWER */}
       <AnimatePresence>
         {showNavMenu && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', justifyContent: 'flex-end' }}>
+          <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.3 } }} style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', justifyContent: 'flex-end' }}>
             {/* Backdrop Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -2546,7 +2549,7 @@ function DashboardContent() {
                 </button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

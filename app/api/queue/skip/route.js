@@ -16,10 +16,7 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Patient ID is required' }, { status: 400 })
         }
 
-        await Promise.allSettled([
-            supabaseAdmin.from('patients').update({ status: 'skipped' }).eq('id', patientId),
-            supabaseAdmin.from('queue_entries').update({ status: 'skipped' }).eq('id', patientId)
-        ])
+        const { error } = await supabaseAdmin.from('queue_entries').update({ status: 'skipped' }).eq('id', patientId)
 
         if (error) {
             return Response.json({ success: false, message: 'Failed to skip patient' }, { status: 500 })

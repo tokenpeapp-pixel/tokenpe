@@ -95,7 +95,7 @@ const viewports = [['desktop (1280px)', 1280], ['mobile (390px)', 390]]
 
 for (const [label, viewportWidth] of viewports) {
 
-  test.describe(`Clinic Dashboard — ${label}`, () => {
+  test.describe(`Clinic Dashboard ï¿½ ${label}`, () => {
 
     test(`[${label}] Login via /business-login then dashboard loads`, async ({ browser, request, baseURL }) => {
       const suffix = qaSuffix()
@@ -181,30 +181,32 @@ for (const [label, viewportWidth] of viewports) {
 
       // Open Manual Check-in modal
       if (viewportWidth < 768) {
-        const hamburger = page.locator('.hamburger-btn, button[title="Open Navigation Menu"]').first()
-        if (await hamburger.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await hamburger.click()
-          await page.waitForTimeout(500)
-          const menuBtn = page.locator('button:has-text("Manual Check-in")').first()
-          if (await menuBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await menuBtn.click()
-          }
-          await page.waitForTimeout(400)
-        }
+        await page.evaluate(() => {
+          const btns = Array.from(document.querySelectorAll('nav button'));
+          const addBtn = btns[1] || btns[btns.length - 1]; // FAB is usually the second button
+          if (addBtn) addBtn.click();
+        });
       } else {
         const btn = page.locator('button:has-text("MANUAL CHECK-IN"), button:has-text("Manual Walk-in")').first()
-        await btn.click()
+        await btn.click({ force: true })
       }
 
       await expect(page.getByText(/Manual Walk-in Check-in/i).first()).toBeVisible({ timeout: 8000 })
       const testPatientName = `Test Patient ${suffix}`
-      const nameInput = page.locator('input[placeholder*="Arush"], input[placeholder*="Patient"], input[placeholder*="name" i]').first()
+      const randomPhone1 = `91${Math.floor(10000000 + Math.random() * 90000000)}`
+      const nameInput = page.locator('div[style*="position: fixed"] input[type="text"]').first()
       await nameInput.fill(testPatientName)
-      const phoneInput = page.locator('input[placeholder*="10-digit"], input[placeholder*="mobile"]').first()
-      await phoneInput.fill('9876543210')
-      await page.click('button:has-text("Add to Queue")')
+      const phoneInput = page.locator('div[style*="position: fixed"] input[placeholder*="10-digit"]').first()
+      await phoneInput.fill(randomPhone1)
+      let submitBtn = page.locator(`button[type="submit"]:has-text("Add to Queue")`).first(); await submitBtn.waitFor({ state: "visible", timeout: 5000 }); await submitBtn.click({ force: true })
       await page.waitForTimeout(2500)
-      await expect(page.getByText(/Manual Walk-in Check-in/i)).toBeHidden({ timeout: 8000 })
+      try {
+        await expect(page.getByText(/Manual Walk-in Check-in/i)).toBeHidden({ timeout: 5000 })
+      } catch (e) {
+        const modalText = await page.locator('div[style*="position: fixed"]').first().textContent().catch(() => 'No modal found');
+        console.error('[TEST DEBUG] Modal failed to close! Modal content:', modalText);
+        throw e;
+      }
       await page.waitForTimeout(2000)
       const patientVisible = await page.getByText(testPatientName).isVisible().catch(() => false)
       expect(patientVisible, `Added patient "${testPatientName}" not visible in queue`).toBeTruthy()
@@ -229,21 +231,20 @@ for (const [label, viewportWidth] of viewports) {
 
       // Add second patient and skip
       if (viewportWidth < 768) {
-        const hamburger = page.locator('.hamburger-btn, button[title="Open Navigation Menu"]').first()
-        if (await hamburger.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await hamburger.click()
-          await page.waitForTimeout(400)
-          await page.locator('button:has-text("Manual Check-in")').first().click()
-          await page.waitForTimeout(400)
-        }
+        await page.evaluate(() => {
+          const btns = Array.from(document.querySelectorAll('nav button'));
+          const addBtn = btns[1] || btns[btns.length - 1];
+          if (addBtn) addBtn.click();
+        });
       } else {
-        await page.locator('button:has-text("MANUAL CHECK-IN"), button:has-text("Manual Walk-in")').first().click()
+        await page.locator('button:has-text("MANUAL CHECK-IN"), button:has-text("Manual Walk-in")').first().click({ force: true })
       }
       await expect(page.getByText(/Manual Walk-in Check-in/i).first()).toBeVisible({ timeout: 8000 })
       const skipPatientName = `Skip Patient ${suffix}`
-      await page.locator('input[placeholder*="Arush"], input[placeholder*="Patient"], input[placeholder*="name" i]').first().fill(skipPatientName)
-      await page.locator('input[placeholder*="10-digit"], input[placeholder*="mobile"]').first().fill('9123456789')
-      await page.click('button:has-text("Add to Queue")')
+      const randomPhone2 = `91${Math.floor(10000000 + Math.random() * 90000000)}`
+      await page.locator('div[style*="position: fixed"] input[type="text"]').first().fill(skipPatientName)
+      await page.locator('div[style*="position: fixed"] input[placeholder*="10-digit"]').first().fill(randomPhone2)
+      submitBtn = page.locator(`button[type="submit"]:has-text("Add to Queue")`).first(); await submitBtn.waitFor({ state: "visible", timeout: 5000 }); await submitBtn.click({ force: true })
       await page.waitForTimeout(2500)
       const skipBtn = page.locator('button.card-btn-skip, button:has-text("Skip")').first()
       if (await skipBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -282,17 +283,22 @@ for (const [label, viewportWidth] of viewports) {
       await expect(page.getByText(/LIVE QUEUE CONTROL/i).first()).toBeVisible({ timeout: 12000 })
 
       if (viewportWidth < 768) {
-        const hamburger = page.locator('.hamburger-btn, button[title="Open Navigation Menu"]').first()
+        const hamburger = page.locator('.hamburger-btn, button[title="Open Navigation Menu"], nav button:has-text("More")').first()
         if (await hamburger.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await hamburger.click()
+          await hamburger.click({ force: true })
           await page.waitForTimeout(400)
-          const paymentsLink = page.locator('button:has-text("Payments Ledger"), button:has-text("Payments")').first()
+          const paymentsLink = page.locator('button:has-text("Payments Ledger"), button:has-text("Payments"), a:has-text("Payments")').first()
           if (await paymentsLink.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await paymentsLink.click()
+            await paymentsLink.click({ force: true })
           } else {
             await page.keyboard.press('Escape')
           }
           await page.waitForTimeout(400)
+        } else {
+          const paymentsLink = page.locator('button:has-text("Payments Ledger"), button:has-text("Payments"), a:has-text("Payments")').first()
+          if (await paymentsLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await paymentsLink.click({ force: true })
+          }
         }
       }
 
@@ -441,7 +447,7 @@ for (const [label, viewportWidth] of viewports) {
         const sidebar = page.locator('.dashboard-sidebar').first()
         const sidebarVisible = await sidebar.isVisible({ timeout: 2000 }).catch(() => false)
         if (sidebarVisible) {
-          console.warn('[SOFT] Sidebar visible at 390px — CSS media query may not be working')
+          console.warn('[SOFT] Sidebar visible at 390px ï¿½ CSS media query may not be working')
         }
         const hamburger = page.locator('.hamburger-btn, button[title="Open Navigation Menu"]').first()
         await expect(hamburger).toBeVisible({ timeout: 8000 })

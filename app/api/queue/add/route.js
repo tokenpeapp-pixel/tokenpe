@@ -91,7 +91,7 @@ export async function POST(req) {
         let currentTotal = 0
         try {
             const { count } = await supabaseAdmin
-                .from('patients')
+                .from('queue_entries')
                 .select('*', { count: 'exact', head: true })
                 .eq('date', today)
             currentTotal = count || 0
@@ -108,7 +108,7 @@ export async function POST(req) {
             let existingJoins = []
             try {
                 const { data: exData } = await supabaseAdmin
-                    .from('patients')
+                    .from('queue_entries')
                     .select('name')
                     .eq('phone', cleanedPhone)
                     .eq('date', today)
@@ -127,6 +127,7 @@ export async function POST(req) {
         const fallbackName = `${vocab.person} ${token}`
 
         const patientObj = {
+            business_type: vertical,
             name: cleanName || fallbackName,
             phone: cleanedPhone,
             token: token,
@@ -139,18 +140,18 @@ export async function POST(req) {
             payment_status: 'pending'
         }
 
-        // Only include clinic_id if it's a valid 36-char UUID
+        // Only include business_id if it's a valid 36-char UUID
         if (businessId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(businessId))) {
-            patientObj.clinic_id = businessId
+            patientObj.business_id = businessId
         }
 
         let patient = null
-        let { data, error } = await supabaseAdmin.from('patients').insert([patientObj]).select()
+        let { data, error } = await supabaseAdmin.from('queue_entries').insert([patientObj]).select()
 
         if (error) {
-            console.warn('[queue/add] FK error inserting into patients, retrying without clinic_id:', error.message)
-            delete patientObj.clinic_id
-            const res2 = await supabaseAdmin.from('patients').insert([patientObj]).select()
+            console.warn('[queue/add] FK error inserting into queue_entries, retrying without business_id:', error.message)
+            delete patientObj.business_id
+            const res2 = await supabaseAdmin.from('queue_entries').insert([patientObj]).select()
             if (res2.data && res2.data[0]) {
                 data = res2.data
                 error = null

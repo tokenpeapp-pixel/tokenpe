@@ -15,6 +15,7 @@ import confetti from 'canvas-confetti'
 import QRCode from 'qrcode'
 import { motion, AnimatePresence } from 'framer-motion'
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '917977075721'
 // ─── ANIMATED COUNTER NUMBER ───
 function AnimatedNumber({ value }) {
   return (
@@ -277,7 +278,8 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
       ctx.fillStyle = '#A7F3D0'
       ctx.font = '500 24px "Plus Jakarta Sans", sans-serif'
-      ctx.fillText(`Or WhatsApp JOIN ${liveCode} to +917977075721`, 400, 680)
+      const displayPhone = WA_NUMBER.startsWith('1') ? '+' + WA_NUMBER.slice(0, 1) + ' ' + WA_NUMBER.slice(1) : '+' + WA_NUMBER
+      ctx.fillText(`Or WhatsApp JOIN ${liveCode} to ${displayPhone}`, 400, 680)
 
       const boxWidth = 680
       const boxX = 400 - boxWidth / 2
@@ -409,9 +411,8 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
             )}
           </div>
 
-          {/* WhatsApp Prompt Subtitle */}
           <div style={{ fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 500 }}>
-            Or WhatsApp <span style={{ color: '#34D399', fontWeight: 900, fontFamily: 'monospace' }}>JOIN {liveCode}</span> to <span style={{ color: '#FFFFFF', fontWeight: 900, fontFamily: 'monospace' }}>+917977075721</span>
+            Or WhatsApp <span style={{ color: '#34D399', fontWeight: 900, fontFamily: 'monospace' }}>JOIN {liveCode}</span> to <span style={{ color: '#FFFFFF', fontWeight: 900, fontFamily: 'monospace' }}>{WA_NUMBER.startsWith('1') ? '+' + WA_NUMBER.slice(0, 1) + ' ' + WA_NUMBER.slice(1) : '+' + WA_NUMBER}</span>
           </div>
         </div>
 

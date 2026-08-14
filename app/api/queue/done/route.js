@@ -26,7 +26,11 @@ export async function POST(req) {
             language
         } = await req.json()
 
-        const businessId = session?.businessId || reqBizId
+        if (!session) {
+            return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+        }
+
+        const businessId = session.businessId || reqBizId
         const finalBusinessName = businessName || clinicName || 'TokenPe Business'
 
         if (!patientId) {

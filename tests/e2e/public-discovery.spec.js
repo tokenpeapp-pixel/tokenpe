@@ -4,7 +4,7 @@ test.describe('TokenPe Public Discovery & SEO', () => {
 
   test('Find Clinic search returns 200 OK and prevents XSS', async ({ request }) => {
     const xssPayload = '<img src=x onerror=alert(1)>';
-    const response = await request.get(`/api/clinics/search?q=${encodeURIComponent(xssPayload)}`);
+    const response = await request.get(`/api/clinics/search?vertical=clinic&q=${encodeURIComponent(xssPayload)}`);
     
     expect(response.status()).toBe(200);
     const json = await response.json();

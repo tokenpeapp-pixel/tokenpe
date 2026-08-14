@@ -15,6 +15,8 @@ const AREA_SUGGESTIONS = [
   'Hostel Admin', 'Canteen Counter', 'Transport Desk', 'Counsellor',
 ]
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '917977075721'
+
 export default function ClassroomsPage() {
   const router = useRouter()
 
@@ -440,7 +442,7 @@ export default function ClassroomsPage() {
             <div style={{ fontSize: '0.72rem', color: '#5A6E85', marginBottom: 18 }}>Scan to join this queue via WhatsApp</div>
             <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: 16, marginBottom: 16, display: 'inline-block' }}>
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://wa.me/917303382377?text=${showQR.code}`)}&bgcolor=FFFFFF&color=1B2A4A&qzone=2`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://wa.me/${WA_NUMBER}?text=${showQR.code}`)}&bgcolor=FFFFFF&color=1B2A4A&qzone=2`}
                 alt="QR Code"
                 style={{ width: 180, height: 180, display: 'block' }}
               />

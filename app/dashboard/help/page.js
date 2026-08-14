@@ -8,6 +8,8 @@ import {
   PlayCircle, Clock, ExternalLink
 } from 'lucide-react'
 
+const SUPPORT_NUMBER = process.env.NEXT_PUBLIC_SUPPORT_NUMBER || '917715951068'
+
 export default function HelpSupportPage() {
   const router = useRouter()
   const [clinic, setClinic]               = useState(null)
@@ -307,7 +309,7 @@ export default function HelpSupportPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Direct WhatsApp Support */}
             <a
-              href="https://wa.me/917715951068?text=Hi%20TokenPe%20Support%2C%20I%20need%20assistance%20with%20my%20clinic%20account"
+              href={`https://wa.me/${SUPPORT_NUMBER}?text=Hi%20TokenPe%20Support%2C%20I%20need%20assistance%20with%20my%20clinic%20account`}
               target="_blank"
               rel="noopener noreferrer"
               className="help-card bg-gradient-to-br from-[#052E20] to-[#043E2E] text-white p-6 rounded-3xl shadow-md border border-[#065F46] flex flex-col justify-between"

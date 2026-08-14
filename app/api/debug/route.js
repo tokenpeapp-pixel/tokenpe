@@ -9,7 +9,7 @@ export async function GET(req) {
 
     // 🛡️ Security: Lock this debug endpoint behind a secret
     const secretKey = searchParams.get('key')
-    if (secretKey !== (process.env.DEBUG_SECRET || 'tokenpe_debug_fallback')) {
+    if (!process.env.DEBUG_SECRET || secretKey !== process.env.DEBUG_SECRET) {
         return Response.json({ error: 'Not Found' }, { status: 404 })
     }
 
@@ -98,7 +98,6 @@ export async function GET(req) {
     return Response.json({
         status: '✅ TokenPe Debug',
         env: {
-            MSG91_AUTHKEY:         process.env.MSG91_AUTHKEY        ? '✅ set' : '❌ MISSING',
             WEBHOOK_VERIFY_TOKEN:  process.env.WEBHOOK_VERIFY_TOKEN  ? '✅ set' : '❌ MISSING',
             NEXT_PUBLIC_APP_URL:   process.env.NEXT_PUBLIC_APP_URL   || '⚠️ not set',
             SARVAM_API_KEY:        process.env.SARVAM_API_KEY        ? '✅ set' : '❌ MISSING',

@@ -607,7 +607,6 @@ export async function GET(req) {
         hint: 'POST to this URL with ?secret=<WEBHOOK_VERIFY_TOKEN>',
         envCheck: {
             WEBHOOK_VERIFY_TOKEN: !!process.env.WEBHOOK_VERIFY_TOKEN,
-            INTERAKT_API_KEY: !!process.env.INTERAKT_API_KEY,
             NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || '(not set)'
         }
     }, { status: 200 })

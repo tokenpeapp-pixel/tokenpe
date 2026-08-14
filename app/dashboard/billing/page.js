@@ -10,6 +10,8 @@ import {
   ArrowRight, CheckCircle, Circle, ArrowLeft, Download, FileText, Calendar, Plus, Minus
 } from 'lucide-react'
 
+const SUPPORT_NUMBER = process.env.NEXT_PUBLIC_SUPPORT_NUMBER || '917715951068'
+
 const PLAN_META = {
   starter:      { name: 'Starter', price: '₹499',   priceNum: 499,  limit: 50,       color: '#6B7280' },
   pro:          { name: 'Pro',     price: '₹999',   priceNum: 999,  limit: 150,      color: '#065F46' },
@@ -730,7 +732,7 @@ export default function BillingPage() {
                     <Building2 className="w-4 h-4" /> Request Custom Enterprise Quote
                   </button>
                   <a
-                    href="https://wa.me/917715951068?text=Hi%20TokenPe%20Team%2C%20I%20want%20to%20inquire%20about%20Custom%20Enterprise%20Plan"
+                    href={`https://wa.me/${SUPPORT_NUMBER}?text=Hi%20TokenPe%20Team%2C%20I%20want%20to%20inquire%20about%20Custom%20Enterprise%20Plan`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-6 py-3 bg-[#10B981]/30 border border-[#A7F3D0]/40 text-white font-bold text-sm rounded-xl hover:bg-[#10B981]/40 transition-all flex items-center justify-center gap-2"

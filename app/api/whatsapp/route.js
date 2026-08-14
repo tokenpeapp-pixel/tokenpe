@@ -83,8 +83,8 @@ export async function POST(req) {
             )
         }
 
-        if (!isIncomingMessage) {
-            // For non-message webhooks (join, callnext), require the secret
+        if (!isIncomingMessage && body.object !== 'whatsapp_business_account') {
+            // For non-message internal webhooks (join, callnext), require the secret
             const expectedSecret = process.env.WEBHOOK_VERIFY_TOKEN || ''
             const isValid = expectedSecret && secret && 
                 secret.length === expectedSecret.length &&

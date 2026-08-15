@@ -103,20 +103,26 @@ export default function LoginPage() {
     async function handleGoogleLogin() {
         setGoogleLoading(true)
         setError('')
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('tokenpe_auth_intent', mode)
-        }
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { 
-                redirectTo: `${window.location.origin}/auth/callback?intent=${mode}`,
-                queryParams: {
-                    prompt: 'select_account'
-                }
+        try {
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('tokenpe_auth_intent', mode)
             }
-        })
-        if (error) {
-            setError('Google sign in failed. Please try again.')
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { 
+                    redirectTo: `${window.location.origin}/auth/callback?intent=${mode}`,
+                    queryParams: {
+                        prompt: 'select_account'
+                    }
+                }
+            })
+            if (error) {
+                setError(error.message || 'Google sign in failed. Please try again.')
+                setGoogleLoading(false)
+            }
+        } catch (err) {
+            console.error('Google login error:', err)
+            setError(err.message || 'Network error during sign in. Please try again.')
             setGoogleLoading(false)
         }
     }

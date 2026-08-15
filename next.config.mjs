@@ -5,7 +5,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: { after: true }, turbopack: {
+  turbopack: {
     root: __dirname,
   },
   async headers() {

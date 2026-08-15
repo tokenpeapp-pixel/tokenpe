@@ -9,6 +9,7 @@ import crypto from 'crypto'
 import { maskPhone, maskName, maskSecret } from '../../../lib/mask'
 import { sanitizeName, validatePhone, validateClinicCode, extractInteractiveReply, parseVisitRating, parseCrmRating, parseCrmFeedbackText } from '../../../lib/validate'
 import { handleIncomingMessage } from '../../../lib/chatbot'
+import { joinQueue } from '../../../lib/queue-manager'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 
@@ -117,7 +118,7 @@ export async function POST(req) {
 
             const { data: recentPatient } = await supabaseAdmin
                 .from('queue_entries')
-                .select('id, clinic_id')
+                .select('id, business_id')
                 .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                 .eq('status', 'done')
                 .gte('date', getISTDateString())
@@ -131,16 +132,16 @@ export async function POST(req) {
                     .update({ rating: directRating })
                     .eq('id', recentPatient.id)
 
-                const { data: clinic } = await supabaseAdmin
-                    .from('clinics').select('name, google_review_link').eq('id', recentPatient.clinic_id).single()
+                const { data: business } = await supabaseAdmin
+                    .from('businesses').select('name, google_review_link').eq('id', recentPatient.business_id).single()
 
                 const stars = '⭐'.repeat(directRating)
-                await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!\n\nThank you for visiting *${clinic?.name || 'our clinic'}*. We hope you feel better soon! 🌟`)
+                await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!\n\nThank you for visiting *${business?.name || 'our premises'}*. We hope to see you again soon! 🌟`)
                 
-                if (directRating >= 4 && clinic?.google_review_link) {
+                if (directRating >= 4 && business?.google_review_link) {
                     // Send Google Review link for 4 or 5 star ratings
                     setTimeout(async () => {
-                        await sendText(customerPhone, `We're thrilled you had a great experience! 😊\n\nCould you take 30 seconds to leave us a quick review on Google? It really helps us out! 🙏\n\n👉 ${clinic.google_review_link}`)
+                        await sendText(customerPhone, `We're thrilled you had a great experience! 😊\n\nCould you take 30 seconds to leave us a quick review on Google? It really helps us out! 🙏\n\n👉 ${business.google_review_link}`)
                     }, 2000)
                 }
                 console.log(`[Rating] ✅ Direct Workflow rating ${directRating} saved for patient ${recentPatient.id}`)
@@ -166,7 +167,7 @@ export async function POST(req) {
 
                 const { data: recentPatient } = await supabaseAdmin
                     .from('queue_entries')
-                    .select('id, clinic_id')
+                    .select('id, business_id')
                     .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                     .eq('status', 'done')
                     .gte('date', getISTDateString())
@@ -180,16 +181,16 @@ export async function POST(req) {
                         .update({ rating: visitRating })
                         .eq('id', recentPatient.id)
 
-                    const { data: clinic } = await supabaseAdmin
-                        .from('clinics').select('name, google_review_link').eq('id', recentPatient.clinic_id).single()
+                    const { data: business } = await supabaseAdmin
+                        .from('businesses').select('name, google_review_link').eq('id', recentPatient.business_id).single()
 
                     const stars = '⭐'.repeat(visitRating)
-                    await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!\n\nThank you for visiting *${clinic?.name || 'our clinic'}*. We hope you feel better soon! 🌟`)
+                    await sendText(customerPhone, `🙏 *Thank You!*\n\nWe have recorded your ${stars} rating. We appreciate your feedback!\n\nThank you for visiting *${business?.name || 'our premises'}*. We hope to see you again soon! 🌟`)
                     
-                    if (visitRating >= 4 && clinic?.google_review_link) {
+                    if (visitRating >= 4 && business?.google_review_link) {
                         // Send Google Review link for 4 or 5 star ratings
                         setTimeout(async () => {
-                            await sendText(customerPhone, `We're thrilled you had a great experience! 😊\n\nCould you take 30 seconds to leave us a quick review on Google? It really helps us out! 🙏\n\n👉 ${clinic.google_review_link}`)
+                            await sendText(customerPhone, `We're thrilled you had a great experience! 😊\n\nCould you take 30 seconds to leave us a quick review on Google? It really helps us out! 🙏\n\n👉 ${business.google_review_link}`)
                         }, 2000)
                     }
                     console.log(`[Rating] ✅ Saved rating ${visitRating} for patient ${recentPatient.id}`)
@@ -210,7 +211,7 @@ export async function POST(req) {
 
                 const { data: recentPatient, error: crmErr } = await supabaseAdmin
                     .from('queue_entries')
-                    .select('id, clinic_id')
+                    .select('id, business_id')
                     .or(`phone.eq.${phone10},phone.eq.${phone12}`)
                     .order('joined_at', { ascending: false })
                     .limit(1)
@@ -297,270 +298,34 @@ export async function POST(req) {
             
             const businessCode = validateClinicCode(cleanedCode)
 
-            console.log(`[Join] phone=${maskPhone(phone)} | name=${maskName(name)} | lang=${language} | businessCode=${businessCode}`)
-
-            if (!phone) {
-                console.error('[Join] ❌ No phone number in payload. Keys received:', Object.keys(body).join(', '))
-                return Response.json({
-                    success: false,
-                    message: '❌ Invalid phone number format',
-                    token: 'ERR', position: 0, wait: 'N/A', clinicName: 'Unknown', name: name
-                }, { status: 200 })
-            }
-
-            // ── Builder Test Safeguard ─────────────────────────────────────────────
-            const isTestPayload = rawCode.includes('{') || rawCode.includes('}') || rawCode === 'PLACEHOLDER' || rawCode.includes('VARIABLE')
-            if (isTestPayload) {
-                console.log('[Join] 🧪 Test mode detected — returning mock response')
-                return Response.json({
-                    success: true,
-                    token: 'T001',
-                    position: 0,
-                    wait: 'You are next!',
-                    clinicName: 'Demo Clinic',
-                    name: name || 'Guest'
-                }, { status: 200 })
-            }
-
-            if (!businessCode) {
-                console.error(`[Join] ❌ Invalid or missing clinic code. rawCode was: "${rawCode}"`)
-                return Response.json({
-                    success: false,
-                    message: '❌ Invalid clinic code. Please scan the QR code again.',
-                    token: 'ERR', position: 0, wait: 'N/A', clinicName: 'Unknown', name: name || 'Guest'
-                }, { status: 200 })
-            }
-
-            // 1. Find clinic in Supabase
-            const { data: clinic, error: clinicError } = await supabase
-                .from('clinics')
-                .select('*')
-                .eq('code', businessCode)
-                .single()
-
-            if (clinicError || !clinic) {
-                console.error(`[Join] ❌ Clinic not found for code: "${businessCode}"`, clinicError?.message)
-                return Response.json({
-                    success: false,
-                    message: '❌ Invalid clinic code. Please scan the QR code again.',
-                    token: 'ERR', position: 0, wait: 'N/A', clinicName: 'Unknown', name: name || 'Guest'
-                }, { status: 200 })
-            }
-
-            // 1.5 Check if queue is paused
-            if (clinic.queue_paused) {
-                console.log(`[Join] ❌ Queue is paused for ${clinic.name}`)
-                const pausedMsg = `❌ *Queue Paused*\n\nThe queue is currently paused by the clinic.\n\nPlease try again later.`
-                // Await to ensure Vercel doesn't kill the function before sending
-                await sendTextAndVoice({
-                    phone: cleanPhone(phone),
-                    language: language,
-                    event: 'paused',
-                    clinicName: clinic.name,
-                    textMessage: pausedMsg
-                })
-                
-                // Return 200 so flow continues, but we return token 'PAUSED'
-                return Response.json({
-                    success: false,
-                    message: 'Queue is currently paused.',
-                    token: 'PAUSED', position: 0, wait: 'N/A', clinicName: clinic.name, name: name || 'Guest'
-                }, { status: 200 })
-            }
-
-            // 1.6 Check if clinic is closed for today
-            const todayDate = getISTDateString()
-            if (clinic.closed_today_date) {
-                console.log(`[Join] ❌ Clinic "${clinic.name}" is closed for today`)
-                const closedMsg = `🔴 *Clinic Closed for Today*\n\n${clinic.name} has ended today's session.\n\nPlease visit again tomorrow. We look forward to seeing you! 🙏\n\n_Powered by TokenPe_`
-                await sendTextAndVoice({
-                    phone: cleanPhone(phone),
-                    language: language,
-                    event: 'paused',  // reuse paused voice event as it conveys "unavailable"
-                    clinicName: clinic.name,
-                    textMessage: closedMsg
-                })
-                return Response.json({
-                    success: false,
-                    message: 'Clinic is closed for today.',
-                    token: 'CLOSED', position: 0, wait: 'N/A', clinicName: clinic.name, name: name || 'Guest'
-                }, { status: 200 })
-            }
-
-            // 2. Count patients & calculate waits in PARALLEL
-            const today = getISTDateString()
-            const planId = clinic.plan_id || 'starter' // default to starter
-            
-            // Item 5: Rate limit joins (3 per phone per day, max 2 per same name)
-            const cleanedPhone = cleanPhone(phone)
-            const { data: existingJoins } = await supabase
-                .from('queue_entries')
-                .select('name')
-                .eq('business_id', clinic.id)
-                .eq('phone', cleanedPhone)
-                .eq('date', today)
-
-            if (existingJoins && existingJoins.length >= 3) {
-                console.log(`[Join] ❌ Rate limit reached for ${maskPhone(phone)} at ${clinic.name}`)
-                await sendText(cleanedPhone, `❌ *Limit Reached*\n\nYou have reached the maximum daily limit for this phone number.\n\nPlease visit the clinic to join via walk-in.`)
-                return Response.json({
-                    success: false,
-                    message: 'Daily join limit reached for this phone number.',
-                    token: 'LIMIT', position: 0, wait: 'N/A', clinicName: clinic.name, name: name
-                }, { status: 200 })
-            }
-
-            const nameCount = existingJoins?.filter(p => p.name.toLowerCase() === name.toLowerCase()).length || 0;
-            if (nameCount >= 2) {
-                console.log(`[Join] ❌ Name limit reached for ${maskPhone(phone)}: ${maskName(name)}`)
-                await sendText(cleanedPhone, `❌ *Limit Reached*\n\nA patient named "${name}" has already joined the queue twice today.\n\nTo join again, please visit the clinic and use the walk-in method.`)
-                return Response.json({
-                    success: false,
-                    message: 'A patient with this name has reached the daily limit.',
-                    token: 'DUPE', position: 0, wait: 'N/A', clinicName: clinic.name, name: name
-                }, { status: 200 })
-            }
-            
-            const [
-                { count },
-                { count: peopleAhead },
-                { data: recentDone }
-            ] = await Promise.all([
-                // Total patients today
-                supabaseAdmin.from('queue_entries').select('*', { count: 'exact', head: true })
-                    .eq('business_id', clinic.id).eq('date', today),
-                // People waiting ahead
-                supabaseAdmin.from('queue_entries').select('*', { count: 'exact', head: true })
-                    .eq('business_id', clinic.id).eq('date', today).in('status', ['waiting', 'called']),
-                // Recent done for dynamic wait time
-                planId !== 'starter' 
-                    ? supabaseAdmin.from('queue_entries').select('completed_at')
-                        .eq('business_id', clinic.id).eq('date', today).eq('status', 'done')
-                        .not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(10)
-                    : Promise.resolve({ data: null })
-            ])
-
-            const position = count || 0
-            const limit = planId === 'starter' ? 50 : planId === 'pro' ? 150 : Infinity
-            
-            if (position >= limit) {
-                console.log(`[Join] ❌ Limit reached for ${clinic.name}: ${position}/${limit}`)
-                const limitMsg = `❌ *Queue Full*\n\nThe clinic has reached its maximum daily patient limit.\n\nPlease ask the clinic reception to upgrade their TokenPe plan to add more patients today.`
-                // Await to ensure Vercel doesn't kill the function before sending
-                await sendText(cleanPhone(phone), limitMsg)
-                
-                return Response.json({
-                    success: false,
-                    message: 'Daily queue limit reached.',
-                    token: 'FULL', position: 0, wait: 'N/A', clinicName: clinic.name, name: name || 'Guest'
-                }, { status: 200 })
-            }
-
-            // Calculate dynamic wait time for Pro/Elite based on doctor's speed today
-            let avgWaitPerPatient = 7 // Default 7 mins
-            if (planId !== 'starter' && recentDone && recentDone.length >= 2) {
-                let totalDiffMs = 0
-                let diffCount = 0
-                for (let i = 0; i < recentDone.length - 1; i++) {
-                    const t1 = new Date(recentDone[i].completed_at).getTime()
-                    const t2 = new Date(recentDone[i+1].completed_at).getTime()
-                    const diffMs = t1 - t2
-                    // Ignore huge gaps (> 30 mins) as the doctor might have taken a break
-                    if (diffMs >= 60000 && diffMs <= 1800000) {
-                        totalDiffMs += diffMs
-                        diffCount++
-                    }
-                }
-                if (diffCount > 0) {
-                    const calculatedAvg = Math.round((totalDiffMs / diffCount) / 60000)
-                    // Keep reasonable bounds (min 2 mins, max 15 mins)
-                    avgWaitPerPatient = Math.max(2, Math.min(calculatedAvg, 15))
-                }
-            }
-
-            const tokenNumber = `T${String(position + 1).padStart(3, '0')}`
-            const waitTimeNum = (peopleAhead || 0) * avgWaitPerPatient
-            let waitMins = (peopleAhead === 0) ? 'You are next!' : `${waitTimeNum} mins`
-            if (planId !== 'starter' && peopleAhead > 0) {
-                waitMins = `Predicted Wait Time: ~${waitTimeNum} mins`
-            }
-
-            // 3. Insert patient into queue + send voice note — in parallel
-            const insertPayload = {
-                business_id: clinic.id,
-                token: tokenNumber,
-                phone: cleanedPhone,
-                name: name,
-                language: language || 'en',
-                status: 'waiting',
-                amount_paid: 0,
-                date: today,
-                joined_at: new Date().toISOString()
-            }
-            console.log(`[Join] Inserting patient: token=${tokenNumber}`)
-
-            const { error: insertError } = await supabaseAdmin.from('queue_entries').insert(insertPayload)
-
-            if (insertError) {
-                console.error('[Join] ❌ Insert failed:', insertError.message, insertError.details)
-                return Response.json({ success: false, message: 'Failed to join queue', error: insertError.message }, { status: 500 })
-            }
-
-            console.log(`[Join] ✅ ${maskName(name)} → ${tokenNumber} at ${clinic.name} (pos ${position})`)
-
-            if (planId !== 'starter') {
-                after(async () => {
-                    try {
-                        if (clinic.welcome_message && (planId === 'elite' || clinic.subscription_status === 'trialing')) {
-                            await sendText(cleanedPhone, `*Message from ${clinic.name}:*\n\n${clinic.welcome_message}`)
-                        }
-                        
-                        await sendVoice({
-                            phone: cleanedPhone,
-                            language: language || 'en',
-                            event: 'joined',
-                            token: tokenNumber,
-                            position: peopleAhead || 0,
-                            clinicName: clinic.name
-                        })
-                    } catch (err) {
-                        console.error('[Voice Background Error]', err)
-                        // Fallback: send text if Sarvam AI fails
-                        const fallbackText = buildVoiceText({
-                            language: language || 'en',
-                            event: 'joined',
-                            token: tokenNumber,
-                            position: peopleAhead || 0,
-                            clinicName: clinic.name
-                        })
-                        if (fallbackText) {
-                            await sendText(cleanedPhone, `🎙️ *Voice Note Failed*\n\n${fallbackText}`)
-                        }
-                    }
-                })
-            }
-
-            // 5. Return token info back to Flow
-            return Response.json({
-                success: true,
-                token: tokenNumber,
-                position: peopleAhead || 0,
-                wait: waitMins,
-                clinicName: clinic.name,
-                name: name || 'Guest'
-            }, { status: 200 })
+            const result = await joinQueue({ phone, name, language, businessCode })
+            return Response.json(result, { status: 200 })
         }
 
         // ── CALLNEXT action ──────────────────────────────────────────────────────
         if (action === 'callnext') {
             const { patientPhone, patientName, token, language, clinicName } = body
 
+            // Check business type to set the correct dynamic message
+            const { data: queueEntry } = await supabaseAdmin
+                .from('queue_entries')
+                .select('businesses(type)')
+                .eq('token', token)
+                .order('joined_at', { ascending: false })
+                .limit(1).single()
+                
+            let destination = "the doctor's cabin"
+            if (queueEntry?.businesses?.type === 'restaurant') destination = 'your table'
+            else if (queueEntry?.businesses?.type === 'salon') destination = 'the stylist'
+            else if (queueEntry?.businesses?.type === 'school') destination = 'the counter'
+            else if (queueEntry?.businesses?.type === 'business') destination = 'the counter'
+
             const msg = `🚨 *It's YOUR turn, ${patientName || 'Patient'}!*
 
 🎟 Token *${token}* — Please go now!
-🏥 ${clinicName}
+🏢 ${clinicName}
 
-Proceed to the doctor's cabin immediately! 🏥
+Proceed to ${destination} immediately! 🚀
 Thank you for your patience 🙏
 
 _Powered by TokenPe_`

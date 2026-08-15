@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
+import ClinicSidebar from '../../components/ClinicSidebar'
 import confetti from 'canvas-confetti'
 import QRCode from 'qrcode'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -55,13 +56,13 @@ function AnimatedClock() {
   const [h, m, s] = timeDigits.split(':')
 
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, fontFamily: "'Plus Jakarta Sans', sans-serif", fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', fontSize: '1.75rem', fontWeight: 800, color: '#064E3B', lineHeight: 1, whiteSpace: 'nowrap' }}>
+    <div style={{ display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, fontFamily: "'Plus Jakarta Sans', sans-serif", fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', fontSize: '1.1rem', fontWeight: 800, color: '#064E3B', lineHeight: 1, whiteSpace: 'nowrap' }}>
       <AnimatedNumber value={h || '00'} />
       <span style={{ margin: '0 1px', opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>:</span>
       <AnimatedNumber value={m || '00'} />
       <span style={{ margin: '0 1px', opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>:</span>
       <AnimatedNumber value={s || '00'} />
-      <span style={{ fontSize: '0.8rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 4, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      <span style={{ fontSize: '0.65rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 3, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
         {ampm}
       </span>
     </div>
@@ -1603,299 +1604,10 @@ function DashboardContent() {
   )
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", background: '#DCEFDF', overflowX: 'hidden' }}>
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#DCEFDF] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
       <UpgradeBanner />
 
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-        .sidebar-btn {
-          display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-          border-radius: 12px; background: transparent; color: #1E3A2B;
-          font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer;
-          width: 100%; text-align: left; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          white-space: nowrap; overflow: hidden;
-        }
-        .sidebar-btn:hover {
-          background: #BFE3CD; color: #064E3B; padding-left: 20px;
-          box-shadow: 0 4px 12px rgba(6,78,59,0.08);
-        }
-        .sidebar-btn.active {
-          background: #BFE3CD; color: #064E3B; font-weight: 800;
-          box-shadow: inset 3px 0 0 #064E3B;
-        }
-        .sidebar-btn .sb-label { font-weight: 700; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .sb-wrap { position: relative; }
-        .sb-tooltip {
-          position: absolute;
-          left: calc(100% + 14px);
-          top: 50%; transform: translateY(-50%) scale(0.95);
-          background: #1E3A2B;
-          color: #E2F5EB;
-          border-radius: 12px;
-          padding: 12px 14px;
-          width: 210px;
-          font-size: 0.78rem;
-          font-weight: 500;
-          line-height: 1.55;
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity 0.18s ease, transform 0.18s ease;
-          z-index: 9999;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-          white-space: normal;
-        }
-        .sb-tooltip strong {
-          display: block;
-          font-size: 0.82rem;
-          font-weight: 800;
-          color: #A7F3D0;
-          margin-bottom: 4px;
-        }
-        .sb-tooltip::before {
-          content: '';
-          position: absolute;
-          left: -7px; top: 50%; transform: translateY(-50%);
-          border: 7px solid transparent;
-          border-right-color: #1E3A2B;
-          border-left: 0;
-        }
-        .sb-wrap:hover .sb-tooltip { opacity: 1; transform: translateY(-50%) scale(1); }
-
-        .spinner-ring {
-          width: 40px;
-          height: 40px;
-          border-width: 3px;
-          pointer-events: none;
-          z-index: 9999;
-          border-style: solid;
-          border-color: #065F46 #C3E6D5 #C3E6D5 #C3E6D5;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-
-        .logo-overlay-hover:hover {
-          opacity: 1 !important;
-        }
-
-        .stat-segment-hover {
-          transition: background-color 0.18s ease;
-        }
-        .stat-segment-hover:hover {
-          background: #F0FDF4;
-        }
-
-        .console-btn-primary {
-          transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
-        }
-        .console-btn-primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(6, 78, 59, 0.3) !important;
-          background: #043E2F !important;
-        }
-
-        .console-btn-secondary {
-          transition: all 0.15s ease !important;
-        }
-        .console-btn-secondary:hover {
-          transform: translateY(-1px);
-          background: #064E3B !important;
-          color: white !important;
-          box-shadow: 0 3px 10px rgba(6, 78, 59, 0.25) !important;
-        }
-        .console-btn-secondary:hover svg {
-          color: white !important;
-          stroke: white !important;
-        }
-
-        .console-btn-light {
-          transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
-        }
-        .console-btn-light:hover {
-          transform: translateY(-1px);
-          background: #D1FAE5 !important;
-          border-color: #059669 !important;
-          box-shadow: 0 3px 10px rgba(5, 150, 105, 0.12) !important;
-        }
-
-        .card-btn-admit {
-          background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
-          display: flex; align-items: center; gap: 4px; cursor: pointer;
-          transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-          -webkit-font-smoothing: antialiased;
-        }
-        .card-btn-admit:hover {
-          background: #059669 !important; color: white !important; border-color: #047857 !important;
-          box-shadow: 0 2px 6px rgba(5,150,105,0.25); transform: translateY(-1px);
-        }
-
-        .card-btn-notify {
-          background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
-          display: flex; align-items: center; gap: 4px; cursor: pointer;
-          transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-          -webkit-font-smoothing: antialiased;
-        }
-        .card-btn-notify:hover {
-          background: #D97706 !important; color: white !important; border-color: #B45309 !important;
-          box-shadow: 0 2px 6px rgba(217,119,6,0.25); transform: translateY(-1px);
-        }
-
-        .card-btn-skip {
-          background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
-          display: flex; align-items: center; gap: 4px; cursor: pointer;
-          transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-          -webkit-font-smoothing: antialiased;
-        }
-        .card-btn-skip:hover {
-          background: #DC2626 !important; color: white !important; border-color: #B91C1C !important;
-          box-shadow: 0 2px 6px rgba(220,38,38,0.25); transform: translateY(-1px);
-        }
-
-        .stage-box-hover {
-          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        }
-        .stage-box-hover:hover {
-          transform: translateY(-2px);
-          border-color: #A7F3D0 !important;
-          box-shadow: 0 6px 20px rgba(6, 78, 59, 0.07) !important;
-        }
-
-        @media (max-width: 768px) {
-          .dashboard-sidebar {
-            display: none !important;
-          }
-          .dashboard-main {
-            padding: 12px 10px !important;
-          }
-          .hamburger-btn {
-            display: flex !important;
-          }
-          .stat-banner-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-          .stat-segment-hover {
-            border-right: 1px solid #CBE4D3 !important;
-            border-bottom: 1px solid #CBE4D3 !important;
-            padding: 10px 8px !important;
-          }
-          .stat-segment-hover:nth-child(2n) {
-            border-right: none !important;
-          }
-          .stat-segment-hover:nth-child(3), .stat-segment-hover:nth-child(4) {
-            border-bottom: none !important;
-          }
-        }
-        @media (min-width: 769px) {
-          .hamburger-btn {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      {/* ── LEFT SIDEBAR NAVIGATION (HIDDEN ON MOBILE) ── */}
-      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflow: 'visible' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto', overflowX: 'hidden', flex: 1, paddingBottom: 8 }}>
-          {/* Brand Header */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', marginBottom: 28 }}>
-            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-          </div>
-
-          {/* Nav Group: Console */}
-          <div style={{ marginBottom: 4 }}>
-            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 10px', marginBottom: 6 }}>Console</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {[
-                { label: 'Dashboard', desc: 'Live queue overview & clinic stats', icon: <LayoutDashboard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {}, active: true },
-                { label: 'Manage Branches', desc: 'Set up & switch between clinic locations under one account', icon: <Layers className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/branches') },
-                { label: 'History', desc: 'Browse completed & past patient consultation records', icon: <History className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/history') },
-                { label: 'Analytics & Reports', desc: 'Track peak OPD hours, average wait times, reason breakdowns, and patient-wise statistics.', icon: <BarChart2 className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/analytics') },
-                { label: 'Broadcasting & CRM', desc: 'Send bulk WhatsApp alerts & manage patient relationships', icon: <Megaphone className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/crm') },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  onClick={item.onClick}
-                  className={`sidebar-btn${item.active ? ' active' : ''}`}
-                  onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
-                  onMouseLeave={() => setSbTooltip(null)}
-                >
-                  {item.icon}
-                  <span className="sb-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ height: 1, background: '#A8D5B5', margin: '14px 8px' }} />
-
-          {/* Nav Group: Account */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[
-              { label: 'Billing & Plans', desc: 'Manage your TokenPe subscription & plan features', icon: <CreditCard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/billing') },
-              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/help') },
-              { label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/profile') },
-            ].map(item => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className="sidebar-btn"
-                onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
-                onMouseLeave={() => setSbTooltip(null)}
-              >
-                {item.icon}
-                <span className="sb-label">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Exit Console & Logout Button at Bottom */}
-        <div style={{ paddingTop: 12, borderTop: '1px solid #A8D5B5', marginTop: 12 }}>
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="sidebar-btn"
-            style={{ width: '100%', color: '#B91C1C', fontWeight: 800 }}
-          >
-            <LogOut className="w-4 h-4" style={{ color: '#B91C1C' }} /> Exit Console &amp; Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* ── SIDEBAR FIXED TOOLTIP OVERLAY ── */}
-      {sbTooltip && (
-        <div style={{
-          position: 'fixed',
-          left: 252,
-          top: sbTooltip.y,
-          transform: 'translateY(-50%)',
-          background: '#1E3A2B',
-          color: '#E2F5EB',
-          borderRadius: 12,
-          padding: '12px 14px',
-          width: 220,
-          fontSize: '0.78rem',
-          fontWeight: 500,
-          lineHeight: 1.55,
-          zIndex: 99998,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-          pointerEvents: 'none',
-          whiteSpace: 'normal',
-        }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#A7F3D0', marginBottom: 4 }}>{sbTooltip.label}</div>
-          {sbTooltip.desc}
-          <div style={{
-            position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
-            width: 0, height: 0,
-            borderTop: '7px solid transparent',
-            borderBottom: '7px solid transparent',
-            borderRight: '7px solid #1E3A2B',
-          }} />
-        </div>
-      )}
+      <ClinicSidebar clinic={clinic} />
 
       {/* ── LOGOUT CONFIRMATION MODAL ── */}
       {showLogoutConfirm && (
@@ -2026,31 +1738,30 @@ function DashboardContent() {
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
               LIVE QUEUE
             </div>
-            <div style={{ background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 16, padding: '4px 14px', width: 175, minWidth: 175, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box', cursor: 'default' }}>
+            <div style={{ background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 14, padding: '4px 10px', width: 125, minWidth: 125, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box', cursor: 'default' }}>
               <AnimatedClock />
             </div>
-            <button
-              className="hamburger-btn"
-              onClick={() => setShowNavMenu(true)}
-              title="Open Navigation Menu"
-              style={{
-                background: '#FFFFFF',
-                border: '1.5px solid #064E3B',
-                padding: '7px 10px',
-                borderRadius: 12,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 2px 8px rgba(6,78,59,0.08)',
-                marginLeft: 'auto'
-              }}
-            >
-              <Menu style={{ width: 20, height: 20, color: '#064E3B' }} />
-            </button>
           </div>
         </div>
+
+        <style jsx global>{`
+          @media (max-width: 1024px) {
+            .stat-banner-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .stat-segment-hover {
+              border-right: 1.5px solid #CBE4D3 !important;
+              border-bottom: 1.5px solid #CBE4D3 !important;
+              padding: 12px 8px !important;
+            }
+            .stat-segment-hover:nth-child(2n) {
+              border-right: none !important;
+            }
+            .stat-segment-hover:nth-child(3), .stat-segment-hover:nth-child(4) {
+              border-bottom: none !important;
+            }
+          }
+        `}</style>
 
         {/* ── SINGLE PARTITIONED STAT BANNER CARD ── */}
         <div className="stat-banner-grid" style={{

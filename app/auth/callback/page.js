@@ -13,14 +13,11 @@ function AuthCallbackContent() {
     const [celebration, setCelebration] = useState(null)
 
     useEffect(() => {
-        async function processAuth() {
-            const vertical = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_vertical') : null
-            const redirectBase = vertical === 'salon' ? '/salon-login' : vertical === 'restaurant' ? '/restaurant-login' : vertical === 'school' ? '/school-login' : vertical === 'other' ? '/business-login' : '/login'
-            
+        const vertical = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_vertical') : null
+        const redirectBase = vertical === 'salon' ? '/salon-login' : vertical === 'restaurant' ? '/restaurant-login' : vertical === 'school' ? '/school-login' : vertical === 'other' ? '/business-login' : '/login'
+
+        async function processAuth(session) {
             try {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-                if (sessionError || !session) { router.replace(redirectBase); return }
-                
                 const urlIntent = searchParams.get('intent')
                 const localIntent = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_auth_intent') : null
                 const intent = urlIntent || localIntent || 'login'
@@ -68,20 +65,52 @@ function AuthCallbackContent() {
                     localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
                 }
 
-                const targetDashboard = vertical === 'school' ? '/school-dashboard' : vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : '/dashboard'
+                const targetDashboard = vertical === 'salon' ? '/salon-dashboard' : vertical === 'restaurant' ? '/restaurant-dashboard' : vertical === 'school' ? '/school-dashboard' : vertical === 'other' ? '/business-dashboard' : '/dashboard'
 
                 if (data.isNewRegistration) {
-                    setCelebration({ clinicName: finalClinicData.name, trialEnd: finalClinicData.trial_ends_at })
+                    setCelebration({
+                        name: finalClinicData.name,
+                        code: finalClinicData.code,
+                        dashboardUrl: targetDashboard
+                    })
                 } else {
                     router.replace(targetDashboard)
                 }
 
             } catch (err) {
-                console.error('Auth callback error:', err)
-                router.replace(redirectBase)
+                console.error('Auth error:', err)
+                router.replace(`${redirectBase}?error=unknown_error`)
             }
         }
-        processAuth()
+
+        let handled = false
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (handled) return
+            if (event === 'SIGNED_IN' && session) {
+                handled = true
+                processAuth(session)
+            }
+        })
+
+        // Fallback: in case the event already fired before the listener attached
+        const hasHash = typeof window !== 'undefined' && window.location.hash.includes('access_token')
+        const fallback = setTimeout(async () => {
+            if (handled) return
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                handled = true
+                processAuth(session)
+            } else {
+                handled = true
+                router.replace(redirectBase)
+            }
+        }, hasHash ? 15000 : 2000)
+
+        return () => {
+            subscription.unsubscribe()
+            clearTimeout(fallback)
+        }
     }, [router, searchParams])
 
     if (celebration) {

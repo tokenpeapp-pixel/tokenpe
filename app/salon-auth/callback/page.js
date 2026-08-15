@@ -12,16 +12,10 @@ function SalonAuthCallbackContent() {
     const [celebration, setCelebration] = useState(null)
 
     useEffect(() => {
-        async function processSalonAuth() {
-            const redirectBase = '/salon-login'
+        const redirectBase = '/salon-login'
 
+        async function processSalonAuth(session) {
             try {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-                if (sessionError || !session) {
-                    router.replace(redirectBase)
-                    return
-                }
-
                 const urlIntent = searchParams.get('intent')
                 const localIntent = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_auth_intent') : null
                 const intent = urlIntent || localIntent || 'login'
@@ -32,12 +26,10 @@ function SalonAuthCallbackContent() {
                     setStatus('Logging you into your salon dashboard...')
                 }
 
-                // Set vertical marker
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('tokenpe_vertical', 'salon')
                 }
 
-                // Call the shared googleCallback API — it handles clinic/salon lookup & JWT
                 const res = await fetch('/api/business-auth/googleCallback', {
                     method: 'POST',
                     headers: {
@@ -58,38 +50,68 @@ function SalonAuthCallbackContent() {
 
                 const finalSalonData = data.clinic
 
-                // Persist salon session in localStorage
-                localStorage.setItem('businessCode', finalSalonData.code)
-                localStorage.setItem('businessPhone', finalSalonData.phone || '0000000000')
-                localStorage.setItem('tokenpe_clinic', JSON.stringify(finalSalonData))
-                localStorage.setItem('tokenpe_vertical', 'salon')
-                if (data.userClinics) {
-                    localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('businessCode', finalSalonData.code)
+                    localStorage.setItem('businessPhone', finalSalonData.phone || '0000000000')
+                    localStorage.setItem('tokenpe_salon', JSON.stringify(finalSalonData))
+                    localStorage.setItem('tokenpe_business', JSON.stringify(finalSalonData))
+                    if (data.userClinics) {
+                        localStorage.setItem('tokenpe_user_businesses', JSON.stringify(data.userClinics))
+                    }
                 }
 
+                const targetDashboard = '/salon-dashboard'
+
                 if (data.isNewRegistration) {
-                    // Show celebration screen before routing to salon dashboard
                     setCelebration({
-                        clinicName: finalSalonData.name,
-                        trialEnd: finalSalonData.trial_ends_at
+                        name: finalSalonData.name,
+                        code: finalSalonData.code,
+                        dashboardUrl: targetDashboard
                     })
                 } else {
-                    router.replace('/salon-dashboard')
+                    router.replace(targetDashboard)
                 }
 
             } catch (err) {
-                console.error('[Salon Auth Callback Error]', err)
-                router.replace(redirectBase)
+                console.error('Salon auth callback error:', err)
+                router.replace(`${redirectBase}?error=unknown_error`)
             }
         }
 
-        processSalonAuth()
+        let handled = false
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (handled) return
+            if (event === 'SIGNED_IN' && session) {
+                handled = true
+                processSalonAuth(session)
+            }
+        })
+
+        // Fallback: in case the event already fired before the listener attached
+        const hasHash = typeof window !== 'undefined' && window.location.hash.includes('access_token')
+        const fallback = setTimeout(async () => {
+            if (handled) return
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                handled = true
+                processSalonAuth(session)
+            } else {
+                handled = true
+                router.replace(redirectBase)
+            }
+        }, hasHash ? 15000 : 2000)
+
+        return () => {
+            subscription.unsubscribe()
+            clearTimeout(fallback)
+        }
     }, [router, searchParams])
 
     if (celebration) {
         return (
             <CelebrationScreen
-                clinicName={celebration.clinicName}
+                clinicName={celebration.name}
                 trialEnd={celebration.trialEnd}
                 onDone={() => router.replace('/salon-dashboard')}
                 vertical="salon"

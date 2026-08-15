@@ -52,13 +52,13 @@ function AnimatedClock() {
   const [h, m, s] = timeDigits.split(':')
 
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, fontFamily: "'Playfair Display', serif", fontSize: '1.9rem', fontWeight: 700, color: '#1B2A4A', lineHeight: 1 }}>
+    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 1, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.15rem', fontWeight: 800, color: '#1B2A4A', lineHeight: 1 }}>
       <AnimatedNumber value={h || '00'} />
       <span style={{ margin: '0 1px', opacity: 0.6 }}>:</span>
       <AnimatedNumber value={m || '00'} />
       <span style={{ margin: '0 1px', opacity: 0.6 }}>:</span>
       <AnimatedNumber value={s || '00'} />
-      <span style={{ fontSize: '0.85rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 6, color: '#0284C7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <span style={{ fontSize: '0.65rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 4, color: '#0284C7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {ampm}
       </span>
     </div>
@@ -1229,9 +1229,9 @@ function SchoolCommandCenterContent() {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: 'Playfair Display', serif;
+          font-family: 'Plus Jakarta Sans', sans-serif;
           font-size: 1.75rem;
-          font-weight: 700;
+          font-weight: 800;
           color: var(--acc-navy);
           background: #FFFFFF;
           box-shadow: 0 2px 8px rgba(27, 42, 74, 0.08);
@@ -1272,17 +1272,18 @@ function SchoolCommandCenterContent() {
           opacity: 1;
         }
         .cmd-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 2.3rem;
-          font-weight: 700;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 2.1rem;
+          font-weight: 900;
           margin: 0;
           color: var(--acc-navy);
           line-height: 1.1;
+          letter-spacing: -0.02em;
         }
         .cmd-clock {
-          font-family: 'Playfair Display', serif;
+          font-family: 'Plus Jakarta Sans', sans-serif;
           font-size: 1.9rem;
-          font-weight: 700;
+          font-weight: 800;
           color: var(--acc-navy);
           text-align: right;
           line-height: 1;
@@ -1348,19 +1349,41 @@ function SchoolCommandCenterContent() {
           justify-content: space-between;
         }
         .cmd-stat-tag span {
-          font-family: 'Playfair Display', serif;
-          font-style: italic;
+          font-family: 'Plus Jakarta Sans', sans-serif;
           color: var(--acc-sky);
-          font-size: 0.9rem;
-          font-weight: 600;
+          font-size: 0.85rem;
+          font-weight: 700;
         }
         .cmd-stat-val {
-          font-family: 'Playfair Display', serif;
-          font-size: 3.2rem;
-          font-weight: 700;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 2.4rem;
+          font-weight: 900;
           line-height: 1;
           color: var(--acc-navy);
           margin-bottom: 6px;
+        }
+        .stat-segment-hover {
+          transition: all 0.2s ease !important;
+        }
+        .stat-segment-hover:hover {
+          background: rgba(239, 244, 250, 0.6) !important;
+        }
+
+        @media (max-width: 1024px) {
+          .stat-banner-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .stat-segment-hover {
+            border-right: 1.5px solid #E2E8F0 !important;
+            border-bottom: 1.5px solid #E2E8F0 !important;
+            padding: 12px 10px !important;
+          }
+          .stat-segment-hover:nth-child(2n) {
+            border-right: none !important;
+          }
+          .stat-segment-hover:nth-child(3), .stat-segment-hover:nth-child(4) {
+            border-bottom: none !important;
+          }
         }
         .cmd-stat-underline {
           height: 2.5px;
@@ -2377,56 +2400,76 @@ function SchoolCommandCenterContent() {
           </div>
         </motion.header>
 
-        {/* ── STATS ROW (ELEVATED HERO NUMBERS) ── */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="cmd-stats-row">
-          {/* Card 1 */}
-          <div className="cmd-stat-card">
-            <div className="cmd-stat-tag">
-              AWAITING CHECK-IN
-              <Users className="w-3.5 h-3.5 text-[#7FA8D9]" />
+        {/* ── SINGLE PARTITIONED STAT BANNER CARD ── */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} style={{ marginBottom: 24 }}>
+          <div className="stat-banner-grid" style={{
+            background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
+            borderRadius: 16,
+            border: '1.5px solid #CBD5E1',
+            boxShadow: '0 4px 16px rgba(27,42,74,0.05)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            overflow: 'hidden'
+          }}>
+            {/* Section 1: Awaiting Check-in */}
+            <div className="stat-segment-hover" style={{ padding: '16px 18px', borderRight: '1.5px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 900, color: '#1B2A4A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Awaiting Check-in</span>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Users className="w-3 h-3" />
+                </div>
+              </div>
+              <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#1B2A4A', lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                <AnimatedNumber value={arrivals.length} />
+              </div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748B', marginTop: 4 }}>at the front desk</div>
             </div>
-            <div className="cmd-stat-val"><AnimatedNumber value={arrivals.length} /></div>
-            <div className="cmd-stat-underline" />
-            <div className="cmd-stat-sub">at the front desk</div>
-          </div>
 
-          {/* Card 2 */}
-          <div className="cmd-stat-card">
-            <div className="cmd-stat-tag">
-              WITH STAFF
-              <UserCheck className="w-3.5 h-3.5 text-[#7FA8D9]" />
+            {/* Section 2: With Staff */}
+            <div className="stat-segment-hover" style={{ padding: '16px 18px', borderRight: '1.5px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 900, color: '#1B2A4A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>With Staff</span>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <UserCheck className="w-3 h-3" />
+                </div>
+              </div>
+              <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#1B2A4A', lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                <AnimatedNumber value={withStaff.length} />
+              </div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748B', marginTop: 4 }}>
+                {withStaff.length > 0 ? `${withStaff.length} active` : 'no active consultations'}
+              </div>
             </div>
-            <div className="cmd-stat-val">
-              <AnimatedNumber value={withStaff.length} />
-            </div>
-            <div className="cmd-stat-underline" />
-            <div className="cmd-stat-sub">
-              {withStaff.length > 0 ? `${withStaff.length} active consultation${withStaff.length > 1 ? 's' : ''}` : 'no active consultations'}
-            </div>
-          </div>
 
-          {/* Card 3 */}
-          <div className="cmd-stat-card">
-            <div className="cmd-stat-tag">
-              COMPLETED TODAY
-              <UserCheck className="w-3.5 h-3.5 text-[#7FA8D9]" />
+            {/* Section 3: Completed Today */}
+            <div className="stat-segment-hover" style={{ padding: '16px 18px', borderRight: '1.5px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 900, color: '#1B2A4A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completed Today</span>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle2 className="w-3 h-3" />
+                </div>
+              </div>
+              <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#1B2A4A', lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                <AnimatedNumber value={dismissals.length} />
+              </div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748B', marginTop: 4 }}>consultations completed</div>
             </div>
-            <div className="cmd-stat-val"><AnimatedNumber value={dismissals.length} /></div>
-            <div className="cmd-stat-underline" />
-            <div className="cmd-stat-sub">consultations completed</div>
-          </div>
 
-          {/* Card 4 */}
-          <div className="cmd-stat-card">
-            <div className="cmd-stat-tag">
-              PEOPLE IN QUEUE
-              <Clock className="w-3.5 h-3.5 text-[#7FA8D9]" />
+            {/* Section 4: People in Queue */}
+            <div className="stat-segment-hover" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 900, color: '#1B2A4A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>People in Queue</span>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: '#FEF3C7', color: '#D97706', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Clock className="w-3 h-3" />
+                </div>
+              </div>
+              <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#1B2A4A', lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                <AnimatedNumber value={arrivals.length} />
+              </div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748B', marginTop: 4 }}>
+                {arrivals.length > 0 ? `${arrivals.length} in queue` : 'queue is clear'}
+              </div>
             </div>
-            <div className="cmd-stat-val">
-              <AnimatedNumber value={arrivals.length} />
-            </div>
-            <div className="cmd-stat-underline" />
-            <div className="cmd-stat-sub">{arrivals.length > 0 ? `${arrivals.length} student${arrivals.length > 1 ? 's' : ''} in queue` : 'queue is clear'}</div>
           </div>
         </motion.div>
 

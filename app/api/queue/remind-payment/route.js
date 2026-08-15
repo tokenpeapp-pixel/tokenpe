@@ -22,7 +22,7 @@ export async function POST(req) {
         // Fetch patient info
         const { data: patient, error: fetchError } = await supabaseAdmin
             .from('queue_entries')
-            .select('business_id, name, phone, token, fee_total, fee_paid')
+            .select('*')
             .eq('id', patientId)
             .single()
 

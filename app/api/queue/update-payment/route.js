@@ -32,20 +32,22 @@ export async function POST(req) {
         let patient = null
         const { data: pData } = await supabaseAdmin
             .from('patients')
-            .select('clinic_id, name, phone, token, fee_total, fee_paid')
+            .select('*')
             .eq('id', patientId)
             .single()
 
         if (pData) {
             patient = pData
+            patient.business_id = pData.business_id || pData.clinic_id
         } else {
             const { data: qData } = await supabaseAdmin
                 .from('queue_entries')
-                .select('clinic_id, business_id, name, phone, token, fee_total, fee_paid')
+                .select('*')
                 .eq('id', patientId)
                 .single()
             if (qData) {
-                patient = { ...qData, business_id: qData.business_id || qData.clinic_id }
+                patient = qData
+                patient.business_id = qData.business_id || qData.clinic_id
             }
         }
 

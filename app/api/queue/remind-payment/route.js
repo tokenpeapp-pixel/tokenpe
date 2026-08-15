@@ -22,7 +22,7 @@ export async function POST(req) {
         // Fetch patient info
         const { data: patient, error: fetchError } = await supabaseAdmin
             .from('queue_entries')
-            .select('clinic_id, name, phone, token, fee_total, fee_paid')
+            .select('business_id, name, phone, token, fee_total, fee_paid')
             .eq('id', patientId)
             .single()
 
@@ -30,7 +30,7 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Patient not found' }, { status: 404 })
         }
 
-        if (patient.clinic_id !== session.businessId) {
+        if (patient.business_id !== session.businessId) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 
@@ -38,14 +38,14 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Invalid phone number for notifications' }, { status: 400 })
         }
 
-        // Fetch clinic info
-        const { data: clinic } = await supabaseAdmin
-            .from('clinics')
+        // Fetch business info
+        const { data: business } = await supabaseAdmin
+            .from('businesses')
             .select('name')
-            .eq('id', patient.clinic_id)
+            .eq('id', patient.business_id)
             .single()
 
-        const clinicName = clinic?.name || 'the clinic'
+        const clinicName = business?.name || 'the business'
         const feeTotal = parseFloat(patient.fee_total) || 0
         const feePaid = parseFloat(patient.fee_paid) || 0
         const remaining = feeTotal - feePaid

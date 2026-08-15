@@ -62,9 +62,9 @@ export async function POST(req) {
         if (businessId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(businessId))) {
             try {
                 const { data: bData } = await supabaseAdmin
-                    .from('clinics')
-                    .upsert([{ id: businessId, name: 'dummy', vertical: 'clinic' }])
-                    .select()
+                    .from('businesses')
+                    .select('name, type, plan_id, closed_today_date, queue_paused')
+                    .eq('id', businessId)
                     .single()
                 if (bData) business = bData
             } catch (_) {}

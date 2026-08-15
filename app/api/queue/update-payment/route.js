@@ -45,7 +45,7 @@ export async function POST(req) {
                 .eq('id', patientId)
                 .single()
             if (qData) {
-                patient = { ...qData, clinic_id: qData.clinic_id || qData.business_id }
+                patient = { ...qData, business_id: qData.business_id || qData.clinic_id }
             }
         }
 
@@ -53,8 +53,7 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Patient not found' }, { status: 404 })
         }
 
-        // Check ownership: allow if patient's clinic_id matches activeClinicId, or if patient has no clinic_id set
-        if (patient.clinic_id && patient.clinic_id !== activeClinicId) {
+        if (patient.business_id && patient.business_id !== activeClinicId) {
             return Response.json({ success: false, message: 'Unauthorized clinic access' }, { status: 403 })
         }
 
@@ -86,14 +85,14 @@ export async function POST(req) {
         if (allowedUpdates.payment_status === 'completed' && patient.phone && patient.phone !== '0000000000') {
             after(async () => {
                 try {
-                    // Fetch clinic info
-                    const { data: clinic } = await supabaseAdmin
-                        .from('clinics')
+                    // Fetch business info
+                    const { data: business } = await supabaseAdmin
+                        .from('businesses')
                         .select('name')
-                        .eq('id', patient.clinic_id)
+                        .eq('id', patient.business_id)
                         .single()
 
-                    const clinicName = clinic?.name || 'the clinic'
+                    const clinicName = business?.name || 'the business'
                     const totalBill = allowedUpdates.fee_total !== undefined ? allowedUpdates.fee_total : (parseFloat(patient.fee_total) || 0)
                     const amountPaid = allowedUpdates.fee_paid !== undefined ? allowedUpdates.fee_paid : (parseFloat(patient.fee_paid) || 0)
 

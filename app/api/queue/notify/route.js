@@ -37,9 +37,9 @@ The clinic has sent a manual alert for you. Please make sure you are nearby! üè
 
 _Powered by TokenPe_`
 
-        // Check clinic plan features
-        const { data: clinic } = await supabaseAdmin.from('clinics').select('plan_id').eq('id', businessId).single()
-        const canUseVoice = clinic?.plan_id === 'pro' || clinic?.plan_id === 'elite'
+        // Check business plan features
+        const { data: business } = await supabaseAdmin.from('businesses').select('plan_id').eq('id', businessId).single()
+        const canUseVoice = business?.plan_id === 'pro' || business?.plan_id === 'elite'
 
         // Send text + voice (if pro/elite) in parallel
         const alerts = [sendText(phone, notifyMsg)]

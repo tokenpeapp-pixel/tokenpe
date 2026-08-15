@@ -5,7 +5,7 @@ import { getSession, getUnifiedSession } from '../../../../lib/auth'
 async function fetchEntityEmail(id) {
   if (!id) return null
   try {
-    let { data } = await supabaseAdmin.from('clinics').select('email').eq('id', id).single()
+    let { data } = await supabaseAdmin.from('businesses').select('email').eq('id', id).single()
     if (!data || !data.email) {
       const { data: bData } = await supabaseAdmin.from('businesses').select('email').eq('id', id).single()
       data = bData

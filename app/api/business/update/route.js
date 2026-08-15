@@ -7,7 +7,7 @@ async function fetchEntityEmail(id) {
   try {
     let { data } = await supabaseAdmin.from('businesses').select('email').eq('id', id).single()
     if (!data || !data.email) {
-      const { data: cData } = await supabaseAdmin.from('clinics').select('email').eq('id', id).single()
+      const { data: cData } = await supabaseAdmin.from('businesses').select('email').eq('id', id).single()
       data = cData
     }
     return data?.email ? data.email.trim().toLowerCase() : null

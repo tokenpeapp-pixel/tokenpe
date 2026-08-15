@@ -39,7 +39,7 @@ export async function GET(req) {
 
     // ── 1. TRIAL EXPIRY REMINDERS ────────────────────────────────────────────
     const { data: trialingClinics } = await supabase
-      .from('clinics')
+      .from('businesses')
       .select('*')
       .eq('subscription_status', 'trialing')
 
@@ -123,7 +123,7 @@ export async function GET(req) {
 
     // ── 2. PAID PLAN RENEWAL REMINDERS ──────────────────────────────────────
     const { data: activeClinics } = await supabase
-      .from('clinics')
+      .from('businesses')
       .select('*')
       .eq('subscription_status', 'active')
       .not('current_period_end', 'is', null)

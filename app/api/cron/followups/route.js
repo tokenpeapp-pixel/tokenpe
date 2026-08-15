@@ -17,7 +17,7 @@ export async function GET(req) {
 
     // 2. Fetch all Elite/Trial clinics that have either feature enabled
     const { data: clinics, error: clinicError } = await supabase
-      .from('clinics')
+      .from('businesses')
       .select('id, name, smart_recall_enabled, smart_meds_enabled, plan_id, subscription_status')
       .or('smart_recall_enabled.eq.true,smart_meds_enabled.eq.true')
       

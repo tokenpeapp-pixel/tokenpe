@@ -13,7 +13,7 @@ export async function POST(req) {
     const session = (await getUnifiedSession()) || (await getSession())
 
     let { data: existingClinics } = await supabaseAdmin
-      .from('clinics')
+      .from('businesses')
       .select('*')
       .eq('email', email)
     
@@ -52,7 +52,7 @@ export async function POST(req) {
     }
 
     const { data: createdClinic, error: clinicErr } = await supabaseAdmin
-      .from('clinics')
+      .from('businesses')
       .insert(newClinic)
       .select()
       .single()

@@ -5,7 +5,7 @@ import { getSession, getUnifiedSession } from '../../../../lib/auth'
 async function getEmail(id) {
   if (!id) return null
   try {
-    const { data: c } = await supabaseAdmin.from('clinics').select('email').eq('id', id).single()
+    const { data: c } = await supabaseAdmin.from('businesses').select('email').eq('id', id).single()
     if (c?.email) return c.email.trim().toLowerCase()
     const { data: b } = await supabaseAdmin.from('businesses').select('email').eq('id', id).single()
     return b?.email ? b.email.trim().toLowerCase() : null
@@ -76,7 +76,7 @@ export async function POST(req) {
       }
     }
 
-    const { error: clinicErr } = await supabaseAdmin.from('clinics').update(updates).eq('id', targetId)
+    const { error: clinicErr } = await supabaseAdmin.from('businesses').update(updates).eq('id', targetId)
 
     const bUpdates = { ...updates }
     if (photoUrl !== undefined) {

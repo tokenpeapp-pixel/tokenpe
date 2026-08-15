@@ -88,7 +88,7 @@ export async function GET(req) {
     }
 
     // ── Default: show env check + list clinics ───────────────────────────────
-    const { data: clinics } = await supabaseAdmin.from('clinics').select('id, name, code, email')
+    const { data: clinics } = await supabaseAdmin.from('businesses').select('id, name, code, email')
     const { data: recentPatients } = await supabaseAdmin
         .from('queue_entries')
         .select('id, name, phone, token, status, clinic_id, date')

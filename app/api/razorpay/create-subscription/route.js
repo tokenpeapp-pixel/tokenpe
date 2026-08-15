@@ -41,7 +41,7 @@ export async function POST(req) {
     )
     
     const { data: clinic, error: cErr } = await supabaseAdmin
-      .from('clinics').select('name, email, phone').eq('id', businessId).single()
+      .from('businesses').select('name, email, phone').eq('id', businessId).single()
 
     if (cErr || !clinic) {
       return Response.json({ error: 'Clinic not found' }, { status: 404 })

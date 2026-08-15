@@ -26,7 +26,7 @@ export async function POST(req) {
 
         const code = String(businessCode).trim().toUpperCase()
         const { data: clinic, error: clinicError } = await supabaseAdmin
-            .from('clinics')
+            .from('businesses')
             .select('id, name, plan_id, subscription_status')
             .eq('code', code)
             .single()
@@ -99,7 +99,7 @@ export async function POST(req) {
                 const avgRating = ratedPatients.length > 0 ? parseFloat((totalRating / ratedPatients.length).toFixed(1)) : 0
                 
                 await supabaseAdmin
-                    .from('clinics')
+                    .from('businesses')
                     .update({ avg_rating: avgRating })
                     .eq('id', clinic.id)
             }

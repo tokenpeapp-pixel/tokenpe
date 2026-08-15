@@ -12,7 +12,7 @@ export async function GET(req) {
 
         // Strict clinic verification against database
         let { data: clinic } = await supabaseAdmin
-            .from('clinics')
+            .from('businesses')
             .select('*')
             .eq('id', businessId)
             .single()
@@ -37,7 +37,7 @@ export async function GET(req) {
         let userClinics = [clinic]
         if (clinic.email) {
             const { data } = await supabaseAdmin
-                .from('clinics')
+                .from('businesses')
                 .select('*')
                 .eq('email', clinic.email)
                 .eq('type', clinic.type)   // ← same industry only
@@ -45,7 +45,7 @@ export async function GET(req) {
             if (data && data.length > 0) userClinics = data
         } else if (clinic.phone) {
             const { data } = await supabaseAdmin
-                .from('clinics')
+                .from('businesses')
                 .select('*')
                 .eq('phone', clinic.phone)
                 .eq('type', clinic.type)   // ← same industry only

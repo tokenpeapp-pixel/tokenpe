@@ -44,7 +44,7 @@ export default function AnalyticsPage() {
 
       // Fetch fresh clinic details from Supabase if available
       try {
-        const { data: freshClinic } = await supabase.from('clinics').select('*').eq('id', c.id).single()
+        const { data: freshClinic } = await supabase.from('businesses').select('*').eq('id', c.id).single()
         if (freshClinic) {
           c = { ...c, ...freshClinic }
           localStorage.setItem('tokenpe_clinic', JSON.stringify(c))

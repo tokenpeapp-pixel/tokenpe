@@ -13,7 +13,7 @@ export async function POST(req) {
         }
 
         // Fetch target clinic from clinics or businesses table
-        let { data: targetClinic } = await supabaseAdmin.from('clinics').select('*').eq('id', targetId).single()
+        let { data: targetClinic } = await supabaseAdmin.from('businesses').select('*').eq('id', targetId).single()
         if (!targetClinic) {
             const { data: bData } = await supabaseAdmin.from('businesses').select('*').eq('id', targetId).single()
             targetClinic = bData

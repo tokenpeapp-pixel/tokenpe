@@ -12,7 +12,7 @@ export async function GET(req) {
 
         const code = String(businessCode).trim().toUpperCase()
         const { data: clinic } = await supabaseAdmin
-            .from('clinics')
+            .from('businesses')
             .select('id, name, logo_url')
             .eq('code', code)
             .single()

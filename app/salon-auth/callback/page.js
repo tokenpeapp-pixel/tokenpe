@@ -22,7 +22,9 @@ function SalonAuthCallbackContent() {
                     return
                 }
 
-                const intent = searchParams.get('intent') || 'login'
+                const urlIntent = searchParams.get('intent')
+                const localIntent = typeof window !== 'undefined' ? localStorage.getItem('tokenpe_auth_intent') : null
+                const intent = urlIntent || localIntent || 'login'
 
                 if (intent === 'register') {
                     setStatus('Setting up your salon workspace...')

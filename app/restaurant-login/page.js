@@ -101,6 +101,9 @@ export default function LoginPage() {
     async function handleGoogleLogin() {
         setGoogleLoading(true)
         setError('')
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('tokenpe_auth_intent', mode)
+        }
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { 

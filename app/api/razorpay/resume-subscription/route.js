@@ -27,7 +27,7 @@ export async function POST(req) {
 
     // Get the clinic's full details
     const { data: clinic, error: cErr } = await supabaseAdmin
-      .from('clinics')
+      .from('businesses')
       .select('razorpay_subscription_id, plan_id, name, email, phone, current_period_end')
       .eq('id', businessId)
       .single()
@@ -45,7 +45,7 @@ export async function POST(req) {
 
     if (!clinic.razorpay_subscription_id) {
       // Manual plan fallback
-      await supabaseAdmin.from('clinics').update({
+      await supabaseAdmin.from('businesses').update({
         subscription_status: 'active'
       }).eq('id', businessId)
       return Response.json({ success: true, message: 'Account reactivated' })
@@ -66,7 +66,7 @@ export async function POST(req) {
 
     // Mark as active in our database
     let updateQuery = supabaseAdmin
-      .from('clinics')
+      .from('businesses')
       .update({ subscription_status: 'active' })
       
     if (clinic.email) {

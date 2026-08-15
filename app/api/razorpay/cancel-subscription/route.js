@@ -27,7 +27,7 @@ export async function POST(req) {
 
     // Get the clinic's full details
     const { data: clinic, error: cErr } = await supabaseAdmin
-      .from('clinics')
+      .from('businesses')
       .select('razorpay_subscription_id, plan_id, name, email, phone, current_period_end')
       .eq('id', businessId)
       .single()
@@ -46,7 +46,7 @@ export async function POST(req) {
 
     if (!clinic.razorpay_subscription_id) {
       // No real subscription ID — lock account directly (test/manual plan)
-      await supabaseAdmin.from('clinics').update({
+      await supabaseAdmin.from('businesses').update({
         plan_id: 'canceled',
         subscription_status: 'canceled',
         current_period_end: null
@@ -68,7 +68,7 @@ export async function POST(req) {
 
     // Mark as pending cancellation — keep plan + access until period end
     let updateQuery = supabaseAdmin
-      .from('clinics')
+      .from('businesses')
       .update({ subscription_status: 'cancel_at_period_end' })
       
     if (clinic.email) {

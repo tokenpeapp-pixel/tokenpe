@@ -42,7 +42,7 @@ export async function POST(req) {
                 supabaseAdmin.from('businesses').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
                 supabaseAdmin.from('schools').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
                 supabaseAdmin.from('public_schools').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {}),
-                supabaseAdmin.from('clinics').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {})
+                supabaseAdmin.from('businesses').update({ queue_paused: newPausedStatus }).eq('id', businessId).catch(() => {})
             ])
         }
 

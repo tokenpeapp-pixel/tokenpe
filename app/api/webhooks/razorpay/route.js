@@ -48,7 +48,7 @@ export async function POST(req) {
     if (eventType === 'subscription.activated' || eventType === 'subscription.charged') {
       // Payment successful — upgrade clinic plan
       const periodEnd = new Date(sub.current_end * 1000).toISOString()
-      const { data: currentClinic } = await supabaseAdmin.from('clinics').select('name, email, phone').eq('id', businessId).single()
+      const { data: currentClinic } = await supabaseAdmin.from('businesses').select('name, email, phone').eq('id', businessId).single()
 
       if (!currentClinic) {
         console.error(`[Razorpay Webhook] Clinic not found for ID: ${businessId}`)
@@ -56,7 +56,7 @@ export async function POST(req) {
       }
 
       let updateQuery = supabaseAdmin
-        .from('clinics')
+        .from('businesses')
         .update({
           plan_id: planTier,
           subscription_status: 'active',
@@ -128,7 +128,7 @@ export async function POST(req) {
 
       // ── Fetch clinic FIRST (separately from update so email never gets skipped) ──
       const { data: clinicInfo, error: fetchErr } = await supabaseAdmin
-        .from('clinics')
+        .from('businesses')
         .select('name, email, phone, plan_id')
         .eq('id', businessId)
         .single()
@@ -141,7 +141,7 @@ export async function POST(req) {
 
       // ── Perform the update ──
       let updateQuery = supabaseAdmin
-        .from('clinics')
+        .from('businesses')
         .update(updatePayload)
         
       if (clinicInfo?.email) {
@@ -211,10 +211,10 @@ export async function POST(req) {
     }
 
     if (eventType === 'subscription.completed') {
-      const { data: compClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', businessId).single()
+      const { data: compClinic } = await supabaseAdmin.from('businesses').select('email').eq('id', businessId).single()
       
       let updateQuery = supabaseAdmin
-        .from('clinics')
+        .from('businesses')
         .update({ subscription_status: 'completed' })
         
       if (compClinic?.email) {

@@ -107,7 +107,7 @@ export async function GET(req) {
       if (!clinics.length) return clinics
       const ids = clinics.map(c => c.id)
       const { data: closedData } = await supabaseAdmin
-        .from('clinics')
+        .from('businesses')
         .select('id, closed_today_date')
         .eq('vertical', vertical)
         .in('id', ids)

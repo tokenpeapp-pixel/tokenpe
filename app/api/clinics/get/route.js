@@ -10,7 +10,7 @@ export async function GET(req) {
     }
 
     let { data: clinic, error } = await supabaseAdmin
-      .from('clinics')
+      .from('businesses')
       .select('*')
       .eq('id', id)
       .single()

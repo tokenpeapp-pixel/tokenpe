@@ -57,23 +57,15 @@ export default function ManageBranchesPage() {
       }
       setClinic(freshClinic)
 
-      // Fetch all sibling branches across both clinics and businesses tables
-      const [cRes, bRes] = await Promise.all([
-        supabase
-          .from('clinics')
-          .select('id, name, code, email, phone, plan_id, subscription_status, created_at, specialty, city, area')
-          .eq('email', freshClinic.email)
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('businesses')
-          .select('id, name, code, email, phone, plan_id, subscription_status, created_at, specialty, city, area')
-          .eq('email', freshClinic.email)
-          .order('created_at', { ascending: true })
-      ])
+      // Fetch all sibling branches across businesses table
+      const bRes = await supabase
+        .from('businesses')
+        .select('id, name, code, email, phone, plan_id, subscription_status, created_at, specialty, city, area')
+        .eq('email', freshClinic.email)
+        .order('created_at', { ascending: true })
 
       const map = new Map()
       if (freshClinic && freshClinic.id) map.set(freshClinic.id, freshClinic)
-      if (cRes.data) cRes.data.forEach(x => map.set(x.id, x))
       if (bRes.data) bRes.data.forEach(x => map.set(x.id, x))
 
       const branchList = Array.from(map.values()).sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))

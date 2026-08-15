@@ -17,8 +17,8 @@ export async function GET(req) {
 
         if (requestedClinicId && requestedClinicId !== session.businessId) {
             // Verify ownership: both clinics must share the same email
-            const { data: sessionClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', session.businessId).single()
-            const { data: targetClinic } = await supabaseAdmin.from('clinics').select('email').eq('id', requestedClinicId).single()
+            const { data: sessionClinic } = await supabaseAdmin.from('businesses').select('email').eq('id', session.businessId).single()
+            const { data: targetClinic } = await supabaseAdmin.from('businesses').select('email').eq('id', requestedClinicId).single()
             if (sessionClinic && targetClinic && sessionClinic.email === targetClinic.email) {
                 businessId = requestedClinicId
             }

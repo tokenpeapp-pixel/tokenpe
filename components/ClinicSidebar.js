@@ -13,6 +13,7 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
   const pathname = usePathname()
   const [clinic, setClinic] = useState(initialClinic || null)
   const [showMobileNav, setShowMobileNav] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [sbTooltip, setSbTooltip] = useState(null)
 
   useEffect(() => {
@@ -202,6 +203,31 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
               </button>
             ))}
           </div>
+
+          {/* Divider & Logout Footer (Desktop) */}
+          <div style={{ paddingTop: 14, borderTop: '1px solid #A8D5B5', marginTop: 14 }}>
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                background: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                color: '#DC2626',
+                borderRadius: 12,
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <LogOut className="w-4 h-4" /> Exit / Logout
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -220,39 +246,16 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', justifyContent: 'flex-end' }}
+            onClick={() => setShowMobileNav(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(5, 46, 32, 0.65)', backdropFilter: 'blur(4px)', zIndex: 99999, display: 'flex', justifyContent: 'flex-end' }}
           >
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowMobileNav(false)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(5, 46, 32, 0.75)', backdropFilter: 'blur(6px)' }}
-            />
-
-            {/* Sliding Drawer */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              style={{
-                position: 'relative',
-                width: '85%',
-                maxWidth: 320,
-                height: '100%',
-                maxHeight: '100dvh',
-                boxSizing: 'border-box',
-                background: '#FFFFFF',
-                boxShadow: '-10px 0 40px rgba(5,46,32,0.3)',
-                display: 'flex',
-                flexDirection: 'column',
-                justify: 'space-between',
-                zIndex: 100001,
-                padding: '20px 16px',
-                overflowY: 'auto'
-              }}
+              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+              onClick={e => e.stopPropagation()}
+              style={{ width: '85%', maxWidth: 320, background: '#FFFFFF', height: '100%', padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflowY: 'auto' }}
             >
               <div>
                 {/* Header */}
@@ -301,7 +304,7 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            justify: 'space-between',
+                            justifyContent: 'space-between',
                             padding: '11px 14px',
                             borderRadius: 12,
                             background: active ? '#ECFDF5' : '#F8FAFC',
@@ -337,7 +340,7 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            justify: 'space-between',
+                            justifyContent: 'space-between',
                             padding: '11px 14px',
                             borderRadius: 12,
                             background: active ? '#ECFDF5' : '#F8FAFC',
@@ -361,10 +364,10 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
                 </div>
               </div>
 
-              {/* Logout Footer */}
+              {/* Logout Footer (Mobile Drawer) */}
               <div style={{ paddingTop: 14, borderTop: '1px solid #E2E8F0', marginTop: 16 }}>
                 <button
-                  onClick={handleLogout}
+                  onClick={() => { setShowMobileNav(false); setShowLogoutConfirm(true); }}
                   style={{
                     width: '100%',
                     padding: '11px',
@@ -377,7 +380,7 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justify: 'center',
+                    justifyContent: 'center',
                     gap: 8
                   }}
                 >
@@ -388,6 +391,62 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── LOGOUT CONFIRMATION MODAL ── */}
+      {showLogoutConfirm && (
+        <div
+          onClick={() => setShowLogoutConfirm(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            background: 'rgba(6, 46, 32, 0.75)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 24,
+              padding: 28,
+              maxWidth: 380,
+              width: '100%',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+              border: '1.5px solid #CBE4D3',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#FEF2F2', border: '1.5px solid #FECACA', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <LogOut style={{ width: 22, height: 22, color: '#DC2626' }} />
+            </div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F291B', marginBottom: 6, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              Exit Command Center?
+            </div>
+            <div style={{ fontSize: '0.84rem', color: '#64748B', marginBottom: 24, lineHeight: 1.6 }}>
+              Are you sure you want to log out of TokenPe?<br />You will need to enter your credentials to log back in.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{ flex: 1, background: '#F1F5F9', color: '#0F291B', border: 'none', padding: '11px', borderRadius: 12, fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowLogoutConfirm(false); handleLogout(); }}
+                style={{ flex: 1, background: '#DC2626', color: 'white', border: 'none', padding: '11px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                <LogOut style={{ width: 15, height: 15 }} /> Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

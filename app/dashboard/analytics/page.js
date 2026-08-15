@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import ClinicSidebar from '../../../components/ClinicSidebar'
 import { Lock, Download, Printer, Rocket, Building, Calendar, Trophy, Brain, TrendingUp, Users, Clock, Repeat, UserPlus, MessageCircle, Footprints, CheckCircle2, Bell, Mic, UsersRound, Sparkles, AlertTriangle, Lightbulb, Zap, LayoutDashboard, Layers, History, BarChart2, Megaphone, CreditCard, HelpCircle, User } from 'lucide-react'
 
 // ─── PHONE MASKING (Privacy) ────────────────────────────────────────────────
@@ -464,13 +465,9 @@ export default function AnalyticsPage() {
   const ratingCount = overallFeedback?.ratingCount || 0
 
   if (loading) return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", background: '#F2F7F2' }}>
-      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', flexShrink: 0, height: '100vh' }}>
-        <div style={{ padding: '0 4px', marginBottom: 28 }}>
-          <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-        </div>
-      </aside>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F2F7F2] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
+      <ClinicSidebar clinic={clinic} />
+      <div className="flex-1 flex items-center justify-center min-h-[60vh] p-8">
         <div className="w-10 h-10 border-4 border-[#C3DBC7] border-t-[#2D6A4F] rounded-full animate-spin"></div>
       </div>
     </div>
@@ -510,17 +507,18 @@ export default function AnalyticsPage() {
     return 'Period Snapshot'
   }
 
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif", background: '#F2F7F2', overflowX: 'hidden' }}>
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Inter:wght@400;500;600;700;800&display=swap');
-        
-        body {
-          font-family: 'Plus Jakarta Sans', sans-serif !important;
-          background-color: #F2F7F2 !important;
-          color: #1A2E22 !important;
-        }
+  const getCleanLocation = () => {
+    if (clinic?.city && typeof clinic.city === 'string' && !clinic.city.startsWith('010100')) return clinic.city.toUpperCase()
+    if (clinic?.address && typeof clinic.address === 'string' && !clinic.address.startsWith('010100')) return clinic.address.toUpperCase()
+    if (clinic?.location && typeof clinic.location === 'string' && !clinic.location.startsWith('010100')) return clinic.location.toUpperCase()
+    return 'CLINIC'
+  }
 
+  return (
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F2F7F2] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
+      <ClinicSidebar clinic={clinic} />
+
+      <style jsx global>{`
         .analytics-card {
           background: #FFFFFF;
           border: 1px solid #E1EBE2;
@@ -542,6 +540,8 @@ export default function AnalyticsPage() {
           background: transparent;
           border: none;
           cursor: pointer;
+          white-space: nowrap !important;
+          flex-shrink: 0 !important;
           transition: all 0.18s ease;
         }
         .range-tab-btn:hover {
@@ -555,95 +555,24 @@ export default function AnalyticsPage() {
           box-shadow: 0 2px 8px rgba(132, 176, 103, 0.3);
         }
 
-        .sidebar-btn {
-          display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-          border-radius: 12px; background: transparent; color: #1E3A2B;
-          font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer;
-          width: 100%; text-align: left; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          white-space: nowrap; overflow: hidden;
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
         }
-        .sidebar-btn:hover {
-          background: #BFE3CD; color: #064E3B; padding-left: 20px;
-          box-shadow: 0 4px 12px rgba(6,78,59,0.08);
-        }
-        .sidebar-btn.active {
-          background: #BFE3CD; color: #064E3B; font-weight: 800;
-          box-shadow: inset 3px 0 0 #064E3B;
-        }
-        .sidebar-btn .sb-label { font-weight: 700; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        @media print {
-          body { background: white !important; }
-          .no-print, .dashboard-sidebar { display: none !important; }
-          .shadow-sm, .shadow-xl { box-shadow: none !important; border: 1px solid #E2E8F0 !important; }
-          .bg-white { background: white !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
-
-      {/* ── LEFT SIDEBAR NAVIGATION ── */}
-      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflow: 'visible' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto', overflowX: 'hidden', flex: 1, paddingBottom: 8 }}>
-          {/* Brand Header */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', marginBottom: 28 }}>
-            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-          </div>
-
-          {/* Nav Group: Console */}
-          <div style={{ marginBottom: 4 }}>
-            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 10px', marginBottom: 6 }}>Console</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {[
-                { label: 'Dashboard', desc: 'Live queue overview & clinic stats', icon: <LayoutDashboard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard') },
-                { label: 'Manage Branches', desc: 'Set up & switch between clinic locations under one account', icon: <Layers className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/branches') },
-                { label: 'History', desc: 'Browse completed & past patient consultation records', icon: <History className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/history') },
-                { label: 'Analytics & Reports', desc: 'Track peak OPD hours, average wait times, reason breakdowns, and patient-wise statistics.', icon: <BarChart2 className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {}, active: true },
-                { label: 'Broadcasting & CRM', desc: 'Send bulk WhatsApp alerts & manage patient relationships', icon: <Megaphone className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/crm') },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  onClick={item.onClick}
-                  className={`sidebar-btn${item.active ? ' active' : ''}`}
-                >
-                  {item.icon}
-                  <span className="sb-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ height: 1, background: '#A8D5B5', margin: '14px 8px' }} />
-
-          {/* Nav Group: Account */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[
-              { label: 'Billing & Plans', desc: 'Manage your TokenPe subscription & plan features', icon: <CreditCard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/billing') },
-              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/help') },
-              { label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/profile') },
-            ].map(item => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className="sidebar-btn"
-              >
-                {item.icon}
-                <span className="sb-label">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 min-h-screen pb-20 font-sans overflow-y-auto">
         {/* HEADER */}
-        <div style={{ padding: '32px 32px 16px' }}>
+        <div className="p-4 sm:p-6 lg:p-8 lg:pb-4">
           {/* Top Row: Subtitle + Title + Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+          <div className="flex justify-between items-start mb-5 flex-wrap gap-4">
             <div>
               <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#84B067', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-                {(clinic?.name || clinic?.business_name || 'TokenPe Clinic').toUpperCase()} · {(clinic?.location || clinic?.city || clinic?.address || 'Bengaluru').toUpperCase()}
+                {(clinic?.name || clinic?.business_name || 'TokenPe Clinic').toUpperCase()} · {getCleanLocation()}
               </div>
               <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F291B', margin: 0, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.02em' }}>
                 Analytics Dashboard
@@ -671,7 +600,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Bottom Row: Range Tab Pills Bar */}
-          <div style={{ background: '#FFFFFF', borderRadius: 28, padding: '5px 8px', border: '1px solid #E1EBE2', display: 'flex', alignItems: 'center', gap: 4, width: '100%', overflowX: 'auto', boxShadow: '0 2px 10px rgba(6,78,59,0.02)' }}>
+          <div className="bg-white rounded-[28px] p-1.5 border border-[#E1EBE2] flex items-center gap-1.5 w-full overflow-x-auto no-scrollbar shadow-sm">
             {[
               { id: 'today', label: 'Today Only' },
               { id: '7', label: 'Last 7 Days' },
@@ -732,7 +661,7 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        <div className="w-full mx-auto px-8 pb-8 space-y-6">
+        <div className="w-full mx-auto p-4 sm:p-6 lg:px-8 lg:pb-8 space-y-6">
         
         {/* PRINT HEADER ONLY */}
         <div className="hidden print:block mb-8 border-b-2 border-[#E2E8F0] pb-4">
@@ -751,71 +680,71 @@ export default function AnalyticsPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: Patients */}
-            <div className="analytics-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="analytics-card p-3.5 sm:p-5 flex flex-col justify-between">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#5A7563' }}>Patients</span>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: '#EFF7F1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2D6A4F' }}>
                   <Users className="w-4 h-4" />
                 </div>
               </div>
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0F291B', lineHeight: 1 }}>{rangeTotal}</div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: diffTotalPct === null ? '#5A7563' : diffTotalPct >= 0 ? '#16A34A' : '#DC2626', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span>{diffTotalPct === null ? 'Live patient count' : `${diffTotalPct >= 0 ? '↑ +' : '↓ '}${diffTotalPct}% vs previous`}</span>
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F291B', lineHeight: 1 }}>{rangeTotal}</div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: diffTotalPct === null ? '#5A7563' : diffTotalPct >= 0 ? '#16A34A' : '#DC2626', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>{diffTotalPct === null ? 'Live count' : `${diffTotalPct >= 0 ? '↑ +' : '↓ '}${diffTotalPct}%`}</span>
                 </div>
               </div>
             </div>
 
             {/* Card 2: Avg Wait Time */}
-            <div className="analytics-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="analytics-card p-3.5 sm:p-5 flex flex-col justify-between">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#5A7563' }}>Avg Wait Time</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#5A7563' }}>Avg Wait</span>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706' }}>
                   <Clock className="w-4 h-4" />
                 </div>
               </div>
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0F291B', lineHeight: 1 }}>
-                  {rangeAvgWait}<span style={{ fontSize: '1rem', fontWeight: 800, color: '#5A7563', marginLeft: 2 }}>min</span>
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F291B', lineHeight: 1 }}>
+                  {rangeAvgWait}<span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#5A7563', marginLeft: 2 }}>min</span>
                 </div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: diffWaitTime === null ? '#5A7563' : diffWaitTime <= 0 ? '#16A34A' : '#DC2626', marginTop: 6 }}>
-                  {diffWaitTime === null ? 'Average queue wait time' : `${diffWaitTime <= 0 ? '↓ ' : '↑ +'}${diffWaitTime}min vs previous`}
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: diffWaitTime === null ? '#5A7563' : diffWaitTime <= 0 ? '#16A34A' : '#DC2626', marginTop: 4 }}>
+                  {diffWaitTime === null ? 'Average wait' : `${diffWaitTime <= 0 ? '↓ ' : '↑ +'}${diffWaitTime}min`}
                 </div>
               </div>
             </div>
 
             {/* Card 3: Completed */}
-            <div className="analytics-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="analytics-card p-3.5 sm:p-5 flex flex-col justify-between">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#5A7563' }}>Completed</span>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A' }}>
                   <TrendingUp className="w-4 h-4" />
                 </div>
               </div>
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0F291B', lineHeight: 1 }}>
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F291B', lineHeight: 1 }}>
                   {rangeTotal ? Math.round((rangeCompleted / rangeTotal) * 100) : 0}%
                 </div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: diffCompletedPct === null ? '#5A7563' : diffCompletedPct >= 0 ? '#16A34A' : '#DC2626', marginTop: 6 }}>
-                  {diffCompletedPct === null ? 'Consultation completion rate' : `${diffCompletedPct >= 0 ? '↑ +' : '↓ '}${diffCompletedPct}% vs previous`}
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: diffCompletedPct === null ? '#5A7563' : diffCompletedPct >= 0 ? '#16A34A' : '#DC2626', marginTop: 4 }}>
+                  {diffCompletedPct === null ? 'Completion rate' : `${diffCompletedPct >= 0 ? '↑ +' : '↓ '}${diffCompletedPct}%`}
                 </div>
               </div>
             </div>
 
             {/* Card 4: Skipped */}
-            <div className="analytics-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="analytics-card p-3.5 sm:p-5 flex flex-col justify-between">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#5A7563' }}>Skipped</span>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626' }}>
                   <Trophy className="w-4 h-4 text-[#DC2626]" />
                 </div>
               </div>
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0F291B', lineHeight: 1 }}>{rangeSkipped}</div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: diffSkippedVal === null ? '#5A7563' : diffSkippedVal <= 0 ? '#16A34A' : '#DC2626', marginTop: 6 }}>
-                  {diffSkippedVal === null ? 'Skipped or no-show count' : `${diffSkippedVal >= 0 ? '+' : ''}${diffSkippedVal} vs previous`}
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F291B', lineHeight: 1 }}>{rangeSkipped}</div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: diffSkippedVal === null ? '#5A7563' : diffSkippedVal <= 0 ? '#16A34A' : '#DC2626', marginTop: 4 }}>
+                  {diffSkippedVal === null ? 'No-show count' : `${diffSkippedVal >= 0 ? '+' : ''}${diffSkippedVal}`}
                 </div>
               </div>
             </div>

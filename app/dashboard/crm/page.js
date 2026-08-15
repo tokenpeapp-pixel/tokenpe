@@ -295,26 +295,30 @@ export default function CRMPage() {
           </div>
 
           {/* ── CRM METRICS OVERVIEW STRIP ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] flex items-center justify-center flex-shrink-0">
-                <Users className="w-6 h-6" />
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 sm:p-5 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] flex items-center justify-center flex-shrink-0">
+                  <Users className="w-4 h-4 sm:w-6 sm:h-6" />
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-[#111827]">{totalPatients}</div>
               </div>
-              <div>
-                <div className="text-[11px] font-black text-[#6B7280] uppercase tracking-wider">Reachable Patients</div>
-                <div className="text-2xl font-black text-[#111827]">{totalPatients}</div>
+              <div className="text-[10px] sm:text-[11px] font-black text-[#6B7280] uppercase tracking-wider leading-tight">
+                Reachable Patients
               </div>
             </div>
 
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-[#059669] flex items-center justify-center flex-shrink-0">
-                <RefreshCw className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="text-[11px] font-black text-[#6B7280] uppercase tracking-wider">Active Reminders</div>
-                <div className="text-sm font-bold text-[#059669]">
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 sm:p-5 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-200 text-[#059669] flex items-center justify-center flex-shrink-0">
+                  <RefreshCw className="w-4 h-4 sm:w-6 sm:h-6" />
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-[#059669]">
                   {followupRecall || followupMeds ? 'Enabled' : 'Disabled'}
                 </div>
+              </div>
+              <div className="text-[10px] sm:text-[11px] font-black text-[#6B7280] uppercase tracking-wider leading-tight">
+                Active Reminders
               </div>
             </div>
           </div>

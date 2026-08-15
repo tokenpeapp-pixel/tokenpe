@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, getISTDateString } from '../../../lib/supabase'
+import ClinicSidebar from '../../../components/ClinicSidebar'
 import confetti from 'canvas-confetti'
 import { 
   Gift, AlertTriangle, Hourglass, RefreshCw, CheckCircle2,
@@ -237,167 +238,15 @@ export default function BillingPage() {
   ]
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif", background: '#F2F7F2', overflowX: 'hidden' }}>
-      <style jsx global>{`
-        .sidebar-btn {
-          display: flex !important;
-          align-items: center !important;
-          flex-direction: row !important;
-          gap: 10px !important;
-          padding: 10px 14px !important;
-          border-radius: 12px !important;
-          background: transparent;
-          color: #1E3A2B !important;
-          font-weight: 700 !important;
-          font-size: 0.85rem !important;
-          border: none !important;
-          cursor: pointer !important;
-          width: 100% !important;
-          text-align: left !important;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-          white-space: nowrap !important;
-          overflow: hidden !important;
-        }
-        .sidebar-btn:hover {
-          background: #BFE3CD !important;
-          color: #064E3B !important;
-          padding-left: 20px !important;
-          box-shadow: 0 4px 12px rgba(6,78,59,0.08) !important;
-        }
-        .sidebar-btn.active {
-          background: #BFE3CD !important;
-          color: #064E3B !important;
-          font-weight: 800 !important;
-          box-shadow: inset 3px 0 0 #064E3B !important;
-        }
-        .sidebar-btn .sb-label {
-          font-weight: 700 !important;
-          font-size: 0.85rem !important;
-          white-space: nowrap !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-        }
-
-        .plan-card-hover {
-          transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease !important;
-          will-change: transform;
-        }
-        .plan-card-hover:hover {
-          transform: translateY(-8px) !important;
-          box-shadow: 0 20px 45px rgba(6, 95, 70, 0.12), 0 0 0 2px rgba(16, 185, 129, 0.3) !important;
-        }
-        .plan-card-amber:hover {
-          box-shadow: 0 20px 45px rgba(217, 119, 6, 0.14), 0 0 0 2px rgba(217, 119, 6, 0.3) !important;
-        }
-
-        .plan-btn-hover {
-          transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease, box-shadow 0.18s ease !important;
-        }
-        .plan-btn-hover:hover:not(:disabled) {
-          transform: translateY(-2px) scale(1.01) !important;
-          filter: brightness(1.06) !important;
-          box-shadow: 0 8px 24px rgba(6, 95, 70, 0.25) !important;
-        }
-        .plan-btn-hover:active:not(:disabled) {
-          transform: scale(0.97) !important;
-        }
-
-        .banner-hover {
-          transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease !important;
-        }
-        .banner-hover:hover {
-          transform: translateY(-3px) !important;
-          box-shadow: 0 24px 50px rgba(5, 46, 32, 0.3) !important;
-        }
-
-        .day-btn-hover {
-          transition: all 0.15s ease !important;
-        }
-        .day-btn-hover:hover {
-          transform: scale(1.05) !important;
-        }
-
-        .faq-card-item {
-          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        }
-        .faq-card-item:hover {
-          border-color: #065F46 !important;
-          box-shadow: 0 8px 20px rgba(6, 95, 70, 0.08) !important;
-        }
-      `}</style>
-      
-      {/* ── LEFT SIDEBAR NAVIGATION ── */}
-      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflow: 'visible' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto', overflowX: 'hidden', flex: 1, paddingBottom: 8 }}>
-          {/* Brand Header */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', marginBottom: 28 }}>
-            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-          </div>
-
-          {/* Nav Group: Console */}
-          <div style={{ marginBottom: 4 }}>
-            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 10px', marginBottom: 6 }}>Console</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {[
-                { label: 'Dashboard', desc: 'Live queue overview & clinic stats', icon: <LayoutDashboard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard') },
-                { label: 'Manage Branches', desc: 'Set up & switch between clinic locations under one account', icon: <Layers className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/branches') },
-                { label: 'History', desc: 'Browse completed & past patient consultation records', icon: <History className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/history') },
-                { label: 'Analytics & Reports', desc: 'Track peak OPD hours, average wait times, reason breakdowns, and patient-wise statistics.', icon: <BarChart2 className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/analytics') },
-                { label: 'Broadcasting & CRM', desc: 'Send bulk WhatsApp alerts & manage patient relationships', icon: <Megaphone className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/crm') },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  onClick={item.onClick}
-                  className="sidebar-btn"
-                  onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
-                  onMouseLeave={() => setSbTooltip(null)}
-                >
-                  {item.icon}
-                  <span className="sb-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ height: 1, background: '#A8D5B5', margin: '14px 8px' }} />
-
-          {/* Nav Group: Account */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[
-              { label: 'Billing & Plans', desc: 'Manage your TokenPe subscription & plan features', icon: <CreditCard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {}, active: true },
-              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/help') },
-              { label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/profile') },
-            ].map(item => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className={`sidebar-btn${item.active ? ' active' : ''}`}
-                onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
-                onMouseLeave={() => setSbTooltip(null)}
-              >
-                {item.icon}
-                <span className="sb-label">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      {/* Floating Hover Tooltip */}
-      {sbTooltip && (
-        <div style={{ position: 'fixed', left: 248, top: sbTooltip.y, transform: 'translateY(-50%)', background: '#0F291B', color: '#FFFFFF', padding: '10px 14px', borderRadius: 10, fontSize: '0.78rem', zIndex: 99999, pointerEvents: 'none', maxWidth: 220, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-          <div style={{ fontWeight: 800, marginBottom: 2, color: '#A7F3D0' }}>{sbTooltip.label}</div>
-          <div style={{ fontSize: '0.72rem', color: '#D1FAE5', lineHeight: 1.3 }}>{sbTooltip.desc}</div>
-        </div>
-      )}
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F2F7F2] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
+      <ClinicSidebar clinic={clinic} />
 
       {/* ── Main Content (Full Width View) ── */}
       <main className="flex-grow lg:overflow-y-auto lg:h-screen">
         <div className="max-w-[1040px] mx-auto p-4 sm:p-6 lg:p-10">
 
           {/* Top Back Navigation */}
-          <div className="mb-6">
+          <div className="hidden lg:block mb-6">
             <button onClick={() => router.push('/dashboard')} className="text-[#065F46] font-bold text-[13px] hover:underline flex items-center gap-1">
               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
             </button>

@@ -2,7 +2,6 @@ import { signToken } from '../../../../lib/auth'
 import { cookies } from 'next/headers'
 import { supabaseAdmin, supabase, getISTDateString } from '../../../../lib/supabase'
 import { sendWelcomeEmail } from '../../../../lib/messaging'
-import { after } from 'next/server'
 
 export async function POST(req) {
     try {
@@ -103,10 +102,8 @@ export async function POST(req) {
             finalClinicData = insertedClinic
             userClinicsToReturn = [insertedClinic]
 
-            // Send welcome email in background
-            after(async () => {
-                await sendWelcomeEmail(finalClinicData.email, finalClinicData.name)
-            })
+            // Send welcome email in background without experimental 'after'
+            sendWelcomeEmail(finalClinicData.email, finalClinicData.name).catch(e => console.error('Email failed:', e))
         }
 
         // Create JWT session

@@ -2,13 +2,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import ClinicSidebar from '../../../components/ClinicSidebar'
 import {
   Layers, LayoutDashboard, History, BarChart2, Megaphone, CreditCard,
   HelpCircle, User, ArrowLeft, Plus, QrCode, Users, CheckCircle2, Trash2,
   X, AlertTriangle, Building2, Sparkles, ShieldCheck, ArrowRight, Check,
   Brain
 } from 'lucide-react'
-import ClinicSidebar from '../../../components/ClinicSidebar'
 
 const BRANCH_PRESETS = [
   'Main Branch', 'Morning OPD Counter 1', 'Evening OPD Counter 2',
@@ -22,7 +22,6 @@ export default function ManageBranchesPage() {
   const [branches, setBranches]         = useState([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState(null)
-  const [sbTooltip, setSbTooltip]       = useState(null)
 
   // Branch Stats
   const [branchStats, setBranchStats]   = useState({})
@@ -206,14 +205,24 @@ export default function ManageBranchesPage() {
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#F2F7F2] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
       <ClinicSidebar clinic={clinic} />
 
+      <style jsx global>{`
+        .branch-card {
+          transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+        }
+        .branch-card:hover {
+          transform: translateY(-3px) !important;
+          box-shadow: 0 12px 30px rgba(6, 95, 70, 0.08) !important;
+        }
+      `}</style>
+      
       {/* ── Main Content Container ── */}
-      <main className="flex-grow lg:overflow-y-auto lg:h-screen">
+      <main className="flex-1 min-h-screen pb-20 font-sans overflow-y-auto">
         <div className="max-w-[1040px] mx-auto p-4 sm:p-6 lg:p-10 space-y-6">
 
           {/* Top Bar Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <button onClick={() => router.push('/dashboard')} className="hidden lg:inline-flex mb-2 text-[#065F46] font-bold text-[13px] hover:underline items-center gap-1">
+              <button onClick={() => router.push('/dashboard')} className="mb-2 text-[#065F46] font-bold text-[13px] hover:underline flex items-center gap-1">
                 <ArrowLeft className="w-4 h-4" /> Back to Dashboard
               </button>
               <h1 className="text-xl sm:text-2xl font-black text-[#111827]">Multi-Branch Clinic Management</h1>
@@ -228,41 +237,60 @@ export default function ManageBranchesPage() {
             </button>
           </div>
 
-          {/* ── CURRENTLY ACTIVE BRANCH BANNER ── */}
+          {/* ── CURRENTLY ACTIVE BRANCH BANNER (Mobile-Optimized) ── */}
           {clinic && (
-            <div className="bg-[#052E20] text-white p-5 rounded-3xl shadow-md border border-[#065F46] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-[#065F46] text-[#A7F3D0] border border-[#10B981]/30 flex-shrink-0">
-                  <Building2 className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <div className="bg-gradient-to-br from-[#052E20] via-[#0A3F2C] to-[#042A1D] text-white p-4 sm:p-6 rounded-3xl shadow-lg border border-[#0F5A3E] relative overflow-hidden">
+              {/* Top Badges Row */}
+              <div className="flex items-center justify-between gap-2 mb-3.5 pb-3 border-b border-[#0F5A3E]/60 flex-wrap">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#065F46]/80 text-[#A7F3D0] border border-[#10B981]/40 text-[10px] font-black uppercase tracking-wider whitespace-nowrap shadow-sm">
+                  <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                   </span>
+                  <span>⚡ Currently Active Location</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#065F46] text-[#A7F3D0] px-2.5 py-0.5 rounded border border-[#10B981]/40">
-                      ⚡ Currently Active Location
-                    </span>
-                    <span className="text-xs font-mono text-[#A7F3D0] font-bold">Code: {clinic.code}</span>
-                  </div>
-                  <div className="text-lg font-black text-white mt-0.5 flex items-center gap-2">
-                    <span>{clinic.name}</span>
-                    {clinic.id === mainBranchId && (
-                      <span className="text-[10px] font-extrabold bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/30 flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-amber-300" /> Main Branch (Primary)
-                      </span>
-                    )}
-                  </div>
+
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/20 text-[#A7F3D0] border border-white/10 text-[11px] font-mono font-bold whitespace-nowrap">
+                  <span className="text-[9px] uppercase tracking-wider text-teal-200/70 font-sans">Code:</span>
+                  <span className="text-white font-extrabold">{clinic.code}</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Main Content Area */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-[#065F46] text-[#A7F3D0] border border-[#10B981]/30 flex-shrink-0 shadow-inner mt-0.5 sm:mt-0">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight truncate leading-tight">
+                      {clinic.name}
+                    </h2>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {clinic.id === mainBranchId ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold bg-amber-400/15 text-amber-300 px-2.5 py-0.5 rounded-lg border border-amber-400/30 whitespace-nowrap">
+                          <Building2 className="w-3 h-3 text-amber-300" /> Main Branch (Primary)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold bg-teal-400/15 text-teal-300 px-2.5 py-0.5 rounded-lg border border-teal-400/30 whitespace-nowrap">
+                          🏢 Sub-Branch Counter
+                        </span>
+                      )}
+                      {clinic.specialty && (
+                        <span className="text-[10px] font-semibold text-teal-100/80 bg-white/5 px-2 py-0.5 rounded-md border border-white/10 whitespace-nowrap">
+                          {clinic.specialty}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="px-4 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                  className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-[#10B981] hover:bg-[#059669] active:scale-[0.98] text-white rounded-2xl text-xs sm:text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 flex-shrink-0 mt-1 sm:mt-0"
                 >
-                  <span>Open OPD Dashboard</span> <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Open OPD Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>

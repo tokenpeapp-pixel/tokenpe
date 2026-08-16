@@ -163,10 +163,10 @@ export default function CRMPage() {
     setBroadcastSuccess(false)
     
     try {
-      const res = await fetch('/api/whatsapp/broadcast', {
+      const res = await fetch('/api/clinic-v2/whatsapp/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id, message: broadcastMsg || ' ', imageUrl: broadcastImage })
+        body: JSON.stringify({ message: broadcastMsg || ' ', imageUrl: broadcastImage })
       })
       const data = await res.json()
       

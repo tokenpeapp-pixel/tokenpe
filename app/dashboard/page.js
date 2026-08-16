@@ -1275,10 +1275,10 @@ function DashboardContent() {
     sounds.call()
     try {
       if (clinic?.id) {
-        await fetch('/api/whatsapp/broadcast', {
+        await fetch('/api/clinic-v2/whatsapp/broadcast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ businessId: clinic.id, message: msg })
+          body: JSON.stringify({ message: msg })
         }).catch(() => {})
       }
     } catch (_) {}
@@ -1551,15 +1551,11 @@ function DashboardContent() {
 
     try {
       const bId = clinic?.id || clinic?.business_id
-      await fetch('/api/queue/notify', {
+      await fetch('/api/clinic-v2/queue/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessId: bId,
-          patientId: patient?.id,
-          phone: patient?.phone,
-          name: patient?.name,
-          token: patient?.token
+          patientEntryId: patient?.id
         })
       }).catch(() => {})
     } catch (e) {

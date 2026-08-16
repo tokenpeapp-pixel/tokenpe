@@ -41,13 +41,31 @@ export default function ClinicSidebar({ clinic: initialClinic, activeTab }) {
     { href: '/dashboard/profile', label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4 flex-shrink-0" /> },
   ]
 
-  const handleLogout = () => {
-    localStorage.removeItem('tokenpe_clinic')
-    localStorage.removeItem('tokenpe_business')
-    localStorage.removeItem('tokenpe_user_businesses')
-    localStorage.removeItem('clinicCode')
-    localStorage.removeItem('clinicPhone')
-    router.push('/login')
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/business-auth/logout', { method: 'POST' }).catch(() => {})
+      await fetch('/api/clinic-v2/logout', { method: 'POST' }).catch(() => {})
+    } catch (_) {}
+
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('tokenpe_clinic')
+        localStorage.removeItem('tokenpe_business')
+        localStorage.removeItem('tokenpe_user_businesses')
+        localStorage.removeItem('tokenpe_cached_patients')
+        localStorage.removeItem('clinicCode')
+        localStorage.removeItem('clinicPhone')
+        localStorage.removeItem('businessCode')
+        localStorage.removeItem('businessPhone')
+        sessionStorage.clear()
+      }
+    } catch (_) {}
+
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    } else {
+      router.push('/login')
+    }
   }
 
   const isCurrentActive = (href) => {

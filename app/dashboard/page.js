@@ -1306,7 +1306,7 @@ function DashboardContent() {
       }
 
       try {
-        const res = await fetch('/api/dashboard/init')
+        const res = await fetch('/api/clinic-v2/dashboard/init')
         const data = await res.json()
         if (data.success && data.clinic) {
           setClinic(data.clinic)
@@ -1329,7 +1329,7 @@ function DashboardContent() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/business-auth/logout', { method: 'POST' }).catch(() => {})
+      await fetch('/api/clinic-v2/logout', { method: 'POST' }).catch(() => {})
       localStorage.removeItem('tokenpe_clinic')
       localStorage.removeItem('tokenpe_cached_patients')
       supabase.auth.signOut().catch(() => {})
@@ -1350,26 +1350,16 @@ function DashboardContent() {
   }, [])
 
   const fetchQueue = useCallback(async () => {
-    const today = getISTDateString()
-    const bId = clinic?.id || clinic?.business_id
     try {
-      const res = await fetch(`/api/dashboard/get?date=${today}&clinicId=${bId || ''}`)
+      const res = await fetch('/api/clinic-v2/dashboard/get')
       const data = await res.json()
-      if (data.success && Array.isArray(data.patients)) {
-        updatePatientsState(data.patients)
-      } else if (bId) {
-        const { data: qData } = await supabase
-          .from('queue_entries')
-          .select('*')
-          .eq('business_id', bId)
-          .eq('date', today)
-          .order('joined_at', { ascending: true })
-        if (qData) updatePatientsState(qData)
+      if (data.success && Array.isArray(data.queue)) {
+        updatePatientsState(data.queue)
       }
     } catch (e) {
       console.warn('fetchQueue error:', e)
     }
-  }, [clinic?.id, clinic?.business_id, updatePatientsState])
+  }, [updatePatientsState])
 
   useEffect(() => {
     fetchQueue()

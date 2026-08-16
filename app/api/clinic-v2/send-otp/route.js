@@ -16,7 +16,7 @@ const getSecret = () => {
 export async function POST(req) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const limit = await otpLimiter.check(ip, 'otp_send')
+    const limit = await otpLimiter.check(ip, 'otp_send_v2')
     if (limit.blocked) {
       const retryMins = Math.ceil(limit.retryAfterMs / 60000)
       return Response.json({ success: false, message: `Too many requests. Try again in ${retryMins} minutes.` }, { status: 429 })
@@ -25,26 +25,32 @@ export async function POST(req) {
     const body = await req.json()
     const { email, phone } = body
 
-    if (!email || !phone) {
-      return Response.json({ success: false, message: 'Email and phone are required.' }, { status: 400 })
+    if (!email) {
+      return Response.json({ success: false, message: 'Email is required.' }, { status: 400 })
     }
 
     const cleanEmail = String(email).trim().toLowerCase()
-    const cleanPhone = String(phone).replace(/\D/g, '')
+    const cleanPhone = phone ? String(phone).replace(/\D/g, '') : null
 
-    // Verify clinic exists with this email + phone
-    const { data: rows, error } = await supabase
-      .from('businesses')
-      .select('id, name, email')
+    // Verify clinic exists
+    let query = supabase
+      .from('clinics')
+      .select('id, name, email, phone')
       .ilike('email', cleanEmail)
-      .eq('phone', cleanPhone)
+      
+    // If phone is absent or starts with 'pending-', lookup by email only
+    if (cleanPhone && cleanPhone.length > 0 && !(phone && phone.startsWith('pending-'))) {
+       query = query.eq('phone', cleanPhone)
+    }
+
+    const { data: rows, error } = await query
       .order('created_at', { ascending: true })
       .limit(1)
 
     const clinic = rows?.[0] ?? null
 
     if (error || !clinic) {
-      await otpLimiter.recordFailure(ip, 'otp_send')
+      await otpLimiter.recordFailure(ip, 'otp_send_v2')
       return Response.json({ success: false, message: 'No clinic found with this email and phone number.' }, { status: 404 })
     }
 
@@ -52,7 +58,9 @@ export async function POST(req) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
     // Sign a short-lived token embedding the OTP (10 minutes)
-    const otpToken = await new SignJWT({ email: cleanEmail, phone: cleanPhone, otp })
+    // We embed clinic's actual DB phone if it exists, or just what they provided
+    const payloadPhone = clinic.phone || cleanPhone || 'none'
+    const otpToken = await new SignJWT({ email: cleanEmail, phone: payloadPhone, otp })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('10m')
@@ -149,7 +157,7 @@ export async function POST(req) {
             `
     })
 
-    await otpLimiter.reset(ip, 'otp_send')
+    await otpLimiter.reset(ip, 'otp_send_v2')
     return Response.json({ success: true, otpToken, message: 'OTP sent to your email.' }, { status: 200 })
 
   } catch (err) {

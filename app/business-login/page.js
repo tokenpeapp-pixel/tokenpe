@@ -226,7 +226,7 @@ export default function LoginPage() {
         setSuccess('')
         setLoading(true)
         try {
-            const res = await fetch('/api/business-auth/send-otp', {
+            const res = await fetch('/api/clinic-v2/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: loginEmail, phone: loginPhone })
@@ -259,7 +259,7 @@ export default function LoginPage() {
         }
         setLoading(true)
         try {
-            const res = await fetch('/api/business-auth/reset-pin', {
+            const res = await fetch('/api/clinic-v2/reset-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ otpToken, otp: otpCode, newPin })

@@ -2,7 +2,9 @@ import { supabaseAdmin } from '../../../../lib/supabase'
 import { verifyPin, setClinicSession } from '../../../../lib/clinic-auth'
 import { validatePhone } from '../../../../lib/validate'
 
-const rateLimitMap = new Map()
+import { rateLimit } from '../../../../lib/rateLimit'
+
+const loginLimiter = rateLimit({ maxAttempts: 5, windowMs: 15 * 60 * 1000 })
 
 export async function POST(req) {
     try {
@@ -16,29 +18,10 @@ export async function POST(req) {
         const cleanIdentifier = String(identifier).trim().toLowerCase()
 
         // 1. Basic Rate Limiting
-        const now = Date.now()
-        const limitWindow = 15 * 60 * 1000 // 15 minutes
-        const maxAttempts = 5
-
-        if (rateLimitMap.has(cleanIdentifier)) {
-            const data = rateLimitMap.get(cleanIdentifier)
-            if (now - data.firstAttempt < limitWindow) {
-                if (data.attempts >= maxAttempts) {
-                    return Response.json({ success: false, message: 'Too many failed attempts. Please try again after 15 minutes.' }, { status: 429 })
-                }
-            } else {
-                rateLimitMap.delete(cleanIdentifier)
-            }
-        }
-
-        const recordFailedAttempt = () => {
-            if (!rateLimitMap.has(cleanIdentifier)) {
-                rateLimitMap.set(cleanIdentifier, { firstAttempt: now, attempts: 1 })
-            } else {
-                const data = rateLimitMap.get(cleanIdentifier)
-                data.attempts += 1
-                rateLimitMap.set(cleanIdentifier, data)
-            }
+        const limit = await loginLimiter.check(cleanIdentifier, 'clinic_login')
+        if (limit.blocked) {
+            const retryMins = Math.ceil(limit.retryAfterMs / 60000)
+            return Response.json({ success: false, message: `Too many failed attempts. Please try again after ${retryMins} minutes.` }, { status: 429 })
         }
 
         const isPhone = /^[0-9+]+$/.test(cleanIdentifier)
@@ -55,19 +38,19 @@ export async function POST(req) {
         const { data: clinic, error } = await query.single()
 
         if (error || !clinic) {
-            recordFailedAttempt()
+            await loginLimiter.recordFailure(cleanIdentifier, 'clinic_login')
             return Response.json({ success: false, message: 'Invalid credentials.' }, { status: 401 })
         }
 
         // Verify PIN
         const isValid = await verifyPin(pin, clinic.pin_hash)
         if (!isValid) {
-            recordFailedAttempt()
+            await loginLimiter.recordFailure(cleanIdentifier, 'clinic_login')
             return Response.json({ success: false, message: 'Invalid credentials.' }, { status: 401 })
         }
         
         // Success: clear rate limit
-        rateLimitMap.delete(cleanIdentifier)
+        await loginLimiter.reset(cleanIdentifier, 'clinic_login')
 
         // Create JWT session
         const sessionPayload = {

@@ -772,9 +772,8 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
   const [sendingReminderId, setSendingReminderId] = useState(null)
 
   const fetchPayments = useCallback(async () => {
-    const bId = clinic?.id || clinic?.business_id
     try {
-      const res = await fetch(`/api/dashboard/payments?clinicId=${bId || ''}`)
+      const res = await fetch('/api/clinic-v2/dashboard/payments')
       const data = await res.json()
       if (data.success && Array.isArray(data.patients) && data.patients.length > 0) {
         setPatients(data.patients)
@@ -797,17 +796,13 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
 
   const handleUpdatePayment = async (pId, feeTotal, feePaid, status) => {
     try {
-      const bId = clinic?.id || clinic?.business_id
-      const res = await fetch(`/api/queue/update-payment?clinicId=${bId || ''}`, {
+      const res = await fetch('/api/clinic-v2/queue/update-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patientId: pId,
-          updates: {
-            fee_total: feeTotal,
-            fee_paid: feePaid,
-            payment_status: status
-          }
+          patientEntryId: pId,
+          paymentStatus: status,
+          paymentAmount: feeTotal
         })
       })
       const data = await res.json()
@@ -826,10 +821,10 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
     setSendingReminderId(pId)
     if (setToastMsg) setToastMsg('📲 WhatsApp payment reminder sent!')
     try {
-      await fetch('/api/queue/remind-payment', {
+      await fetch('/api/clinic-v2/queue/remind-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId: pId })
+        body: JSON.stringify({ patientEntryId: pId })
       }).catch(() => {})
     } catch (e) {}
     setTimeout(() => setSendingReminderId(null), 1200)

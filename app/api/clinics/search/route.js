@@ -22,7 +22,7 @@ export async function GET(req) {
 
     const { data: businesses, error } = await supabaseAdmin
       .from('businesses')
-      .select('id, name, specialty, city, area, code, logo_url, location, lat, lng, queue_paused, closed_today_date')
+      .select('id, name, specialty, city, area, code, logo_url, location, queue_paused, closed_today_date')
       .eq('type', vertical)
       .eq('is_public', true)
       .order('created_at', { ascending: false })
@@ -58,8 +58,6 @@ export async function GET(req) {
         photo_url: biz.logo_url,
         logo_url: biz.logo_url,
         location: biz.location,
-        lat: biz.lat,
-        lng: biz.lng,
         queue_paused: biz.queue_paused,
         is_closed_today: !!biz.closed_today_date,
         waiting_count: count || 0,

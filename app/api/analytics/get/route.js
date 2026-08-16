@@ -25,9 +25,9 @@ export async function GET(req) {
         }
 
         let query = supabaseAdmin
-            .from('patients')
+            .from('queue_entries')
             .select('*')
-            .or(`clinic_id.eq.${businessId},clinic_id.is.null`)
+            .or(`business_id.eq.${businessId},business_id.is.null`)
             
         if (startDate && endDate) {
             query = query.gte('date', startDate).lte('date', endDate)

@@ -185,15 +185,17 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
   const rawCode = sanitizeCode(clinic?.code, clinic?.name)
   const liveCode = codeSuccess ? codeInput.toUpperCase() : rawCode
-  const patientURL = typeof window !== 'undefined'
-    ? `${window.location.origin}/s/${liveCode}`
-    : `https://tokenpe.online/s/${liveCode}`
+  const waNumberClean = String(WA_NUMBER).replace(/[^0-9]/g, '')
+  const validWaNumber = waNumberClean.length >= 10 ? waNumberClean : '917977075721'
+  const waLink = `https://wa.me/${validWaNumber}?text=JOIN%20${liveCode}`
 
   useEffect(() => {
-    QRCode.toDataURL(patientURL, { width: 400, margin: 2, color: { dark: '#064E3B', light: '#FFFFFF' } })
-      .then(url => setQrDataUrl(url))
-      .catch(() => {})
-  }, [patientURL])
+    if (waLink) {
+      QRCode.toDataURL(waLink, { width: 400, margin: 2, color: { dark: '#064E3B', light: '#FFFFFF' } })
+        .then(url => setQrDataUrl(url))
+        .catch(() => setQrDataUrl(`https://quickchart.io/qr?size=400&text=${encodeURIComponent(waLink)}`))
+    }
+  }, [waLink])
 
   async function saveCode() {
     const clean = codeInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')

@@ -529,7 +529,7 @@ export default function ManageBranchesPage() {
 
             <div className="bg-white p-4 rounded-2xl border-2 border-[#A7F3D0] inline-block mb-4 shadow-sm">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/j/${showQR.code}`)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://wa.me/${String(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919969701706').replace(/[^0-9]/g, '')}?text=JOIN%20${showQR.code}`)}`}
                 alt="Patient QR Code"
                 className="w-48 h-48 mx-auto"
               />

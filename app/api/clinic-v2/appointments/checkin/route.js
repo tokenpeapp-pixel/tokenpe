@@ -88,7 +88,7 @@ export async function POST(req) {
             .from('appointments')
             .update({ 
                 patient_entry_id: patient.id,
-                status: 'checked_in'
+                status: 'confirmed'
             })
             .eq('id', appointment.id)
 

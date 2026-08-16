@@ -11,11 +11,13 @@ import {
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, getISTDateString, getISTYesterdayDateString } from '../../lib/supabase'
+import ClinicSidebar from '../../components/ClinicSidebar'
 import confetti from 'canvas-confetti'
 import QRCode from 'qrcode'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '917977075721'
+
 // ─── ANIMATED COUNTER NUMBER ───
 function AnimatedNumber({ value }) {
   return (
@@ -55,13 +57,13 @@ function AnimatedClock() {
   const [h, m, s] = timeDigits.split(':')
 
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, fontFamily: "'Plus Jakarta Sans', sans-serif", fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', fontSize: '1.75rem', fontWeight: 800, color: '#064E3B', lineHeight: 1, whiteSpace: 'nowrap' }}>
+    <div style={{ display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, fontFamily: "'Plus Jakarta Sans', sans-serif", fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', fontSize: '1.1rem', fontWeight: 800, color: '#064E3B', lineHeight: 1, whiteSpace: 'nowrap' }}>
       <AnimatedNumber value={h || '00'} />
       <span style={{ margin: '0 1px', opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>:</span>
       <AnimatedNumber value={m || '00'} />
       <span style={{ margin: '0 1px', opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>:</span>
       <AnimatedNumber value={s || '00'} />
-      <span style={{ fontSize: '0.8rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 4, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      <span style={{ fontSize: '0.65rem', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", marginLeft: 3, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
         {ampm}
       </span>
     </div>
@@ -206,11 +208,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
     try {
       if (clinic?.id) {
-        await fetch('/api/clinic-v2/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: clean })
-        }).catch(() => {})
+        await supabase.from('businesses').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
       }
     } catch (_) {}
 
@@ -375,7 +373,7 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(6, 78, 59, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <motion.div initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={e => e.stopPropagation()} style={{ background: '#FFFFFF', border: '1.5px solid #064E3B', borderRadius: 20, padding: '24px', maxWidth: 440, width: '100%', boxShadow: '0 25px 60px rgba(6, 78, 59, 0.35)', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
         
-        {/* Top Header Bar Matching User Screenshot */}
+        {/* Top Header Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 42, height: 42, borderRadius: 10, border: '1.5px solid #064E3B', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.3rem', fontWeight: 800, color: '#064E3B', flexShrink: 0 }}>
@@ -776,8 +774,9 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
   const [sendingReminderId, setSendingReminderId] = useState(null)
 
   const fetchPayments = useCallback(async () => {
+    const bId = clinic?.id || clinic?.business_id
     try {
-      const res = await fetch('/api/clinic-v2/dashboard/payments')
+      const res = await fetch(`/api/dashboard/payments?clinicId=${bId || ''}`)
       const data = await res.json()
       if (data.success && Array.isArray(data.patients) && data.patients.length > 0) {
         setPatients(data.patients)
@@ -800,13 +799,17 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
 
   const handleUpdatePayment = async (pId, feeTotal, feePaid, status) => {
     try {
-      const res = await fetch('/api/clinic-v2/queue/update-payment', {
+      const bId = clinic?.id || clinic?.business_id
+      const res = await fetch(`/api/queue/update-payment?clinicId=${bId || ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patientEntryId: pId,
-          paymentStatus: status,
-          paymentAmount: feeTotal
+          patientId: pId,
+          updates: {
+            fee_total: feeTotal,
+            fee_paid: feePaid,
+            payment_status: status
+          }
         })
       })
       const data = await res.json()
@@ -825,10 +828,10 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
     setSendingReminderId(pId)
     if (setToastMsg) setToastMsg('📲 WhatsApp payment reminder sent!')
     try {
-      await fetch('/api/clinic-v2/queue/remind-payment', {
+      await fetch('/api/queue/remind-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientEntryId: pId })
+        body: JSON.stringify({ patientId: pId })
       }).catch(() => {})
     } catch (e) {}
     setTimeout(() => setSendingReminderId(null), 1200)
@@ -844,7 +847,6 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-
           <div style={{ background: '#ECFDF5', border: '1.5px solid #A7F3D0', borderRadius: 12, padding: '6px 14px', textAlign: 'right' }}>
             <div style={{ fontSize: '0.64rem', fontWeight: 800, color: '#065F46', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Collected</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#064E3B' }}>₹{totalCollected.toFixed(2)}</div>
@@ -890,7 +892,7 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
                   </div>
                 </div>
 
-                {/* Partition 2: Reason for Visit (if entered) */}
+                {/* Partition 2: Reason for Visit */}
                 {(p.purpose || p.reason) && (
                   <div style={{ flex: '1', minWidth: 130, padding: '0 12px', borderLeft: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <span style={{ fontSize: '0.64rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reason for Visit</span>
@@ -904,7 +906,7 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
                 <div style={{ flex: '1', minWidth: 140, padding: '0 12px', borderLeft: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <span style={{ fontSize: '0.64rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp Phone</span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#059669', fontWeight: 700, fontSize: '0.8rem' }}>
-                    <Phone className="w-3.5 h-3.5 text-[#059669]" /> {p.phone}
+                    <Phone className="w-3.5 h-3.5 text-[#059669]" /> +91 {p.phone}
                   </span>
                 </div>
 
@@ -959,8 +961,6 @@ function PaymentsView({ clinic, setToastMsg, dashboardPatients = [] }) {
           })}
         </div>
       )}
-
-      {/* Add Payment Modal */}
 
       {/* Edit Fee Modal */}
       {editingPatient && (
@@ -1095,7 +1095,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
         </div>
       </div>
 
-      {/* Partition 3: Reason for Visit (only if entered) */}
+      {/* Partition 3: Reason for Visit */}
       {(patient.purpose || patient.reason) && (
         <div style={{ flex: '1', minWidth: 140, padding: '8px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #E2E8F0' }}>
           <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
@@ -1130,7 +1130,7 @@ function PatientCard({ patient, position, onDone, onSkip, onNotify, onPriorityCa
         </div>
       </div>
 
-      {/* Partition 5: Action Controls */}
+      {/* Action Controls */}
       {!isDone && (
         <div
           style={{
@@ -1204,23 +1204,12 @@ function DashboardContent() {
   const [queuePaused, setQueuePaused] = useState(false)
   const [activeNotice, setActiveNotice] = useState('')
   const [toastMsg, setToastMsg] = useState('')
-  const [showNavMenu, setShowNavMenu] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [sbTooltip, setSbTooltip] = useState(null)
 
   useEffect(() => {
     if (!toastMsg) return
     const timer = setTimeout(() => setToastMsg(''), 3000)
     return () => clearTimeout(timer)
   }, [toastMsg])
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
 
   // ── Clinic Name & Logo Inline Editing State ──
   const [isEditingClinic, setIsEditingClinic] = useState(false)
@@ -1239,15 +1228,12 @@ function DashboardContent() {
     try { localStorage.setItem('tokenpe_clinic', JSON.stringify(updated)) } catch (_) {}
     setIsEditingClinic(false)
     setToastMsg('Clinic name updated successfully!')
-    setTimeout(() => setToastMsg(''), 4000)
 
     try {
       if (clinic?.id) {
-        await fetch('/api/clinic-v2/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: editedName.trim() })
-        }).catch(() => {})
+        await supabase.from('businesses')
+          .update({ name: editedName.trim() })
+          .eq('id', clinic.id)
       }
     } catch (_) {}
   }
@@ -1262,15 +1248,12 @@ function DashboardContent() {
         setClinic(updated)
         try { localStorage.setItem('tokenpe_clinic', JSON.stringify(updated)) } catch (_) {}
         setToastMsg('Clinic logo updated successfully!')
-        setTimeout(() => setToastMsg(''), 4000)
 
         try {
           if (clinic?.id) {
-            await fetch('/api/clinic-v2/update', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ logo_url: logoUrl })
-            }).catch(() => {})
+            await supabase.from('businesses')
+              .update({ logo_url: logoUrl })
+              .eq('id', clinic.id)
           }
         } catch (_) {}
       }
@@ -1283,15 +1266,14 @@ function DashboardContent() {
     sounds.call()
     try {
       if (clinic?.id) {
-        await fetch('/api/clinic-v2/whatsapp/broadcast', {
+        await fetch('/api/whatsapp/broadcast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg })
+          body: JSON.stringify({ businessId: clinic.id, message: msg })
         }).catch(() => {})
       }
     } catch (_) {}
     setToastMsg('Broadcast notice sent successfully to queue!')
-    setTimeout(() => setToastMsg(''), 4500)
   }
 
   useEffect(() => {
@@ -1309,7 +1291,7 @@ function DashboardContent() {
       }
 
       try {
-        const res = await fetch('/api/clinic-v2/dashboard/init')
+        const res = await fetch('/api/dashboard/init')
         const data = await res.json()
         if (data.success && data.clinic) {
           setClinic(data.clinic)
@@ -1330,16 +1312,6 @@ function DashboardContent() {
     init()
   }, [router])
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/clinic-v2/logout', { method: 'POST' }).catch(() => {})
-      localStorage.removeItem('tokenpe_clinic')
-      localStorage.removeItem('tokenpe_cached_patients')
-      supabase.auth.signOut().catch(() => {})
-    } catch (e) {}
-    router.push('/login')
-  }
-
   const updatePatientsState = useCallback((updater) => {
     setPatients(prev => {
       const nextVal = typeof updater === 'function' ? updater(prev) : updater
@@ -1353,16 +1325,26 @@ function DashboardContent() {
   }, [])
 
   const fetchQueue = useCallback(async () => {
+    const today = getISTDateString()
+    const bId = clinic?.id || clinic?.business_id
     try {
-      const res = await fetch('/api/clinic-v2/dashboard/get')
+      const res = await fetch(`/api/dashboard/get?date=${today}&clinicId=${bId || ''}`)
       const data = await res.json()
-      if (data.success && Array.isArray(data.queue)) {
-        updatePatientsState(data.queue)
+      if (data.success && Array.isArray(data.patients)) {
+        updatePatientsState(data.patients)
+      } else if (bId) {
+        const { data: qData } = await supabase
+          .from('queue_entries')
+          .select('*')
+          .eq('business_id', bId)
+          .eq('date', today)
+          .order('joined_at', { ascending: true })
+        if (qData) updatePatientsState(qData)
       }
     } catch (e) {
       console.warn('fetchQueue error:', e)
     }
-  }, [updatePatientsState])
+  }, [clinic?.id, clinic?.business_id, updatePatientsState])
 
   useEffect(() => {
     fetchQueue()
@@ -1374,85 +1356,28 @@ function DashboardContent() {
     setQueuePaused(!queuePaused)
   }
 
-  const addWalkIn = async () => {
-    const cleanP = newPhone.replace(/\D/g, '')
-    if (!cleanP || cleanP.length < 10) {
-      setAddError('Please enter a valid 10-digit WhatsApp number.')
-      return
-    }
-
-    setAddSaving(true)
-    setAddError('')
-
-    const bId = clinic?.id || clinic?.business_id
-    const nextTokenNum = (patients?.length || 0) + 1
-    const generatedToken = `A-${100 + nextTokenNum}`
-    const today = new Date().toISOString().split('T')[0]
-    const pName = newName.trim() || 'Walk-in Patient'
-
-    // 1. Try backend API endpoint
-    try {
-      const res = await fetch('/api/clinic-v2/queue/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: pName,
-          phone: cleanP,
-          language: newLang || 'en',
-          purpose: 'Walk-in Consultation',
-        })
-      })
-      const data = await res.json()
-      if (data.success) {
-        setNewName('')
-        setNewPhone('')
-        setAddError('')
-        setShowAddForm(false)
-        fetchQueue()
-        sounds.admit()
-        setAddSaving(false)
-        return
-      }
-    } catch (e) {
-      console.warn('API add failed:', e)
-    }
-
-    // 3. Instant local state insertion so user never sees a failure
-    const fallbackPatient = {
-      id: 'walkin-' + Date.now(),
-      name: pName,
-      phone: cleanP,
-      token: generatedToken,
-      status: 'waiting',
-      joined_at: new Date().toISOString(),
-      reason: 'Walk-in Consultation',
-      language: newLang || 'en'
-    }
-    setPatients(prev => [...prev, fallbackPatient])
-    setNewName('')
-    setNewPhone('')
-    setAddError('')
-    setShowAddForm(false)
-    sounds.admit()
-    setAddSaving(false)
-  }
-
   const admitPatient = async (patientId) => {
     sounds.call()
     updatePatientsState(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'called' } : p))
     setToastMsg('Patient admitted to doctor consultation!')
-    setTimeout(() => setToastMsg(''), 4000)
 
     try {
       const targetP = patients.find(p => String(p.id) === String(patientId))
       const bId = clinic?.id || clinic?.business_id
 
+      supabase.from('queue_entries').update({ status: 'called' }).eq('id', patientId).then(() => {})
+
       if (bId && targetP) {
-        await fetch('/api/clinic-v2/queue/next', {
+        await fetch('/api/queue/next', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            patientId: patientId
+            businessId: bId,
+            patientId: patientId,
+            patientPhone: targetP.phone,
+            patientName: targetP.name,
+            token: targetP.token,
+            language: targetP.language || 'en'
           })
         }).catch(() => {})
       }
@@ -1461,30 +1386,19 @@ function DashboardContent() {
     }
   }
 
-  const callNext = async () => {
-    sounds.call()
-    try {
-      const res = await fetch('/api/queue/next', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId: clinic.id })
-      })
-      const data = await res.json()
-      if (data.success) fetchQueue()
-    } catch (e) {}
-  }
-
   const markDone = async (patientId) => {
     sounds.admit()
     updatePatientsState(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'done' } : p))
     setToastMsg('Patient consultation marked as Completed!')
-    setTimeout(() => setToastMsg(''), 4000)
 
     try {
-      await fetch('/api/clinic-v2/queue/done', {
+      const bId = clinic?.id || clinic?.business_id
+      supabase.from('queue_entries').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', patientId).then(() => {})
+
+      await fetch('/api/queue/done', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: patientId })
+        body: JSON.stringify({ patientId, businessId: bId })
       }).catch(() => {})
     } catch (e) {
       console.warn('markDone error:', e)
@@ -1495,13 +1409,15 @@ function DashboardContent() {
     sounds.dismiss()
     updatePatientsState(prev => prev.map(p => String(p.id) === String(patientId) ? { ...p, status: 'skipped' } : p))
     setToastMsg('Patient token skipped.')
-    setTimeout(() => setToastMsg(''), 4000)
 
     try {
-      await fetch('/api/clinic-v2/queue/cancel', {
+      const bId = clinic?.id || clinic?.business_id
+      supabase.from('queue_entries').update({ status: 'skipped' }).eq('id', patientId).then(() => {})
+
+      await fetch('/api/queue/skip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: patientId })
+        body: JSON.stringify({ patientId, businessId: bId })
       }).catch(() => {})
     } catch (e) {
       console.warn('skipPatient error:', e)
@@ -1511,15 +1427,18 @@ function DashboardContent() {
   const notifyWhatsApp = async (patient) => {
     sounds.call()
     setToastMsg(`WhatsApp alert sent to ${patient?.name || 'patient'} (${formatToken(patient?.token)})!`)
-    setTimeout(() => setToastMsg(''), 4000)
 
     try {
       const bId = clinic?.id || clinic?.business_id
-      await fetch('/api/clinic-v2/queue/notify', {
+      await fetch('/api/queue/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patientEntryId: patient?.id
+          businessId: bId,
+          patientId: patient?.id,
+          phone: patient?.phone,
+          name: patient?.name,
+          token: patient?.token
         })
       }).catch(() => {})
     } catch (e) {
@@ -1548,334 +1467,10 @@ function DashboardContent() {
   )
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", background: '#DCEFDF', overflowX: 'hidden' }}>
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#DCEFDF] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
       <UpgradeBanner />
 
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-        .sidebar-btn {
-          display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-          border-radius: 12px; background: transparent; color: #1E3A2B;
-          font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer;
-          width: 100%; text-align: left; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          white-space: nowrap; overflow: hidden;
-        }
-        .sidebar-btn:hover {
-          background: #BFE3CD; color: #064E3B; padding-left: 20px;
-          box-shadow: 0 4px 12px rgba(6,78,59,0.08);
-        }
-        .sidebar-btn.active {
-          background: #BFE3CD; color: #064E3B; font-weight: 800;
-          box-shadow: inset 3px 0 0 #064E3B;
-        }
-        .sidebar-btn .sb-label { font-weight: 700; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .sb-wrap { position: relative; }
-        .sb-tooltip {
-          position: absolute;
-          left: calc(100% + 14px);
-          top: 50%; transform: translateY(-50%) scale(0.95);
-          background: #1E3A2B;
-          color: #E2F5EB;
-          border-radius: 12px;
-          padding: 12px 14px;
-          width: 210px;
-          font-size: 0.78rem;
-          font-weight: 500;
-          line-height: 1.55;
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity 0.18s ease, transform 0.18s ease;
-          z-index: 9999;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-          white-space: normal;
-        }
-        .sb-tooltip strong {
-          display: block;
-          font-size: 0.82rem;
-          font-weight: 800;
-          color: #A7F3D0;
-          margin-bottom: 4px;
-        }
-        .sb-tooltip::before {
-          content: '';
-          position: absolute;
-          left: -7px; top: 50%; transform: translateY(-50%);
-          border: 7px solid transparent;
-          border-right-color: #1E3A2B;
-          border-left: 0;
-        }
-        .sb-wrap:hover .sb-tooltip { opacity: 1; transform: translateY(-50%) scale(1); }
-
-        .spinner-ring {
-          width: 40px;
-          height: 40px;
-          border-width: 3px;
-          pointer-events: none;
-          z-index: 9999;
-          border-style: solid;
-          border-color: #065F46 #C3E6D5 #C3E6D5 #C3E6D5;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-
-        .logo-overlay-hover:hover {
-          opacity: 1 !important;
-        }
-
-        .stat-segment-hover {
-          transition: background-color 0.18s ease;
-        }
-        .stat-segment-hover:hover {
-          background: #F0FDF4;
-        }
-
-        .console-btn-primary {
-          transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
-        }
-        .console-btn-primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(6, 78, 59, 0.3) !important;
-          background: #043E2F !important;
-        }
-
-        .console-btn-secondary {
-          transition: all 0.15s ease !important;
-        }
-        .console-btn-secondary:hover {
-          transform: translateY(-1px);
-          background: #064E3B !important;
-          color: white !important;
-          box-shadow: 0 3px 10px rgba(6, 78, 59, 0.25) !important;
-        }
-        .console-btn-secondary:hover svg {
-          color: white !important;
-          stroke: white !important;
-        }
-
-        .console-btn-light {
-          transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
-        }
-        .console-btn-light:hover {
-          transform: translateY(-1px);
-          background: #D1FAE5 !important;
-          border-color: #059669 !important;
-          box-shadow: 0 3px 10px rgba(5, 150, 105, 0.12) !important;
-        }
-
-        .card-btn-admit {
-          background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
-          display: flex; align-items: center; gap: 4px; cursor: pointer;
-          transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-          -webkit-font-smoothing: antialiased;
-        }
-        .card-btn-admit:hover {
-          background: #059669 !important; color: white !important; border-color: #047857 !important;
-          box-shadow: 0 2px 6px rgba(5,150,105,0.25); transform: translateY(-1px);
-        }
-
-        .card-btn-notify {
-          background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
-          display: flex; align-items: center; gap: 4px; cursor: pointer;
-          transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-          -webkit-font-smoothing: antialiased;
-        }
-        .card-btn-notify:hover {
-          background: #D97706 !important; color: white !important; border-color: #B45309 !important;
-          box-shadow: 0 2px 6px rgba(217,119,6,0.25); transform: translateY(-1px);
-        }
-
-        .card-btn-skip {
-          background: white; border: 1.5px solid #CBE4D3; color: #0F172A;
-          padding: 4px 9px; border-radius: 7px; font-weight: 700; font-size: 0.71rem;
-          display: flex; align-items: center; gap: 4px; cursor: pointer;
-          transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-          -webkit-font-smoothing: antialiased;
-        }
-        .card-btn-skip:hover {
-          background: #DC2626 !important; color: white !important; border-color: #B91C1C !important;
-          box-shadow: 0 2px 6px rgba(220,38,38,0.25); transform: translateY(-1px);
-        }
-
-        .stage-box-hover {
-          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        }
-        .stage-box-hover:hover {
-          transform: translateY(-2px);
-          border-color: #A7F3D0 !important;
-          box-shadow: 0 6px 20px rgba(6, 78, 59, 0.07) !important;
-        }
-
-        @media (max-width: 768px) {
-          .dashboard-sidebar {
-            display: none !important;
-          }
-          .dashboard-main {
-            padding: 12px 10px !important;
-          }
-          .hamburger-btn {
-            display: flex !important;
-          }
-          .stat-banner-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-          .stat-segment-hover {
-            border-right: 1px solid #CBE4D3 !important;
-            border-bottom: 1px solid #CBE4D3 !important;
-            padding: 10px 8px !important;
-          }
-          .stat-segment-hover:nth-child(2n) {
-            border-right: none !important;
-          }
-          .stat-segment-hover:nth-child(3), .stat-segment-hover:nth-child(4) {
-            border-bottom: none !important;
-          }
-        }
-        @media (min-width: 769px) {
-          .hamburger-btn {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      {/* ── LEFT SIDEBAR NAVIGATION (HIDDEN ON MOBILE) ── */}
-      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflow: 'visible' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto', overflowX: 'hidden', flex: 1, paddingBottom: 8 }}>
-          {/* Brand Header */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', marginBottom: 28 }}>
-            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-          </div>
-
-          {/* Nav Group: Console */}
-          <div style={{ marginBottom: 4 }}>
-            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 10px', marginBottom: 6 }}>Console</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {[
-                { label: 'Dashboard', desc: 'Live queue overview & clinic stats', icon: <LayoutDashboard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {}, active: true },
-                { label: 'Manage Branches', desc: 'Set up & switch between clinic locations under one account', icon: <Layers className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/branches') },
-                { label: 'History', desc: 'Browse completed & past patient consultation records', icon: <History className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/history') },
-                { label: 'Analytics & Reports', desc: 'Track peak OPD hours, average wait times, reason breakdowns, and patient-wise statistics.', icon: <BarChart2 className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/analytics') },
-                { label: 'Broadcasting & CRM', desc: 'Send bulk WhatsApp alerts & manage patient relationships', icon: <Megaphone className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/crm') },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  onClick={item.onClick}
-                  className={`sidebar-btn${item.active ? ' active' : ''}`}
-                  onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
-                  onMouseLeave={() => setSbTooltip(null)}
-                >
-                  {item.icon}
-                  <span className="sb-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ height: 1, background: '#A8D5B5', margin: '14px 8px' }} />
-
-          {/* Nav Group: Account */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[
-              { label: 'Billing & Plans', desc: 'Manage your TokenPe subscription & plan features', icon: <CreditCard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/billing') },
-              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/help') },
-              { label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/profile') },
-            ].map(item => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className="sidebar-btn"
-                onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
-                onMouseLeave={() => setSbTooltip(null)}
-              >
-                {item.icon}
-                <span className="sb-label">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Exit Console & Logout Button at Bottom */}
-        <div style={{ paddingTop: 12, borderTop: '1px solid #A8D5B5', marginTop: 12 }}>
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="sidebar-btn"
-            style={{ width: '100%', color: '#B91C1C', fontWeight: 800 }}
-          >
-            <LogOut className="w-4 h-4" style={{ color: '#B91C1C' }} /> Exit Console &amp; Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* ── SIDEBAR FIXED TOOLTIP OVERLAY ── */}
-      {sbTooltip && (
-        <div style={{
-          position: 'fixed',
-          left: 252,
-          top: sbTooltip.y,
-          transform: 'translateY(-50%)',
-          background: '#1E3A2B',
-          color: '#E2F5EB',
-          borderRadius: 12,
-          padding: '12px 14px',
-          width: 220,
-          fontSize: '0.78rem',
-          fontWeight: 500,
-          lineHeight: 1.55,
-          zIndex: 99998,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-          pointerEvents: 'none',
-          whiteSpace: 'normal',
-        }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#A7F3D0', marginBottom: 4 }}>{sbTooltip.label}</div>
-          {sbTooltip.desc}
-          <div style={{
-            position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
-            width: 0, height: 0,
-            borderTop: '7px solid transparent',
-            borderBottom: '7px solid transparent',
-            borderRight: '7px solid #1E3A2B',
-          }} />
-        </div>
-      )}
-
-      {/* ── LOGOUT CONFIRMATION MODAL ── */}
-      {showLogoutConfirm && (
-        <div
-          onClick={() => setShowLogoutConfirm(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(6, 78, 59, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: '#FFFFFF', borderRadius: 20, padding: 28, maxWidth: 380, width: '100%', boxShadow: '0 25px 60px rgba(0,0,0,0.25)', border: '1.5px solid #CBE4D3', textAlign: 'center' }}
-          >
-            <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#FEF2F2', border: '1.5px solid #FECACA', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <LogOut style={{ width: 22, height: 22, color: '#B91C1C' }} />
-            </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A', marginBottom: 6, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Exit Console?</div>
-            <div style={{ fontSize: '0.84rem', color: '#64748B', marginBottom: 24, lineHeight: 1.6 }}>
-              You are about to log out of the TokenPe dashboard.<br />All unsaved changes will be lost.
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                style={{ flex: 1, background: '#F1F5F9', color: '#0F172A', border: 'none', padding: '11px', borderRadius: 12, fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { setShowLogoutConfirm(false); handleLogout() }}
-                style={{ flex: 1, background: '#B91C1C', color: 'white', border: 'none', padding: '11px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-              >
-                <LogOut style={{ width: 15, height: 15 }} /> Yes, Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ClinicSidebar clinic={clinic} activeTab={activeTab} />
 
       {/* ── MAIN CONTENT CONSOLE ── */}
       <main className="dashboard-main" style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', background: '#DCEFDF' }}>
@@ -1971,31 +1566,30 @@ function DashboardContent() {
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
               LIVE QUEUE
             </div>
-            <div style={{ background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 16, padding: '4px 14px', width: 175, minWidth: 175, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box', cursor: 'default' }}>
+            <div style={{ background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 14, padding: '4px 10px', width: 125, minWidth: 125, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box', cursor: 'default' }}>
               <AnimatedClock />
             </div>
-            <button
-              className="hamburger-btn"
-              onClick={() => setShowNavMenu(true)}
-              title="Open Navigation Menu"
-              style={{
-                background: '#FFFFFF',
-                border: '1.5px solid #064E3B',
-                padding: '7px 10px',
-                borderRadius: 12,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 2px 8px rgba(6,78,59,0.08)',
-                marginLeft: 'auto'
-              }}
-            >
-              <Menu style={{ width: 20, height: 20, color: '#064E3B' }} />
-            </button>
           </div>
         </div>
+
+        <style jsx global>{`
+          @media (max-width: 1024px) {
+            .stat-banner-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .stat-segment-hover {
+              border-right: 1.5px solid #CBE4D3 !important;
+              border-bottom: 1.5px solid #CBE4D3 !important;
+              padding: 12px 8px !important;
+            }
+            .stat-segment-hover:nth-child(2n) {
+              border-right: none !important;
+            }
+            .stat-segment-hover:nth-child(3), .stat-segment-hover:nth-child(4) {
+              border-bottom: none !important;
+            }
+          }
+        `}</style>
 
         {/* ── SINGLE PARTITIONED STAT BANNER CARD ── */}
         <div className="stat-banner-grid" style={{
@@ -2220,7 +1814,7 @@ function DashboardContent() {
 
         {/* ── QUEUE LIST / PAYMENTS VIEW ── */}
         <div>
-          {/* Search Queue Bar Inside Queue Section Top */}
+          {/* Search Queue Bar */}
           {activeTab !== 'payments' && (
             <div style={{ marginBottom: 12 }}>
               <div style={{ position: 'relative', width: '100%' }}>
@@ -2358,147 +1952,7 @@ function DashboardContent() {
         )}
       </AnimatePresence>
 
-      {/* 📱 MOBILE NAVIGATION OVERLAY DRAWER */}
-      <AnimatePresence>
-        {showNavMenu && (
-          <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.3 } }} style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', justifyContent: 'flex-end' }}>
-            {/* Backdrop Overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowNavMenu(false)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(6, 78, 59, 0.75)', backdropFilter: 'blur(6px)' }}
-            />
-
-            {/* Sliding Content Drawer (From Right) */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              style={{
-                position: 'relative',
-                width: '82%',
-                maxWidth: 320,
-                height: '100%',
-                maxHeight: '100dvh',
-                boxSizing: 'border-box',
-                background: '#FFFFFF',
-                boxShadow: '-10px 0 40px rgba(6,78,59,0.3)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-start',
-                zIndex: 10001,
-                padding: '24px 20px',
-                overflowY: 'auto'
-              }}
-            >
-              <div style={{ flexGrow: 1 }}>
-                {/* Brand Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid #E2E8F0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 38, height: 38, borderRadius: 12, background: '#064E3B', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Stethoscope className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#064E3B', letterSpacing: '-0.5px' }}>TokenPE</div>
-                      <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 700 }}>{clinic?.name || 'OPD Clinic Console'}</div>
-                    </div>
-                  </div>
-                  <button onClick={() => setShowNavMenu(false)} style={{ background: '#F1F5F9', border: 'none', width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}>
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Nav Links */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ fontSize: '0.66rem', fontWeight: 800, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4, paddingLeft: 4 }}>NAVIGATION</div>
-
-                  <button
-                    onClick={() => { setActiveTab('active'); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: activeTab === 'active' ? '#ECFDF5' : 'transparent', color: activeTab === 'active' ? '#064E3B' : '#0F172A', fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <LayoutDashboard className="w-4 h-4 text-[#064E3B]" /> Live Queue
-                  </button>
-
-                  <button
-                    onClick={() => { setShowAddForm(true); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <UserPlus className="w-4 h-4 text-[#059669]" /> Manual Check-in
-                  </button>
-
-                  <button
-                    onClick={() => { setShowBroadcast(true); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <Megaphone className="w-4 h-4 text-[#059669]" /> Notice to Queue
-                  </button>
-
-                  <button
-                    onClick={() => { setShowQR(true); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <QrCode className="w-4 h-4 text-[#059669]" /> OPD QR Poster
-                  </button>
-
-                  <button
-                    onClick={() => { setActiveTab('payments'); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: activeTab === 'payments' ? '#ECFDF5' : 'transparent', color: activeTab === 'payments' ? '#064E3B' : '#0F172A', fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <CreditCard className="w-4 h-4 text-[#059669]" /> Payments Ledger
-                  </button>
-
-                  <button
-                    onClick={() => { setActiveTab('done'); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: activeTab === 'done' ? '#ECFDF5' : 'transparent', color: activeTab === 'done' ? '#064E3B' : '#0F172A', fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-[#059669]" /> Completed Consultations
-                  </button>
-
-                  <div style={{ height: 1, background: '#E2E8F0', margin: '8px 0' }} />
-
-                  <div style={{ fontSize: '0.66rem', fontWeight: 800, color: '#064E3B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4, paddingLeft: 4 }}>MANAGEMENT</div>
-
-                  <button
-                    onClick={() => { router.push('/dashboard/analytics'); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <Calendar className="w-4 h-4 text-[#059669]" /> Appointments & Analytics
-                  </button>
-
-                  <button
-                    onClick={() => { router.push('/dashboard/crm'); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <UserCheck className="w-4 h-4 text-[#059669]" /> Doctors & Patients
-                  </button>
-
-                  <button
-                    onClick={() => { router.push('/dashboard/billing'); setShowNavMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'transparent', color: '#0F172A', fontWeight: 700, fontSize: '0.88rem', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <Settings className="w-4 h-4 text-[#059669]" /> Settings & Billing
-                  </button>
-                </div>
-              </div>
-
-              {/* Drawer Bottom Logout */}
-              <div style={{ paddingTop: 16, borderTop: '1px solid #E2E8F0', marginTop: 20 }}>
-                <button
-                  onClick={handleLogout}
-                  style={{ width: '100%', padding: '12px', background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: 12, fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                >
-                  <LogOut className="w-4 h-4" /> Logout
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {showAddForm && <WalkInModal clinic={clinic} onClose={() => setShowAddForm(false)} onAddSuccess={(newP) => { if (newP) setPatients(prev => [...prev, newP]); fetchQueue(); sounds.admit(); setToastMsg('Patient added to queue successfully!'); setTimeout(() => setToastMsg(''), 4500); }} patientsCount={patients.length} />}
+      {showAddForm && <WalkInModal clinic={clinic} onClose={() => setShowAddForm(false)} onAddSuccess={(newP) => { if (newP) setPatients(prev => [...prev, newP]); fetchQueue(); sounds.admit(); setToastMsg('Patient added to queue successfully!'); }} patientsCount={patients.length} />}
       {showQR && <QRModal clinic={clinic} onClose={() => setShowQR(false)} onCodeUpdate={(code) => setClinic(c => ({ ...c, code }))} />}
       {showBroadcast && <BroadcastModal onClose={() => setShowBroadcast(false)} onSendNotice={handleSendNotice} activeNotice={activeNotice} />}
       {selectedPatient && <PatientDetailsModal patient={selectedPatient} onClose={() => setSelectedPatient(null)} onNotify={() => notifyWhatsApp(selectedPatient)} />}

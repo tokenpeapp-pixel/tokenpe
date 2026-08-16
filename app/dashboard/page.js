@@ -206,7 +206,11 @@ function QRModal({ clinic, onClose, onCodeUpdate }) {
 
     try {
       if (clinic?.id) {
-        await supabase.from('businesses').update({ code: clean, location: locationInput }).eq('id', clinic.id).catch(() => {})
+        await fetch('/api/clinic-v2/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: clean })
+        }).catch(() => {})
       }
     } catch (_) {}
 
@@ -1239,9 +1243,11 @@ function DashboardContent() {
 
     try {
       if (clinic?.id) {
-        await supabase.from('businesses')
-          .update({ name: editedName.trim() })
-          .eq('id', clinic.id)
+        await fetch('/api/clinic-v2/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: editedName.trim() })
+        }).catch(() => {})
       }
     } catch (_) {}
   }
@@ -1260,9 +1266,11 @@ function DashboardContent() {
 
         try {
           if (clinic?.id) {
-            await supabase.from('businesses')
-              .update({ logo_url: logoUrl })
-              .eq('id', clinic.id)
+            await fetch('/api/clinic-v2/update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ logo_url: logoUrl })
+            }).catch(() => {})
           }
         } catch (_) {}
       }
@@ -1384,14 +1392,12 @@ function DashboardContent() {
 
     // 1. Try backend API endpoint
     try {
-      const res = await fetch('/api/queue/add', {
+      const res = await fetch('/api/clinic-v2/queue/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessId: bId,
           name: pName,
           phone: cleanP,
-          token: generatedToken,
           language: newLang || 'en',
           purpose: 'Walk-in Consultation',
         })
@@ -1409,35 +1415,6 @@ function DashboardContent() {
       }
     } catch (e) {
       console.warn('API add failed:', e)
-    }
-
-    // 2. Direct Supabase fallback
-    try {
-      if (bId) {
-        const { data, error } = await supabase.from('queue_entries').insert([{
-          business_id: bId,
-          name: pName,
-          phone: cleanP,
-          token: generatedToken,
-          status: 'waiting',
-          date: today,
-          language: newLang || 'en',
-          joined_at: new Date().toISOString(),
-        }]).select()
-
-        if (!error && data) {
-          setNewName('')
-          setNewPhone('')
-          setAddError('')
-          setShowAddForm(false)
-          fetchQueue()
-          sounds.admit()
-          setAddSaving(false)
-          return
-        }
-      }
-    } catch (e) {
-      console.error(e)
     }
 
     // 3. Instant local state insertion so user never sees a failure
@@ -1470,19 +1447,12 @@ function DashboardContent() {
       const targetP = patients.find(p => String(p.id) === String(patientId))
       const bId = clinic?.id || clinic?.business_id
 
-      supabase.from('queue_entries').update({ status: 'called' }).eq('id', patientId).then(() => {})
-
       if (bId && targetP) {
-        await fetch('/api/queue/next', {
+        await fetch('/api/clinic-v2/queue/next', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            businessId: bId,
-            patientId: patientId,
-            patientPhone: targetP.phone,
-            patientName: targetP.name,
-            token: targetP.token,
-            language: targetP.language || 'en'
+            patientId: patientId
           })
         }).catch(() => {})
       }
@@ -1511,13 +1481,10 @@ function DashboardContent() {
     setTimeout(() => setToastMsg(''), 4000)
 
     try {
-      const bId = clinic?.id || clinic?.business_id
-      supabase.from('queue_entries').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', patientId).then(() => {})
-
-      await fetch('/api/queue/done', {
+      await fetch('/api/clinic-v2/queue/done', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId, businessId: bId })
+        body: JSON.stringify({ id: patientId })
       }).catch(() => {})
     } catch (e) {
       console.warn('markDone error:', e)
@@ -1531,13 +1498,10 @@ function DashboardContent() {
     setTimeout(() => setToastMsg(''), 4000)
 
     try {
-      const bId = clinic?.id || clinic?.business_id
-      supabase.from('queue_entries').update({ status: 'skipped' }).eq('id', patientId).then(() => {})
-
-      await fetch('/api/queue/skip', {
+      await fetch('/api/clinic-v2/queue/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId, businessId: bId })
+        body: JSON.stringify({ id: patientId })
       }).catch(() => {})
     } catch (e) {
       console.warn('skipPatient error:', e)

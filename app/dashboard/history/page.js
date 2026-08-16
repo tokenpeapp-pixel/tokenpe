@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
-import ClinicSidebar from '../../../components/ClinicSidebar'
 import { 
   History, Search, Calendar, Phone, Clock, User, CheckCircle2, XCircle, Users,
   ArrowLeft, Download, Filter, RefreshCw, Layers, LayoutDashboard, 
@@ -111,8 +110,7 @@ export default function HistoryPage() {
   })
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8FAFC] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
-      <ClinicSidebar clinic={clinic} />
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", background: '#F8FAFC', overflowX: 'hidden' }}>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
         .sidebar-btn {
@@ -172,6 +170,107 @@ export default function HistoryPage() {
         }
       `}</style>
 
+      {/* ── LEFT SIDEBAR NAVIGATION ── */}
+      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflow: 'visible' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto', overflowX: 'hidden', flex: 1, paddingBottom: 8 }}>
+          {/* Brand Header */}
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', marginBottom: 28 }}>
+            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
+          </div>
+
+          {/* Nav Group: Console */}
+          <div style={{ marginBottom: 4 }}>
+            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 10px', marginBottom: 6 }}>Console</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {[
+                { label: 'Dashboard', desc: 'Live queue overview & clinic stats', icon: <LayoutDashboard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard') },
+                { label: 'Manage Branches', desc: 'Set up & switch between clinic locations under one account', icon: <Layers className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/branches') },
+                { label: 'History', desc: 'Browse completed & past patient consultation records', icon: <History className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {}, active: true },
+                { label: 'Analytics & Reports', desc: 'Track peak OPD hours, average wait times, reason breakdowns, and patient-wise statistics.', icon: <BarChart2 className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/analytics') },
+                { label: 'Broadcasting & CRM', desc: 'Send bulk WhatsApp alerts & manage patient relationships', icon: <Megaphone className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/crm') },
+              ].map(item => (
+                <button
+                  key={item.label}
+                  onClick={item.onClick}
+                  className={`sidebar-btn${item.active ? ' active' : ''}`}
+                  onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
+                  onMouseLeave={() => setSbTooltip(null)}
+                >
+                  {item.icon}
+                  <span className="sb-label">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: '#A8D5B5', margin: '14px 8px' }} />
+
+          {/* Nav Group: Account */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {[
+              { label: 'Billing & Plans', desc: 'Manage your TokenPe subscription & plan features', icon: <CreditCard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/billing') },
+              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/help') },
+              { label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/profile') },
+            ].map(item => (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                className="sidebar-btn"
+                onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
+                onMouseLeave={() => setSbTooltip(null)}
+              >
+                {item.icon}
+                <span className="sb-label">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Exit Console & Logout Button at Bottom */}
+        <div style={{ paddingTop: 12, borderTop: '1px solid #A8D5B5', marginTop: 12 }}>
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="sidebar-btn"
+            style={{ width: '100%', color: '#B91C1C', fontWeight: 800 }}
+          >
+            <LogOut className="w-4 h-4" style={{ color: '#B91C1C' }} /> Exit Console &amp; Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* ── SIDEBAR FIXED TOOLTIP OVERLAY ── */}
+      {sbTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: 252,
+          top: sbTooltip.y,
+          transform: 'translateY(-50%)',
+          background: '#1E3A2B',
+          color: '#E2F5EB',
+          borderRadius: 12,
+          padding: '12px 14px',
+          width: 220,
+          fontSize: '0.78rem',
+          fontWeight: 500,
+          lineHeight: 1.55,
+          zIndex: 99998,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+          pointerEvents: 'none',
+          whiteSpace: 'normal',
+        }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#A7F3D0', marginBottom: 4 }}>{sbTooltip.label}</div>
+          {sbTooltip.desc}
+          <div style={{
+            position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
+            width: 0, height: 0,
+            borderTop: '7px solid transparent',
+            borderBottom: '7px solid transparent',
+            borderRight: '7px solid #1E3A2B',
+          }} />
+        </div>
+      )}
+
       {/* ── LOGOUT CONFIRMATION MODAL ── */}
       {showLogoutConfirm && (
         <div
@@ -213,7 +312,7 @@ export default function HistoryPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <button
             onClick={() => router.push('/dashboard')}
-            className="hidden lg:flex items-center gap-1.5 bg-white border border-[#CBD5E1] px-4 py-2 rounded-xl font-extrabold text-[#0F172A] text-xs shadow-sm hover:bg-slate-50 transition-all cursor-pointer"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'white', border: '1.5px solid #CBD5E1', padding: '8px 16px', borderRadius: 12, fontWeight: 800, color: '#0F172A', fontSize: '0.82rem', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}
           >
             <ArrowLeft className="w-4 h-4" /> Back to Live Dashboard
           </button>

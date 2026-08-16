@@ -37,11 +37,19 @@ export async function GET(req) {
       }
     }
 
-    // Query queue_entries table directly
+    // Query patients table first (fallback to queue_entries)
     let { data: patients, error } = await supabaseAdmin
-      .from('queue_entries')
-      .select('phone, crm_rating, feedback_text, feedback_at, name, date, completed_at, status')
-      .eq('business_id', businessId)
+      .from('patients')
+      .select('phone, name, date, completed_at, status, crm_rating, feedback_text, feedback_at')
+      .eq('clinic_id', businessId)
+      
+    if (error || !patients) {
+      const { data: qPatients } = await supabaseAdmin
+        .from('queue_entries')
+        .select('phone, crm_rating, feedback_text, feedback_at, name, date, completed_at, status')
+        .eq('business_id', businessId)
+      patients = qPatients || []
+    }
 
     if (!patients || patients.length === 0) {
       return NextResponse.json({

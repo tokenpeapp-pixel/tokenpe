@@ -20,9 +20,9 @@ export async function GET(req) {
         const customEnd = searchParams.get('customEnd')
 
         let query = supabaseAdmin
-            .from('queue_entries')
+            .from('patients')
             .select('*')
-            .eq('business_id', businessId)
+            .eq('clinic_id', businessId)
             .order('joined_at', { ascending: false })
 
         const now = new Date()
@@ -55,11 +55,11 @@ export async function GET(req) {
         let { data: patients, error } = await query
 
         if (!patients || patients.length === 0) {
-            // Fallback for null business_id entries
+            // Fallback for null clinic_id entries
             let fbQuery = supabaseAdmin
-                .from('queue_entries')
+                .from('patients')
                 .select('*')
-                .is('business_id', null)
+                .is('clinic_id', null)
                 .order('joined_at', { ascending: false })
 
             if (preset === 'today') {

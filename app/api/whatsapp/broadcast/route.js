@@ -60,9 +60,17 @@ export async function POST(req) {
 
     // 2. Fetch Unique Patients
     let { data: patients } = await supabaseAdmin
-      .from('queue_entries')
+      .from('patients')
       .select('phone')
-      .eq('business_id', targetId)
+      .eq('clinic_id', targetId)
+
+    if (!patients || patients.length === 0) {
+      const { data: qP } = await supabaseAdmin
+        .from('queue_entries')
+        .select('phone')
+        .eq('business_id', targetId)
+      if (qP) patients = qP
+    }
 
     const uniquePhones = [...new Set((patients || []).map(p => p.phone).filter(Boolean))]
 

@@ -63,7 +63,7 @@ export async function POST(req) {
                 name: user.user_metadata?.full_name || 'My Clinic',
                 email: user.email,
                 code: newCode,
-                phone: '0000000000',
+                phone: 'pending-' + crypto.randomBytes(4).toString('hex'),
                 pin_hash: pinHash,
                 plan_id: 'elite',
                 subscription_status: 'trialing',

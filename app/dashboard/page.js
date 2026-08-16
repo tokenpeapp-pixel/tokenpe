@@ -57,7 +57,7 @@ function AnimatedClock() {
   const [h, m, s] = timeDigits.split(':')
 
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, fontFamily: "'Plus Jakarta Sans', sans-serif", fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', fontSize: '1.1rem', fontWeight: 800, color: '#064E3B', lineHeight: 1, whiteSpace: 'nowrap' }}>
+    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 1, fontFamily: "'Plus Jakarta Sans', sans-serif", fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', fontSize: '0.92rem', fontWeight: 800, color: '#064E3B', lineHeight: 1, whiteSpace: 'nowrap' }}>
       <AnimatedNumber value={h || '00'} />
       <span style={{ margin: '0 1px', opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>:</span>
       <AnimatedNumber value={m || '00'} />
@@ -1557,16 +1557,24 @@ function DashboardContent() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 16, padding: '4px 12px', color: '#1E3A2B', fontSize: '0.74rem', fontWeight: 700, cursor: 'default' }}>
-              <Calendar className="w-3.5 h-3.5 text-[#059669]" />
-              <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
+          {/* Header Status Badges (3 Individual Pills - 'LIVE QUEUE' on Desktop, 'LIVE' on Mobile) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
+            {/* Pill 1: Date */}
+            <div style={{ height: 34, display: 'inline-flex', alignItems: 'center', gap: 5, background: '#FFFFFF', border: '1.5px solid #A8D5B5', borderRadius: 12, padding: '0 10px', color: '#1E3A2B', fontSize: '0.76rem', fontWeight: 700, cursor: 'default', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <Calendar className="w-3.5 h-3.5 text-[#059669] flex-shrink-0" />
+              <span className="hidden sm:inline">{new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              <span className="sm:hidden">{new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#FFFFFF', border: '1.5px solid #A8D5B5', borderRadius: 16, padding: '4px 12px', color: '#047857', fontSize: '0.74rem', fontWeight: 800, cursor: 'default' }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
-              LIVE QUEUE
+
+            {/* Pill 2: Status (LIVE QUEUE on desktop, LIVE on mobile) */}
+            <div style={{ height: 34, display: 'inline-flex', alignItems: 'center', gap: 5, background: '#FFFFFF', border: '1.5px solid #A8D5B5', borderRadius: 12, padding: '0 10px', color: '#047857', fontSize: '0.76rem', fontWeight: 800, cursor: 'default', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse flex-shrink-0" />
+              <span className="hidden sm:inline">LIVE QUEUE</span>
+              <span className="sm:hidden">LIVE</span>
             </div>
-            <div style={{ background: 'white', border: '1.5px solid #A8D5B5', borderRadius: 14, padding: '4px 10px', width: 125, minWidth: 125, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box', cursor: 'default' }}>
+
+            {/* Pill 3: Real-time Clock */}
+            <div style={{ height: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFF', border: '1.5px solid #A8D5B5', borderRadius: 12, padding: '0 10px', cursor: 'default', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', whiteSpace: 'nowrap', flexShrink: 0 }}>
               <AnimatedClock />
             </div>
           </div>

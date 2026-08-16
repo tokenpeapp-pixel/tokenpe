@@ -45,9 +45,6 @@ export async function POST(req) {
         }
 
         // 3. Insert transaction if a payment was made
-        // A payment is made if paymentAmount > 0 and status is completed or partial, but we will insert whatever amount is passed
-        // as long as paymentAmount > 0 and status isn't unpaid. Or maybe just insert whenever amount is passed.
-        // Actually, if we're marking 'completed', we should log the transaction.
         if (paymentAmount > 0 && paymentStatus !== 'unpaid') {
             await supabaseAdmin
                 .from('patient_transactions')

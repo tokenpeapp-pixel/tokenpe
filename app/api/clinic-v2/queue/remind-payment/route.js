@@ -32,11 +32,11 @@ export async function POST(req) {
             return Response.json({ success: false, message: 'Access denied to this patient record' }, { status: 403 })
         }
 
-        if (patient.payment_status === 'completed') {
+        if (patient.payment_status === 'paid') {
             return Response.json({ success: false, message: 'Payment is already completed.' }, { status: 400 })
         }
 
-        if (!patient.phone || patient.phone === '0000000000') {
+        if (!patient.phone || patient.phone.startsWith('pending-')) {
             return Response.json({ success: false, message: 'No valid phone number to send reminder.' }, { status: 400 })
         }
 

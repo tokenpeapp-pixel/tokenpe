@@ -18,22 +18,13 @@ export async function GET(req) {
         const clinicId = session.clinicId
         const today = getISTDateString()
 
-        // 1. Total Collected
-        const { data: collectedData } = await supabaseAdmin
-            .from('patient_transactions')
-            .select('amount')
-            .eq('status', 'captured')
-        // We need to filter transactions by clinic. If patient_transactions doesn't have clinic_id,
-        // we might have to join or we assume we can add clinic_id. Actually, V2 patient_transactions usually has patient_entry_id.
-        // Wait, does patient_transactions have clinic_id? Let's just query patient_entries for the clinic.
-
         // Let's get today's patient entries for the clinic
         const { data: entries } = await supabaseAdmin
             .from('patient_entries')
             .select('*')
             .eq('clinic_id', clinicId)
             .eq('entry_date', today)
-            .order('joined_at', { ascending: false })
+            .order('created_at', { ascending: false })
             
         const patientEntries = entries || []
         const entryIds = patientEntries.map(e => e.id)
@@ -73,7 +64,7 @@ export async function GET(req) {
             return {
                 ...e,
                 fee_total: e.payment_amount,
-                fee_paid: e.payment_status === 'completed' && paid === 0 ? e.payment_amount : paid, // fallback if no tx
+                fee_paid: e.status === 'completed' && paid === 0 ? e.payment_amount : paid, // fallback if no tx
             }
         })
 

@@ -1295,6 +1295,9 @@ function DashboardContent() {
         const data = await res.json()
         if (data.success && data.clinic) {
           setClinic(data.clinic)
+          if (data.clinic.queue_paused !== undefined && data.clinic.queue_paused !== null) {
+            setQueuePaused(Boolean(data.clinic.queue_paused))
+          }
           localStorage.setItem('tokenpe_clinic', JSON.stringify(data.clinic))
         } else if (!storedClinic) {
           router.push('/login')
@@ -1352,8 +1355,25 @@ function DashboardContent() {
     return () => clearInterval(interval)
   }, [fetchQueue])
 
-  const togglePauseQueue = () => {
-    setQueuePaused(!queuePaused)
+  const togglePauseQueue = async () => {
+    const nextState = !queuePaused
+    setQueuePaused(nextState)
+    setClinic(prev => prev ? { ...prev, queue_paused: nextState } : prev)
+    sounds.dismiss()
+    setToastMsg(nextState ? 'OPD Queue Paused. Patient check-ins suspended.' : 'OPD Queue Resumed! Active check-ins restored.')
+
+    try {
+      const bId = clinic?.id || clinic?.business_id
+      if (bId) {
+        await fetch('/api/business/pause', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId: bId, paused: nextState })
+        })
+      }
+    } catch (e) {
+      console.warn('Error toggling queue pause status:', e)
+    }
   }
 
   const admitPatient = async (patientId) => {
@@ -1566,11 +1586,11 @@ function DashboardContent() {
               <span className="sm:hidden">{new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
             </div>
 
-            {/* Pill 2: Status (LIVE QUEUE on desktop, LIVE on mobile) */}
-            <div style={{ height: 34, display: 'inline-flex', alignItems: 'center', gap: 5, background: '#FFFFFF', border: '1.5px solid #A8D5B5', borderRadius: 12, padding: '0 10px', color: '#047857', fontSize: '0.76rem', fontWeight: 800, cursor: 'default', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse flex-shrink-0" />
-              <span className="hidden sm:inline">LIVE QUEUE</span>
-              <span className="sm:hidden">LIVE</span>
+            {/* Pill 2: Status (LIVE QUEUE / QUEUE PAUSED) */}
+            <div style={{ height: 34, display: 'inline-flex', alignItems: 'center', gap: 5, background: queuePaused ? '#FEF2F2' : '#FFFFFF', border: `1.5px solid ${queuePaused ? '#FCA5A5' : '#A8D5B5'}`, borderRadius: 12, padding: '0 10px', color: queuePaused ? '#DC2626' : '#047857', fontSize: '0.76rem', fontWeight: 800, cursor: 'default', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <span className={`w-2 h-2 rounded-full ${queuePaused ? 'bg-[#EF4444]' : 'bg-[#10B981]'} animate-pulse flex-shrink-0`} />
+              <span className="hidden sm:inline">{queuePaused ? 'QUEUE PAUSED' : 'LIVE QUEUE'}</span>
+              <span className="sm:hidden">{queuePaused ? 'PAUSED' : 'LIVE'}</span>
             </div>
 
             {/* Pill 3: Real-time Clock */}
@@ -1598,6 +1618,66 @@ function DashboardContent() {
             }
           }
         `}</style>
+
+        {/* ── QUEUE PAUSED ALERT HEADER BANNER ── */}
+        {queuePaused && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              background: 'linear-gradient(135deg, #FEF2F2 0%, #FFF1F2 100%)',
+              border: '1.5px solid #FCA5A5',
+              borderRadius: 14,
+              padding: '14px 20px',
+              marginBottom: 16,
+              boxShadow: '0 4px 16px rgba(220, 38, 38, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: '#FEE2E2', border: '1px solid #FECACA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', flexShrink: 0 }}>
+                <Pause className="w-5 h-5 text-[#DC2626] animate-pulse" />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#991B1B', fontFamily: "'Plus Jakarta Sans', sans-serif", display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Pause className="w-4 h-4 text-[#DC2626] flex-shrink-0" />
+                    <span>OPD QUEUE IS CURRENTLY PAUSED</span>
+                  </div>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, background: '#DC2626', color: 'white', padding: '2px 8px', borderRadius: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>CHECK-INS SUSPENDED</span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#7F1D1D', fontWeight: 600, marginTop: 2 }}>
+                  Patient token generation is on hold. Doctor consultation operations remain accessible below.
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={togglePauseQueue}
+              style={{
+                background: '#DC2626',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: 10,
+                padding: '9px 18px',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: '0 4px 12px rgba(220,38,38,0.25)',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <Play className="w-3.5 h-3.5 fill-current text-white" /> Resume OPD Queue
+            </button>
+          </motion.div>
+        )}
 
         {/* ── SINGLE PARTITIONED STAT BANNER CARD ── */}
         <div className="stat-banner-grid" style={{

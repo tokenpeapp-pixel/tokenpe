@@ -174,11 +174,8 @@ export default function LoginPage() {
             return
         }
 
-        if (!regLat || !regLng) {
-            setError('Business GPS Location is mandatory. Please click "Detect GPS Location" and allow permissions.')
-            setLoading(false)
-            return
-        }
+        const latToSend = regLat || 19.0760
+        const lngToSend = regLng || 72.8777
 
         try {
             const res = await fetch('/api/clinic-v2/register', {
@@ -191,8 +188,8 @@ export default function LoginPage() {
                     pin: regPin,
                     specialty: regBusinessType === 'Other' ? customBusinessType : regBusinessType,
                     city: regCity,
-                    lat: regLat,
-                    lng: regLng
+                    lat: latToSend,
+                    lng: lngToSend
                 })
             })
             const result = await res.json()

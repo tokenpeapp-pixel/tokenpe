@@ -28,8 +28,14 @@ function AuthCallbackContent() {
                     setStatus('Logging you in securely...')
                 }
 
+                // Route clinics to the new V2 endpoint, keep others on V1
+                let endpoint = '/api/business-auth/googleCallback'
+                if (!vertical || vertical === 'clinic' || vertical === 'other') {
+                    endpoint = '/api/clinic-v2/google-callback'
+                }
+
                 // Call our secure backend API to handle all checks, creation, and JWT logic
-                const res = await fetch('/api/business-auth/googleCallback', {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',

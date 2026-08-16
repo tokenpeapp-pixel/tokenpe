@@ -18,7 +18,7 @@ export default function LoginPage() {
         if (typeof window !== 'undefined') {
             localStorage.setItem('tokenpe_vertical', 'other')
             // Check session via API instead of localStorage directly to be secure
-            fetch('/api/business-auth/me')
+            fetch('/api/clinic-v2/me')
                 .then(res => res.json())
                 .then(data => {
                     if (data.authenticated && data.clinic) {
@@ -139,10 +139,10 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/business-auth/login', {
+            const res = await fetch('/api/clinic-v2/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: loginEmail, phone: loginPhone, pin: loginPin })
+                body: JSON.stringify({ identifier: loginEmail || loginPhone, pin: loginPin })
             })
             const result = await res.json()
 
@@ -181,7 +181,7 @@ export default function LoginPage() {
         }
 
         try {
-            const res = await fetch('/api/business-auth/register', {
+            const res = await fetch('/api/clinic-v2/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

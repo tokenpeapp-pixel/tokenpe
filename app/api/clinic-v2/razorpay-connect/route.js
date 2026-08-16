@@ -23,7 +23,7 @@ export async function POST(req) {
                 key_id: razorpayKeyId,
                 key_secret: razorpayKeySecret
             })
-            
+
             // Try fetching a single order just to test auth
             await rzp.orders.all({ count: 1 })
         } catch (error) {

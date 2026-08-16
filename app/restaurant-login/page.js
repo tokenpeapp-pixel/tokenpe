@@ -166,11 +166,8 @@ export default function LoginPage() {
             return
         }
 
-        if (!regLat || !regLng) {
-            setError('Restaurant GPS location is mandatory. Please click "Detect GPS Location" and allow permissions.')
-            setLoading(false)
-            return
-        }
+        const latToSend = regLat || 19.0760
+        const lngToSend = regLng || 72.8777
 
         try {
             const res = await fetch('/api/business-auth/register', {
@@ -183,8 +180,8 @@ export default function LoginPage() {
                     pin: regPin,
                     specialty: 'Restaurant',
                     city: regCity,
-                    lat: regLat,
-                    lng: regLng,
+                    lat: latToSend,
+                    lng: lngToSend,
                     vertical: 'restaurant'
                 })
             })

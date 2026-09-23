@@ -403,18 +403,23 @@ export default function LandingPageTemplate({ config = {} }) {
           100% { left: 200%; }
         }
 
-        /* ── TOPBAR ── */
+        /* ── TOPBAR (always sticky) ── */
         .lp-topbar {
-          background: transparent !important;
+          background: rgba(34, 197, 94, 0.08) !important;
           color: #d1d5db !important;
           text-align: center;
-          padding: 10px 16px;
+          padding: 9px 16px;
           font-size: 13px;
           font-weight: 500;
           letter-spacing: 0.2px;
           line-height: 1.5;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          border-bottom: 1px solid rgba(34, 197, 94, 0.15);
           display: block !important;
+          transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        .lp-topbar.scrolled-bar {
+          background: rgba(34, 197, 94, 0.12) !important;
+          border-bottom: 1px solid rgba(34, 197, 94, 0.2);
         }
         .lp-topbar a {
           color: #22c55e !important;
@@ -2426,13 +2431,13 @@ export default function LandingPageTemplate({ config = {} }) {
 
       {/* ── FIXED NAV (CONTAINING TOPBAR & MAIN NAV INNER) ── */}
       <nav className={`lp-nav${scrolled ? " scrolled" : ""}`}>
-        {!scrolled && (
-          <div className="lp-topbar">
-            <Sparkles size={14} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "middle" }} /> 7-Day Elite Trial — No credit card needed.
+        <div className={`lp-topbar${scrolled ? ' scrolled-bar' : ''}`}>
+            <Sparkles size={14} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "middle", color: "#22c55e" }} />
+            <span style={{ color: "#22c55e", fontWeight: 600 }}>7-Day Elite Trial</span>
+            <span style={{ color: "#9ca3af", marginLeft: 6 }}>— No credit card needed.</span>
             {!config.isRoot && <a href="#" onClick={(e) => { e.preventDefault(); router.push("/login"); }}>Start now →</a>}
             {config.isRoot && <a href="#" onClick={(e) => { e.preventDefault(); go("industries"); }}>Start now →</a>}
           </div>
-        )}
         <div className="lp-nav-inner">
           <div className="lp-nav-left">
             <img src="/logo-nav.svg" alt="TokenPe" style={{ height: 36, width: "auto", cursor: "pointer" }} onClick={() => router.push("/")} />

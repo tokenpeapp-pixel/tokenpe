@@ -2412,7 +2412,7 @@ export default function LandingPageTemplate({ config = {} }) {
             opacity: 1 !important;
           }
           /* Mobile Vibrant Orange Announcement Topbar */
-          .lp-topbar {
+          .lp-topbar, .lp-topbar.scrolled-bar {
             background: linear-gradient(135deg, #f97316, #ea580c) !important;
             color: #ffffff !important;
             border-bottom: none !important;

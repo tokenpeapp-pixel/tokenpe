@@ -421,6 +421,9 @@ export default function LandingPageTemplate({ config = {} }) {
           background: rgba(34, 197, 94, 0.12) !important;
           border-bottom: 1px solid rgba(34, 197, 94, 0.2);
         }
+        .tb-icon { color: #22c55e; }
+        .tb-hl { color: #22c55e; font-weight: 600; }
+        .tb-muted { color: #9ca3af; margin-left: 6px; }
         .lp-topbar a {
           color: #22c55e !important;
           font-weight: 600;
@@ -2422,6 +2425,11 @@ export default function LandingPageTemplate({ config = {} }) {
             text-decoration: underline !important;
             font-weight: 700 !important;
           }
+          .lp-topbar .tb-icon,
+          .lp-topbar .tb-hl,
+          .lp-topbar .tb-muted {
+            color: #ffffff !important;
+          }
         }
       `}
         </style>
@@ -2432,9 +2440,9 @@ export default function LandingPageTemplate({ config = {} }) {
       {/* ── FIXED NAV (CONTAINING TOPBAR & MAIN NAV INNER) ── */}
       <nav className={`lp-nav${scrolled ? " scrolled" : ""}`}>
         <div className={`lp-topbar${scrolled ? ' scrolled-bar' : ''}`}>
-            <Sparkles size={14} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "middle", color: "#22c55e" }} />
-            <span style={{ color: "#22c55e", fontWeight: 600 }}>7-Day Elite Trial</span>
-            <span style={{ color: "#9ca3af", marginLeft: 6 }}>— No credit card needed.</span>
+            <Sparkles size={14} className="tb-icon" style={{ display: "inline-block", marginRight: "6px", verticalAlign: "middle" }} />
+            <span className="tb-hl">7-Day Elite Trial</span>
+            <span className="tb-muted">— No credit card needed.</span>
             {!config.isRoot && <a href="#" onClick={(e) => { e.preventDefault(); router.push("/login"); }}>Start now →</a>}
             {config.isRoot && <a href="#" onClick={(e) => { e.preventDefault(); go("industries"); }}>Start now →</a>}
           </div>

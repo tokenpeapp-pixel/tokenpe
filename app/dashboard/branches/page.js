@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import ClinicSidebar from '../../../components/ClinicSidebar'
 import {
   Layers, LayoutDashboard, History, BarChart2, Megaphone, CreditCard,
   HelpCircle, User, ArrowLeft, Plus, QrCode, Users, CheckCircle2, Trash2,
@@ -21,7 +22,6 @@ export default function ManageBranchesPage() {
   const [branches, setBranches]         = useState([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState(null)
-  const [sbTooltip, setSbTooltip]       = useState(null)
 
   // Branch Stats
   const [branchStats, setBranchStats]   = useState({})
@@ -189,13 +189,9 @@ export default function ManageBranchesPage() {
   }
 
   if (loading) return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", background: '#F2F7F2' }}>
-      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', flexShrink: 0, height: '100vh' }}>
-        <div style={{ padding: '0 4px', marginBottom: 28 }}>
-          <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-        </div>
-      </aside>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F2F7F2] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
+      <ClinicSidebar clinic={clinic} />
+      <div className="flex-1 flex items-center justify-center min-h-[60vh] p-8">
         <div className="w-10 h-10 border-4 border-[#C3DBC7] border-t-[#2D6A4F] rounded-full animate-spin"></div>
       </div>
     </div>
@@ -206,47 +202,10 @@ export default function ManageBranchesPage() {
   const mainBranchId = branches.length > 0 ? branches[0].id : null
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif", background: '#F2F7F2', overflowX: 'hidden' }}>
-      <style jsx global>{`
-        .sidebar-btn {
-          display: flex !important;
-          align-items: center !important;
-          flex-direction: row !important;
-          gap: 10px !important;
-          padding: 10px 14px !important;
-          border-radius: 12px !important;
-          background: transparent;
-          color: #1E3A2B !important;
-          font-weight: 700 !important;
-          font-size: 0.85rem !important;
-          border: none !important;
-          cursor: pointer !important;
-          width: 100% !important;
-          text-align: left !important;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-          white-space: nowrap !important;
-          overflow: hidden !important;
-        }
-        .sidebar-btn:hover {
-          background: #BFE3CD !important;
-          color: #064E3B !important;
-          padding-left: 20px !important;
-          box-shadow: 0 4px 12px rgba(6,78,59,0.08) !important;
-        }
-        .sidebar-btn.active {
-          background: #BFE3CD !important;
-          color: #064E3B !important;
-          font-weight: 800 !important;
-          box-shadow: inset 3px 0 0 #064E3B !important;
-        }
-        .sidebar-btn .sb-label {
-          font-weight: 700 !important;
-          font-size: 0.85rem !important;
-          white-space: nowrap !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-        }
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F2F7F2] font-['Plus_Jakarta_Sans'] overflow-x-hidden">
+      <ClinicSidebar clinic={clinic} />
 
+      <style jsx global>{`
         .branch-card {
           transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
         }
@@ -256,74 +215,8 @@ export default function ManageBranchesPage() {
         }
       `}</style>
       
-      {/* ── LEFT SIDEBAR NAVIGATION ── */}
-      <aside className="dashboard-sidebar" style={{ width: 240, background: '#CBE4D3', borderRight: '1px solid #A8D5B5', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflow: 'visible' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, overflowY: 'auto', overflowX: 'hidden', flex: 1, paddingBottom: 8 }}>
-          {/* Brand Header */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', marginBottom: 28 }}>
-            <img src="/logo-light.svg" alt="TokenPe" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-          </div>
-
-          {/* Nav Group: Console */}
-          <div style={{ marginBottom: 4 }}>
-            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#1E3A2B', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 10px', marginBottom: 6 }}>Console</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {[
-                { label: 'Dashboard', desc: 'Live queue overview & clinic stats', icon: <LayoutDashboard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard') },
-                { label: 'Manage Branches', desc: 'Set up & switch between clinic locations under one account', icon: <Layers className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => {}, active: true },
-                { label: 'History', desc: 'Browse completed & past patient consultation records', icon: <History className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/history') },
-                { label: 'Analytics & Reports', desc: 'Track peak OPD hours, average wait times, reason breakdowns, and patient-wise statistics.', icon: <BarChart2 className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/analytics') },
-                { label: 'Broadcasting & CRM', desc: 'Send bulk WhatsApp alerts & manage patient relationships', icon: <Megaphone className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/crm') },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  onClick={item.onClick}
-                  className={`sidebar-btn${item.active ? ' active' : ''}`}
-                  onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
-                  onMouseLeave={() => setSbTooltip(null)}
-                >
-                  {item.icon}
-                  <span className="sb-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ height: 1, background: '#A8D5B5', margin: '14px 8px' }} />
-
-          {/* Nav Group: Account */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[
-              { label: 'Billing & Plans', desc: 'Manage your TokenPe subscription & plan features', icon: <CreditCard className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/billing') },
-              { label: 'Help & Support', desc: 'Report bugs, raise issues & get in touch with our team', icon: <HelpCircle className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/help') },
-              { label: 'Edit Profile', desc: 'Update clinic name, contact info & branding', icon: <User className="w-4 h-4" style={{ flexShrink: 0 }} />, onClick: () => router.push('/dashboard/profile') },
-            ].map(item => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className="sidebar-btn"
-                onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setSbTooltip({ label: item.label, desc: item.desc, y: r.top + r.height / 2 }) }}
-                onMouseLeave={() => setSbTooltip(null)}
-              >
-                {item.icon}
-                <span className="sb-label">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      {/* Floating Hover Tooltip */}
-      {sbTooltip && (
-        <div style={{ position: 'fixed', left: 248, top: sbTooltip.y, transform: 'translateY(-50%)', background: '#0F291B', color: '#FFFFFF', padding: '10px 14px', borderRadius: 10, fontSize: '0.78rem', zIndex: 99999, pointerEvents: 'none', maxWidth: 220, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-          <div style={{ fontWeight: 800, marginBottom: 2, color: '#A7F3D0' }}>{sbTooltip.label}</div>
-          <div style={{ fontSize: '0.72rem', color: '#D1FAE5', lineHeight: 1.3 }}>{sbTooltip.desc}</div>
-        </div>
-      )}
-
       {/* ── Main Content Container ── */}
-      <main className="flex-grow lg:overflow-y-auto lg:h-screen">
+      <main className="flex-1 min-h-screen pb-20 font-sans overflow-y-auto">
         <div className="max-w-[1040px] mx-auto p-4 sm:p-6 lg:p-10 space-y-6">
 
           {/* Top Bar Header */}
@@ -344,41 +237,60 @@ export default function ManageBranchesPage() {
             </button>
           </div>
 
-          {/* ── CURRENTLY ACTIVE BRANCH BANNER ── */}
+          {/* ── CURRENTLY ACTIVE BRANCH BANNER (Mobile-Optimized) ── */}
           {clinic && (
-            <div className="bg-[#052E20] text-white p-5 rounded-3xl shadow-md border border-[#065F46] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-[#065F46] text-[#A7F3D0] border border-[#10B981]/30 flex-shrink-0">
-                  <Building2 className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <div className="bg-gradient-to-br from-[#052E20] via-[#0A3F2C] to-[#042A1D] text-white p-4 sm:p-6 rounded-3xl shadow-lg border border-[#0F5A3E] relative overflow-hidden">
+              {/* Top Badges Row */}
+              <div className="flex items-center justify-between gap-2 mb-3.5 pb-3 border-b border-[#0F5A3E]/60 flex-wrap">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#065F46]/80 text-[#A7F3D0] border border-[#10B981]/40 text-[10px] font-black uppercase tracking-wider whitespace-nowrap shadow-sm">
+                  <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                   </span>
+                  <span>⚡ Currently Active Location</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#065F46] text-[#A7F3D0] px-2.5 py-0.5 rounded border border-[#10B981]/40">
-                      ⚡ Currently Active Location
-                    </span>
-                    <span className="text-xs font-mono text-[#A7F3D0] font-bold">Code: {clinic.code}</span>
-                  </div>
-                  <div className="text-lg font-black text-white mt-0.5 flex items-center gap-2">
-                    <span>{clinic.name}</span>
-                    {clinic.id === mainBranchId && (
-                      <span className="text-[10px] font-extrabold bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/30 flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-amber-300" /> Main Branch (Primary)
-                      </span>
-                    )}
-                  </div>
+
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/20 text-[#A7F3D0] border border-white/10 text-[11px] font-mono font-bold whitespace-nowrap">
+                  <span className="text-[9px] uppercase tracking-wider text-teal-200/70 font-sans">Code:</span>
+                  <span className="text-white font-extrabold">{clinic.code}</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Main Content Area */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-[#065F46] text-[#A7F3D0] border border-[#10B981]/30 flex-shrink-0 shadow-inner mt-0.5 sm:mt-0">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight truncate leading-tight">
+                      {clinic.name}
+                    </h2>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {clinic.id === mainBranchId ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold bg-amber-400/15 text-amber-300 px-2.5 py-0.5 rounded-lg border border-amber-400/30 whitespace-nowrap">
+                          <Building2 className="w-3 h-3 text-amber-300" /> Main Branch (Primary)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold bg-teal-400/15 text-teal-300 px-2.5 py-0.5 rounded-lg border border-teal-400/30 whitespace-nowrap">
+                          🏢 Sub-Branch Counter
+                        </span>
+                      )}
+                      {clinic.specialty && (
+                        <span className="text-[10px] font-semibold text-teal-100/80 bg-white/5 px-2 py-0.5 rounded-md border border-white/10 whitespace-nowrap">
+                          {clinic.specialty}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="px-4 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                  className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-[#10B981] hover:bg-[#059669] active:scale-[0.98] text-white rounded-2xl text-xs sm:text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 flex-shrink-0 mt-1 sm:mt-0"
                 >
-                  <span>Open OPD Dashboard</span> <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Open OPD Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>

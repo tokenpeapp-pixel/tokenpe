@@ -3,11 +3,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, GraduationCap, Users, Zap, CheckCircle2, ChevronRight, Bell, Calendar, Mic, Globe2, Utensils, ChefHat, Coffee, Clock } from "lucide-react";
+import { useIndustryActive } from "@/lib/useIndustries";
 
 export default function RestaurantLandingPage({ config }) {
   const router = useRouter();
+  const isActive = useIndustryActive('restaurant');
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -34,6 +37,9 @@ export default function RestaurantLandingPage({ config }) {
       window.scrollTo({ top: el.offsetTop - 80, behavior: "smooth" });
     }
   };
+
+  // Feature flag guard — return null if this industry is not active
+  if (!isActive) return null;
 
   return (
     <>

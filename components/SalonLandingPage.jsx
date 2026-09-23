@@ -9,6 +9,7 @@ import {
   Calendar, ShieldCheck, FileText, UserCheck, Award, PartyPopper, Heart,
   Sparkle, Crown
 } from "lucide-react";
+import { useIndustryActive } from "@/lib/useIndustries";
 
 /* ═══════════════════════════════════════════════════════════════
    TYPEWRITER HOOK
@@ -452,6 +453,7 @@ function MobileAutoCarousel({ children, total, activeDotColor = "#D14D72" }) {
 ═══════════════════════════════════════════════════════════════ */
 export default function SalonLandingPage() {
   const router = useRouter();
+  const isActive = useIndustryActive('salon');
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -522,6 +524,9 @@ export default function SalonLandingPage() {
     "AI voice agent & WhatsApp bot answer booking queries 24/7",
     "Automated feedback & Google review requests after appointment",
   ];
+
+  // Feature flag guard — return null if this industry is not active
+  if (!isActive) return null;
 
   return (
     <>

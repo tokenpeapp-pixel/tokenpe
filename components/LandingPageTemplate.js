@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, UtensilsCrossed, GraduationCap, Scissors, MoreHorizontal, Search, Check, Users, Megaphone, ClipboardList, Stethoscope, Activity, Building2, Smile, Mic, MessageSquare, Zap, Bell, Calendar, QrCode, FileSignature, BellRing, FileText, CheckCircle2, XCircle, ChevronRight, Mail, PhoneOff, TrendingDown, Menu, X, Smartphone, CreditCard, Bot, Star, PhoneCall, Languages, BarChart3 } from "lucide-react";
+import { useIndustries } from "@/lib/useIndustries";
 
 import WhatsAppDemo from "../app/components/WhatsAppDemo";
 import Lenis from "lenis";
@@ -158,6 +159,14 @@ function HeroCursorField() {
   );
 }
 
+// Icon map for the vertical selector — kept client-side only
+const VERTICAL_ICONS = {
+  clinic:     Stethoscope,
+  restaurant: UtensilsCrossed,
+  school:     GraduationCap,
+  salon:      Scissors,
+};
+
 export default function LandingPageTemplate({ config = {} }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -165,6 +174,8 @@ export default function LandingPageTemplate({ config = {} }) {
   const [scrolled, setScrolled] = useState(false);
   const [dots, setDots] = useState([]);
   const [activeWho, setActiveWho] = useState(0);
+  // Feature-flag-driven industry list (only fetched when this is the root page)
+  const { industries: activeIndustries, loading: industriesLoading } = useIndustries();
   
   const go = (id) => {
     const target = document.getElementById(id);
@@ -2566,25 +2577,30 @@ export default function LandingPageTemplate({ config = {} }) {
         </div>
       </section>
 
-      {/* ── VERTICAL SELECTOR (Root Only) ── */}
+      {/* ── VERTICAL SELECTOR (Root Only — driven by feature flags) ── */}
       {config.isRoot && (
         <section id="industries" className="lp-sec lp-vertical-sec" style={{ paddingTop: '20px', paddingBottom: '40px' }}>
           <div className="lp-sec-inner">
             <h2 className="lp-sec-h2 lp-sec-centered lp-reveal" style={{ marginBottom: '32px' }}>Choose your industry</h2>
             <div className="lp-vertical-grid lp-reveal lp-reveal-d1">
-              {[
-                { name: "Clinic", Ico: Stethoscope, path: "/clinics" },
-                { name: "Restaurant", Ico: UtensilsCrossed, path: "/restaurants" },
-                { name: "School", Ico: GraduationCap, path: "/schools" },
-                { name: "Salon", Ico: Scissors, path: "/salons" },
-                { name: "Other", Ico: Sparkles, path: "/other" }
-              ].map(v => (
-                <Link key={v.name} href={v.path} className="lp-vcard">
-                  <div className="lp-vcard-ghost"><v.Ico size={120} strokeWidth={1.5} /></div>
-                  <div className="lp-vcard-icon"><v.Ico size={24} /></div>
-                  <div className="lp-vcard-name">{v.name}</div>
-                </Link>
-              ))}
+              {industriesLoading ? (
+                // Skeleton card while fetching
+                <div className="lp-vcard" style={{ opacity: 0.4, pointerEvents: 'none', minWidth: 120 }}>
+                  <div className="lp-vcard-icon" style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 12, width: 48, height: 48 }} />
+                  <div className="lp-vcard-name" style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 6, width: 60, height: 14, marginTop: 8 }} />
+                </div>
+              ) : (
+                activeIndustries.map(ind => {
+                  const Ico = VERTICAL_ICONS[ind.industry] || Sparkles;
+                  return (
+                    <Link key={ind.industry} href={ind.href} className="lp-vcard">
+                      <div className="lp-vcard-ghost"><Ico size={120} strokeWidth={1.5} /></div>
+                      <div className="lp-vcard-icon"><Ico size={24} /></div>
+                      <div className="lp-vcard-name">{ind.label.replace('Find ', '')}</div>
+                    </Link>
+                  );
+                })
+              )}
             </div>
           </div>
         </section>

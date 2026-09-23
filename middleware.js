@@ -1,39 +1,52 @@
 import { NextResponse } from 'next/server';
+import { getActiveIndustries } from '@/lib/featureFlags';
 
-export function middleware(request) {
+export async function middleware(request) {
     const url = request.nextUrl.pathname;
 
-    // The Pro Way: Bypass the maintenance block if you are developing locally (npm run dev)!
+    // Bypass everything in development so local dev is never blocked
     if (process.env.NODE_ENV === 'development') {
         return NextResponse.next();
     }
 
-    // The list of new industry vertical base paths that should be blocked
-    const maintenancePaths = [
-
-        '/business',
-        '/other'
-    ];
-
-    // If the path starts with any of the blocked vertical paths (e.g. /salons, /restaurant-login)
+    // ── Always-allowed admin paths ───────────────────────────────────────
     const alwaysAllow = ['/business-login', '/business-dashboard', '/business-auth'];
     if (alwaysAllow.some(p => url.startsWith(p))) return NextResponse.next();
-    
+
+    // ── Maintenance-mode paths (hard-blocked regardless of feature flags) ─
+    const maintenancePaths = ['/business', '/other'];
     const isMaintenancePath = maintenancePaths.some(
         path => url === path || url.startsWith(path + '/')
     );
-    
     if (isMaintenancePath) {
         return NextResponse.rewrite(new URL('/maintenance', request.url));
     }
 
+    // ── Feature-flag-based industry gating ───────────────────────────────
+    // Map of path prefixes → industry slug
+    const industryPaths = [
+        { prefixes: ['/r/', '/r?', '/restaurants', '/restaurant-login', '/restaurant-dashboard'], industry: 'restaurant' },
+        { prefixes: ['/s/', '/s?', '/salons', '/salon-auth', '/salon-login', '/salon-dashboard'], industry: 'salon' },
+        { prefixes: ['/schools', '/school-auth', '/school-login', '/school-dashboard'], industry: 'school' },
+    ];
 
+    // Check if the current path belongs to any gated industry
+    const matchedIndustry = industryPaths.find(({ prefixes }) =>
+        prefixes.some(prefix => url === prefix.replace(/[/?]$/, '') || url.startsWith(prefix))
+    );
 
-    // Allow everything else (e.g., /, /login, /dashboard, /api, /find) to pass through to the live functionality
+    if (matchedIndustry) {
+        const activeIndustries = await getActiveIndustries();
+        if (!activeIndustries.includes(matchedIndustry.industry)) {
+            return NextResponse.rewrite(new URL('/not-found', request.url));
+        }
+    }
+
+    // Allow everything else (/, /login, /dashboard, /api, /clinics, /find, etc.)
     return NextResponse.next();
 }
 
-// Ensure the middleware runs on all routes except statically served Next.js files and the maintenance page itself
+// Run on all routes except static assets
 export const config = {
     matcher: [
         '/((?!api|_next/static|_next/image|favicon.ico|maintenance|logo-nav.svg).*)',

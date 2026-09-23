@@ -9,6 +9,7 @@ import {
   School, BookOpen, Calendar, ShieldCheck, FileText, UserCheck, Award,
   PartyPopper, Heart, Volume2, Layers
 } from "lucide-react";
+import { useIndustryActive } from "@/lib/useIndustries";
 
 /* ═══════════════════════════════════════════════════════════════
    TYPEWRITER HOOK
@@ -628,6 +629,7 @@ function LogoMarquee() {
 ═══════════════════════════════════════════════════════════════ */
 export default function SchoolLandingPage() {
   const router = useRouter();
+  const isActive = useIndustryActive('school');
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -701,6 +703,9 @@ export default function SchoolLandingPage() {
     "AI voice agent & WhatsApp bot answer parent queries 24/7",
     "Automated feedback & Google review requests after PTM",
   ];
+
+  // Feature flag guard — return null if this industry is not active
+  if (!isActive) return null;
 
   return (
     <>
